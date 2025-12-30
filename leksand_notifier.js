@@ -119,7 +119,8 @@ async function sendNotification(videoUrl, imageUrl, game) {
 }
 
 async function checkHighlights(game) {
-    console.log(`Checking highlights for game ${game.uuid} (${game.startDateTime})...`);
+    const timestamp = new Date().toLocaleTimeString();
+    console.log(`[${timestamp}] Checking highlights for game ${game.uuid} (${game.startDateTime})...`);
 
     if (seenGames.includes(game.uuid)) {
         console.log('Game already processed.');
