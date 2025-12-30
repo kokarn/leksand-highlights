@@ -200,9 +200,8 @@ async function main() {
     await runCheck();
 
     // Schedule every 5 minutes (300,000 ms)
-    // TEMPORARY: 10 seconds for verification
-    const INTERVAL = 10 * 1000;
-    console.log(`Scheduling next check in 10 seconds (TEST MODE)...`);
+    const INTERVAL = 5 * 60 * 1000;
+    console.log(`Scheduling next check in 5 minutes...`);
 
     setInterval(async () => {
         await runCheck();
