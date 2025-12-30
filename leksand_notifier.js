@@ -126,6 +126,17 @@ async function checkHighlights(game) {
         return;
     }
 
+    // Stop checking if game is older than 24 hours to avoid infinite polling for games without highlights
+    const startTime = new Date(game.startDateTime);
+    const now = new Date();
+    const hoursSinceStart = (now - startTime) / (1000 * 60 * 60);
+
+    if (hoursSinceStart > 24) {
+        console.log(`Game ${game.uuid} is older than 24 hours and no highlights found. Marking as seen to stop polling.`);
+        saveSeenGame(game.uuid);
+        return;
+    }
+
     const apiUrl = `https://www.shl.se/api/media/videos-for-game?page=0&pageSize=20&gameUuid=${game.uuid}`;
     console.log(`Fetching videos from API: ${apiUrl}...`);
 
