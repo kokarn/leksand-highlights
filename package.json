@@ -1,0 +1,13 @@
+{
+  "name": "leksand-notify",
+  "version": "1.0.0",
+  "description": "Notifies when Leksand SHL highlights are available",
+  "main": "leksand_notifier.js",
+  "scripts": {
+    "start": "node leksand_notifier.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12"
+  }
+}
