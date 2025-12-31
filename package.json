@@ -5,6 +5,7 @@
     "main": "shl_notifier.js",
     "scripts": {
         "start": "node shl_notifier.js",
+        "build": "echo 'Build complete'",
         "test": "echo \"Error: no test specified\" && exit 1"
     }
 }

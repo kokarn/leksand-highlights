@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const http = require('http');
 
 const SEEN_GAMES_FILE = path.join(__dirname, 'seen_games.json');
 const SHL_SCHEDULE_API = 'https://www.shl.se/api/sports-v2/game-schedule?seasonUuid=xs4m9qupsi&seriesUuid=qQ9-bb0bzEWUk&gameTypeUuid=qQ9-af37Ti40B&gamePlace=all&played=all';
@@ -177,30 +176,6 @@ async function runCheck() {
 
 async function main() {
     console.log('Starting SHL Notifier (Multi-Team Support)...');
-
-    // Start web server
-    const PORT = 3000;
-    const server = http.createServer((req, res) => {
-        if (req.url === '/' || req.url === '/index.html') {
-            const indexPath = path.join(__dirname, 'index.html');
-            fs.readFile(indexPath, (err, data) => {
-                if (err) {
-                    res.writeHead(500);
-                    res.end('Error loading index.html');
-                } else {
-                    res.writeHead(200, { 'Content-Type': 'text/html' });
-                    res.end(data);
-                }
-            });
-        } else {
-            res.writeHead(404);
-            res.end('Not Found');
-        }
-    });
-
-    server.listen(PORT, () => {
-        console.log(`Web server running at http://localhost:${PORT}`);
-    });
 
     await runCheck();
     setInterval(runCheck, 5 * 60 * 1000);

@@ -67,66 +67,88 @@
             backdrop-filter: blur(12px);
             border: 1px solid var(--glass-border);
             border-radius: 1.5rem;
-            padding: 2rem;
+            padding: 2.5rem 2rem;
             display: flex;
             flex-direction: column;
             align-items: center;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             text-decoration: none;
             color: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .team-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.4s;
         }
 
         .team-card:hover {
             transform: translateY(-8px);
-            background: rgba(30, 41, 59, 0.9);
-            border-color: var(--accent-color);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            background: rgba(30, 41, 59, 0.85);
+            border-color: rgba(56, 189, 248, 0.4);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .team-card:hover::before {
+            opacity: 1;
         }
 
         .logo-container {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 1.5rem;
+            width: 90px;
+            height: 90px;
+            margin-bottom: 2rem;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .team-card:hover .logo-container {
+            transform: scale(1.1) rotate(5deg);
         }
 
         .logo-container img {
             max-width: 100%;
             max-height: 100%;
-            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+            filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.4));
         }
 
         .team-name {
             font-size: 1.5rem;
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 0.5rem;
+            text-align: center;
         }
 
         .team-code {
             font-size: 0.875rem;
             color: var(--text-secondary);
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 2rem;
+            letter-spacing: 0.2em;
+            margin-bottom: 0;
         }
 
-        .subscribe-btn {
-            background-color: var(--accent-color);
-            color: #000;
-            padding: 0.75rem 1.5rem;
-            border-radius: 9999px;
-            font-weight: 600;
+        .follow-hint {
+            margin-top: 1.5rem;
             font-size: 0.875rem;
-            transition: all 0.2s;
-            width: 100%;
-            text-align: center;
+            font-weight: 600;
+            color: var(--accent-color);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        .team-card:hover .subscribe-btn {
-            background-color: #fff;
-            transform: scale(1.05);
+        .team-card:hover .follow-hint {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         footer {
@@ -167,22 +189,22 @@
         const teams = [
             {
                 "code": "BIF",
-                "name": "Brynäs",
+                "name": "Brynäs IF",
                 "logo": "https://sportality.cdn.s8y.se/team-logos/bif1_bif.svg"
             },
             {
                 "code": "DIF",
-                "name": "Djurgården",
+                "name": "Djurgårdens IF",
                 "logo": "https://sportality.cdn.s8y.se/team-logos/dif1_dif.svg"
             },
             {
                 "code": "FBK",
-                "name": "Färjestad",
+                "name": "Färjestad BK",
                 "logo": "https://sportality.cdn.s8y.se/team-logos/fbk1_fbk.svg"
             },
             {
                 "code": "FHC",
-                "name": "Frölunda",
+                "name": "Frölunda HC",
                 "logo": "https://sportality.cdn.s8y.se/team-logos/fhc1_fhc.svg"
             },
             {
@@ -192,52 +214,53 @@
             },
             {
                 "code": "LHC",
-                "name": "Linköping",
+                "name": "Linköping HC",
                 "logo": "https://sportality.cdn.s8y.se/team-logos/lhc1_lhc.svg"
             },
             {
                 "code": "LHF",
-                "name": "Luleå",
+                "name": "Luleå Hockey",
                 "logo": "https://sportality.cdn.s8y.se/team-logos/lhf1_lhf.svg"
             },
             {
                 "code": "LIF",
-                "name": "Leksand",
+                "name": "Leksands IF",
                 "logo": "https://sportality.cdn.s8y.se/team-logos/lif1_lif.svg"
             },
             {
                 "code": "MIF",
-                "name": "Malmö",
+                "name": "Malmö Redhawks",
                 "logo": "https://sportality.cdn.s8y.se/team-logos/mif1_mif.svg"
             },
             {
                 "code": "OHK",
-                "name": "Örebro",
+                "name": "Örebro Hockey",
                 "logo": "https://sportality.cdn.s8y.se/team-logos/ohk1_ohk.svg"
             },
             {
                 "code": "RBK",
-                "name": "Rögle",
+                "name": "Rögle BK",
                 "logo": "https://sportality.cdn.s8y.se/team-logos/rbk1_rbk.svg"
             },
             {
                 "code": "SAIK",
-                "name": "Skellefteå",
+                "name": "Skellefteå AIK",
                 "logo": "https://sportality.cdn.s8y.se/team-logos/saik1_saik.svg"
             },
             {
                 "code": "TIK",
-                "name": "Timrå",
+                "name": "Timrå IK",
                 "logo": "https://sportality.cdn.s8y.se/team-logos/tik1_tik.svg"
             },
             {
                 "code": "VLH",
-                "name": "Växjö",
+                "name": "Växjö Lakers",
                 "logo": "https://sportality.cdn.s8y.se/team-logos/vlh1_vlh.svg"
             }
         ];
 
         const grid = document.getElementById('team-grid');
+        teams.sort((a, b) => a.name.localeCompare(b.name, 'sv'));
         teams.forEach(team => {
             const card = document.createElement('a');
             card.className = 'team-card';
@@ -250,7 +273,7 @@
                 </div>
                 <div class="team-name">${team.name}</div>
                 <div class="team-code">${team.code}</div>
-                <div class="subscribe-btn">Prenumerera</div>
+                <div class="follow-hint">Följ lag →</div>
             `;
 
             grid.appendChild(card);
