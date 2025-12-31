@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="sv">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHL Highlights Notifier</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --accent-color: #38bdf8;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            padding: 4rem 2rem;
+            text-align: center;
+            max-width: 800px;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(to bottom right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.025em;
+        }
+
+        p.subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 1200px;
+            padding: 0 2rem 4rem;
+        }
+
+        .team-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .team-card:hover {
+            transform: translateY(-8px);
+            background: rgba(30, 41, 59, 0.9);
+            border-color: var(--accent-color);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo-container {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-container img {
+            max-width: 100%;
+            max-height: 100%;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+        }
+
+        .team-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .team-code {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 2rem;
+        }
+
+        .subscribe-btn {
+            background-color: var(--accent-color);
+            color: #000;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            width: 100%;
+            text-align: center;
+        }
+
+        .team-card:hover .subscribe-btn {
+            background-color: #fff;
+            transform: scale(1.05);
+        }
+
+        footer {
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            text-align: center;
+        }
+
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .team-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>SHL Highlights</h1>
+        <p class="subtitle">Få notiser direkt i mobilen när höjdpunkterna från ditt lags matcher publiceras. Välj ditt
+            lag nedan för att prenumerera via ntfy.</p>
+    </header>
+
+    <div class="team-grid" id="team-grid">
+        <!-- Teams will be injected here -->
+    </div>
+
+    <footer>
+        Drivs av SHL Media API & ntfy.sh
+    </footer>
+
+    <script>
+        const teams = [
+            {
+                "code": "BIF",
+                "name": "Brynäs",
+                "logo": "https://sportality.cdn.s8y.se/team-logos/bif1_bif.svg"
+            },
+            {
+                "code": "DIF",
+                "name": "Djurgården",
+                "logo": "https://sportality.cdn.s8y.se/team-logos/dif1_dif.svg"
+            },
+            {
+                "code": "FBK",
+                "name": "Färjestad",
+                "logo": "https://sportality.cdn.s8y.se/team-logos/fbk1_fbk.svg"
+            },
+            {
+                "code": "FHC",
+                "name": "Frölunda",
+                "logo": "https://sportality.cdn.s8y.se/team-logos/fhc1_fhc.svg"
+            },
+            {
+                "code": "HV71",
+                "name": "HV71",
+                "logo": "https://sportality.cdn.s8y.se/team-logos/hv711_hv71.svg"
+            },
+            {
+                "code": "LHC",
+                "name": "Linköping",
+                "logo": "https://sportality.cdn.s8y.se/team-logos/lhc1_lhc.svg"
+            },
+            {
+                "code": "LHF",
+                "name": "Luleå",
+                "logo": "https://sportality.cdn.s8y.se/team-logos/lhf1_lhf.svg"
+            },
+            {
+                "code": "LIF",
+                "name": "Leksand",
+                "logo": "https://sportality.cdn.s8y.se/team-logos/lif1_lif.svg"
+            },
+            {
+                "code": "MIF",
+                "name": "Malmö",
+                "logo": "https://sportality.cdn.s8y.se/team-logos/mif1_mif.svg"
+            },
+            {
+                "code": "OHK",
+                "name": "Örebro",
+                "logo": "https://sportality.cdn.s8y.se/team-logos/ohk1_ohk.svg"
+            },
+            {
+                "code": "RBK",
+                "name": "Rögle",
+                "logo": "https://sportality.cdn.s8y.se/team-logos/rbk1_rbk.svg"
+            },
+            {
+                "code": "SAIK",
+                "name": "Skellefteå",
+                "logo": "https://sportality.cdn.s8y.se/team-logos/saik1_saik.svg"
+            },
+            {
+                "code": "TIK",
+                "name": "Timrå",
+                "logo": "https://sportality.cdn.s8y.se/team-logos/tik1_tik.svg"
+            },
+            {
+                "code": "VLH",
+                "name": "Växjö",
+                "logo": "https://sportality.cdn.s8y.se/team-logos/vlh1_vlh.svg"
+            }
+        ];
+
+        const grid = document.getElementById('team-grid');
+        teams.forEach(team => {
+            const card = document.createElement('a');
+            card.className = 'team-card';
+            card.href = `https://ntfy.sh/shl-highlights-${team.code}`;
+            card.target = '_blank';
+
+            card.innerHTML = `
+                <div class="logo-container">
+                    <img src="${team.logo}" alt="${team.name} logotyp">
+                </div>
+                <div class="team-name">${team.name}</div>
+                <div class="team-code">${team.code}</div>
+                <div class="subscribe-btn">Prenumerera</div>
+            `;
+
+            grid.appendChild(card);
+        });
+    </script>
+</body>
+
+</html>
