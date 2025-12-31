@@ -37,8 +37,21 @@ async function fetchSchedule() {
             return [];
         }
 
-        const games = data.gameInfo.filter(game => game.state === 'post-game');
-        console.log(`Found ${games.length} completed games.`);
+        const now = new Date();
+        const games = data.gameInfo.filter(game => {
+            if (game.state !== 'post-game') return false;
+
+            const startTime = new Date(game.startDateTime);
+            const hoursSinceStart = (now - startTime) / (1000 * 60 * 60);
+            return hoursSinceStart <= 24;
+        });
+
+        if (games.length > 0) {
+            const gameDetails = games.map(g => `${g.homeTeamInfo.names.short} vs ${g.awayTeamInfo.names.short}`).join(', ');
+            console.log(`Found ${games.length} recently completed games: ${gameDetails}`);
+        } else {
+            console.log('No games found from the last 24 hours.');
+        }
         return games;
 
     } catch (error) {
@@ -90,9 +103,13 @@ async function sendNotification(videoUrl, imageUrl, game, teamCode) {
 
 async function checkHighlights(game) {
     const timestamp = new Date().toLocaleTimeString();
-    console.log(`[${timestamp}] Checking highlights for game ${game.uuid} (${game.startDateTime})...`);
+    const homeName = game.homeTeamInfo.names.short || game.homeTeamInfo.code;
+    const awayName = game.awayTeamInfo.names.short || game.awayTeamInfo.code;
+
+    console.log(`[${timestamp}] Checking highlights for ${homeName} vs ${awayName} (${game.uuid})...`);
 
     if (seenGames.includes(game.uuid)) {
+        console.log(`Game ${game.uuid} has already been processed. Skipping.`);
         return;
     }
 
@@ -144,16 +161,13 @@ async function runCheck() {
     console.log(`\n--- Running check at ${new Date().toLocaleTimeString()} ---`);
     const games = await fetchSchedule();
 
+    // If seenGames is empty (first run), we mark all currently finished games as seen
+    // to avoid a burst of notifications for games that just happened.
     if (seenGames.length === 0 && games.length > 0) {
-        console.log('First run: suppressing only games older than 24 hours.');
-        const now = new Date();
-        games.forEach(game => {
-            const startTime = new Date(game.startDateTime);
-            const hoursSinceStart = (now - startTime) / (1000 * 60 * 60);
-            if (hoursSinceStart > 24) {
-                saveSeenGame(game.uuid);
-            }
-        });
+        const gameDetails = games.map(g => `${g.homeTeamInfo.names.short} vs ${g.awayTeamInfo.names.short}`).join(', ');
+        console.log(`First run: marking ${games.length} games as seen to avoid initial spam: ${gameDetails}`);
+        games.forEach(g => saveSeenGame(g.uuid));
+        return;
     }
 
     for (const game of games) {
