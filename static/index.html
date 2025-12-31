@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏒</text></svg>">
     <style>
         :root {
             --bg-color: #0f172a;
@@ -159,12 +161,39 @@
         }
 
         @media (max-width: 640px) {
+            header {
+                padding: 3rem 1.5rem 2rem;
+            }
+
             h1 {
                 font-size: 2.5rem;
             }
 
+            p.subtitle {
+                font-size: 1.1rem;
+                padding: 0 0.5rem;
+            }
+
             .team-grid {
                 grid-template-columns: 1fr;
+                padding: 0 1.5rem 3rem;
+                gap: 1rem;
+            }
+
+            .team-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .logo-container {
+                width: 80px;
+                height: 80px;
+                margin-bottom: 1.5rem;
+            }
+
+            .follow-hint {
+                opacity: 0.8;
+                transform: translateY(0);
+                font-size: 0.8rem;
             }
         }
     </style>
