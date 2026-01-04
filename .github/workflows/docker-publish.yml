@@ -3,6 +3,13 @@ name: Docker Publish
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'shl_notifier.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - '.github/workflows/docker-publish.yml'
 
 env:
   REGISTRY: ghcr.io
