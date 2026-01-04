@@ -4,6 +4,7 @@ const path = require('path');
 const SEEN_GAMES_FILE = path.join(__dirname, 'seen_games.json');
 const SHL_SCHEDULE_API = 'https://www.shl.se/api/sports-v2/game-schedule?seasonUuid=xs4m9qupsi&seriesUuid=qQ9-bb0bzEWUk&gameTypeUuid=qQ9-af37Ti40B&gamePlace=all&played=all';
 const TOPIC_PREFIX = 'shl-highlights-';
+const MAX_HOURS_SINCE_GAME = 36;
 
 // Load seen games
 let seenGames = [];
@@ -42,14 +43,14 @@ async function fetchSchedule() {
 
             const startTime = new Date(game.startDateTime);
             const hoursSinceStart = (now - startTime) / (1000 * 60 * 60);
-            return hoursSinceStart <= 24;
+            return hoursSinceStart <= MAX_HOURS_SINCE_GAME;
         });
 
         if (games.length > 0) {
             const gameDetails = games.map(g => `${g.homeTeamInfo.names.short} vs ${g.awayTeamInfo.names.short}`).join(', ');
             console.log(`Found ${games.length} recently completed games: ${gameDetails}`);
         } else {
-            console.log('No games found from the last 24 hours.');
+            console.log(`No games found from the last ${MAX_HOURS_SINCE_GAME} hours.`);
         }
         return games;
 
@@ -112,13 +113,13 @@ async function checkHighlights(game) {
         return;
     }
 
-    // Stop checking if game is older than 24 hours
+    // Stop checking if game is older than MAX_HOURS_SINCE_GAME hours
     const startTime = new Date(game.startDateTime);
     const now = new Date();
     const hoursSinceStart = (now - startTime) / (1000 * 60 * 60);
 
-    if (hoursSinceStart > 24) {
-        console.log(`Game ${game.uuid} is older than 24 hours. Marking as seen.`);
+    if (hoursSinceStart > MAX_HOURS_SINCE_GAME) {
+        console.log(`Game ${game.uuid} is older than ${MAX_HOURS_SINCE_GAME} hours. Marking as seen.`);
         saveSeenGame(game.uuid);
         return;
     }
