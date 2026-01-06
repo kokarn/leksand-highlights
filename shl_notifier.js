@@ -2,17 +2,31 @@ const fs = require('fs');
 const path = require('path');
 
 const SEEN_GAMES_FILE = path.join(__dirname, 'seen_games.json');
+const SEEN_VIDEOS_FILE = path.join(__dirname, 'seen_videos.json');
 const SHL_SCHEDULE_API = 'https://www.shl.se/api/sports-v2/game-schedule?seasonUuid=xs4m9qupsi&seriesUuid=qQ9-bb0bzEWUk&gameTypeUuid=qQ9-af37Ti40B&gamePlace=all&played=all';
-const TOPIC_PREFIX = 'shl-highlights-';
+const HIGHLIGHTS_TOPIC_PREFIX = 'shl-highlights-';
+const TEAM_ALL_TOPIC_PREFIX = 'shl-all-';
+const GLOBAL_ALL_TOPIC = 'shl-all-videos';
 const MAX_HOURS_SINCE_GAME = 36;
 
-// Load seen games
+// Load seen games/videos
 let seenGames = [];
-if (fs.existsSync(SEEN_GAMES_FILE)) {
-    try {
-        seenGames = JSON.parse(fs.readFileSync(SEEN_GAMES_FILE, 'utf8'));
-    } catch (e) {
-        console.error('Error reading seen_games.json:', e);
+let seenVideos = [];
+
+function loadData() {
+    if (fs.existsSync(SEEN_GAMES_FILE)) {
+        try {
+            seenGames = JSON.parse(fs.readFileSync(SEEN_GAMES_FILE, 'utf8'));
+        } catch (e) {
+            console.error('Error reading seen_games.json:', e);
+        }
+    }
+    if (fs.existsSync(SEEN_VIDEOS_FILE)) {
+        try {
+            seenVideos = JSON.parse(fs.readFileSync(SEEN_VIDEOS_FILE, 'utf8'));
+        } catch (e) {
+            console.error('Error reading seen_videos.json:', e);
+        }
     }
 }
 
@@ -20,6 +34,13 @@ function saveSeenGame(gameId) {
     if (!seenGames.includes(gameId)) {
         seenGames.push(gameId);
         fs.writeFileSync(SEEN_GAMES_FILE, JSON.stringify(seenGames, null, 2));
+    }
+}
+
+function saveSeenVideo(videoId) {
+    if (!seenVideos.includes(videoId)) {
+        seenVideos.push(videoId);
+        fs.writeFileSync(SEEN_VIDEOS_FILE, JSON.stringify(seenVideos, null, 2));
     }
 }
 
@@ -60,16 +81,23 @@ async function fetchSchedule() {
     }
 }
 
-async function sendNotification(videoUrl, imageUrl, game, teamCode) {
-    const topic = `${TOPIC_PREFIX}${teamCode}`;
+async function sendNotification(topic, video, game, isHighlight) {
     const homeName = game.homeTeamInfo.names.short || game.homeTeamInfo.code;
     const awayName = game.awayTeamInfo.names.short || game.awayTeamInfo.code;
     const arenaName = game.venueInfo ? game.venueInfo.name : 'arenan';
-    const title = `Highlights: ${homeName} vs ${awayName}`;
-    let message = `Watch the summary from ${homeName} vs ${awayName} at ${arenaName}`;
+    const videoUrl = video.renderedMedia.videourl;
+    const imageUrl = video.renderedMedia.url || video.thumbnail;
+
+    const title = isHighlight
+        ? `Highlights: ${homeName} vs ${awayName}`
+        : `New Video: ${homeName} vs ${awayName}`;
+
+    let message = isHighlight
+        ? `Watch the highlights from ${homeName} vs ${awayName} at ${arenaName}`
+        : `A new video has been posted from ${homeName} vs ${awayName}`;
 
     if (imageUrl) {
-        message += `\n\n[![Highlights](${imageUrl})](${videoUrl})`;
+        message += `\n\n![Thumbnail](${imageUrl})`;
     }
 
     console.log(`Sending notification to ntfy.sh/${topic}...`);
@@ -78,13 +106,13 @@ async function sendNotification(videoUrl, imageUrl, game, teamCode) {
             topic: topic,
             message: message,
             title: title,
-            tags: ['hockey', teamCode.toLowerCase(), 'highlights'],
-            priority: 4,
+            tags: ['hockey', 'shl', isHighlight ? 'highlights' : 'videos'],
+            priority: isHighlight ? 4 : 3,
             click: videoUrl,
             markdown: true,
             actions: [{
                 action: 'view',
-                label: 'Watch Highlights',
+                label: 'Watch Video',
                 url: videoUrl
             }]
         };
@@ -101,28 +129,12 @@ async function sendNotification(videoUrl, imageUrl, game, teamCode) {
     }
 }
 
-async function checkHighlights(game) {
+async function processGameVideos(game, skipNotifications = false) {
     const timestamp = new Date().toLocaleTimeString();
     const homeName = game.homeTeamInfo.names.short || game.homeTeamInfo.code;
     const awayName = game.awayTeamInfo.names.short || game.awayTeamInfo.code;
 
-    console.log(`[${timestamp}] Checking highlights for ${homeName} vs ${awayName} (${game.uuid})...`);
-
-    if (seenGames.includes(game.uuid)) {
-        console.log(`Game ${game.uuid} has already been processed. Skipping.`);
-        return;
-    }
-
-    // Stop checking if game is older than MAX_HOURS_SINCE_GAME hours
-    const startTime = new Date(game.startDateTime);
-    const now = new Date();
-    const hoursSinceStart = (now - startTime) / (1000 * 60 * 60);
-
-    if (hoursSinceStart > MAX_HOURS_SINCE_GAME) {
-        console.log(`Game ${game.uuid} is older than ${MAX_HOURS_SINCE_GAME} hours. Marking as seen.`);
-        saveSeenGame(game.uuid);
-        return;
-    }
+    console.log(`[${timestamp}] Checking videos for ${homeName} vs ${awayName} (${game.uuid})...`);
 
     const apiUrl = `https://www.shl.se/api/media/videos-for-game?page=0&pageSize=20&gameUuid=${game.uuid}`;
 
@@ -136,61 +148,75 @@ async function checkHighlights(game) {
         if (!response.ok) return;
 
         const data = await response.json();
-        const highlight = (data.items || []).find(item =>
-            item.tags && item.tags.includes('custom.highlights')
-        );
+        const videos = data.items || [];
 
-        if (highlight && highlight.renderedMedia && highlight.renderedMedia.videourl) {
-            const videoUrl = highlight.renderedMedia.videourl;
-            const imageUrl = highlight.renderedMedia.url || highlight.thumbnail;
+        for (const video of videos) {
+            if (seenVideos.includes(video.id)) continue;
 
-            console.log(`Found highlights for ${game.uuid} (${homeName} vs ${awayName}). Notifying teams...`);
+            const isHighlight = video.tags && video.tags.includes('custom.highlights');
 
-            // Notify both teams
-            await sendNotification(videoUrl, imageUrl, game, game.homeTeamInfo.code);
-            await sendNotification(videoUrl, imageUrl, game, game.awayTeamInfo.code);
+            if (!skipNotifications) {
+                // 1. Global topic
+                await sendNotification(GLOBAL_ALL_TOPIC, video, game, isHighlight);
 
-            saveSeenGame(game.uuid);
-        } else {
-            console.log(`Highlights not yet available for ${game.uuid} (${homeName} vs ${awayName}).`);
+                // 2. Per-team "all" topics
+                await sendNotification(`${TEAM_ALL_TOPIC_PREFIX}${game.homeTeamInfo.code}`, video, game, isHighlight);
+                await sendNotification(`${TEAM_ALL_TOPIC_PREFIX}${game.awayTeamInfo.code}`, video, game, isHighlight);
+
+                // 3. Per-team highlights (if applicable)
+                if (isHighlight) {
+                    await sendNotification(`${HIGHLIGHTS_TOPIC_PREFIX}${game.homeTeamInfo.code}`, video, game, isHighlight);
+                    await sendNotification(`${HIGHLIGHTS_TOPIC_PREFIX}${game.awayTeamInfo.code}`, video, game, isHighlight);
+                }
+            }
+
+            saveSeenVideo(video.id);
         }
+
+        // If game is old, also mark it as seen in seen_games.json to potentially skip schedule checks
+        const startTime = new Date(game.startDateTime);
+        const hoursSinceStart = (new Date() - startTime) / (1000 * 60 * 60);
+        if (hoursSinceStart > MAX_HOURS_SINCE_GAME) {
+            saveSeenGame(game.uuid);
+        }
+
     } catch (e) {
-        console.error(`Error checking highlights for ${game.uuid}: ${e.message}`);
+        console.error(`Error processing videos for ${game.uuid}: ${e.message}`);
     }
 }
 
 async function runCheck() {
     console.log(`\n--- Running check at ${new Date().toLocaleString()} ---`);
+    loadData();
     const games = await fetchSchedule();
 
-    const isFirstRun = seenGames.length === 0 && games.length > 0;
+    const isFirstRun = seenVideos.length === 0 && games.length > 0;
     if (isFirstRun) {
-        console.log(`First run detected. Analyzing ${games.length} games in the 36h window...`);
+        console.log(`First run detected. Pre-seeding seen videos for older games...`);
     }
 
     for (const game of games) {
+        if (seenGames.includes(game.uuid)) continue;
+
         if (isFirstRun) {
             const startTime = new Date(game.startDateTime);
-            const now = new Date();
-            const hoursSinceStart = (now - startTime) / (1000 * 60 * 60);
+            const hoursSinceStart = (new Date() - startTime) / (1000 * 60 * 60);
 
-            // On first run, we only mark games older than 12h as seen to avoid initial spam.
-            // Recently completed games (within 12h) will be processed normally.
+            // On first run, we only skip notifications for videos older than 12h.
+            // Recently completed games (within 12h) will have their videos processed with notifications.
             if (hoursSinceStart > 12) {
-                console.log(`First run: marking game ${game.uuid} as seen (${hoursSinceStart.toFixed(1)}h ago) to avoid spam.`);
-                saveSeenGame(game.uuid);
+                console.log(`First run: pre-seeding videos for game ${game.uuid} (${hoursSinceStart.toFixed(1)}h ago) without notifications.`);
+                await processGameVideos(game, true);
                 continue;
-            } else {
-                console.log(`First run: will process recent game ${game.uuid} (${hoursSinceStart.toFixed(1)}h ago).`);
             }
         }
-        await checkHighlights(game);
+        await processGameVideos(game, false);
     }
 }
 
 async function main() {
-    console.log('Starting SHL Notifier (Multi-Team Support)...');
-
+    console.log('Starting SHL Notifier (Multi-Topic support)...');
+    loadData();
     await runCheck();
     setInterval(runCheck, 5 * 60 * 1000);
 }
