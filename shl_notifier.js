@@ -144,13 +144,15 @@ async function checkHighlights(game) {
             const videoUrl = highlight.renderedMedia.videourl;
             const imageUrl = highlight.renderedMedia.url || highlight.thumbnail;
 
-            console.log(`Found highlights for ${game.uuid}. Notifying teams...`);
+            console.log(`Found highlights for ${game.uuid} (${homeName} vs ${awayName}). Notifying teams...`);
 
             // Notify both teams
             await sendNotification(videoUrl, imageUrl, game, game.homeTeamInfo.code);
             await sendNotification(videoUrl, imageUrl, game, game.awayTeamInfo.code);
 
             saveSeenGame(game.uuid);
+        } else {
+            console.log(`Highlights not yet available for ${game.uuid} (${homeName} vs ${awayName}).`);
         }
     } catch (e) {
         console.error(`Error checking highlights for ${game.uuid}: ${e.message}`);
@@ -158,19 +160,30 @@ async function checkHighlights(game) {
 }
 
 async function runCheck() {
-    console.log(`\n--- Running check at ${new Date().toLocaleTimeString()} ---`);
+    console.log(`\n--- Running check at ${new Date().toLocaleString()} ---`);
     const games = await fetchSchedule();
 
-    // If seenGames is empty (first run), we mark all currently finished games as seen
-    // to avoid a burst of notifications for games that just happened.
-    if (seenGames.length === 0 && games.length > 0) {
-        const gameDetails = games.map(g => `${g.homeTeamInfo.names.short} vs ${g.awayTeamInfo.names.short}`).join(', ');
-        console.log(`First run: marking ${games.length} games as seen to avoid initial spam: ${gameDetails}`);
-        games.forEach(g => saveSeenGame(g.uuid));
-        return;
+    const isFirstRun = seenGames.length === 0 && games.length > 0;
+    if (isFirstRun) {
+        console.log(`First run detected. Analyzing ${games.length} games in the 36h window...`);
     }
 
     for (const game of games) {
+        if (isFirstRun) {
+            const startTime = new Date(game.startDateTime);
+            const now = new Date();
+            const hoursSinceStart = (now - startTime) / (1000 * 60 * 60);
+
+            // On first run, we only mark games older than 12h as seen to avoid initial spam.
+            // Recently completed games (within 12h) will be processed normally.
+            if (hoursSinceStart > 12) {
+                console.log(`First run: marking game ${game.uuid} as seen (${hoursSinceStart.toFixed(1)}h ago) to avoid spam.`);
+                saveSeenGame(game.uuid);
+                continue;
+            } else {
+                console.log(`First run: will process recent game ${game.uuid} (${hoursSinceStart.toFixed(1)}h ago).`);
+            }
+        }
         await checkHighlights(game);
     }
 }
