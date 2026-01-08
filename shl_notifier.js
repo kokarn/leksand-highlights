@@ -60,18 +60,32 @@ async function fetchSchedule() {
 
         const now = new Date();
         const games = data.gameInfo.filter(game => {
-            if (game.state !== 'post-game') return false;
-
             const startTime = new Date(game.startDateTime);
             const hoursSinceStart = (now - startTime) / (1000 * 60 * 60);
-            return hoursSinceStart <= MAX_HOURS_SINCE_GAME;
+
+            // 1. Post-game: Check within the detection window
+            if (game.state === 'post-game') {
+                return hoursSinceStart >= -1 && hoursSinceStart <= MAX_HOURS_SINCE_GAME;
+            }
+
+            // 2. Live game: Check if it's currently active
+            if (game.state === 'live') {
+                return true;
+            }
+
+            // 3. Pre-game fallback: If start time passed, check for 6 hours (handles API lag)
+            if (game.state === 'pre-game' && hoursSinceStart >= 0) {
+                return hoursSinceStart <= 6;
+            }
+
+            return false;
         });
 
         if (games.length > 0) {
-            const gameDetails = games.map(g => `${g.homeTeamInfo.names.short} vs ${g.awayTeamInfo.names.short}`).join(', ');
-            console.log(`Found ${games.length} recently completed games: ${gameDetails}`);
+            const gameDetails = games.map(g => `${g.homeTeamInfo.names.short} vs ${g.awayTeamInfo.names.short} (${g.state})`).join(', ');
+            console.log(`Checking ${games.length} active/recent games: ${gameDetails}`);
         } else {
-            console.log(`No games found from the last ${MAX_HOURS_SINCE_GAME} hours.`);
+            console.log(`No active or recent games found (last ${MAX_HOURS_SINCE_GAME} hours).`);
         }
         return games;
 
