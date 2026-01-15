@@ -226,13 +226,34 @@ async function runCheck() {
         }
         await processGameVideos(game, false);
     }
+    return games;
 }
 
 async function main() {
     console.log('Starting SHL Notifier (Multi-Topic support)...');
     loadData();
-    await runCheck();
-    setInterval(runCheck, 5 * 60 * 1000);
+
+    const checkLoop = async () => {
+        try {
+            const games = await runCheck();
+            const hasLiveGame = games && games.some(g => g.state === 'live');
+
+            // Check every 30 seconds if live game, otherwise every 5 minutes
+            const delay = hasLiveGame ? 30 * 1000 : 5 * 60 * 1000;
+
+            if (hasLiveGame) {
+                console.log(`Live game active! Next check in 30 seconds.`);
+            }
+
+            setTimeout(checkLoop, delay);
+        } catch (error) {
+            console.error('Error in main loop:', error);
+            // Fallback to 5 minutes on error
+            setTimeout(checkLoop, 5 * 60 * 1000);
+        }
+    };
+
+    await checkLoop();
 }
 
 if (require.main === module) {
