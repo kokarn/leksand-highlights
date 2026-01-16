@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHL Admin Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.8);
+            --panel-border: rgba(148, 163, 184, 0.2);
+            --accent: #38bdf8;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --danger: #f87171;
+            --success: #4ade80;
+        }
+
+        body {
+            background: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            padding: 2.5rem 1.5rem 4rem;
+        }
+
+        header {
+            max-width: 1200px;
+            margin: 0 auto 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        header h1 {
+            font-size: 2.4rem;
+            font-weight: 700;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            max-width: 680px;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+        }
+
+        .panel h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+
+        .status-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 0.75rem;
+            padding: 1rem;
+        }
+
+        .status-card h3 {
+            font-size: 0.95rem;
+            margin-bottom: 0.75rem;
+            color: var(--accent);
+        }
+
+        .status-card dl {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.35rem 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .status-card dt {
+            color: var(--text-secondary);
+        }
+
+        .status-card dd {
+            text-align: right;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        button {
+            border: none;
+            border-radius: 0.6rem;
+            padding: 0.65rem 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            background: var(--accent);
+            color: #0f172a;
+        }
+
+        button.secondary {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--text-primary);
+        }
+
+        button.danger {
+            background: var(--danger);
+            color: #1f2937;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .feedback {
+            margin-top: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .feedback.success {
+            color: var(--success);
+        }
+
+        .feedback.error {
+            color: var(--danger);
+        }
+
+        form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            align-items: end;
+        }
+
+        label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: block;
+            margin-bottom: 0.4rem;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            border-radius: 0.6rem;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            background: rgba(15, 23, 42, 0.6);
+            color: var(--text-primary);
+        }
+
+        .games-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .game-card {
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 0.85rem;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.6);
+        }
+
+        .game-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .game-title {
+            font-weight: 600;
+        }
+
+        .game-meta {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .game-actions {
+            margin-top: 0.75rem;
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .muted {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 1.5rem 1rem 3rem;
+            }
+
+            header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>SHL Admin Console</h1>
+        <p>Manage manual games, update live scores, and monitor indexing status for the SHL highlights server.</p>
+    </header>
+
+    <main>
+        <section class="panel">
+            <h2>Indexing status</h2>
+            <div class="status-grid" id="status-grid"></div>
+            <div class="actions" style="margin-top: 1rem;">
+                <button id="refresh-status" class="secondary">Refresh status</button>
+                <button id="clear-cache">Clear caches</button>
+                <button id="run-notifier" class="secondary">Run notifier check</button>
+            </div>
+            <div class="feedback" id="status-feedback"></div>
+        </section>
+
+        <section class="panel">
+            <h2>Create manual game</h2>
+            <form id="create-game-form">
+                <div>
+                    <label for="home-team">Home team</label>
+                    <select id="home-team" required></select>
+                </div>
+                <div>
+                    <label for="away-team">Away team</label>
+                    <select id="away-team" required></select>
+                </div>
+                <div>
+                    <label for="game-state">State</label>
+                    <select id="game-state">
+                        <option value="live">Live</option>
+                        <option value="pre-game">Pre-game</option>
+                        <option value="post-game">Post-game</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="start-time">Start time</label>
+                    <input id="start-time" type="datetime-local" required />
+                </div>
+                <div>
+                    <label for="venue">Venue</label>
+                    <input id="venue" type="text" placeholder="Arena name" />
+                </div>
+                <div>
+                    <label for="home-score">Home score</label>
+                    <input id="home-score" type="number" min="0" value="0" />
+                </div>
+                <div>
+                    <label for="away-score">Away score</label>
+                    <input id="away-score" type="number" min="0" value="0" />
+                </div>
+                <button type="submit">Create game</button>
+            </form>
+            <div class="feedback" id="create-feedback"></div>
+        </section>
+
+        <section class="panel">
+            <h2>Manual games</h2>
+            <p class="muted" id="games-count"></p>
+            <div class="games-list" id="games-list"></div>
+            <div class="feedback" id="games-feedback"></div>
+        </section>
+    </main>
+
+    <script>
+        const statusGrid = document.getElementById('status-grid');
+        const statusFeedback = document.getElementById('status-feedback');
+        const createFeedback = document.getElementById('create-feedback');
+        const gamesFeedback = document.getElementById('games-feedback');
+        const gamesList = document.getElementById('games-list');
+        const gamesCount = document.getElementById('games-count');
+
+        const homeTeamSelect = document.getElementById('home-team');
+        const awayTeamSelect = document.getElementById('away-team');
+        const startTimeInput = document.getElementById('start-time');
+        const venueInput = document.getElementById('venue');
+        const gameStateSelect = document.getElementById('game-state');
+        const homeScoreInput = document.getElementById('home-score');
+        const awayScoreInput = document.getElementById('away-score');
+
+        const refreshStatusButton = document.getElementById('refresh-status');
+        const clearCacheButton = document.getElementById('clear-cache');
+        const runNotifierButton = document.getElementById('run-notifier');
+        const createForm = document.getElementById('create-game-form');
+
+        let teams = [];
+        let venueTouched = false;
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function showFeedback(element, message, type) {
+            element.textContent = message || '';
+            element.className = `feedback ${type || ''}`.trim();
+        }
+
+        function formatDuration(seconds) {
+            if (seconds === null || seconds === undefined) {
+                return '-';
+            }
+            const total = Math.floor(Number(seconds));
+            const hours = Math.floor(total / 3600);
+            const minutes = Math.floor((total % 3600) / 60);
+            const secs = total % 60;
+            return `${hours}h ${minutes}m ${secs}s`;
+        }
+
+        function toLocalDateTimeValue(value) {
+            if (!value) {
+                return '';
+            }
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) {
+                return '';
+            }
+            const offset = date.getTimezoneOffset();
+            const local = new Date(date.getTime() - offset * 60000);
+            return local.toISOString().slice(0, 16);
+        }
+
+        function buildStatusCard(title, rows) {
+            const dl = rows.map(row => {
+                return `<dt>${escapeHtml(row.label)}</dt><dd>${escapeHtml(row.value)}</dd>`;
+            }).join('');
+            return `
+                <div class="status-card">
+                    <h3>${escapeHtml(title)}</h3>
+                    <dl>${dl}</dl>
+                </div>
+            `;
+        }
+
+        async function apiRequest(path, options = {}) {
+            const response = await fetch(path, options);
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(payload.error || 'Request failed');
+            }
+            return payload;
+        }
+
+        async function loadStatus() {
+            try {
+                const status = await apiRequest('/api/status');
+                const serverRows = [
+                    { label: 'Uptime', value: formatDuration(status.server?.uptime) },
+                    { label: 'Timestamp', value: status.server?.timestamp || '-' },
+                    { label: 'Provider', value: status.provider || '-' }
+                ];
+                const notifierRows = [
+                    { label: 'Running', value: status.notifier?.running ? 'Yes' : 'No' },
+                    { label: 'Last check', value: status.notifier?.lastCheck || '-' },
+                    { label: 'Games checked', value: status.notifier?.gamesChecked ?? '-' },
+                    { label: 'Notifications', value: status.notifier?.totalNotificationsSent ?? '-' }
+                ];
+                const cacheRows = [
+                    { label: 'Games cached', value: status.cache?.games?.cached ? 'Yes' : 'No' },
+                    { label: 'Games age', value: status.cache?.games?.ageSeconds ?? '-' },
+                    { label: 'Live mode', value: status.cache?.games?.hasLiveGame ? 'Yes' : 'No' },
+                    { label: 'Details entries', value: status.cache?.details?.entriesCount ?? '-' },
+                    { label: 'Videos entries', value: status.cache?.videos?.entriesCount ?? '-' }
+                ];
+
+                statusGrid.innerHTML = [
+                    buildStatusCard('Server', serverRows),
+                    buildStatusCard('Notifier', notifierRows),
+                    buildStatusCard('Cache', cacheRows)
+                ].join('');
+
+                showFeedback(statusFeedback, 'Status updated', 'success');
+            } catch (error) {
+                showFeedback(statusFeedback, error.message, 'error');
+            }
+        }
+
+        function populateTeamSelect(select) {
+            select.innerHTML = teams.map(team => {
+                return `<option value="${escapeHtml(team.code)}">${escapeHtml(team.names.long || team.names.short || team.code)}</option>`;
+            }).join('');
+        }
+
+        function updateVenueFromHomeTeam() {
+            if (venueTouched) {
+                return;
+            }
+            const selected = teams.find(team => team.code === homeTeamSelect.value);
+            venueInput.value = selected?.arena || '';
+        }
+
+        function renderGames(records) {
+            gamesList.innerHTML = '';
+            gamesCount.textContent = records.length ? `${records.length} manual game(s).` : 'No manual games yet.';
+
+            if (!records.length) {
+                return;
+            }
+
+            records.forEach(record => {
+                const game = record.game;
+                const card = document.createElement('div');
+                card.className = 'game-card';
+                card.dataset.id = record.id;
+
+                const stateOptions = ['live', 'pre-game', 'post-game'].map(state => {
+                    const label = state === 'pre-game' ? 'Pre-game' : state === 'post-game' ? 'Post-game' : 'Live';
+                    return `<option value="${state}" ${record.state === state ? 'selected' : ''}>${label}</option>`;
+                }).join('');
+
+                card.innerHTML = `
+                    <div class="game-header">
+                        <div>
+                            <div class="game-title">${escapeHtml(game.homeTeamInfo.names.short)} vs ${escapeHtml(game.awayTeamInfo.names.short)}</div>
+                            <div class="game-meta">${escapeHtml(record.id)}</div>
+                        </div>
+                        <div>
+                            <label>State</label>
+                            <select data-field="state">${stateOptions}</select>
+                        </div>
+                    </div>
+                    <div class="game-grid">
+                        <div>
+                            <label>Start time</label>
+                            <input type="datetime-local" data-field="startDateTime" value="${toLocalDateTimeValue(record.startDateTime)}" />
+                        </div>
+                        <div>
+                            <label>Venue</label>
+                            <input type="text" data-field="venue" value="${escapeHtml(record.venue)}" />
+                        </div>
+                        <div>
+                            <label>Home score</label>
+                            <input type="number" min="0" data-field="homeScore" value="${record.homeScore}" />
+                        </div>
+                        <div>
+                            <label>Away score</label>
+                            <input type="number" min="0" data-field="awayScore" value="${record.awayScore}" />
+                        </div>
+                    </div>
+                    <div class="game-actions">
+                        <button data-action="save">Save changes</button>
+                        <button class="danger" data-action="delete">Delete</button>
+                    </div>
+                    <p class="muted">Updated ${escapeHtml(new Date(record.updatedAt).toLocaleString())}</p>
+                `;
+
+                const saveButton = card.querySelector('[data-action="save"]');
+                const deleteButton = card.querySelector('[data-action="delete"]');
+
+                saveButton.addEventListener('click', async () => {
+                    const payload = {
+                        state: card.querySelector('[data-field="state"]').value,
+                        startDateTime: card.querySelector('[data-field="startDateTime"]').value,
+                        venue: card.querySelector('[data-field="venue"]').value,
+                        homeScore: card.querySelector('[data-field="homeScore"]').value,
+                        awayScore: card.querySelector('[data-field="awayScore"]').value
+                    };
+
+                    try {
+                        saveButton.disabled = true;
+                        await apiRequest(`/api/admin/games/${record.id}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        await loadGames();
+                        showFeedback(gamesFeedback, 'Game updated', 'success');
+                    } catch (error) {
+                        showFeedback(gamesFeedback, error.message, 'error');
+                    } finally {
+                        saveButton.disabled = false;
+                    }
+                });
+
+                deleteButton.addEventListener('click', async () => {
+                    if (!window.confirm('Delete this manual game?')) {
+                        return;
+                    }
+                    try {
+                        deleteButton.disabled = true;
+                        await apiRequest(`/api/admin/games/${record.id}`, { method: 'DELETE' });
+                        await loadGames();
+                        showFeedback(gamesFeedback, 'Game deleted', 'success');
+                    } catch (error) {
+                        showFeedback(gamesFeedback, error.message, 'error');
+                    } finally {
+                        deleteButton.disabled = false;
+                    }
+                });
+
+                gamesList.appendChild(card);
+            });
+        }
+
+        async function loadGames() {
+            try {
+                const data = await apiRequest('/api/admin/games');
+                renderGames(data.games || []);
+            } catch (error) {
+                showFeedback(gamesFeedback, error.message, 'error');
+            }
+        }
+
+        async function loadTeams() {
+            const data = await apiRequest('/api/teams');
+            teams = (data || []).sort((a, b) => a.code.localeCompare(b.code));
+            populateTeamSelect(homeTeamSelect);
+            populateTeamSelect(awayTeamSelect);
+            awayTeamSelect.selectedIndex = 1;
+            updateVenueFromHomeTeam();
+        }
+
+        refreshStatusButton.addEventListener('click', loadStatus);
+        clearCacheButton.addEventListener('click', async () => {
+            try {
+                clearCacheButton.disabled = true;
+                const result = await apiRequest('/api/cache/clear', { method: 'POST' });
+                showFeedback(statusFeedback, result.message || 'Cache cleared', 'success');
+                await loadStatus();
+            } catch (error) {
+                showFeedback(statusFeedback, error.message, 'error');
+            } finally {
+                clearCacheButton.disabled = false;
+            }
+        });
+        runNotifierButton.addEventListener('click', async () => {
+            try {
+                runNotifierButton.disabled = true;
+                const result = await apiRequest('/api/notifier/check', { method: 'POST' });
+                showFeedback(statusFeedback, result.message || 'Notifier check completed', 'success');
+                await loadStatus();
+            } catch (error) {
+                showFeedback(statusFeedback, error.message, 'error');
+            } finally {
+                runNotifierButton.disabled = false;
+            }
+        });
+
+        venueInput.addEventListener('input', () => {
+            venueTouched = true;
+        });
+        homeTeamSelect.addEventListener('change', updateVenueFromHomeTeam);
+
+        createForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const payload = {
+                homeTeamCode: homeTeamSelect.value,
+                awayTeamCode: awayTeamSelect.value,
+                state: gameStateSelect.value,
+                startDateTime: startTimeInput.value,
+                venue: venueInput.value,
+                homeScore: homeScoreInput.value,
+                awayScore: awayScoreInput.value
+            };
+
+            if (payload.homeTeamCode === payload.awayTeamCode) {
+                showFeedback(createFeedback, 'Home and away teams must differ', 'error');
+                return;
+            }
+
+            try {
+                const submitButton = createForm.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                await apiRequest('/api/admin/games', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                showFeedback(createFeedback, 'Game created', 'success');
+                homeScoreInput.value = 0;
+                awayScoreInput.value = 0;
+                gameStateSelect.value = 'live';
+                startTimeInput.value = toLocalDateTimeValue(new Date());
+                venueTouched = false;
+                updateVenueFromHomeTeam();
+                await loadGames();
+            } catch (error) {
+                showFeedback(createFeedback, error.message, 'error');
+            } finally {
+                const submitButton = createForm.querySelector('button[type="submit"]');
+                submitButton.disabled = false;
+            }
+        });
+
+        function init() {
+            startTimeInput.value = toLocalDateTimeValue(new Date());
+            loadTeams()
+                .then(loadGames)
+                .then(loadStatus);
+            setInterval(loadStatus, 15000);
+        }
+
+        init();
+    </script>
+</body>
+</html>

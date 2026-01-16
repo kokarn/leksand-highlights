@@ -12,6 +12,7 @@ const CACHE_DURATION_VIDEOS = 60 * 1000;    // 1 minute for videos
 // ============ NOTIFIER CONFIGURATION ============
 const SEEN_GAMES_FILE = path.join(__dirname, '..', 'seen_games.json');
 const SEEN_VIDEOS_FILE = path.join(__dirname, '..', 'seen_videos.json');
+const ADMIN_GAMES_FILE = path.join(__dirname, '..', 'admin_games.json');
 const HIGHLIGHTS_TOPIC_PREFIX = 'shl-highlights-';
 const TEAM_ALL_TOPIC_PREFIX = 'shl-all-';
 const GLOBAL_ALL_TOPIC = 'shl-all-videos';
@@ -34,6 +35,7 @@ module.exports = {
     // Notifier
     SEEN_GAMES_FILE,
     SEEN_VIDEOS_FILE,
+    ADMIN_GAMES_FILE,
     HIGHLIGHTS_TOPIC_PREFIX,
     TEAM_ALL_TOPIC_PREFIX,
     GLOBAL_ALL_TOPIC,

@@ -21,6 +21,10 @@ function getGamesCacheDuration() {
     return cache.games.hasLive ? CACHE_DURATION_LIVE : CACHE_DURATION_NORMAL;
 }
 
+function setGamesLiveFlag(hasLive) {
+    cache.games.hasLive = Boolean(hasLive);
+}
+
 function getCachedGames() {
     const duration = getGamesCacheDuration();
     if (isCacheValid(cache.games, duration)) {
@@ -98,5 +102,6 @@ module.exports = {
     setCachedVideos,
     clearAllCaches,
     getCacheStatus,
-    getGamesCacheDuration
+    getGamesCacheDuration,
+    setGamesLiveFlag
 };

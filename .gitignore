@@ -2,3 +2,4 @@ node_modules/
 debug/
 my.secrets
 seen_games.json
+admin_games.json

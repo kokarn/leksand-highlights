@@ -13,14 +13,25 @@ const {
     getCachedVideos,
     setCachedVideos,
     clearAllCaches,
-    getCacheStatus
+    getCacheStatus,
+    setGamesLiveFlag
 } = require('./modules/cache');
 const { getProvider } = require('./modules/providers');
 const { formatSwedishTimestamp } = require('./modules/utils');
 const notifier = require('./modules/notifier');
+const {
+    listAdminGames,
+    findAdminGameRecord,
+    createAdminGame,
+    updateAdminGame,
+    deleteAdminGame,
+    hydrateAdminGame,
+    formatAdminRecord
+} = require('./modules/admin-games');
 
 const app = express();
 app.use(cors());
+app.use(express.json({ limit: '1mb' }));
 
 // Serve static files (logos, etc.)
 app.use('/static', express.static(path.join(__dirname, 'static')));
@@ -31,8 +42,40 @@ let teamsData = { teams: [] };
 if (fs.existsSync(teamsDataPath)) {
     teamsData = JSON.parse(fs.readFileSync(teamsDataPath, 'utf8'));
 }
+const teamsByCode = new Map(teamsData.teams.map(team => [team.code, team]));
+
+function getAdminGameSchedule() {
+    return listAdminGames(teamsByCode).map(record => record.game);
+}
+
+function getAdminGameById(uuid) {
+    const record = findAdminGameRecord(uuid);
+    return record ? hydrateAdminGame(record, teamsByCode) : null;
+}
+
+function mergeGames(primaryGames, adminGames) {
+    const merged = new Map();
+    primaryGames.forEach(game => {
+        merged.set(game.uuid, game);
+    });
+    adminGames.forEach(game => {
+        merged.set(game.uuid, game);
+    });
+    return Array.from(merged.values()).sort((a, b) =>
+        new Date(b.startDateTime) - new Date(a.startDateTime)
+    );
+}
+
+function sendAdminError(res, error) {
+    const message = error?.message || 'Invalid request';
+    res.status(400).json({ error: message });
+}
 
 // ============ API ENDPOINTS ============
+
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'static', 'admin.html'));
+});
 
 /**
  * GET /api/teams
@@ -57,41 +100,78 @@ app.get('/api/teams/:code', (req, res) => {
     res.json(team);
 });
 
+/**
+ * Admin: list, create, update, delete manual games
+ */
+app.get('/api/admin/games', (req, res) => {
+    res.json({ games: listAdminGames(teamsByCode) });
+});
+
+app.post('/api/admin/games', (req, res) => {
+    try {
+        const record = createAdminGame(req.body || {}, teamsByCode);
+        res.status(201).json(formatAdminRecord(record, teamsByCode));
+    } catch (error) {
+        sendAdminError(res, error);
+    }
+});
+
+app.patch('/api/admin/games/:id', (req, res) => {
+    try {
+        const record = updateAdminGame(req.params.id, req.body || {}, teamsByCode);
+        if (!record) {
+            return res.status(404).json({ error: 'Admin game not found' });
+        }
+        res.json(formatAdminRecord(record, teamsByCode));
+    } catch (error) {
+        sendAdminError(res, error);
+    }
+});
+
+app.delete('/api/admin/games/:id', (req, res) => {
+    const deleted = deleteAdminGame(req.params.id);
+    if (!deleted) {
+        return res.status(404).json({ error: 'Admin game not found' });
+    }
+    res.json({ message: 'Admin game deleted' });
+});
+
 app.get('/api/games', async (req, res) => {
     try {
-        // Check cache first
-        const cached = getCachedGames();
-        if (cached) {
+        let baseGames = getCachedGames();
+        let usedCache = true;
+
+        if (baseGames) {
             console.log('[Cache HIT] /api/games');
-            return res.json(cached);
+        } else {
+            usedCache = false;
+            console.log('[Cache MISS] /api/games - fetching fresh data...');
+            const provider = getProvider();
+            const games = await provider.fetchAllGames();
+
+            baseGames = games.length
+                ? games.sort((a, b) => new Date(b.startDateTime) - new Date(a.startDateTime))
+                : [];
+
+            if (baseGames.length) {
+                baseGames = await provider.enrichGames(baseGames);
+            }
         }
 
-        console.log('[Cache MISS] /api/games - fetching fresh data...');
-        const provider = getProvider();
-        const games = await provider.fetchAllGames();
+        const adminGames = getAdminGameSchedule();
+        const combinedGames = mergeGames(baseGames, adminGames);
+        const hasLiveGame = combinedGames.some(game => game.state === 'live');
 
-        if (!games.length) {
-            return res.json([]);
+        if (!usedCache) {
+            setCachedGames(baseGames, hasLiveGame);
+            if (hasLiveGame) {
+                console.log('[Cache] Live game detected - using 15s cache duration');
+            }
+        } else {
+            setGamesLiveFlag(hasLiveGame);
         }
 
-        // Sort games by date, descending (newest first)
-        const sortedGames = games.sort((a, b) =>
-            new Date(b.startDateTime) - new Date(a.startDateTime)
-        );
-
-        const hasLiveGame = sortedGames.some(g => g.state === 'live');
-
-        // Enrich games with additional data (e.g., actual scores)
-        const enrichedGames = await provider.enrichGames(sortedGames);
-
-        // Update cache
-        setCachedGames(enrichedGames, hasLiveGame);
-
-        if (hasLiveGame) {
-            console.log('[Cache] Live game detected - using 15s cache duration');
-        }
-
-        res.json(enrichedGames);
+        res.json(combinedGames);
 
     } catch (error) {
         console.error('Error fetching schedule:', error);
@@ -101,6 +181,11 @@ app.get('/api/games', async (req, res) => {
 
 app.get('/api/game/:uuid/videos', async (req, res) => {
     const { uuid } = req.params;
+
+    const adminGame = getAdminGameById(uuid);
+    if (adminGame) {
+        return res.json([]);
+    }
 
     // Check cache first
     const cached = getCachedVideos(uuid);
@@ -154,6 +239,40 @@ app.get('/api/video/:id', async (req, res) => {
 
 app.get('/api/game/:uuid/details', async (req, res) => {
     const { uuid } = req.params;
+
+    const adminGame = getAdminGameById(uuid);
+    if (adminGame) {
+        return res.json({
+            info: {
+                gameInfo: {
+                    gameUuid: adminGame.uuid,
+                    startDateTime: adminGame.startDateTime,
+                    arenaName: adminGame.venueInfo?.name || null,
+                    state: adminGame.state
+                },
+                homeTeam: {
+                    names: adminGame.homeTeamInfo.names,
+                    uuid: adminGame.homeTeamInfo.uuid,
+                    score: adminGame.homeTeamInfo.score,
+                    icon: adminGame.homeTeamInfo.icon
+                },
+                awayTeam: {
+                    names: adminGame.awayTeamInfo.names,
+                    uuid: adminGame.awayTeamInfo.uuid,
+                    score: adminGame.awayTeamInfo.score,
+                    icon: adminGame.awayTeamInfo.icon
+                },
+                ssgtUuid: null
+            },
+            teamStats: null,
+            events: {
+                goals: [],
+                penalties: [],
+                periods: [],
+                all: []
+            }
+        });
+    }
 
     // Check cache first
     const cached = getCachedDetails(uuid);
