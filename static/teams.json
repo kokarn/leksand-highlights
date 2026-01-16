@@ -1,0 +1,228 @@
+{
+  "teams": [
+    {
+      "code": "BIF",
+      "uuid": "1ab8-1ab8bfj7N",
+      "names": {
+        "short": "Brynäs",
+        "long": "Brynäs IF",
+        "full": "Brynäs IF Gävle"
+      },
+      "city": "Gävle",
+      "arena": "Gavlerinken Arena",
+      "logo": "/static/logos/bif.svg",
+      "colors": {
+        "primary": "#FFD700",
+        "secondary": "#000000"
+      }
+    },
+    {
+      "code": "DIF",
+      "uuid": "2459-2459QTs1f",
+      "names": {
+        "short": "Djurgården",
+        "long": "Djurgårdens IF",
+        "full": "Djurgårdens IF Hockey"
+      },
+      "city": "Stockholm",
+      "arena": "Hovet",
+      "logo": "/static/logos/dif.svg",
+      "colors": {
+        "primary": "#00247D",
+        "secondary": "#CF142B"
+      }
+    },
+    {
+      "code": "FBK",
+      "uuid": "752c-752c12zB7Z",
+      "names": {
+        "short": "Färjestad",
+        "long": "Färjestad BK",
+        "full": "Färjestads Bollklubb"
+      },
+      "city": "Karlstad",
+      "arena": "Löfbergs Arena",
+      "logo": "/static/logos/fbk.svg",
+      "colors": {
+        "primary": "#006847",
+        "secondary": "#FFFFFF"
+      }
+    },
+    {
+      "code": "FHC",
+      "uuid": "087a-087aTQv9u",
+      "names": {
+        "short": "Frölunda",
+        "long": "Frölunda HC",
+        "full": "Frölunda Hockey Club"
+      },
+      "city": "Göteborg",
+      "arena": "Scandinavium",
+      "logo": "/static/logos/fhc.svg",
+      "colors": {
+        "primary": "#006341",
+        "secondary": "#C8102E"
+      }
+    },
+    {
+      "code": "HV71",
+      "uuid": "3db0-3db09jXTE",
+      "names": {
+        "short": "HV71",
+        "long": "HV71",
+        "full": "HV71"
+      },
+      "city": "Jönköping",
+      "arena": "Husqvarna Garden",
+      "logo": "/static/logos/hv71.svg",
+      "colors": {
+        "primary": "#002F6C",
+        "secondary": "#C8102E"
+      }
+    },
+    {
+      "code": "LHC",
+      "uuid": "41c4-41c4BiYZU",
+      "names": {
+        "short": "Linköping",
+        "long": "Linköping HC",
+        "full": "Linköpings Hockey Club"
+      },
+      "city": "Linköping",
+      "arena": "Saab Arena",
+      "logo": "/static/logos/lhc.svg",
+      "colors": {
+        "primary": "#00205B",
+        "secondary": "#FFFFFF"
+      }
+    },
+    {
+      "code": "LHF",
+      "uuid": "1a71-1a71gTHKh",
+      "names": {
+        "short": "Luleå",
+        "long": "Luleå Hockey",
+        "full": "Luleå Hockey"
+      },
+      "city": "Luleå",
+      "arena": "Coop Norrbotten Arena",
+      "logo": "/static/logos/lhf.svg",
+      "colors": {
+        "primary": "#C8102E",
+        "secondary": "#FFFFFF"
+      }
+    },
+    {
+      "code": "LIF",
+      "uuid": "9541-95418PpkP",
+      "names": {
+        "short": "Leksand",
+        "long": "Leksands IF",
+        "full": "Leksands IF"
+      },
+      "city": "Leksand",
+      "arena": "Tegera Arena",
+      "logo": "/static/logos/lif.svg",
+      "colors": {
+        "primary": "#005EB8",
+        "secondary": "#FFFFFF"
+      }
+    },
+    {
+      "code": "MIF",
+      "uuid": "8e6f-8e6fUXJvi",
+      "names": {
+        "short": "Malmö",
+        "long": "Malmö Redhawks",
+        "full": "Malmö Redhawks"
+      },
+      "city": "Malmö",
+      "arena": "Malmö Arena",
+      "logo": "/static/logos/mif.svg",
+      "colors": {
+        "primary": "#C8102E",
+        "secondary": "#000000"
+      }
+    },
+    {
+      "code": "OHK",
+      "uuid": "82eb-82ebmgaJ8",
+      "names": {
+        "short": "Örebro",
+        "long": "Örebro Hockey",
+        "full": "Örebro Hockey"
+      },
+      "city": "Örebro",
+      "arena": "Behrn Arena",
+      "logo": "/static/logos/ohk.svg",
+      "colors": {
+        "primary": "#000000",
+        "secondary": "#FF6600"
+      }
+    },
+    {
+      "code": "RBK",
+      "uuid": "ee93-ee93uy4oW",
+      "names": {
+        "short": "Rögle",
+        "long": "Rögle BK",
+        "full": "Rögle Bandyklubb"
+      },
+      "city": "Ängelholm",
+      "arena": "Catena Arena",
+      "logo": "/static/logos/rbk.svg",
+      "colors": {
+        "primary": "#154734",
+        "secondary": "#FFFFFF"
+      }
+    },
+    {
+      "code": "SAIK",
+      "uuid": "50e6-50e6DYeWM",
+      "names": {
+        "short": "Skellefteå",
+        "long": "Skellefteå AIK",
+        "full": "Skellefteå AIK"
+      },
+      "city": "Skellefteå",
+      "arena": "Skellefteå Kraft Arena",
+      "logo": "/static/logos/saik.svg",
+      "colors": {
+        "primary": "#000000",
+        "secondary": "#FFD700"
+      }
+    },
+    {
+      "code": "TIK",
+      "uuid": "31d1-31d1NbSlR",
+      "names": {
+        "short": "Timrå",
+        "long": "Timrå IK",
+        "full": "Timrå IK"
+      },
+      "city": "Timrå",
+      "arena": "NHC Arena",
+      "logo": "/static/logos/tik.svg",
+      "colors": {
+        "primary": "#C8102E",
+        "secondary": "#FFFFFF"
+      }
+    },
+    {
+      "code": "VLH",
+      "uuid": "fe02-fe02mf1FN",
+      "names": {
+        "short": "Växjö",
+        "long": "Växjö Lakers",
+        "full": "Växjö Lakers HC"
+      },
+      "city": "Växjö",
+      "arena": "Vida Arena",
+      "logo": "/static/logos/vlh.svg",
+      "colors": {
+        "primary": "#00205B",
+        "secondary": "#FFD700"
+      }
+    }
+  ]
+}
