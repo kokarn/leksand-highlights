@@ -4,7 +4,8 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'shl_notifier.js'
+      - 'server.js'
+      - 'modules/**'
       - 'package.json'
       - 'package-lock.json'
       - 'Dockerfile'
