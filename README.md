@@ -7,7 +7,7 @@ A lightweight, zero-dependency Node.js service that monitors the SHL schedule an
 - **Multi-Team Support**: Dedicated notification topics for all 14 SHL teams.
 - **Zero Dependencies**: Built entirely with native Node.js modules (`http`, `fs`, `fetch`).
 - **Real-time Monitoring**: Polls the SHL Media API every 5 minutes.
-- **Built-in Landing Page**: Serve a beautiful team selection page on port 3000.
+- **Built-in Landing Page**: Serve a beautiful team selection page on port 3080.
 - **Spoiler-Free**: Clean notifications with direct links to `staylive.tv` videos.
 - **Reliable**: Handles the usual delay between game end and highlight publication (up to 24h).
 
@@ -26,7 +26,7 @@ A lightweight, zero-dependency Node.js service that monitors the SHL schedule an
    ```
 
 3. **Subscribe to Highlights**
-   Visit `http://localhost:3000` in your browser to select your team and subscribe via ntfy.
+   Visit `http://localhost:3080` in your browser to select your team and subscribe via ntfy.
 
 ## 🛠 Configuration
 

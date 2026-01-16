@@ -1,14 +1,14 @@
 // Automatically determine API base URL based on how the page is accessed
-// - localhost: use localhost:3000
-// - network IP: use same hostname with port 3000
+// - localhost: use localhost:3080
+// - network IP: use same hostname with port 3080
 // - native mobile: fallback to localhost (change for device testing)
 const getApiBaseUrl = () => {
     if (typeof window !== 'undefined' && window.location) {
         const { hostname, protocol } = window.location;
-        return `${protocol}//${hostname}:3000`;
+        return `${protocol}//${hostname}:3080`;
     }
     // Fallback for native mobile (React Native)
-    return 'http://localhost:3000';
+    return 'http://localhost:3080';
 };
 
 const API_BASE_URL = getApiBaseUrl();

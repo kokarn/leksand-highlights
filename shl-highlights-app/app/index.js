@@ -330,7 +330,7 @@ export default function App() {
             intervalId = setInterval(() => {
                 console.log('Auto-refreshing live games...');
                 loadGames(true);
-            }, 30000);
+            }, 30800);
         }
         return () => { if (intervalId) clearInterval(intervalId); };
     }, [games]);

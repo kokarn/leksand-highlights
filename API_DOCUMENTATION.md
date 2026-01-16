@@ -5,7 +5,7 @@ This document describes the available API endpoints for the SHL Highlights serve
 ## Base URL
 
 ```
-http://localhost:3000
+http://localhost:3080
 ```
 
 ---

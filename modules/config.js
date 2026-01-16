@@ -1,7 +1,7 @@
 const path = require('path');
 
 // ============ SERVER CONFIGURATION ============
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3080;
 
 // ============ CACHE DURATIONS (milliseconds) ============
 const CACHE_DURATION_LIVE = 15 * 1000;      // 15 seconds when live games exist

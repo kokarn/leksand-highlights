@@ -11,17 +11,17 @@ Sports API with video support for schedules, game details, and highlight clips.
 
 ## Run
 - `npm start`
-- Default base URL: `http://localhost:3000`
+- Default base URL: `http://localhost:3080`
 
 ## Environment variables
-- `PORT`: overrides the default port (3000).
+- `PORT`: overrides the default port (3080).
 - `DATA_PROVIDER`: data source provider (default: `shl`).
 
 ## Useful URLs
-- Landing page: `http://localhost:3000`
-- Admin console: `http://localhost:3000/admin`
-- API base: `http://localhost:3000/api`
-- Static assets: `http://localhost:3000/static`
+- Landing page: `http://localhost:3080`
+- Admin console: `http://localhost:3080/admin`
+- API base: `http://localhost:3080/api`
+- Static assets: `http://localhost:3080/static`
 
 ## Admin workflows
 - List admin games: `GET /api/admin/games`
