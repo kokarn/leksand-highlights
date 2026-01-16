@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "shl-highlights-app",
-    "slug": "shl-highlights-app",
+    "slug": "sports-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -43,6 +43,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4855f821-cdfd-4022-aaf3-9fea646a4359"
+      }
+    },
+    "owner": "kokarn"
   }
 }
