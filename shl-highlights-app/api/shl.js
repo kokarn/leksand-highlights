@@ -169,6 +169,75 @@ export async function fetchVideoDetails(videoId) {
     }
 }
 
+// ============ FOOTBALL/ALLSVENSKAN API ============
+
+/**
+ * Fetch Allsvenskan fixtures with optional filters
+ * @param {Object} filters - Optional filters (team, state, upcoming, limit)
+ * @returns {Promise<Array>} Array of match objects
+ */
+export async function fetchFootballGames(filters = {}) {
+    try {
+        const params = new URLSearchParams();
+        if (filters.team) params.append('team', filters.team);
+        if (filters.state) params.append('state', filters.state);
+        if (filters.upcoming) params.append('upcoming', 'true');
+        if (filters.limit) params.append('limit', filters.limit);
+
+        const url = `${API_BASE_URL}/api/football/games${params.toString() ? '?' + params.toString() : ''}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching football games:', error.message);
+        return [];
+    }
+}
+
+/**
+ * Fetch details for a specific Allsvenskan match
+ * @param {string} gameId - Match identifier
+ * @returns {Promise<Object|null>} Match details or null
+ */
+export async function fetchFootballGameDetails(gameId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/football/game/${gameId}/details`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching football match details for ${gameId}:`, error.message);
+        return null;
+    }
+}
+
+/**
+ * Fetch Allsvenskan standings
+ * @param {Object} options - Optional filters
+ * @param {string} options.team - Filter by team code
+ * @param {number} options.top - Limit to top N teams
+ * @returns {Promise<Object>} Standings payload
+ */
+export async function fetchFootballStandings(options = {}) {
+    try {
+        const params = new URLSearchParams();
+        if (options.team) params.append('team', options.team);
+        if (options.top) params.append('top', options.top);
+        const url = `${API_BASE_URL}/api/football/standings${params.toString() ? '?' + params.toString() : ''}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching football standings:', error.message);
+        return { season: null, standings: [] };
+    }
+}
+
 // ============ BIATHLON API ============
 
 /**

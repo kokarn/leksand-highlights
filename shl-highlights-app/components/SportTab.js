@@ -3,7 +3,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 const SPORT_NAMES = {
     shl: 'Hockey',
-    biathlon: 'Biathlon'
+    biathlon: 'Biathlon',
+    football: 'Football'
 };
 
 export const SportTab = ({ sport, isActive, onPress }) => (
@@ -13,7 +14,11 @@ export const SportTab = ({ sport, isActive, onPress }) => (
         activeOpacity={0.7}
     >
         <Ionicons
-            name={sport === 'biathlon' ? 'locate-outline' : 'snow-outline'}
+            name={sport === 'biathlon'
+                ? 'locate-outline'
+                : sport === 'football'
+                    ? 'football-outline'
+                    : 'snow-outline'}
             size={18}
             color={isActive ? '#0A84FF' : '#666'}
         />
