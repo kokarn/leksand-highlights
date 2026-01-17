@@ -69,12 +69,18 @@ export const getStayLiveVideoId = (video) => {
  * @returns {string} Formatted relative date in Swedish
  */
 export const formatRelativeDate = (dateStr) => {
-    const date = parseISO(dateStr);
-    if (isToday(date)) return 'Idag';
-    if (isTomorrow(date)) return 'Imorgon';
-    const days = differenceInDays(date, new Date());
-    if (days > 0 && days <= 7) return format(date, 'EEEE', { locale: sv });
-    return format(date, 'd MMM', { locale: sv });
+    if (!dateStr) return '-';
+    try {
+        const date = parseISO(dateStr);
+        if (Number.isNaN(date.getTime())) return '-';
+        if (isToday(date)) return 'Idag';
+        if (isTomorrow(date)) return 'Imorgon';
+        const days = differenceInDays(date, new Date());
+        if (days > 0 && days <= 7) return format(date, 'EEEE', { locale: sv });
+        return format(date, 'd MMM', { locale: sv });
+    } catch (error) {
+        return '-';
+    }
 };
 
 /**
@@ -84,7 +90,14 @@ export const formatRelativeDate = (dateStr) => {
  * @returns {string} Formatted date
  */
 export const formatSwedishDate = (dateStr, formatStr = 'd MMMM HH:mm') => {
-    return format(parseISO(dateStr), formatStr, { locale: sv });
+    if (!dateStr) return '-';
+    try {
+        const date = parseISO(dateStr);
+        if (Number.isNaN(date.getTime())) return '-';
+        return format(date, formatStr, { locale: sv });
+    } catch (error) {
+        return '-';
+    }
 };
 
 /**
@@ -108,12 +121,45 @@ export const getGoalType = (goal) => {
  * @param {Object} teamInfo - Team info object
  * @returns {string|number} Score value or dash
  */
+export const normalizeScoreValue = (score) => {
+    if (score === null || score === undefined) {
+        return null;
+    }
+    if (typeof score === 'object') {
+        if (Object.prototype.hasOwnProperty.call(score, 'value')) {
+            return normalizeScoreValue(score.value);
+        }
+        return null;
+    }
+    if (typeof score === 'string') {
+        const trimmed = score.trim();
+        if (!trimmed) {
+            return null;
+        }
+        const lowered = trimmed.toLowerCase();
+        if (lowered === 'n/a' || lowered === 'na') {
+            return null;
+        }
+        const numeric = Number(trimmed);
+        if (!Number.isNaN(numeric)) {
+            return numeric;
+        }
+        return trimmed;
+    }
+    if (Number.isNaN(score)) {
+        return null;
+    }
+    return score;
+};
+
 export const extractScore = (teamResult, teamInfo) => {
     if (teamResult?.score !== undefined) {
-        return typeof teamResult.score === 'object' ? teamResult.score.value : teamResult.score;
+        const normalized = normalizeScoreValue(teamResult.score);
+        return normalized ?? '-';
     }
     if (teamInfo?.score !== undefined) {
-        return typeof teamInfo.score === 'object' ? teamInfo.score.value : teamInfo.score;
+        const normalized = normalizeScoreValue(teamInfo.score);
+        return normalized ?? '-';
     }
     return '-';
 };

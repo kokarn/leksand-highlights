@@ -16,9 +16,16 @@ const {
     setCachedStandings,
     getCachedBiathlon,
     setCachedBiathlon,
+    getCachedAllsvenskanGames,
+    setCachedAllsvenskanGames,
+    getCachedAllsvenskanDetails,
+    setCachedAllsvenskanDetails,
+    getCachedAllsvenskanStandings,
+    setCachedAllsvenskanStandings,
     clearAllCaches,
     getCacheStatus,
-    setGamesLiveFlag
+    setGamesLiveFlag,
+    setAllsvenskanLiveFlag
 } = require('./modules/cache');
 const { getProvider, getAvailableSports } = require('./modules/providers');
 const { formatSwedishTimestamp } = require('./modules/utils');
@@ -49,6 +56,9 @@ if (fs.existsSync(teamsDataPath)) {
 }
 const teamsByCode = new Map(teamsData.teams.map(team => [team.code, team]));
 
+const STARTING_SOON_WINDOW_MINUTES = 30;
+const RECENT_START_WINDOW_MINUTES = 90;
+
 // Load biathlon nations data
 const biathlonNationsPath = path.join(__dirname, 'static', 'biathlon-nations.json');
 let biathlonData = { nations: [], disciplines: [] };
@@ -78,6 +88,23 @@ function mergeGames(primaryGames, adminGames) {
     );
 }
 
+function isGameNearStart(game, now = new Date()) {
+    if (!game || game.state === 'post-game') {
+        return false;
+    }
+    const startTime = new Date(game.startDateTime);
+    if (Number.isNaN(startTime.getTime())) {
+        return false;
+    }
+    const minutesFromStart = (startTime.getTime() - now.getTime()) / (1000 * 60);
+    return minutesFromStart <= STARTING_SOON_WINDOW_MINUTES
+        && minutesFromStart >= -RECENT_START_WINDOW_MINUTES;
+}
+
+function shouldUseFastGamesCache(games, now = new Date()) {
+    return games.some(game => game.state === 'live' || isGameNearStart(game, now));
+}
+
 function sendAdminError(res, error) {
     const message = error?.message || 'Invalid request';
     res.status(400).json({ error: message });
@@ -94,12 +121,18 @@ app.get('/admin', (req, res) => {
  * Get all available sports
  */
 app.get('/api/sports', (req, res) => {
+    const sportIcons = {
+        shl: 'hockey-puck',
+        allsvenskan: 'soccer-ball',
+        biathlon: 'target'
+    };
+
     const sports = getAvailableSports().map(sport => {
         const provider = getProvider(sport);
         return {
             id: sport,
             name: provider.getName(),
-            icon: sport === 'shl' ? 'hockey-puck' : 'target'
+            icon: sportIcons[sport] || 'target'
         };
     });
     res.json(sports);
@@ -300,6 +333,173 @@ app.get('/api/biathlon/race/:id', async (req, res) => {
     }
 });
 
+// ============ ALLSVENSKAN/FOOTBALL ENDPOINTS ============
+
+/**
+ * GET /api/football/games
+ * Get Allsvenskan fixtures
+ * Query params:
+ *   - team: filter by team code, id, or name (optional)
+ *   - state: filter by game state (pre-game, live, post-game)
+ *   - upcoming: only show upcoming games if 'true'
+ *   - limit: max number of games to return
+ */
+app.get('/api/football/games', async (req, res) => {
+    try {
+        let games = getCachedAllsvenskanGames();
+        let usedCache = true;
+
+        if (games) {
+            console.log('[Cache HIT] /api/football/games');
+        } else {
+            usedCache = false;
+            console.log('[Cache MISS] /api/football/games - fetching fresh data...');
+            const provider = getProvider('allsvenskan');
+            games = await provider.fetchAllGames();
+        }
+
+        if (!Array.isArray(games)) {
+            games = [];
+        }
+
+        const getTimeValue = (value) => {
+            const time = new Date(value).getTime();
+            return Number.isNaN(time) ? 0 : time;
+        };
+        games = games.sort((a, b) => getTimeValue(b.startDateTime) - getTimeValue(a.startDateTime));
+
+        const now = new Date();
+        const shouldUseFastCache = shouldUseFastGamesCache(games, now);
+
+        if (!usedCache) {
+            setCachedAllsvenskanGames(games, shouldUseFastCache);
+        } else {
+            setAllsvenskanLiveFlag(shouldUseFastCache);
+        }
+
+        let result = games;
+
+        if (req.query.team) {
+            const teamQuery = String(req.query.team).trim().toLowerCase();
+            const matchesTeam = (teamInfo) => {
+                if (!teamInfo) return false;
+                const candidates = [
+                    teamInfo.code,
+                    teamInfo.uuid,
+                    teamInfo.names?.short,
+                    teamInfo.names?.long
+                ];
+                return candidates.some(value => value && String(value).toLowerCase() === teamQuery);
+            };
+            result = result.filter(game => matchesTeam(game.homeTeamInfo) || matchesTeam(game.awayTeamInfo));
+        }
+
+        if (req.query.state) {
+            const stateQuery = String(req.query.state).trim().toLowerCase();
+            result = result.filter(game => game.state === stateQuery);
+        }
+
+        if (req.query.upcoming === 'true') {
+            result = result.filter(game => {
+                const startTime = new Date(game.startDateTime);
+                return !Number.isNaN(startTime.getTime()) && startTime >= now;
+            });
+        }
+
+        if (req.query.limit) {
+            const limit = parseInt(req.query.limit);
+            if (limit > 0) {
+                result = result.slice(0, limit);
+            }
+        }
+
+        res.json(result);
+    } catch (error) {
+        console.error('Error fetching Allsvenskan schedule:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/football/game/:id/details
+ * Get details for a specific Allsvenskan match
+ */
+app.get('/api/football/game/:id/details', async (req, res) => {
+    const { id } = req.params;
+
+    const cached = getCachedAllsvenskanDetails(id);
+    if (cached) {
+        console.log(`[Cache HIT] /api/football/game/${id}/details`);
+        return res.json(cached);
+    }
+
+    console.log(`[Cache MISS] /api/football/game/${id}/details - fetching...`);
+
+    try {
+        const provider = getProvider('allsvenskan');
+        const details = await provider.fetchGameDetails(id);
+
+        if (!details) {
+            return res.status(404).json({ error: 'Game not found' });
+        }
+
+        setCachedAllsvenskanDetails(id, details);
+        res.json(details);
+    } catch (error) {
+        console.error(`Error fetching Allsvenskan details for ${id}:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/football/standings
+ * Get Allsvenskan standings
+ * Query params:
+ *   - team: filter by team code or name (optional)
+ *   - top: limit to top N teams (optional)
+ */
+app.get('/api/football/standings', async (req, res) => {
+    try {
+        let standings = getCachedAllsvenskanStandings();
+
+        if (standings) {
+            console.log('[Cache HIT] /api/football/standings');
+        } else {
+            console.log('[Cache MISS] /api/football/standings - fetching fresh data...');
+            const provider = getProvider('allsvenskan');
+            standings = await provider.fetchStandings();
+            setCachedAllsvenskanStandings(standings);
+        }
+
+        let result = { ...standings };
+
+        if (req.query.team) {
+            const teamQuery = String(req.query.team).trim().toLowerCase();
+            result.standings = standings.standings.filter(team => {
+                const candidates = [
+                    team.teamCode,
+                    team.teamUuid,
+                    team.teamName,
+                    team.teamShortName
+                ];
+                return candidates.some(value => value && String(value).toLowerCase() === teamQuery);
+            });
+        }
+
+        if (req.query.top) {
+            const topN = parseInt(req.query.top);
+            if (topN > 0) {
+                result.standings = result.standings.slice(0, topN);
+            }
+        }
+
+        res.json(result);
+    } catch (error) {
+        console.error('Error fetching Allsvenskan standings:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ============ SHL/HOCKEY ENDPOINTS ============
 
 /**
@@ -362,15 +562,23 @@ app.get('/api/games', async (req, res) => {
 
         const adminGames = getAdminGameSchedule();
         const combinedGames = mergeGames(baseGames, adminGames);
+        const now = new Date();
         const hasLiveGame = combinedGames.some(game => game.state === 'live');
+        const hasStartingSoonGame = combinedGames.some(game =>
+            game.state !== 'post-game'
+            && game.state !== 'live'
+            && isGameNearStart(game, now)
+        );
+        const shouldUseFastCache = shouldUseFastGamesCache(combinedGames, now);
 
         if (!usedCache) {
-            setCachedGames(baseGames, hasLiveGame);
-            if (hasLiveGame) {
-                console.log('[Cache] Live game detected - using 15s cache duration');
+            setCachedGames(baseGames, shouldUseFastCache);
+            if (shouldUseFastCache) {
+                const reason = hasLiveGame ? 'Live game' : 'Game starting soon';
+                console.log(`[Cache] ${reason} detected - using 15s cache duration`);
             }
         } else {
-            setGamesLiveFlag(hasLiveGame);
+            setGamesLiveFlag(shouldUseFastCache);
         }
 
         res.json(combinedGames);
@@ -497,29 +705,31 @@ app.get('/api/game/:uuid/details', async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => {
-    const shlProvider = getProvider('shl');
-    const biathlonProvider = getProvider('biathlon');
+    const providers = getAvailableSports().reduce((acc, sport) => {
+        acc[sport] = getProvider(sport).getName();
+        return acc;
+    }, {});
 
     res.json({
         server: {
             uptime: process.uptime(),
             timestamp: formatSwedishTimestamp()
         },
-        providers: {
-            shl: shlProvider.getName(),
-            biathlon: biathlonProvider.getName()
-        },
+        providers,
         availableSports: getAvailableSports(),
         notifier: notifier.getStats(),
         scheduler: scheduler.getStats(),
         cache: getCacheStatus(),
         refreshRates: {
             gamesNormal: '60 seconds',
-            gamesLive: '15 seconds',
+            gamesLive: '15 seconds (live/starting soon)',
             gameDetails: '30 seconds',
             videos: '60 seconds',
             standings: '5 minutes',
             biathlon: '30 minutes',
+            allsvenskanGamesNormal: '60 seconds',
+            allsvenskanGamesLive: '15 seconds (live/starting soon)',
+            allsvenskanStandings: '5 minutes',
             notifierNormal: '5 minutes',
             notifierLive: '30 seconds',
             biathlonScheduler: '1 hour'
@@ -585,18 +795,17 @@ app.get('/api/scheduler/status', (req, res) => {
 
 // ============ START SERVER ============
 app.listen(PORT, () => {
-    const shlProvider = getProvider('shl');
-    const biathlonProvider = getProvider('biathlon');
+    const providerNames = getAvailableSports().map(sport => getProvider(sport).getName());
 
     console.log(`\n========================================`);
     console.log(`  GamePulse API Server`);
     console.log(`========================================`);
     console.log(`Server running at http://localhost:${PORT}`);
     console.log(`Available sports: ${getAvailableSports().join(', ')}`);
-    console.log(`Providers: ${shlProvider.getName()}, ${biathlonProvider.getName()}`);
+    console.log(`Providers: ${providerNames.join(', ')}`);
     console.log(`Started at: ${formatSwedishTimestamp()}`);
     console.log(`\nCache durations:`);
-    console.log(`  - Games: 60s (15s during live games)`);
+    console.log(`  - Games: 60s (15s during live/starting soon games)`);
     console.log(`  - Details: 30s`);
     console.log(`  - Videos: 60s`);
     console.log(`  - Standings: 5 minutes`);

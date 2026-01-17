@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, Modal, ScrollView, Image, RefreshControl, Platform } from 'react-native';
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { isToday, parseISO } from 'date-fns';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,14 +10,14 @@ import { WebView } from 'react-native-webview';
 // API
 import {
     fetchGames, fetchVideosForGame, fetchGameDetails, fetchVideoDetails, getTeamLogoUrl,
-    fetchBiathlonSchedule, fetchBiathlonEvents, fetchBiathlonNations
+    fetchBiathlonRaces, fetchBiathlonEvents, fetchBiathlonNations
 } from '../api/shl';
 
 // Constants
 import { STORAGE_KEYS, GENDER_OPTIONS, getTeamColor } from '../constants';
 
 // Utils
-import { getVideoDisplayTitle, getStayLiveVideoId } from '../utils';
+import { getVideoDisplayTitle, getStayLiveVideoId, normalizeScoreValue } from '../utils';
 
 // Components
 import { SportTab } from '../components/SportTab';
@@ -48,6 +49,11 @@ export default function App() {
     const [playingVideoDetails, setPlayingVideoDetails] = useState(null);
     const [loadingVideoDetails, setLoadingVideoDetails] = useState(false);
     const [activeTab, setActiveTab] = useState('summary');
+    const shlListRef = useRef(null);
+    const lastFocusedGameRef = useRef(null);
+    const AUTO_REFRESH_INTERVAL_MS = 20000;
+    const STARTING_SOON_WINDOW_MINUTES = 30;
+    const RECENT_START_WINDOW_MINUTES = 90;
 
     // Biathlon state
     const [biathlonRaces, setBiathlonRaces] = useState([]);
@@ -119,9 +125,13 @@ export default function App() {
             }
         });
 
+        const detailHomeScore = normalizeScoreValue(gameDetails.info?.homeTeam?.score);
+        const detailAwayScore = normalizeScoreValue(gameDetails.info?.awayTeam?.score);
+        const fallbackHomeScore = normalizeScoreValue(selectedGame.homeTeamResult?.score) ?? normalizeScoreValue(selectedGame.homeTeamInfo?.score);
+        const fallbackAwayScore = normalizeScoreValue(selectedGame.awayTeamResult?.score) ?? normalizeScoreValue(selectedGame.awayTeamInfo?.score);
         const scoreDisplay = {
-            home: actualScore.home ?? gameDetails.info?.homeTeam?.score ?? selectedGame.homeTeamResult?.score ?? '-',
-            away: actualScore.away ?? gameDetails.info?.awayTeam?.score ?? selectedGame.awayTeamResult?.score ?? '-'
+            home: actualScore.home ?? detailHomeScore ?? fallbackHomeScore ?? '-',
+            away: actualScore.away ?? detailAwayScore ?? fallbackAwayScore ?? '-'
         };
 
         const interestingEvents = [];
@@ -159,17 +169,25 @@ export default function App() {
         }
     }, [activeSport]);
 
-    // Auto-refresh for live games
+    // Auto-refresh for live or starting-soon games
     useEffect(() => {
-        const hasLiveGame = games.some(g => g.state === 'live');
-        let intervalId;
-        if (hasLiveGame && activeSport === 'shl') {
-            intervalId = setInterval(() => {
-                console.log('Auto-refreshing live games...');
-                loadGames(true);
-            }, 30800);
-        }
-        return () => { if (intervalId) clearInterval(intervalId); };
+        if (activeSport !== 'shl') return;
+        const now = Date.now();
+        const shouldAutoRefresh = games.some(game => {
+            if (game.state === 'live') return true;
+            if (game.state === 'post-game') return false;
+            const startTime = new Date(game.startDateTime).getTime();
+            if (Number.isNaN(startTime)) return false;
+            const minutesFromStart = (startTime - now) / (1000 * 60);
+            return minutesFromStart <= STARTING_SOON_WINDOW_MINUTES
+                && minutesFromStart >= -RECENT_START_WINDOW_MINUTES;
+        });
+        if (!shouldAutoRefresh) return;
+        const intervalId = setInterval(() => {
+            console.log('Auto-refreshing live or starting-soon games...');
+            loadGames(true);
+        }, AUTO_REFRESH_INTERVAL_MS);
+        return () => clearInterval(intervalId);
     }, [games, activeSport]);
 
     const loadGames = async (silent = false) => {
@@ -189,7 +207,7 @@ export default function App() {
         if (!silent) setLoadingBiathlon(true);
         try {
             const [races, , nations] = await Promise.all([
-                fetchBiathlonSchedule(50),
+                fetchBiathlonRaces(),
                 fetchBiathlonEvents(),
                 fetchBiathlonNations()
             ]);
@@ -319,14 +337,77 @@ export default function App() {
     const filteredGames = useMemo(() => {
         return games.filter(game => {
             if (selectedTeams.length > 0) {
-                if (!selectedTeams.includes(game.homeTeamInfo.code) && !selectedTeams.includes(game.awayTeamInfo.code)) {
+                const homeCode = game.homeTeamInfo?.code;
+                const awayCode = game.awayTeamInfo?.code;
+                if (!selectedTeams.includes(homeCode) && !selectedTeams.includes(awayCode)) {
                     return false;
                 }
             }
-            if (game.state === 'pre-game') return false;
             return true;
         });
     }, [games, selectedTeams]);
+
+    const sortedGames = useMemo(() => {
+        return [...filteredGames].sort((a, b) => {
+            const timeA = new Date(a.startDateTime).getTime();
+            const timeB = new Date(b.startDateTime).getTime();
+            return timeA - timeB;
+        });
+    }, [filteredGames]);
+
+    const nextGameIndex = useMemo(() => {
+        if (!sortedGames.length) return 0;
+        const upcomingIndex = sortedGames.findIndex(game => game.state !== 'post-game');
+        if (upcomingIndex !== -1) return upcomingIndex;
+        return sortedGames.length - 1;
+    }, [sortedGames]);
+
+    const currentDateIndex = useMemo(() => {
+        if (!sortedGames.length) return 0;
+        return sortedGames.findIndex(game => {
+            if (!game?.startDateTime) return false;
+            try {
+                const parsed = parseISO(game.startDateTime);
+                if (Number.isNaN(parsed.getTime())) return false;
+                return isToday(parsed);
+            } catch (error) {
+                return false;
+            }
+        });
+    }, [sortedGames]);
+
+    const targetGameIndex = useMemo(() => {
+        return currentDateIndex !== -1 ? currentDateIndex : nextGameIndex;
+    }, [currentDateIndex, nextGameIndex]);
+
+    const targetGameId = useMemo(() => {
+        return sortedGames[targetGameIndex]?.uuid || null;
+    }, [sortedGames, targetGameIndex]);
+
+    const handleScrollToIndexFailed = useCallback((info) => {
+        const offset = info.averageItemLength * info.index;
+        setTimeout(() => {
+            shlListRef.current?.scrollToOffset({ offset, animated: false });
+        }, 50);
+    }, []);
+
+    useEffect(() => {
+        if (activeSport !== 'shl') {
+            lastFocusedGameRef.current = null;
+        }
+    }, [activeSport]);
+
+    useEffect(() => {
+        if (activeSport !== 'shl' || !sortedGames.length || !targetGameId) return;
+        if (lastFocusedGameRef.current === targetGameId) return;
+
+        const timeoutId = setTimeout(() => {
+            shlListRef.current?.scrollToIndex({ index: targetGameIndex, animated: false });
+        }, 0);
+
+        lastFocusedGameRef.current = targetGameId;
+        return () => clearTimeout(timeoutId);
+    }, [activeSport, sortedGames.length, targetGameId, targetGameIndex]);
 
     const filteredBiathlonRaces = useMemo(() => {
         return biathlonRaces.filter(race => {
@@ -405,13 +486,13 @@ export default function App() {
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
             ListEmptyComponent={
                 <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>No upcoming races found.</Text>
+                    <Text style={styles.emptyText}>No races found.</Text>
                 </View>
             }
             ListHeaderComponent={
                 <View style={styles.scheduleHeader}>
                     <Ionicons name="calendar-outline" size={20} color="#0A84FF" />
-                    <Text style={styles.scheduleHeaderText}>Upcoming Races</Text>
+                    <Text style={styles.scheduleHeaderText}>All Races</Text>
                     <Text style={styles.scheduleCount}>{filteredBiathlonRaces.length} races</Text>
                 </View>
             }
@@ -616,11 +697,13 @@ export default function App() {
                         <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
                     ) : (
                         <FlatList
-                            data={filteredGames}
+                            ref={shlListRef}
+                            data={sortedGames}
                             renderItem={({ item }) => <GameCard game={item} onPress={() => handleGamePress(item)} />}
                             keyExtractor={item => item.uuid}
                             contentContainerStyle={styles.listContent}
                             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+                            onScrollToIndexFailed={handleScrollToIndexFailed}
                             ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.emptyText}>No games found.</Text></View>}
                         />
                     )}
