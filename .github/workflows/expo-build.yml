@@ -48,7 +48,18 @@ jobs:
         working-directory: shl-highlights-app
 
       - name: Upload APK artifact
+        id: upload_apk
         uses: actions/upload-artifact@v4
         with:
           name: app-release
           path: ${{ github.workspace }}/app-release.apk
+
+      - name: Notify ntfy with artifact link
+        if: ${{ success() }}
+        env:
+          NTFY_TOPIC: "-gamepulse-release"
+          ARTIFACT_URL: ${{ steps.upload_apk.outputs.artifact-url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          message="APK artifact uploaded: ${ARTIFACT_URL}\nRun: ${RUN_URL}"
+          curl -s -X POST -d "$message" "https://ntfy.sh/${NTFY_TOPIC}"
