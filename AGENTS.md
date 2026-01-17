@@ -6,6 +6,7 @@
 - When testing, if there's a npm script called "dev" available, use that
 - When adding tests, add it in a folder called "test"
 - Use context7
+- Keep the admin console in sync with new API features (e.g., new sports).
 
 ## Design
 - Ensure that buttons and layouts are responsive and premium-looking across all devices.
