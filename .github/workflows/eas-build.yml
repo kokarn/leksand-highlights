@@ -29,6 +29,6 @@ jobs:
         run: npm ci
         working-directory: ./shl-highlights-app
 
-      - name: Build on EAS
-        run: eas build --platform android --non-interactive --no-wait
+      - name: Build on EAS (preview)
+        run: eas build --platform android --profile preview --non-interactive --no-wait
         working-directory: shl-highlights-app
