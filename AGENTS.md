@@ -5,6 +5,7 @@
 - When using the browser subagent, remember to close the tab after you are done.
 - When testing, if there's a npm script called "dev" available, use that
 - When adding tests, add it in a folder called "test"
+- Use context7
 
 ## Design
 - Ensure that buttons and layouts are responsive and premium-looking across all devices.
@@ -18,3 +19,7 @@
 
 ## Backend
 - Always use the latest LTS version of node.js
+- Always increment the version according to semver
+
+## App
+- Always increment the version according to semver
