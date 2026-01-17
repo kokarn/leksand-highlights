@@ -218,11 +218,22 @@ class BiathlonProvider extends BaseProvider {
         ];
     }
 
-    getSeasonId() {
-        const [startYear, endYearRaw] = this.currentSeason.split('-');
+    getSeasonId(season = this.currentSeason) {
+        const [startYear, endYearRaw] = String(season).split('-');
         const start = String(startYear || '').slice(-2);
         const end = String(endYearRaw || '').padStart(2, '0');
         return `${start}${end}`;
+    }
+
+    getPreviousSeason(season = this.currentSeason) {
+        const [startYearRaw] = String(season).split('-');
+        const startYear = parseInt(startYearRaw, 10);
+        if (Number.isNaN(startYear)) {
+            return this.currentSeason;
+        }
+        const previousStartYear = startYear - 1;
+        const previousEndYear = String(previousStartYear + 1).slice(-2);
+        return `${previousStartYear}-${previousEndYear}`;
     }
 
     getStockholmDateTimeParts(date) {
@@ -283,8 +294,8 @@ class BiathlonProvider extends BaseProvider {
         return `${prefix} - ${event.ShortDescription || event.Organizer || 'TBA'}`;
     }
 
-    async fetchIbuEvents() {
-        const seasonId = this.getSeasonId();
+    async fetchIbuEvents(season = this.currentSeason) {
+        const seasonId = this.getSeasonId(season);
         const url = `${this.resultsApiBaseUrl}/Events?SeasonId=${seasonId}`;
 
         try {
@@ -346,8 +357,8 @@ class BiathlonProvider extends BaseProvider {
         }
     }
 
-    async fetchIbuSchedule() {
-        const events = await this.fetchIbuEvents();
+    async fetchIbuSchedule(season = this.currentSeason) {
+        const events = await this.fetchIbuEvents(season);
         if (!events.length) return [];
 
         const schedule = await Promise.all(events.map(async event => {
@@ -422,12 +433,31 @@ class BiathlonProvider extends BaseProvider {
         return races.sort((a, b) => new Date(b.startDateTime) - new Date(a.startDateTime));
     }
 
+    mergeRaces(...raceLists) {
+        const merged = new Map();
+        raceLists.flat().forEach(race => {
+            if (!race?.uuid) return;
+            merged.set(race.uuid, race);
+        });
+        return Array.from(merged.values()).sort((a, b) => new Date(b.startDateTime) - new Date(a.startDateTime));
+    }
+
     async fetchAllGames() {
         console.log(`[${this.name}] Fetching biathlon race schedule...`);
         try {
             const events = await this.fetchIbuSchedule();
             if (events.length) {
-                return this.transformToRaces(events);
+                const currentRaces = this.transformToRaces(events);
+                const hasCompleted = currentRaces.some(race => race.state === 'completed');
+                if (!hasCompleted) {
+                    const previousSeason = this.getPreviousSeason();
+                    const previousEvents = await this.fetchIbuSchedule(previousSeason);
+                    if (previousEvents.length) {
+                        const previousRaces = this.transformToRaces(previousEvents);
+                        return this.mergeRaces(previousRaces, currentRaces);
+                    }
+                }
+                return currentRaces;
             }
         } catch (error) {
             console.warn(`[${this.name}] Falling back to static calendar:`, error.message);

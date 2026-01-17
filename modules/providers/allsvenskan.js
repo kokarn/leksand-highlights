@@ -46,6 +46,15 @@ class AllsvenskanProvider extends BaseProvider {
         return Array.isArray(data?.events) ? data.events : [];
     }
 
+    async fetchSeasonEventsSafe(year) {
+        try {
+            return await this.fetchSeasonEvents(year);
+        } catch (error) {
+            console.warn(`[${this.name}] Failed to fetch ${year} schedule:`, error.message);
+            return [];
+        }
+    }
+
     normalizeState(status) {
         const state = status?.type?.state;
 
@@ -147,24 +156,40 @@ class AllsvenskanProvider extends BaseProvider {
             .filter(Boolean);
     }
 
+    mergeGamesById(...gameLists) {
+        const merged = new Map();
+        gameLists.flat().forEach(game => {
+            if (!game?.uuid) return;
+            merged.set(game.uuid, game);
+        });
+        return Array.from(merged.values());
+    }
+
     async fetchAllGames() {
         const year = this.getSeasonYear();
-        let events = [];
-
-        try {
-            events = await this.fetchSeasonEvents(year);
-        } catch (error) {
-            console.warn(`[${this.name}] Failed to fetch ${year} schedule:`, error.message);
-        }
-
-        if (!events.length) {
-            const fallbackYear = year - 1;
-            console.warn(`[${this.name}] Falling back to ${fallbackYear} schedule`);
-            events = await this.fetchSeasonEvents(fallbackYear);
-        }
-
+        const now = new Date();
+        const events = await this.fetchSeasonEventsSafe(year);
         const games = this.normalizeEvents(events);
-        return games.sort((a, b) => new Date(b.startDateTime) - new Date(a.startDateTime));
+        const hasFutureGames = games.some(game => new Date(game.startDateTime) >= now);
+        const hasPastGames = games.some(game => new Date(game.startDateTime) < now);
+
+        const extraEventBatches = [];
+
+        if (!hasFutureGames) {
+            const nextYear = year + 1;
+            extraEventBatches.push(await this.fetchSeasonEventsSafe(nextYear));
+        }
+
+        if (!hasPastGames) {
+            const previousYear = year - 1;
+            extraEventBatches.push(await this.fetchSeasonEventsSafe(previousYear));
+        }
+
+        const extraEvents = extraEventBatches.flat();
+        const extraGames = extraEvents.length ? this.normalizeEvents(extraEvents) : [];
+        const mergedGames = this.mergeGamesById(games, extraGames);
+
+        return mergedGames.sort((a, b) => new Date(b.startDateTime) - new Date(a.startDateTime));
     }
 
     async fetchActiveGames() {
