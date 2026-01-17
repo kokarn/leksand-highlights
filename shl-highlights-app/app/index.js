@@ -9,16 +9,16 @@ import { WebView } from 'react-native-webview';
 
 // API
 import {
-    fetchGames, fetchVideosForGame, fetchGameDetails, fetchVideoDetails, getTeamLogoUrl,
+    fetchGames, fetchVideosForGame, fetchGameDetails, fetchStandings, fetchVideoDetails, getTeamLogoUrl,
     fetchBiathlonRaces, fetchBiathlonEvents, fetchBiathlonNations,
-    fetchFootballGames, fetchFootballGameDetails
+    fetchFootballGames, fetchFootballGameDetails, fetchFootballStandings
 } from '../api/shl';
 
 // Constants
 import { STORAGE_KEYS, GENDER_OPTIONS, getTeamColor } from '../constants';
 
 // Utils
-import { getVideoDisplayTitle, getStayLiveVideoId, normalizeScoreValue } from '../utils';
+import { formatSwedishDate, getVideoDisplayTitle, getStayLiveVideoId, normalizeScoreValue } from '../utils';
 
 // Components
 import { SportTab } from '../components/SportTab';
@@ -50,6 +50,9 @@ export default function App() {
     const [playingVideoDetails, setPlayingVideoDetails] = useState(null);
     const [loadingVideoDetails, setLoadingVideoDetails] = useState(false);
     const [activeTab, setActiveTab] = useState('summary');
+    const [shlViewMode, setShlViewMode] = useState('schedule');
+    const [standings, setStandings] = useState(null);
+    const [loadingStandings, setLoadingStandings] = useState(false);
     const shlListRef = useRef(null);
     const footballListRef = useRef(null);
     const lastFocusedGameRef = useRef(null);
@@ -73,6 +76,10 @@ export default function App() {
     const [footballDetails, setFootballDetails] = useState(null);
     const [loadingFootballDetails, setLoadingFootballDetails] = useState(false);
     const [selectedFootballTeams, setSelectedFootballTeams] = useState([]);
+    const [footballViewMode, setFootballViewMode] = useState('schedule');
+    const [footballStandings, setFootballStandings] = useState(null);
+    const [loadingFootballStandings, setLoadingFootballStandings] = useState(false);
+    const [selectedFootballSeason, setSelectedFootballSeason] = useState(null);
 
     // Load saved preferences on app start
     useEffect(() => {
@@ -191,6 +198,18 @@ export default function App() {
         }
     }, [activeSport]);
 
+    useEffect(() => {
+        if (activeSport !== 'shl') return;
+        if (shlViewMode !== 'standings') return;
+        loadStandings();
+    }, [activeSport, shlViewMode]);
+
+    useEffect(() => {
+        if (activeSport !== 'football') return;
+        if (footballViewMode !== 'standings') return;
+        loadFootballStandings();
+    }, [activeSport, footballViewMode]);
+
     const shouldAutoRefreshGames = (gamesList) => {
         const now = Date.now();
         return gamesList.some(game => {
@@ -240,6 +259,19 @@ export default function App() {
         }
     };
 
+    const loadStandings = async (silent = false) => {
+        if (!silent) setLoadingStandings(true);
+        try {
+            const data = await fetchStandings();
+            setStandings(data);
+        } catch (e) {
+            console.error("Failed to load standings", e);
+        } finally {
+            if (!silent) setLoadingStandings(false);
+            setRefreshing(false);
+        }
+    };
+
     const loadBiathlonData = async (silent = false) => {
         if (!silent) setLoadingBiathlon(true);
         try {
@@ -271,20 +303,74 @@ export default function App() {
         }
     };
 
+    const loadFootballStandings = async (silent = false, seasonOverride) => {
+        if (!silent) setLoadingFootballStandings(true);
+        try {
+            const season = seasonOverride ?? selectedFootballSeason;
+            const data = await fetchFootballStandings(season ? { season } : {});
+            setFootballStandings(data);
+
+            const resolvedSeason = data?.season ? String(data.season) : null;
+            const availableSeasons = Array.isArray(data?.availableSeasons)
+                ? data.availableSeasons.map(value => String(value))
+                : [];
+            const normalizedSeasons = resolvedSeason && !availableSeasons.includes(resolvedSeason)
+                ? [resolvedSeason, ...availableSeasons]
+                : availableSeasons;
+
+            if (!selectedFootballSeason && resolvedSeason) {
+                setSelectedFootballSeason(resolvedSeason);
+            }
+
+            if (selectedFootballSeason && resolvedSeason && !normalizedSeasons.includes(String(selectedFootballSeason))) {
+                setSelectedFootballSeason(resolvedSeason);
+            }
+        } catch (e) {
+            console.error("Failed to load football standings", e);
+        } finally {
+            if (!silent) setLoadingFootballStandings(false);
+            setRefreshing(false);
+        }
+    };
+
     const onRefresh = () => {
         setRefreshing(true);
         if (activeSport === 'shl') {
-            loadGames();
+            if (shlViewMode === 'standings') {
+                loadStandings();
+            } else {
+                loadGames();
+            }
         } else if (activeSport === 'biathlon') {
             loadBiathlonData();
         } else if (activeSport === 'football') {
-            loadFootballGames();
+            if (footballViewMode === 'standings') {
+                loadFootballStandings();
+            } else {
+                loadFootballGames();
+            }
         }
     };
 
     const handleSportChange = (sport) => {
         setActiveSport(sport);
         savePreference(STORAGE_KEYS.SELECTED_SPORT, sport);
+    };
+
+    const handleShlViewChange = (nextView) => {
+        if (nextView === shlViewMode) return;
+        setShlViewMode(nextView);
+    };
+
+    const handleFootballViewChange = (nextView) => {
+        if (nextView === footballViewMode) return;
+        setFootballViewMode(nextView);
+    };
+
+    const handleFootballSeasonSelect = (season) => {
+        if (!season || season === selectedFootballSeason) return;
+        setSelectedFootballSeason(season);
+        loadFootballStandings(false, season);
     };
 
     const toggleTeamFilter = useCallback((teamCode) => {
@@ -391,6 +477,15 @@ export default function App() {
         return team?.code || team?.uuid || team?.names?.short || team?.names?.long || null;
     }, []);
 
+    const getFootballStandingsTeamKey = useCallback((team) => {
+        return team?.teamCode || team?.teamUuid || team?.teamName || team?.teamShortName || null;
+    }, []);
+
+    const formatStatValue = (value) => {
+        if (value === null || value === undefined) return '-';
+        return String(value);
+    };
+
     // Derived data
     const teams = useMemo(() => {
         const teamCodes = new Set();
@@ -419,6 +514,30 @@ export default function App() {
         });
         return Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name));
     }, [footballGames, getFootballTeamKey]);
+
+    const footballSeasonOptions = useMemo(() => {
+        const seasons = Array.isArray(footballStandings?.availableSeasons)
+            ? footballStandings.availableSeasons.map(value => String(value))
+            : [];
+        const currentSeason = footballStandings?.season ? String(footballStandings.season) : null;
+        if (currentSeason && !seasons.includes(currentSeason)) {
+            seasons.unshift(currentSeason);
+        }
+        const unique = Array.from(new Set(seasons));
+        return unique.sort((a, b) => {
+            const numA = Number(a);
+            const numB = Number(b);
+            if (!Number.isNaN(numA) && !Number.isNaN(numB)) {
+                return numB - numA;
+            }
+            return b.localeCompare(a);
+        });
+    }, [footballStandings]);
+
+    const activeFootballSeason = selectedFootballSeason
+        || footballStandings?.season
+        || footballSeasonOptions[0]
+        || null;
 
     const filteredGames = useMemo(() => {
         return games.filter(game => {
@@ -656,6 +775,66 @@ export default function App() {
     };
 
     // Render functions
+    const renderViewToggle = (mode, onChange) => (
+        <View style={styles.viewToggle}>
+            <TouchableOpacity
+                style={[styles.viewToggleButton, mode === 'schedule' && styles.viewToggleButtonActive]}
+                onPress={() => onChange('schedule')}
+                activeOpacity={0.7}
+            >
+                <Ionicons name="calendar-outline" size={16} color={mode === 'schedule' ? '#0A84FF' : '#666'} />
+                <Text style={[styles.viewToggleText, mode === 'schedule' && styles.viewToggleTextActive]}>
+                    Schedule
+                </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={[styles.viewToggleButton, mode === 'standings' && styles.viewToggleButtonActive]}
+                onPress={() => onChange('standings')}
+                activeOpacity={0.7}
+            >
+                <Ionicons name="stats-chart" size={16} color={mode === 'standings' ? '#0A84FF' : '#666'} />
+                <Text style={[styles.viewToggleText, mode === 'standings' && styles.viewToggleTextActive]}>
+                    Standings
+                </Text>
+            </TouchableOpacity>
+        </View>
+    );
+
+    const renderSeasonPicker = (seasons, selectedSeason, onSelect) => {
+        if (!Array.isArray(seasons) || seasons.length === 0) return null;
+        if (seasons.length === 1) {
+            return (
+                <View style={styles.seasonSingle}>
+                    <Ionicons name="calendar-outline" size={14} color="#888" />
+                    <Text style={styles.seasonSingleText}>Season {seasons[0]}</Text>
+                </View>
+            );
+        }
+
+        return (
+            <View style={styles.seasonPicker}>
+                <Text style={styles.seasonLabel}>Season</Text>
+                <View style={styles.seasonChipRow}>
+                    {seasons.map(season => {
+                        const isActive = season === selectedSeason;
+                        return (
+                            <TouchableOpacity
+                                key={season}
+                                style={[styles.seasonChip, isActive && styles.seasonChipActive]}
+                                onPress={() => onSelect?.(season)}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={[styles.seasonChipText, isActive && styles.seasonChipTextActive]}>
+                                    {season}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+            </View>
+        );
+    };
+
     const renderSportTabs = () => (
         <View style={styles.sportTabsContainer}>
             <SportTab sport="shl" isActive={activeSport === 'shl'} onPress={() => handleSportChange('shl')} />
@@ -701,14 +880,257 @@ export default function App() {
                 </View>
             }
             ListHeaderComponent={
-                <View style={styles.scheduleHeader}>
-                    <Ionicons name="football-outline" size={20} color="#0A84FF" />
-                    <Text style={styles.scheduleHeaderText}>Allsvenskan</Text>
-                    <Text style={styles.scheduleCount}>{sortedFootballGames.length} matches</Text>
+                <View style={styles.listHeader}>
+                    {renderViewToggle(footballViewMode, handleFootballViewChange)}
+                    <View style={styles.scheduleHeader}>
+                        <Ionicons name="football-outline" size={20} color="#0A84FF" />
+                        <Text style={styles.scheduleHeaderText}>Allsvenskan</Text>
+                        <Text style={styles.scheduleCount}>{sortedFootballGames.length} matches</Text>
+                    </View>
                 </View>
             }
         />
     );
+
+    const renderShlStandings = () => {
+        const seasonLabel = standings?.season ? String(standings.season) : null;
+        const seasonOptions = Array.isArray(standings?.availableSeasons)
+            ? standings.availableSeasons.map(value => String(value))
+            : (seasonLabel ? [seasonLabel] : []);
+        const lastUpdatedLabel = standings?.lastUpdated
+            ? formatSwedishDate(standings.lastUpdated, 'd MMM HH:mm')
+            : null;
+        const gamesAnalyzed = standings?.gamesAnalyzed;
+        const standingsRows = Array.isArray(standings?.standings) ? standings.standings : [];
+
+        return (
+            <ScrollView
+                contentContainerStyle={styles.listContent}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+            >
+                {renderViewToggle(shlViewMode, handleShlViewChange)}
+                <View style={styles.standingsHeader}>
+                    <View style={styles.standingsHeaderRow}>
+                        <Ionicons name="stats-chart" size={20} color="#0A84FF" />
+                        <Text style={styles.standingsTitle}>SHL Table</Text>
+                        <Text style={styles.standingsCount}>{standingsRows.length} teams</Text>
+                    </View>
+                    {renderSeasonPicker(seasonOptions, seasonLabel, null)}
+                    <View style={styles.standingsMetaRow}>
+                        {lastUpdatedLabel && (
+                            <Text style={styles.standingsMetaText}>Updated {lastUpdatedLabel}</Text>
+                        )}
+                        {Number.isFinite(gamesAnalyzed) && (
+                            <Text style={styles.standingsMetaText}>Analyzed {gamesAnalyzed} games</Text>
+                        )}
+                    </View>
+                </View>
+
+                {loadingStandings ? (
+                    <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 24 }} />
+                ) : standingsRows.length === 0 ? (
+                    <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyText}>No standings available.</Text>
+                    </View>
+                ) : (
+                    <View style={styles.tableCard}>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            <View>
+                                <View style={[styles.tableRow, styles.tableRowHeader]}>
+                                    <Text style={[styles.tableHeaderText, styles.colRank]}>#</Text>
+                                    <Text style={[styles.tableHeaderText, styles.colTeamHeader]}>Team</Text>
+                                    <Text style={[styles.tableHeaderText, styles.colStat]}>GP</Text>
+                                    <Text style={[styles.tableHeaderText, styles.colStat]}>W</Text>
+                                    <Text style={[styles.tableHeaderText, styles.colStat]}>OTW</Text>
+                                    <Text style={[styles.tableHeaderText, styles.colStat]}>OTL</Text>
+                                    <Text style={[styles.tableHeaderText, styles.colStat]}>L</Text>
+                                    <Text style={[styles.tableHeaderText, styles.colPoints]}>PTS</Text>
+                                    <Text style={[styles.tableHeaderText, styles.colGoalDiff]}>GD</Text>
+                                </View>
+                                {standingsRows.map(team => {
+                                    const teamCode = team.teamCode || team.teamShortName;
+                                    const isFavorite = teamCode && selectedTeams.includes(teamCode);
+                                    const goalDiffValue = Number(team.goalDiff);
+                                    const logoUrl = teamCode ? getTeamLogoUrl(teamCode) : null;
+                                    const resolvedLogoUrl = logoUrl || team.teamIcon || null;
+                                    return (
+                                        <View
+                                            key={team.teamUuid || team.teamCode || team.teamName}
+                                            style={[styles.tableRow, isFavorite && styles.tableRowActive]}
+                                        >
+                                            <Text style={[styles.tableCell, styles.colRank]}>
+                                                {formatStatValue(team.position)}
+                                            </Text>
+                                            <View style={styles.teamCell}>
+                                                {resolvedLogoUrl ? (
+                                                    <Image
+                                                        source={{ uri: resolvedLogoUrl }}
+                                                        style={styles.teamLogo}
+                                                        resizeMode="contain"
+                                                    />
+                                                ) : (
+                                                    <View style={styles.teamLogoPlaceholder} />
+                                                )}
+                                                <View style={styles.teamTextBlock}>
+                                                    <Text style={styles.teamName} numberOfLines={1}>
+                                                        {team.teamShortName || team.teamName || teamCode}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                            <Text style={[styles.tableCell, styles.colStat]}>
+                                                {formatStatValue(team.gamesPlayed)}
+                                            </Text>
+                                            <Text style={[styles.tableCell, styles.colStat]}>
+                                                {formatStatValue(team.wins)}
+                                            </Text>
+                                            <Text style={[styles.tableCell, styles.colStat]}>
+                                                {formatStatValue(team.overtimeWins)}
+                                            </Text>
+                                            <Text style={[styles.tableCell, styles.colStat]}>
+                                                {formatStatValue(team.overtimeLosses)}
+                                            </Text>
+                                            <Text style={[styles.tableCell, styles.colStat]}>
+                                                {formatStatValue(team.losses)}
+                                            </Text>
+                                            <Text style={[styles.tableCell, styles.colPoints]}>
+                                                {formatStatValue(team.points)}
+                                            </Text>
+                                            <Text
+                                                style={[
+                                                    styles.tableCell,
+                                                    styles.colGoalDiff,
+                                                    Number.isFinite(goalDiffValue) && goalDiffValue > 0 && styles.positiveValue,
+                                                    Number.isFinite(goalDiffValue) && goalDiffValue < 0 && styles.negativeValue
+                                                ]}
+                                            >
+                                                {formatStatValue(team.goalDiff)}
+                                            </Text>
+                                        </View>
+                                    );
+                                })}
+                            </View>
+                        </ScrollView>
+                    </View>
+                )}
+            </ScrollView>
+        );
+    };
+
+    const renderFootballStandings = () => {
+        const seasonLabel = activeFootballSeason ? String(activeFootballSeason) : null;
+        const lastUpdatedLabel = footballStandings?.lastUpdated
+            ? formatSwedishDate(footballStandings.lastUpdated, 'd MMM HH:mm')
+            : null;
+        const standingsRows = Array.isArray(footballStandings?.standings) ? footballStandings.standings : [];
+
+        return (
+            <ScrollView
+                contentContainerStyle={styles.listContent}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+            >
+                {renderViewToggle(footballViewMode, handleFootballViewChange)}
+                <View style={styles.standingsHeader}>
+                    <View style={styles.standingsHeaderRow}>
+                        <Ionicons name="football-outline" size={20} color="#0A84FF" />
+                        <Text style={styles.standingsTitle}>Allsvenskan Table</Text>
+                        <Text style={styles.standingsCount}>{standingsRows.length} teams</Text>
+                    </View>
+                    {renderSeasonPicker(footballSeasonOptions, seasonLabel, handleFootballSeasonSelect)}
+                    <View style={styles.standingsMetaRow}>
+                        {lastUpdatedLabel && (
+                            <Text style={styles.standingsMetaText}>Updated {lastUpdatedLabel}</Text>
+                        )}
+                    </View>
+                </View>
+
+                {loadingFootballStandings ? (
+                    <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 24 }} />
+                ) : standingsRows.length === 0 ? (
+                    <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyText}>No standings available.</Text>
+                    </View>
+                ) : (
+                    <View style={styles.tableCard}>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            <View>
+                                <View style={[styles.tableRow, styles.tableRowHeader]}>
+                                    <Text style={[styles.tableHeaderText, styles.colRank]}>#</Text>
+                                    <Text style={[styles.tableHeaderText, styles.colTeamHeader]}>Team</Text>
+                                    <Text style={[styles.tableHeaderText, styles.colStat]}>GP</Text>
+                                    <Text style={[styles.tableHeaderText, styles.colStat]}>W</Text>
+                                    <Text style={[styles.tableHeaderText, styles.colStat]}>D</Text>
+                                    <Text style={[styles.tableHeaderText, styles.colStat]}>L</Text>
+                                    <Text style={[styles.tableHeaderText, styles.colPoints]}>PTS</Text>
+                                    <Text style={[styles.tableHeaderText, styles.colGoalDiff]}>GD</Text>
+                                </View>
+                                {standingsRows.map(team => {
+                                    const teamKey = getFootballStandingsTeamKey(team);
+                                    const isFavorite = teamKey && selectedFootballTeams.includes(teamKey);
+                                    const goalDiffValue = Number(team.goalDiff);
+                                    return (
+                                        <View
+                                            key={team.teamUuid || team.teamCode || team.teamName}
+                                            style={[styles.tableRow, isFavorite && styles.tableRowActive]}
+                                        >
+                                            <Text style={[styles.tableCell, styles.colRank]}>
+                                                {formatStatValue(team.position)}
+                                            </Text>
+                                            <View style={styles.teamCell}>
+                                                {team.teamIcon ? (
+                                                    <Image
+                                                        source={{ uri: team.teamIcon }}
+                                                        style={styles.teamLogo}
+                                                        resizeMode="contain"
+                                                    />
+                                                ) : (
+                                                    <View style={styles.teamLogoPlaceholder} />
+                                                )}
+                                                <View style={styles.teamTextBlock}>
+                                                    <Text style={styles.teamName} numberOfLines={1}>
+                                                        {team.teamShortName || team.teamName || team.teamCode}
+                                                    </Text>
+                                                    {team.note ? (
+                                                        <Text style={styles.teamNote} numberOfLines={1}>
+                                                            {team.note}
+                                                        </Text>
+                                                    ) : null}
+                                                </View>
+                                            </View>
+                                            <Text style={[styles.tableCell, styles.colStat]}>
+                                                {formatStatValue(team.gamesPlayed)}
+                                            </Text>
+                                            <Text style={[styles.tableCell, styles.colStat]}>
+                                                {formatStatValue(team.wins)}
+                                            </Text>
+                                            <Text style={[styles.tableCell, styles.colStat]}>
+                                                {formatStatValue(team.draws)}
+                                            </Text>
+                                            <Text style={[styles.tableCell, styles.colStat]}>
+                                                {formatStatValue(team.losses)}
+                                            </Text>
+                                            <Text style={[styles.tableCell, styles.colPoints]}>
+                                                {formatStatValue(team.points)}
+                                            </Text>
+                                            <Text
+                                                style={[
+                                                    styles.tableCell,
+                                                    styles.colGoalDiff,
+                                                    Number.isFinite(goalDiffValue) && goalDiffValue > 0 && styles.positiveValue,
+                                                    Number.isFinite(goalDiffValue) && goalDiffValue < 0 && styles.negativeValue
+                                                ]}
+                                            >
+                                                {formatStatValue(team.goalDiff)}
+                                            </Text>
+                                        </View>
+                                    );
+                                })}
+                            </View>
+                        </ScrollView>
+                    </View>
+                )}
+            </ScrollView>
+        );
+    };
 
     // Tab content renderers
     const renderSummaryTab = () => {
@@ -903,30 +1325,48 @@ export default function App() {
 
             {/* Sport-specific content */}
             {activeSport === 'shl' ? (
-                <>
-                    {loading ? (
-                        <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
-                    ) : (
-                        <FlatList
-                            ref={shlListRef}
-                            data={sortedGames}
-                            renderItem={({ item }) => <GameCard game={item} onPress={() => handleGamePress(item)} />}
-                            keyExtractor={item => item.uuid}
-                            contentContainerStyle={styles.listContent}
-                            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
-                            onScrollToIndexFailed={handleScrollToIndexFailed}
-                            ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.emptyText}>No games found.</Text></View>}
-                        />
-                    )}
-                </>
+                shlViewMode === 'standings' ? (
+                    renderShlStandings()
+                ) : (
+                    <>
+                        {loading ? (
+                            <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
+                        ) : (
+                            <FlatList
+                                ref={shlListRef}
+                                data={sortedGames}
+                                renderItem={({ item }) => <GameCard game={item} onPress={() => handleGamePress(item)} />}
+                                keyExtractor={item => item.uuid}
+                                contentContainerStyle={styles.listContent}
+                                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+                                onScrollToIndexFailed={handleScrollToIndexFailed}
+                                ListHeaderComponent={
+                                    <View style={styles.listHeader}>
+                                        {renderViewToggle(shlViewMode, handleShlViewChange)}
+                                        <View style={styles.scheduleHeader}>
+                                            <Ionicons name="snow-outline" size={20} color="#0A84FF" />
+                                            <Text style={styles.scheduleHeaderText}>SHL</Text>
+                                            <Text style={styles.scheduleCount}>{sortedGames.length} games</Text>
+                                        </View>
+                                    </View>
+                                }
+                                ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.emptyText}>No games found.</Text></View>}
+                            />
+                        )}
+                    </>
+                )
             ) : activeSport === 'football' ? (
-                <>
-                    {loadingFootball ? (
-                        <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
-                    ) : (
-                        renderFootballSchedule()
-                    )}
-                </>
+                footballViewMode === 'standings' ? (
+                    renderFootballStandings()
+                ) : (
+                    <>
+                        {loadingFootball ? (
+                            <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
+                        ) : (
+                            renderFootballSchedule()
+                        )}
+                    </>
+                )
             ) : (
                 <>
                     {loadingBiathlon ? (
@@ -1064,9 +1504,145 @@ const styles = StyleSheet.create({
     listContent: { padding: 16, paddingTop: 8 },
 
     // Schedule Header
+    listHeader: { gap: 12, marginBottom: 12 },
     scheduleHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16, paddingHorizontal: 4 },
     scheduleHeaderText: { color: '#fff', fontSize: 18, fontWeight: '700', flex: 1 },
     scheduleCount: { color: '#666', fontSize: 13, fontWeight: '600' },
+
+    // View Toggle
+    viewToggle: {
+        flexDirection: 'row',
+        backgroundColor: '#1c1c1e',
+        borderRadius: 12,
+        padding: 4,
+        borderWidth: 1,
+        borderColor: '#333'
+    },
+    viewToggleButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 10,
+        borderRadius: 10
+    },
+    viewToggleButtonActive: {
+        backgroundColor: 'rgba(10, 132, 255, 0.15)',
+        borderWidth: 1,
+        borderColor: '#0A84FF'
+    },
+    viewToggleText: {
+        color: '#666',
+        fontSize: 13,
+        fontWeight: '600'
+    },
+    viewToggleTextActive: {
+        color: '#0A84FF'
+    },
+
+    // Standings Header
+    standingsHeader: {
+        backgroundColor: '#1c1c1e',
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#333'
+    },
+    standingsHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 12
+    },
+    standingsTitle: { color: '#fff', fontSize: 18, fontWeight: '700', flex: 1 },
+    standingsCount: { color: '#666', fontSize: 13, fontWeight: '600' },
+    standingsMetaRow: { gap: 6, marginTop: 10 },
+    standingsMetaText: { color: '#8e8e93', fontSize: 12, fontWeight: '600' },
+
+    // Season Picker
+    seasonSingle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingVertical: 6
+    },
+    seasonSingleText: { color: '#888', fontSize: 12, fontWeight: '600' },
+    seasonPicker: { gap: 10 },
+    seasonLabel: { color: '#888', fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+    seasonChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    seasonChip: {
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 16,
+        backgroundColor: '#252525',
+        borderWidth: 1,
+        borderColor: '#333'
+    },
+    seasonChipActive: { backgroundColor: '#0A84FF', borderColor: '#0A84FF' },
+    seasonChipText: { color: '#888', fontSize: 12, fontWeight: '600' },
+    seasonChipTextActive: { color: '#fff' },
+
+    // Standings Table
+    tableCard: {
+        backgroundColor: '#1c1c1e',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#333',
+        overflow: 'hidden'
+    },
+    tableRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#2c2c2e'
+    },
+    tableRowHeader: {
+        backgroundColor: '#2c2c2e',
+        borderBottomColor: '#333'
+    },
+    tableRowActive: {
+        backgroundColor: 'rgba(10, 132, 255, 0.08)'
+    },
+    tableCell: {
+        color: '#d1d1d6',
+        fontSize: 12,
+        fontWeight: '600',
+        textAlign: 'center'
+    },
+    tableHeaderText: {
+        color: '#8e8e93',
+        fontSize: 11,
+        fontWeight: '700',
+        textTransform: 'uppercase',
+        textAlign: 'center'
+    },
+    colRank: { width: 32 },
+    colTeamHeader: { width: 170, textAlign: 'left' },
+    colStat: { width: 42 },
+    colPoints: { width: 50 },
+    colGoalDiff: { width: 50 },
+    teamCell: {
+        width: 170,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8
+    },
+    teamLogo: { width: 24, height: 24 },
+    teamLogoPlaceholder: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#2c2c2e'
+    },
+    teamTextBlock: { flex: 1 },
+    teamName: { color: '#fff', fontSize: 13, fontWeight: '600' },
+    teamNote: { color: '#666', fontSize: 11, marginTop: 2 },
+    positiveValue: { color: '#30D158' },
+    negativeValue: { color: '#FF453A' },
 
     // Modal
     modalContainer: { flex: 1, backgroundColor: '#0a0a0a' },

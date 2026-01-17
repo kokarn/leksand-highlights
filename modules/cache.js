@@ -16,10 +16,12 @@ const cache = {
     biathlon: { data: null, timestamp: 0, lastUpdate: null },
     allsvenskanGames: { data: null, timestamp: 0, hasLive: false },
     allsvenskanDetails: new Map(),
-    allsvenskanStandings: { data: null, timestamp: 0 }
+    allsvenskanStandings: new Map()
 };
 
 // ============ CACHE HELPERS ============
+const DEFAULT_ALLSVENSKAN_STANDINGS_KEY = 'current';
+
 function isCacheValid(cacheEntry, duration) {
     return cacheEntry && cacheEntry.data && (Date.now() - cacheEntry.timestamp) < duration;
 }
@@ -120,15 +122,26 @@ function setCachedStandings(data) {
     cache.standings = { data, timestamp: Date.now() };
 }
 
-function getCachedAllsvenskanStandings() {
-    if (isCacheValid(cache.allsvenskanStandings, CACHE_DURATION_STANDINGS)) {
-        return cache.allsvenskanStandings.data;
+function normalizeAllsvenskanStandingsKey(season) {
+    if (!season) {
+        return DEFAULT_ALLSVENSKAN_STANDINGS_KEY;
+    }
+    const normalized = String(season).trim();
+    return normalized || DEFAULT_ALLSVENSKAN_STANDINGS_KEY;
+}
+
+function getCachedAllsvenskanStandings(season) {
+    const key = normalizeAllsvenskanStandingsKey(season);
+    const cached = cache.allsvenskanStandings.get(key);
+    if (isCacheValid(cached, CACHE_DURATION_STANDINGS)) {
+        return cached.data;
     }
     return null;
 }
 
-function setCachedAllsvenskanStandings(data) {
-    cache.allsvenskanStandings = { data, timestamp: Date.now() };
+function setCachedAllsvenskanStandings(season, data) {
+    const key = normalizeAllsvenskanStandingsKey(season);
+    cache.allsvenskanStandings.set(key, { data, timestamp: Date.now() });
 }
 
 // ============ BIATHLON CACHE ============
@@ -159,7 +172,7 @@ function clearAllCaches() {
     cache.biathlon = { data: null, timestamp: 0, lastUpdate: null };
     cache.allsvenskanGames = { data: null, timestamp: 0, hasLive: false };
     cache.allsvenskanDetails.clear();
-    cache.allsvenskanStandings = { data: null, timestamp: 0 };
+    cache.allsvenskanStandings.clear();
 }
 
 function getCacheStatus() {
@@ -170,8 +183,13 @@ function getCacheStatus() {
     const allsvenskanGamesAge = cache.allsvenskanGames.timestamp
         ? Math.round((now - cache.allsvenskanGames.timestamp) / 1000)
         : null;
-    const allsvenskanStandingsAge = cache.allsvenskanStandings.timestamp
-        ? Math.round((now - cache.allsvenskanStandings.timestamp) / 1000)
+    const allsvenskanStandingsEntries = Array.from(cache.allsvenskanStandings.values());
+    const allsvenskanStandingsLatest = allsvenskanStandingsEntries.reduce((latest, entry) => {
+        if (!entry?.timestamp) return latest;
+        return entry.timestamp > latest ? entry.timestamp : latest;
+    }, 0);
+    const allsvenskanStandingsLatestAge = allsvenskanStandingsLatest
+        ? Math.round((now - allsvenskanStandingsLatest) / 1000)
         : null;
 
     return {
@@ -212,9 +230,10 @@ function getCacheStatus() {
                 cacheDuration: '30s'
             },
             standings: {
-                cached: !!cache.allsvenskanStandings.data,
-                ageSeconds: allsvenskanStandingsAge,
-                cacheDuration: '5m'
+                cached: cache.allsvenskanStandings.size > 0,
+                ageSeconds: allsvenskanStandingsLatestAge,
+                cacheDuration: '5m',
+                entriesCount: cache.allsvenskanStandings.size
             }
         }
     };
