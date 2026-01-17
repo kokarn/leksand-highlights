@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, Modal, ScrollView, Image, RefreshControl, Platform } from 'react-native';
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -48,6 +48,8 @@ export default function App() {
     const [playingVideoDetails, setPlayingVideoDetails] = useState(null);
     const [loadingVideoDetails, setLoadingVideoDetails] = useState(false);
     const [activeTab, setActiveTab] = useState('summary');
+    const shlListRef = useRef(null);
+    const lastFocusedGameRef = useRef(null);
 
     // Biathlon state
     const [biathlonRaces, setBiathlonRaces] = useState([]);
@@ -323,10 +325,53 @@ export default function App() {
                     return false;
                 }
             }
-            if (game.state === 'pre-game') return false;
             return true;
         });
     }, [games, selectedTeams]);
+
+    const sortedGames = useMemo(() => {
+        return [...filteredGames].sort((a, b) => {
+            const timeA = new Date(a.startDateTime).getTime();
+            const timeB = new Date(b.startDateTime).getTime();
+            return timeA - timeB;
+        });
+    }, [filteredGames]);
+
+    const nextGameIndex = useMemo(() => {
+        if (!sortedGames.length) return 0;
+        const upcomingIndex = sortedGames.findIndex(game => game.state !== 'post-game');
+        if (upcomingIndex !== -1) return upcomingIndex;
+        return sortedGames.length - 1;
+    }, [sortedGames]);
+
+    const nextGameId = useMemo(() => {
+        return sortedGames[nextGameIndex]?.uuid || null;
+    }, [sortedGames, nextGameIndex]);
+
+    const handleScrollToIndexFailed = useCallback((info) => {
+        const offset = info.averageItemLength * info.index;
+        setTimeout(() => {
+            shlListRef.current?.scrollToOffset({ offset, animated: false });
+        }, 50);
+    }, []);
+
+    useEffect(() => {
+        if (activeSport !== 'shl') {
+            lastFocusedGameRef.current = null;
+        }
+    }, [activeSport]);
+
+    useEffect(() => {
+        if (activeSport !== 'shl' || !sortedGames.length || !nextGameId) return;
+        if (lastFocusedGameRef.current === nextGameId) return;
+
+        const timeoutId = setTimeout(() => {
+            shlListRef.current?.scrollToIndex({ index: nextGameIndex, animated: false });
+        }, 0);
+
+        lastFocusedGameRef.current = nextGameId;
+        return () => clearTimeout(timeoutId);
+    }, [activeSport, sortedGames.length, nextGameId, nextGameIndex]);
 
     const filteredBiathlonRaces = useMemo(() => {
         return biathlonRaces.filter(race => {
@@ -616,11 +661,13 @@ export default function App() {
                         <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
                     ) : (
                         <FlatList
-                            data={filteredGames}
+                            ref={shlListRef}
+                            data={sortedGames}
                             renderItem={({ item }) => <GameCard game={item} onPress={() => handleGamePress(item)} />}
                             keyExtractor={item => item.uuid}
                             contentContainerStyle={styles.listContent}
                             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+                            onScrollToIndexFailed={handleScrollToIndexFailed}
                             ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.emptyText}>No games found.</Text></View>}
                         />
                     )}
