@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, Modal, ScrollView, Image, RefreshControl, Platform } from 'react-native';
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { isToday, parseISO } from 'date-fns';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,7 +10,7 @@ import { WebView } from 'react-native-webview';
 // API
 import {
     fetchGames, fetchVideosForGame, fetchGameDetails, fetchVideoDetails, getTeamLogoUrl,
-    fetchBiathlonSchedule, fetchBiathlonEvents, fetchBiathlonNations
+    fetchBiathlonRaces, fetchBiathlonEvents, fetchBiathlonNations
 } from '../api/shl';
 
 // Constants
@@ -191,7 +192,7 @@ export default function App() {
         if (!silent) setLoadingBiathlon(true);
         try {
             const [races, , nations] = await Promise.all([
-                fetchBiathlonSchedule(50),
+                fetchBiathlonRaces(),
                 fetchBiathlonEvents(),
                 fetchBiathlonNations()
             ]);
@@ -344,9 +345,18 @@ export default function App() {
         return sortedGames.length - 1;
     }, [sortedGames]);
 
-    const nextGameId = useMemo(() => {
-        return sortedGames[nextGameIndex]?.uuid || null;
-    }, [sortedGames, nextGameIndex]);
+    const currentDateIndex = useMemo(() => {
+        if (!sortedGames.length) return 0;
+        return sortedGames.findIndex(game => isToday(parseISO(game.startDateTime)));
+    }, [sortedGames]);
+
+    const targetGameIndex = useMemo(() => {
+        return currentDateIndex !== -1 ? currentDateIndex : nextGameIndex;
+    }, [currentDateIndex, nextGameIndex]);
+
+    const targetGameId = useMemo(() => {
+        return sortedGames[targetGameIndex]?.uuid || null;
+    }, [sortedGames, targetGameIndex]);
 
     const handleScrollToIndexFailed = useCallback((info) => {
         const offset = info.averageItemLength * info.index;
@@ -362,16 +372,16 @@ export default function App() {
     }, [activeSport]);
 
     useEffect(() => {
-        if (activeSport !== 'shl' || !sortedGames.length || !nextGameId) return;
-        if (lastFocusedGameRef.current === nextGameId) return;
+        if (activeSport !== 'shl' || !sortedGames.length || !targetGameId) return;
+        if (lastFocusedGameRef.current === targetGameId) return;
 
         const timeoutId = setTimeout(() => {
-            shlListRef.current?.scrollToIndex({ index: nextGameIndex, animated: false });
+            shlListRef.current?.scrollToIndex({ index: targetGameIndex, animated: false });
         }, 0);
 
-        lastFocusedGameRef.current = nextGameId;
+        lastFocusedGameRef.current = targetGameId;
         return () => clearTimeout(timeoutId);
-    }, [activeSport, sortedGames.length, nextGameId, nextGameIndex]);
+    }, [activeSport, sortedGames.length, targetGameId, targetGameIndex]);
 
     const filteredBiathlonRaces = useMemo(() => {
         return biathlonRaces.filter(race => {
@@ -450,13 +460,13 @@ export default function App() {
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
             ListEmptyComponent={
                 <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>No upcoming races found.</Text>
+                    <Text style={styles.emptyText}>No races found.</Text>
                 </View>
             }
             ListHeaderComponent={
                 <View style={styles.scheduleHeader}>
                     <Ionicons name="calendar-outline" size={20} color="#0A84FF" />
-                    <Text style={styles.scheduleHeaderText}>Upcoming Races</Text>
+                    <Text style={styles.scheduleHeaderText}>All Races</Text>
                     <Text style={styles.scheduleCount}>{filteredBiathlonRaces.length} races</Text>
                 </View>
             }
