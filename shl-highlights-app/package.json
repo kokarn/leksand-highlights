@@ -1,7 +1,7 @@
 {
   "name": "shl-highlights-app",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
@@ -48,6 +48,7 @@
     "@types/react": "~19.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
+    "sharp": "^0.34.5",
     "typescript": "~5.9.2"
   },
   "private": true
