@@ -1,4 +1,3 @@
-import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, Modal, Dimensions, ScrollView, Image, RefreshControl, Platform } from 'react-native';
 import { useEffect, useState, useMemo } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,6 +6,7 @@ import { sv } from 'date-fns/locale';
 import { fetchGames, fetchVideosForGame, fetchGameDetails, fetchVideoDetails, getTeamLogoUrl, fetchTeams } from '../api/shl';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -28,7 +28,18 @@ const TEAM_COLORS = {
     'MODO': ['#D31022', '#005336'],
 };
 
+const APP_NAME = 'IceClips';
+const APP_TAGLINE = 'SHL highlights';
+
 // ============ COMPONENTS ============
+
+const LogoMark = () => (
+    <LinearGradient colors={['#0A84FF', '#5AC8FA']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.logoMark}>
+        <View style={styles.logoStreak} />
+        <View style={styles.logoStreakLight} />
+        <View style={styles.logoPuck} />
+    </LinearGradient>
+);
 
 // Stats Bar Component
 const StatBar = ({ label, homeValue, awayValue, homeColor, awayColor }) => {
@@ -825,9 +836,17 @@ export default function App() {
     // ============ MAIN RENDER ============
 
     return (
-        <View style={styles.container}>
-            <StatusBar style="light" />
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <LinearGradient colors={['#000000', '#121212']} style={StyleSheet.absoluteFill} />
+            <View style={styles.header}>
+                <View style={styles.headerBrand}>
+                    <LogoMark />
+                    <View>
+                        <Text style={styles.headerTitle}>{APP_NAME}</Text>
+                        <Text style={styles.headerSubtitle}>{APP_TAGLINE}</Text>
+                    </View>
+                </View>
+            </View>
             {!loading && renderTeamFilter()}
             {loading ? (
                 <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
@@ -844,7 +863,7 @@ export default function App() {
 
             {/* Game Modal */}
             <Modal visible={!!selectedGame} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeModal}>
-                <View style={styles.modalContainer}>
+                <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
                     {selectedGame && (
                         <>
                             {/* Header with Score */}
@@ -894,9 +913,9 @@ export default function App() {
                             )}
                         </>
                     )}
-                </View>
+                </SafeAreaView>
             </Modal>
-        </View>
+        </SafeAreaView>
     );
 }
 
@@ -904,8 +923,14 @@ export default function App() {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#000' },
-    header: { paddingTop: 60, paddingHorizontal: 20, paddingBottom: 10 },
-    headerTitle: { color: '#fff', fontSize: 34, fontWeight: '800', letterSpacing: -0.5 },
+    header: { paddingHorizontal: 16, paddingBottom: 12, paddingTop: 12 },
+    headerBrand: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    headerTitle: { color: '#fff', fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
+    headerSubtitle: { color: '#8e8e93', fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.2 },
+    logoMark: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+    logoStreak: { position: 'absolute', width: 26, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.9)', top: 14, left: 10 },
+    logoStreakLight: { position: 'absolute', width: 20, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.7)', top: 22, left: 12 },
+    logoPuck: { position: 'absolute', width: 12, height: 12, borderRadius: 6, backgroundColor: '#0b0d10', bottom: 10, right: 10 },
     filterContainer: { height: 60 },
     filterContent: { paddingHorizontal: 16, alignItems: 'center', gap: 8 },
     filterPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#1c1c1e', borderWidth: 1, borderColor: '#333' },
