@@ -31,7 +31,75 @@ class SHLProvider extends BaseProvider {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        return data?.gameInfo || [];
+        return this.normalizeGames(data?.gameInfo || []);
+    }
+
+    normalizeScoreValue(value) {
+        if (value === null || value === undefined) {
+            return null;
+        }
+        if (typeof value === 'object') {
+            if (Object.prototype.hasOwnProperty.call(value, 'value')) {
+                return this.normalizeScoreValue(value.value);
+            }
+            return null;
+        }
+        if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (!trimmed) {
+                return null;
+            }
+            const lowered = trimmed.toLowerCase();
+            if (lowered === 'n/a' || lowered === 'na') {
+                return null;
+            }
+            const numeric = Number(trimmed);
+            if (!Number.isNaN(numeric)) {
+                return numeric;
+            }
+            return trimmed;
+        }
+        if (Number.isNaN(value)) {
+            return null;
+        }
+        return value;
+    }
+
+    normalizeTeamInfo(teamInfo) {
+        if (!teamInfo) {
+            return teamInfo;
+        }
+        return {
+            ...teamInfo,
+            score: this.normalizeScoreValue(teamInfo.score)
+        };
+    }
+
+    normalizeTeamResult(teamResult) {
+        if (!teamResult) {
+            return teamResult;
+        }
+        return {
+            ...teamResult,
+            score: this.normalizeScoreValue(teamResult.score)
+        };
+    }
+
+    normalizeGame(game) {
+        if (!game) {
+            return game;
+        }
+        return {
+            ...game,
+            homeTeamInfo: this.normalizeTeamInfo(game.homeTeamInfo),
+            awayTeamInfo: this.normalizeTeamInfo(game.awayTeamInfo),
+            homeTeamResult: this.normalizeTeamResult(game.homeTeamResult),
+            awayTeamResult: this.normalizeTeamResult(game.awayTeamResult)
+        };
+    }
+
+    normalizeGames(games) {
+        return games.map(game => this.normalizeGame(game));
     }
 
     /**

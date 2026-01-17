@@ -49,6 +49,9 @@ if (fs.existsSync(teamsDataPath)) {
 }
 const teamsByCode = new Map(teamsData.teams.map(team => [team.code, team]));
 
+const STARTING_SOON_WINDOW_MINUTES = 30;
+const RECENT_START_WINDOW_MINUTES = 90;
+
 // Load biathlon nations data
 const biathlonNationsPath = path.join(__dirname, 'static', 'biathlon-nations.json');
 let biathlonData = { nations: [], disciplines: [] };
@@ -76,6 +79,23 @@ function mergeGames(primaryGames, adminGames) {
     return Array.from(merged.values()).sort((a, b) =>
         new Date(b.startDateTime) - new Date(a.startDateTime)
     );
+}
+
+function isGameNearStart(game, now = new Date()) {
+    if (!game || game.state === 'post-game') {
+        return false;
+    }
+    const startTime = new Date(game.startDateTime);
+    if (Number.isNaN(startTime.getTime())) {
+        return false;
+    }
+    const minutesFromStart = (startTime.getTime() - now.getTime()) / (1000 * 60);
+    return minutesFromStart <= STARTING_SOON_WINDOW_MINUTES
+        && minutesFromStart >= -RECENT_START_WINDOW_MINUTES;
+}
+
+function shouldUseFastGamesCache(games, now = new Date()) {
+    return games.some(game => game.state === 'live' || isGameNearStart(game, now));
 }
 
 function sendAdminError(res, error) {
@@ -362,15 +382,23 @@ app.get('/api/games', async (req, res) => {
 
         const adminGames = getAdminGameSchedule();
         const combinedGames = mergeGames(baseGames, adminGames);
+        const now = new Date();
         const hasLiveGame = combinedGames.some(game => game.state === 'live');
+        const hasStartingSoonGame = combinedGames.some(game =>
+            game.state !== 'post-game'
+            && game.state !== 'live'
+            && isGameNearStart(game, now)
+        );
+        const shouldUseFastCache = shouldUseFastGamesCache(combinedGames, now);
 
         if (!usedCache) {
-            setCachedGames(baseGames, hasLiveGame);
-            if (hasLiveGame) {
-                console.log('[Cache] Live game detected - using 15s cache duration');
+            setCachedGames(baseGames, shouldUseFastCache);
+            if (shouldUseFastCache) {
+                const reason = hasLiveGame ? 'Live game' : 'Game starting soon';
+                console.log(`[Cache] ${reason} detected - using 15s cache duration`);
             }
         } else {
-            setGamesLiveFlag(hasLiveGame);
+            setGamesLiveFlag(shouldUseFastCache);
         }
 
         res.json(combinedGames);
@@ -515,7 +543,7 @@ app.get('/api/status', (req, res) => {
         cache: getCacheStatus(),
         refreshRates: {
             gamesNormal: '60 seconds',
-            gamesLive: '15 seconds',
+            gamesLive: '15 seconds (live/starting soon)',
             gameDetails: '30 seconds',
             videos: '60 seconds',
             standings: '5 minutes',
@@ -596,7 +624,7 @@ app.listen(PORT, () => {
     console.log(`Providers: ${shlProvider.getName()}, ${biathlonProvider.getName()}`);
     console.log(`Started at: ${formatSwedishTimestamp()}`);
     console.log(`\nCache durations:`);
-    console.log(`  - Games: 60s (15s during live games)`);
+    console.log(`  - Games: 60s (15s during live/starting soon games)`);
     console.log(`  - Details: 30s`);
     console.log(`  - Videos: 60s`);
     console.log(`  - Standings: 5 minutes`);

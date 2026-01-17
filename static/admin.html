@@ -400,7 +400,7 @@
                 const cacheRows = [
                     { label: 'Games cached', value: status.cache?.games?.cached ? 'Yes' : 'No' },
                     { label: 'Games age', value: status.cache?.games?.ageSeconds ?? '-' },
-                    { label: 'Live mode', value: status.cache?.games?.hasLiveGame ? 'Yes' : 'No' },
+                    { label: 'Fast refresh', value: status.cache?.games?.hasLiveGame ? 'Yes' : 'No' },
                     { label: 'Details entries', value: status.cache?.details?.entriesCount ?? '-' },
                     { label: 'Videos entries', value: status.cache?.videos?.entriesCount ?? '-' }
                 ];
