@@ -11,6 +11,10 @@ export const SettingsModal = ({
     selectedTeams,
     onToggleTeam,
     onClearTeams,
+    footballTeams = [],
+    selectedFootballTeams = [],
+    onToggleFootballTeam,
+    onClearFootballTeams,
     biathlonNations,
     selectedNations,
     onToggleNation,
@@ -55,6 +59,43 @@ export const SettingsModal = ({
                     </View>
                     {selectedTeams.length > 0 && (
                         <TouchableOpacity style={styles.clearButton} onPress={onClearTeams}>
+                            <Text style={styles.clearButtonText}>Clear selection</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                <View style={styles.settingsCard}>
+                    <View style={styles.settingsCardHeader}>
+                        <Ionicons name="football-outline" size={22} color="#0A84FF" />
+                        <Text style={styles.settingsCardTitle}>Football Teams</Text>
+                    </View>
+                    <View style={styles.settingsChipContainer}>
+                        {footballTeams.length > 0 ? (
+                            footballTeams.map(team => (
+                                <TouchableOpacity
+                                    key={team.key}
+                                    style={[styles.settingsChip, selectedFootballTeams.includes(team.key) && styles.settingsChipActive]}
+                                    onPress={() => onToggleFootballTeam(team.key)}
+                                >
+                                    {team.icon ? (
+                                        <Image source={{ uri: team.icon }} style={styles.settingsChipLogo} resizeMode="contain" />
+                                    ) : (
+                                        <View style={styles.settingsChipLogoPlaceholder} />
+                                    )}
+                                    <Text
+                                        style={[styles.settingsChipText, selectedFootballTeams.includes(team.key) && styles.settingsChipTextActive]}
+                                        numberOfLines={1}
+                                    >
+                                        {team.name}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))
+                        ) : (
+                            <Text style={styles.settingsEmptyText}>No football teams available yet.</Text>
+                        )}
+                    </View>
+                    {selectedFootballTeams.length > 0 && (
+                        <TouchableOpacity style={styles.clearButton} onPress={onClearFootballTeams}>
                             <Text style={styles.clearButtonText}>Clear selection</Text>
                         </TouchableOpacity>
                     )}
@@ -204,13 +245,20 @@ const styles = StyleSheet.create({
         width: 24,
         height: 24
     },
+    settingsChipLogoPlaceholder: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#2c2c2e'
+    },
     settingsChipFlag: {
         fontSize: 18
     },
     settingsChipText: {
         color: '#888',
         fontSize: 13,
-        fontWeight: '600'
+        fontWeight: '600',
+        flexShrink: 1
     },
     settingsChipTextActive: {
         color: '#fff'
@@ -223,6 +271,10 @@ const styles = StyleSheet.create({
         color: '#0A84FF',
         fontSize: 13,
         fontWeight: '600'
+    },
+    settingsEmptyText: {
+        color: '#666',
+        fontSize: 13
     },
     resetOnboardingButton: {
         flexDirection: 'row',
