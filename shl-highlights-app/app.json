@@ -1,7 +1,6 @@
 {
   "expo": {
     "name": "GamePulse",
-    "slug": "game-pulse",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -49,7 +48,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "4855f821-cdfd-4022-aaf3-9fea646a4359"
+        "projectId": "a66a979e-84b8-49d2-91ea-c20ce6131456"
       }
     },
     "owner": "kokarn"
