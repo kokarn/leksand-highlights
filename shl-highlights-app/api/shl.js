@@ -219,6 +219,7 @@ export async function fetchFootballGameDetails(gameId) {
  * @param {Object} options - Optional filters
  * @param {string} options.team - Filter by team code
  * @param {number} options.top - Limit to top N teams
+ * @param {string|number} options.season - Season year
  * @returns {Promise<Object>} Standings payload
  */
 export async function fetchFootballStandings(options = {}) {
@@ -226,6 +227,7 @@ export async function fetchFootballStandings(options = {}) {
         const params = new URLSearchParams();
         if (options.team) params.append('team', options.team);
         if (options.top) params.append('top', options.top);
+        if (options.season) params.append('season', options.season);
         const url = `${API_BASE_URL}/api/football/standings${params.toString() ? '?' + params.toString() : ''}`;
         const response = await fetch(url);
         if (!response.ok) {

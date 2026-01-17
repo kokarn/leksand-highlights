@@ -14,6 +14,7 @@ class SHLProvider extends BaseProvider {
         this.seasonUuid = 'xs4m9qupsi';
         this.seriesUuid = 'qQ9-bb0bzEWUk';
         this.gameTypeUuid = 'qQ9-af37Ti40B';
+        this.seasonLabel = '2024-25';
 
         this.scheduleUrl = `${this.baseUrl}/sports-v2/game-schedule?seasonUuid=${this.seasonUuid}&seriesUuid=${this.seriesUuid}&gameTypeUuid=${this.gameTypeUuid}&gamePlace=all&played=all`;
 
@@ -219,12 +220,14 @@ class SHLProvider extends BaseProvider {
 
             console.log(`[${this.name}] Calculated standings for ${standings.length} teams from ${completedGames.length} games`);
 
+            const season = this.seasonLabel;
             return {
-                season: '2024-25',
+                season,
                 series: 'SHL',
                 lastUpdated: new Date().toISOString(),
                 gamesAnalyzed: completedGames.length,
-                standings
+                standings,
+                availableSeasons: [season]
             };
         } catch (error) {
             console.error(`[${this.name}] Error calculating standings:`, error.message);

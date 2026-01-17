@@ -213,6 +213,7 @@ Returns the current SHL league standings, calculated from completed games.
 ```json
 {
   "season": "2024-25",
+  "availableSeasons": ["2024-25"],
   "series": "SHL",
   "lastUpdated": "2026-01-17T10:17:15.163Z",
   "gamesAnalyzed": 251,
@@ -315,11 +316,13 @@ Returns the current Allsvenskan league standings.
 **Query Parameters:**
 - `team` (optional): Filter by team code or name (e.g., `AIK`)
 - `top` (optional): Limit to top N teams
+- `season` (optional): Season year (e.g., `2026`)
 
 **Response:**
 ```json
 {
   "season": "2026",
+  "availableSeasons": ["2026", "2025", "2024"],
   "league": "Allsvenskan",
   "lastUpdated": "2026-01-17T10:17:15.163Z",
   "standings": [

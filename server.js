@@ -460,15 +460,29 @@ app.get('/api/football/game/:id/details', async (req, res) => {
  */
 app.get('/api/football/standings', async (req, res) => {
     try {
-        let standings = getCachedAllsvenskanStandings();
+        const seasonQuery = req.query.season ? String(req.query.season).trim() : null;
+        let standings = getCachedAllsvenskanStandings(seasonQuery);
 
         if (standings) {
             console.log('[Cache HIT] /api/football/standings');
         } else {
             console.log('[Cache MISS] /api/football/standings - fetching fresh data...');
             const provider = getProvider('allsvenskan');
-            standings = await provider.fetchStandings();
-            setCachedAllsvenskanStandings(standings);
+            standings = await provider.fetchStandings({ season: seasonQuery });
+            const resolvedSeason = standings?.season ? String(standings.season) : null;
+
+            if (seasonQuery) {
+                if (resolvedSeason && resolvedSeason !== seasonQuery) {
+                    setCachedAllsvenskanStandings(resolvedSeason, standings);
+                } else {
+                    setCachedAllsvenskanStandings(seasonQuery, standings);
+                }
+            } else {
+                setCachedAllsvenskanStandings(null, standings);
+                if (resolvedSeason) {
+                    setCachedAllsvenskanStandings(resolvedSeason, standings);
+                }
+            }
         }
 
         let result = { ...standings };

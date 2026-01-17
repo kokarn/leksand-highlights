@@ -281,17 +281,59 @@ class AllsvenskanProvider extends BaseProvider {
         return Number.isNaN(parsed) ? stat.value : parsed;
     }
 
-    async fetchStandings() {
-        const response = await fetch(this.standingsUrl, { headers: this.headers });
+    normalizeSeasonOptions(seasons, fallbackSeason) {
+        const normalized = (Array.isArray(seasons) ? seasons : [])
+            .map(season => season?.year ?? season?.season ?? season?.value ?? season)
+            .map(value => (value === null || value === undefined ? null : String(value)))
+            .filter(Boolean);
+
+        if (fallbackSeason && !normalized.includes(String(fallbackSeason))) {
+            normalized.unshift(String(fallbackSeason));
+        }
+
+        const unique = Array.from(new Set(normalized));
+        return unique.sort((a, b) => {
+            const numA = Number(a);
+            const numB = Number(b);
+            if (!Number.isNaN(numA) && !Number.isNaN(numB)) {
+                return numB - numA;
+            }
+            return b.localeCompare(a);
+        });
+    }
+
+    async fetchStandingsData(url) {
+        const response = await fetch(url, { headers: this.headers });
 
         if (!response.ok) {
             throw new Error(`[${this.name}] Standings fetch failed (${response.status})`);
         }
 
-        const data = await response.json();
+        return response.json();
+    }
+
+    async fetchStandings(options = {}) {
+        const season = options.season ? String(options.season).trim() : null;
+        const url = season ? `${this.standingsUrl}?season=${encodeURIComponent(season)}` : this.standingsUrl;
+        let data;
+
+        try {
+            data = await this.fetchStandingsData(url);
+        } catch (error) {
+            if (!season) {
+                throw error;
+            }
+            console.warn(`[${this.name}] Season ${season} standings failed, falling back:`, error.message);
+            data = await this.fetchStandingsData(this.standingsUrl);
+        }
+
         const group = data?.children?.[0] || {};
         const entries = group?.standings?.entries || [];
-        const seasonYear = data?.seasons?.[0]?.year || this.getSeasonYear();
+        const resolvedSeason = data?.seasons?.[0]?.year
+            || data?.season?.year
+            || season
+            || this.getSeasonYear();
+        const availableSeasons = this.normalizeSeasonOptions(data?.seasons, resolvedSeason);
 
         const standings = entries.map(entry => {
             const team = entry.team || {};
@@ -319,11 +361,12 @@ class AllsvenskanProvider extends BaseProvider {
         });
 
         return {
-            season: String(seasonYear),
+            season: String(resolvedSeason),
             league: group?.name || 'Allsvenskan',
             lastUpdated: new Date().toISOString(),
             standings,
-            source: 'espn'
+            source: 'espn',
+            availableSeasons
         };
     }
 
