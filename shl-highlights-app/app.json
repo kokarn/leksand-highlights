@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "shl-highlights-app",
-    "slug": "shl-highlights-app",
+    "name": "GamePulse",
+    "slug": "game-pulse",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "shlhighlightsapp",
+    "scheme": "gamepulse",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
