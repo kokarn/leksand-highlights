@@ -469,6 +469,14 @@ export default function App() {
         });
     }, [biathlonRaces, selectedNations, selectedGenders]);
 
+    const sortedBiathlonRaces = useMemo(() => {
+        return [...filteredBiathlonRaces].sort((a, b) => {
+            const timeA = new Date(a.startDateTime).getTime();
+            const timeB = new Date(b.startDateTime).getTime();
+            return timeA - timeB;
+        });
+    }, [filteredBiathlonRaces]);
+
     const handleGamePress = async (game) => {
         setSelectedGame(game);
         setLoadingModal(true);
@@ -548,7 +556,7 @@ export default function App() {
 
     const renderBiathlonSchedule = () => (
         <FlatList
-            data={filteredBiathlonRaces}
+            data={sortedBiathlonRaces}
             renderItem={({ item }) => <BiathlonRaceCard race={item} onPress={() => setSelectedRace(item)} />}
             keyExtractor={item => item.uuid}
             contentContainerStyle={styles.listContent}
@@ -562,7 +570,7 @@ export default function App() {
                 <View style={styles.scheduleHeader}>
                     <Ionicons name="calendar-outline" size={20} color="#0A84FF" />
                     <Text style={styles.scheduleHeaderText}>All Races</Text>
-                    <Text style={styles.scheduleCount}>{filteredBiathlonRaces.length} races</Text>
+                    <Text style={styles.scheduleCount}>{sortedBiathlonRaces.length} races</Text>
                 </View>
             }
         />
