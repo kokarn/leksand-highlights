@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHL Admin Console</title>
+    <title>GamePulse Admin Console</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -140,6 +140,7 @@
         .feedback {
             margin-top: 0.75rem;
             font-size: 0.9rem;
+            white-space: pre-line;
         }
 
         .feedback.success {
@@ -236,20 +237,31 @@
 </head>
 <body>
     <header>
-        <h1>SHL Admin Console</h1>
-        <p>Manage manual games, update live scores, and monitor indexing status for the SHL highlights server.</p>
+        <h1>GamePulse Admin Console</h1>
+        <p>Manage manual games, monitor caches, and trigger operational tasks across all supported sports.</p>
     </header>
 
     <main>
         <section class="panel">
-            <h2>Indexing status</h2>
+            <h2>Operations status</h2>
             <div class="status-grid" id="status-grid"></div>
             <div class="actions" style="margin-top: 1rem;">
                 <button id="refresh-status" class="secondary">Refresh status</button>
                 <button id="clear-cache">Clear caches</button>
                 <button id="run-notifier" class="secondary">Run notifier check</button>
+                <button id="refresh-biathlon" class="secondary">Refresh biathlon schedule</button>
             </div>
             <div class="feedback" id="status-feedback"></div>
+        </section>
+
+        <section class="panel">
+            <h2>Sports coverage</h2>
+            <p class="muted">Current sports providers loaded by the API.</p>
+            <div class="status-grid" id="sports-grid"></div>
+            <div class="actions" style="margin-top: 1rem;">
+                <button id="refresh-sports" class="secondary">Refresh sports list</button>
+            </div>
+            <div class="feedback" id="sports-feedback"></div>
         </section>
 
         <section class="panel">
@@ -303,6 +315,8 @@
     <script>
         const statusGrid = document.getElementById('status-grid');
         const statusFeedback = document.getElementById('status-feedback');
+        const sportsGrid = document.getElementById('sports-grid');
+        const sportsFeedback = document.getElementById('sports-feedback');
         const createFeedback = document.getElementById('create-feedback');
         const gamesFeedback = document.getElementById('games-feedback');
         const gamesList = document.getElementById('games-list');
@@ -319,13 +333,16 @@
         const refreshStatusButton = document.getElementById('refresh-status');
         const clearCacheButton = document.getElementById('clear-cache');
         const runNotifierButton = document.getElementById('run-notifier');
+        const refreshBiathlonButton = document.getElementById('refresh-biathlon');
+        const refreshSportsButton = document.getElementById('refresh-sports');
         const createForm = document.getElementById('create-game-form');
 
         let teams = [];
+        let sports = [];
         let venueTouched = false;
 
         function escapeHtml(value) {
-            return String(value || '')
+            return String(value === null || value === undefined ? '' : value)
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
@@ -338,15 +355,76 @@
             element.className = `feedback ${type || ''}`.trim();
         }
 
+        const SWEDISH_TIMESTAMP_OPTIONS = {
+            timeZone: 'Europe/Stockholm',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        };
+
         function formatDuration(seconds) {
             if (seconds === null || seconds === undefined) {
                 return '-';
             }
             const total = Math.floor(Number(seconds));
+            if (Number.isNaN(total)) {
+                return '-';
+            }
             const hours = Math.floor(total / 3600);
             const minutes = Math.floor((total % 3600) / 60);
             const secs = total % 60;
             return `${hours}h ${minutes}m ${secs}s`;
+        }
+
+        function formatAgeSeconds(seconds) {
+            if (seconds === null || seconds === undefined) {
+                return '-';
+            }
+            const total = Math.floor(Number(seconds));
+            if (Number.isNaN(total)) {
+                return '-';
+            }
+            if (total < 60) {
+                return `${total}s`;
+            }
+            return formatDuration(total);
+        }
+
+        function formatTimestamp(value) {
+            if (!value) {
+                return '-';
+            }
+            if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value)) {
+                return value;
+            }
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) {
+                return String(value);
+            }
+            return date.toLocaleString('sv-SE', SWEDISH_TIMESTAMP_OPTIONS);
+        }
+
+        function formatList(values) {
+            if (!Array.isArray(values) || values.length === 0) {
+                return '-';
+            }
+            return values.join(', ');
+        }
+
+        function formatProviders(providers) {
+            if (!providers || typeof providers !== 'object') {
+                return '-';
+            }
+            const entries = Object.entries(providers);
+            if (!entries.length) {
+                return '-';
+            }
+            return entries
+                .map(([key, name]) => `${key.toUpperCase()}: ${name}`)
+                .join(', ');
         }
 
         function toLocalDateTimeValue(value) {
@@ -374,6 +452,15 @@
             `;
         }
 
+        function buildSportCard(sport) {
+            const title = sport?.name || sport?.id || 'Unknown sport';
+            const rows = [
+                { label: 'ID', value: sport?.id || '-' },
+                { label: 'Icon', value: sport?.icon || '-' }
+            ];
+            return buildStatusCard(title, rows);
+        }
+
         async function apiRequest(path, options = {}) {
             const response = await fetch(path, options);
             const payload = await response.json().catch(() => ({}));
@@ -383,35 +470,87 @@
             return payload;
         }
 
-        async function loadStatus() {
+        async function loadStatus(options = {}) {
+            const { showMessage = false } = options;
             try {
                 const status = await apiRequest('/api/status');
+                const lastSchedulerError = status.scheduler?.recentErrors?.length
+                    ? status.scheduler.recentErrors[status.scheduler.recentErrors.length - 1]
+                    : null;
                 const serverRows = [
                     { label: 'Uptime', value: formatDuration(status.server?.uptime) },
-                    { label: 'Timestamp', value: status.server?.timestamp || '-' },
-                    { label: 'Provider', value: status.provider || '-' }
+                    { label: 'Timestamp', value: formatTimestamp(status.server?.timestamp) },
+                    { label: 'Providers', value: formatProviders(status.providers) },
+                    { label: 'Sports', value: formatList(status.availableSports) }
                 ];
                 const notifierRows = [
                     { label: 'Running', value: status.notifier?.running ? 'Yes' : 'No' },
-                    { label: 'Last check', value: status.notifier?.lastCheck || '-' },
+                    { label: 'Last check', value: formatTimestamp(status.notifier?.lastCheck) },
                     { label: 'Games checked', value: status.notifier?.gamesChecked ?? '-' },
-                    { label: 'Notifications', value: status.notifier?.totalNotificationsSent ?? '-' }
+                    { label: 'Notifications', value: status.notifier?.totalNotificationsSent ?? '-' },
+                    { label: 'Seen games', value: status.notifier?.seenGamesCount ?? '-' },
+                    { label: 'Seen videos', value: status.notifier?.seenVideosCount ?? '-' }
                 ];
-                const cacheRows = [
-                    { label: 'Games cached', value: status.cache?.games?.cached ? 'Yes' : 'No' },
-                    { label: 'Games age', value: status.cache?.games?.ageSeconds ?? '-' },
+                const schedulerRows = [
+                    { label: 'Running', value: status.scheduler?.running ? 'Yes' : 'No' },
+                    { label: 'Biathlon last check', value: formatTimestamp(status.scheduler?.biathlon?.lastCheck) },
+                    { label: 'Biathlon checks', value: status.scheduler?.biathlon?.checkCount ?? '-' },
+                    { label: 'Biathlon interval', value: status.scheduler?.biathlon?.checkInterval ?? '-' },
+                    { label: 'Biathlon cache', value: formatTimestamp(status.scheduler?.biathlon?.cacheLastUpdate) },
+                    { label: 'Recent errors', value: status.scheduler?.recentErrors?.length ?? 0 },
+                    {
+                        label: 'Last error',
+                        value: lastSchedulerError
+                            ? `${lastSchedulerError.message} (${formatTimestamp(lastSchedulerError.timestamp)})`
+                            : '-'
+                    }
+                ];
+                const gamesCacheRows = [
+                    { label: 'Cached', value: status.cache?.games?.cached ? 'Yes' : 'No' },
+                    { label: 'Age', value: formatAgeSeconds(status.cache?.games?.ageSeconds) },
                     { label: 'Fast refresh', value: status.cache?.games?.hasLiveGame ? 'Yes' : 'No' },
+                    { label: 'Duration', value: status.cache?.games?.cacheDuration ?? '-' }
+                ];
+                const mediaCacheRows = [
                     { label: 'Details entries', value: status.cache?.details?.entriesCount ?? '-' },
-                    { label: 'Videos entries', value: status.cache?.videos?.entriesCount ?? '-' }
+                    { label: 'Details TTL', value: status.cache?.details?.cacheDuration ?? '-' },
+                    { label: 'Videos entries', value: status.cache?.videos?.entriesCount ?? '-' },
+                    { label: 'Videos TTL', value: status.cache?.videos?.cacheDuration ?? '-' }
+                ];
+                const standingsCacheRows = [
+                    { label: 'Standings cached', value: status.cache?.standings?.cached ? 'Yes' : 'No' },
+                    { label: 'Standings age', value: formatAgeSeconds(status.cache?.standings?.ageSeconds) },
+                    { label: 'Standings TTL', value: status.cache?.standings?.cacheDuration ?? '-' },
+                    { label: 'Biathlon cached', value: status.cache?.biathlon?.cached ? 'Yes' : 'No' },
+                    { label: 'Biathlon age', value: formatAgeSeconds(status.cache?.biathlon?.ageSeconds) },
+                    { label: 'Biathlon update', value: formatTimestamp(status.cache?.biathlon?.lastUpdate) },
+                    { label: 'Biathlon TTL', value: status.cache?.biathlon?.cacheDuration ?? '-' }
+                ];
+                const refreshRows = [
+                    { label: 'Games normal', value: status.refreshRates?.gamesNormal ?? '-' },
+                    { label: 'Games live', value: status.refreshRates?.gamesLive ?? '-' },
+                    { label: 'Game details', value: status.refreshRates?.gameDetails ?? '-' },
+                    { label: 'Videos', value: status.refreshRates?.videos ?? '-' },
+                    { label: 'Standings', value: status.refreshRates?.standings ?? '-' },
+                    { label: 'Biathlon', value: status.refreshRates?.biathlon ?? '-' },
+                    { label: 'Notifier normal', value: status.refreshRates?.notifierNormal ?? '-' },
+                    { label: 'Notifier live', value: status.refreshRates?.notifierLive ?? '-' },
+                    { label: 'Biathlon scheduler', value: status.refreshRates?.biathlonScheduler ?? '-' }
                 ];
 
                 statusGrid.innerHTML = [
                     buildStatusCard('Server', serverRows),
                     buildStatusCard('Notifier', notifierRows),
-                    buildStatusCard('Cache', cacheRows)
+                    buildStatusCard('Scheduler', schedulerRows),
+                    buildStatusCard('Cache: Games', gamesCacheRows),
+                    buildStatusCard('Cache: Media', mediaCacheRows),
+                    buildStatusCard('Cache: Standings & Biathlon', standingsCacheRows),
+                    buildStatusCard('Refresh rates', refreshRows)
                 ].join('');
 
-                showFeedback(statusFeedback, 'Status updated', 'success');
+                if (showMessage) {
+                    showFeedback(statusFeedback, 'Status updated', 'success');
+                }
             } catch (error) {
                 showFeedback(statusFeedback, error.message, 'error');
             }
@@ -483,7 +622,7 @@
                         <button data-action="save">Save changes</button>
                         <button class="danger" data-action="delete">Delete</button>
                     </div>
-                    <p class="muted">Updated ${escapeHtml(new Date(record.updatedAt).toLocaleString())}</p>
+                    <p class="muted">Updated ${escapeHtml(formatTimestamp(record.updatedAt))}</p>
                 `;
 
                 const saveButton = card.querySelector('[data-action="save"]');
@@ -552,12 +691,38 @@
             updateVenueFromHomeTeam();
         }
 
-        refreshStatusButton.addEventListener('click', loadStatus);
+        async function loadSports(options = {}) {
+            const { showMessage = false } = options;
+            try {
+                const data = await apiRequest('/api/sports');
+                sports = Array.isArray(data) ? data : [];
+                sports.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
+
+                if (sports.length) {
+                    sportsGrid.innerHTML = sports.map(buildSportCard).join('');
+                } else {
+                    sportsGrid.innerHTML = '<p class="muted">No sports available yet.</p>';
+                }
+
+                if (showMessage) {
+                    showFeedback(sportsFeedback, `Loaded ${sports.length} sport(s)`, 'success');
+                }
+            } catch (error) {
+                showFeedback(sportsFeedback, error.message, 'error');
+            }
+        }
+
+        refreshStatusButton.addEventListener('click', () => loadStatus({ showMessage: true }));
+        refreshSportsButton.addEventListener('click', () => loadSports({ showMessage: true }));
         clearCacheButton.addEventListener('click', async () => {
             try {
                 clearCacheButton.disabled = true;
                 const result = await apiRequest('/api/cache/clear', { method: 'POST' });
-                showFeedback(statusFeedback, result.message || 'Cache cleared', 'success');
+                const details = [
+                    result.message || 'All caches cleared',
+                    result.timestamp ? `Timestamp: ${formatTimestamp(result.timestamp)}` : null
+                ].filter(Boolean);
+                showFeedback(statusFeedback, details.join('\n'), 'success');
                 await loadStatus();
             } catch (error) {
                 showFeedback(statusFeedback, error.message, 'error');
@@ -569,12 +734,47 @@
             try {
                 runNotifierButton.disabled = true;
                 const result = await apiRequest('/api/notifier/check', { method: 'POST' });
-                showFeedback(statusFeedback, result.message || 'Notifier check completed', 'success');
+                const details = [
+                    result.message || 'Notifier check completed',
+                    result.timestamp ? `Timestamp: ${formatTimestamp(result.timestamp)}` : null,
+                    result.gamesChecked !== undefined ? `Games checked: ${result.gamesChecked}` : null
+                ].filter(Boolean);
+                showFeedback(statusFeedback, details.join('\n'), 'success');
                 await loadStatus();
             } catch (error) {
                 showFeedback(statusFeedback, error.message, 'error');
             } finally {
                 runNotifierButton.disabled = false;
+            }
+        });
+        refreshBiathlonButton.addEventListener('click', async () => {
+            try {
+                refreshBiathlonButton.disabled = true;
+                const result = await apiRequest('/api/biathlon/refresh', { method: 'POST' });
+                const details = [
+                    result.message || 'Biathlon schedule refreshed',
+                    result.timestamp ? `Timestamp: ${formatTimestamp(result.timestamp)}` : null,
+                    result.racesCount !== undefined ? `Races: ${result.racesCount}` : null
+                ].filter(Boolean);
+
+                if (result.validation) {
+                    const issueCount = result.validation.issues?.length ?? 0;
+                    details.push(
+                        result.validation.valid
+                            ? 'Validation: OK'
+                            : `Validation issues: ${issueCount}`
+                    );
+                    if (!result.validation.valid && Array.isArray(result.validation.issues)) {
+                        result.validation.issues.forEach(issue => details.push(`- ${issue}`));
+                    }
+                }
+
+                showFeedback(statusFeedback, details.join('\n'), 'success');
+                await loadStatus();
+            } catch (error) {
+                showFeedback(statusFeedback, error.message, 'error');
+            } finally {
+                refreshBiathlonButton.disabled = false;
             }
         });
 
@@ -628,8 +828,10 @@
             startTimeInput.value = toLocalDateTimeValue(new Date());
             loadTeams()
                 .then(loadGames)
-                .then(loadStatus);
-            setInterval(loadStatus, 15000);
+                .catch(error => showFeedback(createFeedback, error.message, 'error'));
+            loadStatus({ showMessage: true });
+            loadSports();
+            setInterval(() => loadStatus(), 15000);
         }
 
         init();
