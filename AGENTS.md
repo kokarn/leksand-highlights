@@ -17,6 +17,7 @@
 - Use descriptive variable names that are self-explanatory.
 - Use node builtins over external dependencies for basic functionality, such as fetch
 - When we print timestamps, make sure to do it in a local swedish style with dates
+- Always use curly brackets for if statements and the like
 
 ## Backend
 - Always use the latest LTS version of node.js
