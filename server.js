@@ -12,6 +12,10 @@ const {
     setCachedDetails,
     getCachedVideos,
     setCachedVideos,
+    getCachedStandings,
+    setCachedStandings,
+    getCachedBiathlon,
+    setCachedBiathlon,
     clearAllCaches,
     getCacheStatus,
     setGamesLiveFlag
@@ -19,6 +23,7 @@ const {
 const { getProvider, getAvailableSports } = require('./modules/providers');
 const { formatSwedishTimestamp } = require('./modules/utils');
 const notifier = require('./modules/notifier');
+const scheduler = require('./modules/scheduler');
 const {
     listAdminGames,
     findAdminGameRecord,
@@ -123,6 +128,51 @@ app.get('/api/teams/:code', (req, res) => {
     res.json(team);
 });
 
+/**
+ * GET /api/standings
+ * Get current SHL league standings
+ * Query params:
+ *   - team: filter by team code (optional)
+ *   - top: limit to top N teams (optional)
+ */
+app.get('/api/standings', async (req, res) => {
+    try {
+        // Check cache first
+        let standings = getCachedStandings();
+
+        if (standings) {
+            console.log('[Cache HIT] /api/standings');
+        } else {
+            console.log('[Cache MISS] /api/standings - fetching fresh data...');
+            const provider = getProvider('shl');
+            standings = await provider.fetchStandings();
+            setCachedStandings(standings);
+        }
+
+        // Apply filters
+        let result = { ...standings };
+
+        if (req.query.team) {
+            const teamCode = req.query.team.toUpperCase();
+            result.standings = standings.standings.filter(t =>
+                t.teamCode?.toUpperCase() === teamCode
+            );
+        }
+
+        if (req.query.top) {
+            const topN = parseInt(req.query.top);
+            if (topN > 0) {
+                result.standings = result.standings.slice(0, topN);
+            }
+        }
+
+        res.json(result);
+    } catch (error) {
+        console.error('Error fetching standings:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ============ BIATHLON ENDPOINTS ============
 
 /**
@@ -168,14 +218,27 @@ app.get('/api/biathlon/events', async (req, res) => {
  */
 app.get('/api/biathlon/races', async (req, res) => {
     try {
-        const provider = getProvider('biathlon');
         let races;
 
-        if (req.query.upcoming === 'true') {
-            const limit = parseInt(req.query.limit) || 20;
-            races = await provider.fetchUpcomingRaces(limit);
-        } else {
-            races = await provider.fetchAllGames();
+        // Try cache first for all races
+        if (req.query.upcoming !== 'true') {
+            races = getCachedBiathlon();
+            if (races) {
+                console.log('[Cache HIT] /api/biathlon/races');
+            }
+        }
+
+        if (!races) {
+            console.log('[Cache MISS] /api/biathlon/races - fetching...');
+            const provider = getProvider('biathlon');
+
+            if (req.query.upcoming === 'true') {
+                const limit = parseInt(req.query.limit) || 20;
+                races = await provider.fetchUpcomingRaces(limit);
+            } else {
+                races = await provider.fetchAllGames();
+                setCachedBiathlon(races);
+            }
         }
 
         // Apply filters
@@ -448,14 +511,18 @@ app.get('/api/status', (req, res) => {
         },
         availableSports: getAvailableSports(),
         notifier: notifier.getStats(),
+        scheduler: scheduler.getStats(),
         cache: getCacheStatus(),
         refreshRates: {
             gamesNormal: '60 seconds',
             gamesLive: '15 seconds',
             gameDetails: '30 seconds',
             videos: '60 seconds',
+            standings: '5 minutes',
+            biathlon: '30 minutes',
             notifierNormal: '5 minutes',
-            notifierLive: '30 seconds'
+            notifierLive: '30 seconds',
+            biathlonScheduler: '1 hour'
         }
     });
 });
@@ -480,6 +547,42 @@ app.post('/api/notifier/check', async (req, res) => {
     }
 });
 
+/**
+ * POST /api/biathlon/refresh
+ * Force refresh the biathlon schedule
+ */
+app.post('/api/biathlon/refresh', async (req, res) => {
+    console.log('[API] Manual biathlon refresh triggered');
+    try {
+        const races = await scheduler.forceRefreshBiathlon();
+
+        if (races) {
+            const validation = scheduler.validateBiathlonSchedule(races);
+            res.json({
+                message: 'Biathlon schedule refreshed',
+                timestamp: formatSwedishTimestamp(),
+                racesCount: races.length,
+                validation
+            });
+        } else {
+            res.status(500).json({ error: 'Failed to refresh biathlon schedule' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/scheduler/status
+ * Get scheduler status and statistics
+ */
+app.get('/api/scheduler/status', (req, res) => {
+    res.json({
+        timestamp: formatSwedishTimestamp(),
+        scheduler: scheduler.getStats()
+    });
+});
+
 // ============ START SERVER ============
 app.listen(PORT, () => {
     const shlProvider = getProvider('shl');
@@ -496,13 +599,20 @@ app.listen(PORT, () => {
     console.log(`  - Games: 60s (15s during live games)`);
     console.log(`  - Details: 30s`);
     console.log(`  - Videos: 60s`);
+    console.log(`  - Standings: 5 minutes`);
+    console.log(`  - Biathlon: 30 minutes`);
     console.log(`\nNotifier check intervals:`);
     console.log(`  - Normal: 5 minutes`);
     console.log(`  - Live games: 30 seconds`);
+    console.log(`\nScheduler intervals:`);
+    console.log(`  - Biathlon refresh: 1 hour`);
     console.log(`========================================\n`);
 
     // Start the notifier loop after server is ready
     notifier.startLoop();
+
+    // Start the scheduler for periodic updates
+    scheduler.startLoop();
 });
 
 // Export for testing

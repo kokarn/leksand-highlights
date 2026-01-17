@@ -10,7 +10,13 @@ class SHLProvider extends BaseProvider {
         super('SHL');
 
         this.baseUrl = 'https://www.shl.se/api';
-        this.scheduleUrl = `${this.baseUrl}/sports-v2/game-schedule?seasonUuid=xs4m9qupsi&seriesUuid=qQ9-bb0bzEWUk&gameTypeUuid=qQ9-af37Ti40B&gamePlace=all&played=all`;
+        // Current season identifiers (2024-25 season)
+        this.seasonUuid = 'xs4m9qupsi';
+        this.seriesUuid = 'qQ9-bb0bzEWUk';
+        this.gameTypeUuid = 'qQ9-af37Ti40B';
+
+        this.scheduleUrl = `${this.baseUrl}/sports-v2/game-schedule?seasonUuid=${this.seasonUuid}&seriesUuid=${this.seriesUuid}&gameTypeUuid=${this.gameTypeUuid}&gamePlace=all&played=all`;
+
         this.headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         };
@@ -26,6 +32,136 @@ class SHLProvider extends BaseProvider {
         }
         const data = await response.json();
         return data?.gameInfo || [];
+    }
+
+    /**
+     * Fetch league standings/table
+     * Calculates standings from completed games
+     * Returns team standings with position, points, wins, losses, etc.
+     */
+    async fetchStandings() {
+        console.log(`[${this.name}] Calculating standings from game data...`);
+
+        try {
+            // Fetch all games for the season
+            const games = await this.fetchAllGames();
+
+            // Filter to only completed games (post-game state)
+            const completedGames = games.filter(g => g.state === 'post-game');
+
+            // Build team stats from completed games
+            const teamStats = new Map();
+
+            for (const game of completedGames) {
+                const homeTeam = game.homeTeamInfo;
+                const awayTeam = game.awayTeamInfo;
+
+                if (!homeTeam?.code || !awayTeam?.code) continue;
+
+                const homeScore = homeTeam.score ?? 0;
+                const awayScore = awayTeam.score ?? 0;
+
+                // Skip games with no score data
+                if (homeScore === 0 && awayScore === 0) continue;
+
+                // Initialize team stats if not exists
+                for (const team of [homeTeam, awayTeam]) {
+                    if (!teamStats.has(team.code)) {
+                        teamStats.set(team.code, {
+                            teamCode: team.code,
+                            teamName: team.names?.long || team.names?.short || team.code,
+                            teamShortName: team.names?.short || team.code,
+                            teamUuid: team.uuid,
+                            teamIcon: team.icon || null,
+                            gamesPlayed: 0,
+                            wins: 0,
+                            losses: 0,
+                            overtimeWins: 0,
+                            overtimeLosses: 0,
+                            points: 0,
+                            goalsFor: 0,
+                            goalsAgainst: 0
+                        });
+                    }
+                }
+
+                const homeStats = teamStats.get(homeTeam.code);
+                const awayStats = teamStats.get(awayTeam.code);
+
+                // Update games played
+                homeStats.gamesPlayed++;
+                awayStats.gamesPlayed++;
+
+                // Update goals
+                homeStats.goalsFor += homeScore;
+                homeStats.goalsAgainst += awayScore;
+                awayStats.goalsFor += awayScore;
+                awayStats.goalsAgainst += homeScore;
+
+                // Determine winner and update stats
+                // SHL uses: Win = 3 pts, OT Win = 2 pts, OT Loss = 1 pt, Loss = 0 pts
+                // Check if game went to overtime (indicated by certain game states or tied after regulation)
+                const isOvertime = game.shootOut || game.overtime || false;
+
+                if (homeScore > awayScore) {
+                    // Home team wins
+                    if (isOvertime) {
+                        homeStats.overtimeWins++;
+                        homeStats.points += 2;
+                        awayStats.overtimeLosses++;
+                        awayStats.points += 1;
+                    } else {
+                        homeStats.wins++;
+                        homeStats.points += 3;
+                        awayStats.losses++;
+                    }
+                } else {
+                    // Away team wins
+                    if (isOvertime) {
+                        awayStats.overtimeWins++;
+                        awayStats.points += 2;
+                        homeStats.overtimeLosses++;
+                        homeStats.points += 1;
+                    } else {
+                        awayStats.wins++;
+                        awayStats.points += 3;
+                        homeStats.losses++;
+                    }
+                }
+            }
+
+            // Convert to array and sort by points, then goal difference
+            const standings = Array.from(teamStats.values())
+                .map(team => ({
+                    ...team,
+                    goalDiff: team.goalsFor - team.goalsAgainst
+                }))
+                .sort((a, b) => {
+                    // Sort by points (desc)
+                    if (b.points !== a.points) return b.points - a.points;
+                    // Then by goal difference (desc)
+                    if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff;
+                    // Then by goals for (desc)
+                    return b.goalsFor - a.goalsFor;
+                })
+                .map((team, index) => ({
+                    position: index + 1,
+                    ...team
+                }));
+
+            console.log(`[${this.name}] Calculated standings for ${standings.length} teams from ${completedGames.length} games`);
+
+            return {
+                season: '2024-25',
+                series: 'SHL',
+                lastUpdated: new Date().toISOString(),
+                gamesAnalyzed: completedGames.length,
+                standings
+            };
+        } catch (error) {
+            console.error(`[${this.name}] Error calculating standings:`, error.message);
+            throw error;
+        }
     }
 
     async fetchActiveGames() {

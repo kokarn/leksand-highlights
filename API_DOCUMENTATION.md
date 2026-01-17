@@ -1,6 +1,6 @@
-# SHL Highlights API Documentation
+# GamePulse API Documentation
 
-This document describes the available API endpoints for the SHL Highlights server.
+This document describes the available API endpoints for the GamePulse server, supporting SHL (Swedish Hockey League) and Biathlon sports data.
 
 ## Base URL
 
@@ -186,6 +186,159 @@ Returns comprehensive game details including metadata, play-by-play events, and 
 
 ---
 
+### `GET /api/standings`
+
+Returns the current SHL league standings, calculated from completed games.
+
+**Query Parameters:**
+- `team` (optional): Filter by team code (e.g., `LIF`, `FHC`)
+- `top` (optional): Limit to top N teams
+
+**Response:**
+```json
+{
+  "season": "2024-25",
+  "series": "SHL",
+  "lastUpdated": "2026-01-17T10:17:15.163Z",
+  "gamesAnalyzed": 251,
+  "standings": [
+    {
+      "position": 1,
+      "teamCode": "FHC",
+      "teamName": "Frölunda HC",
+      "teamShortName": "Frölunda",
+      "teamUuid": "087a-087aTQv9u",
+      "teamIcon": "https://sportality.cdn.s8y.se/team-logos/fhc1_fhc.svg",
+      "gamesPlayed": 35,
+      "wins": 28,
+      "losses": 6,
+      "overtimeWins": 1,
+      "overtimeLosses": 0,
+      "points": 86,
+      "goalsFor": 115,
+      "goalsAgainst": 56,
+      "goalDiff": 59
+    }
+  ]
+}
+```
+
+---
+
+### `GET /api/biathlon/races`
+
+Returns all biathlon races for the current season.
+
+**Query Parameters:**
+- `upcoming` (optional): Set to `true` to only show upcoming races
+- `limit` (optional): Max number of races to return
+- `country` (optional): Filter by host country code (e.g., `NOR`, `SWE`)
+- `discipline` (optional): Filter by discipline (sprint, pursuit, etc.)
+- `gender` (optional): Filter by gender (men, women, mixed)
+
+**Response:**
+```json
+[
+  {
+    "uuid": "wc-2026-oberhof-sprint-women",
+    "eventId": "wc-2026-oberhof",
+    "eventName": "World Cup 4 - Oberhof",
+    "eventType": "world-cup",
+    "discipline": "Sprint",
+    "gender": "women",
+    "genderDisplay": "Women",
+    "startDateTime": "2026-01-08T14:20:00",
+    "date": "2026-01-08",
+    "time": "14:20",
+    "location": "Oberhof",
+    "country": "GER",
+    "countryName": "Germany",
+    "state": "upcoming",
+    "sport": "biathlon"
+  }
+]
+```
+
+---
+
+### `POST /api/biathlon/refresh`
+
+Manually triggers a refresh of the biathlon schedule and validates the data.
+
+**Response:**
+```json
+{
+  "message": "Biathlon schedule refreshed",
+  "timestamp": "2026-01-17 11:17:31",
+  "racesCount": 67,
+  "validation": {
+    "valid": true,
+    "issues": [],
+    "totalRaces": 67
+  }
+}
+```
+
+---
+
+### `GET /api/scheduler/status`
+
+Returns the status of background scheduler tasks.
+
+**Response:**
+```json
+{
+  "timestamp": "2026-01-17 11:17:27",
+  "scheduler": {
+    "running": true,
+    "biathlon": {
+      "lastCheck": "2026-01-17 11:17:11",
+      "checkCount": 1,
+      "checkInterval": "60 minutes",
+      "cacheLastUpdate": "2026-01-17T10:17:11.280Z"
+    },
+    "recentErrors": []
+  }
+}
+```
+
+---
+
+### `GET /api/status`
+
+Returns server status including cache info, scheduler status, and notifier stats.
+
+**Response:**
+```json
+{
+  "server": {
+    "uptime": 16.815835917,
+    "timestamp": "2026-01-17 11:17:27"
+  },
+  "providers": {
+    "shl": "SHL",
+    "biathlon": "Biathlon"
+  },
+  "availableSports": ["shl", "biathlon"],
+  "notifier": { ... },
+  "scheduler": { ... },
+  "cache": {
+    "games": { "cached": true, "ageSeconds": 45, ... },
+    "standings": { "cached": true, "ageSeconds": 13, "cacheDuration": "5m" },
+    "biathlon": { "cached": true, "ageSeconds": 17, "cacheDuration": "30m" }
+  },
+  "refreshRates": {
+    "gamesNormal": "60 seconds",
+    "gamesLive": "15 seconds",
+    "standings": "5 minutes",
+    "biathlon": "30 minutes",
+    "biathlonScheduler": "1 hour"
+  }
+}
+```
+
+---
+
 ## Event Types
 
 The `events.all` array contains various event types:
@@ -215,9 +368,29 @@ All endpoints return a `500` status code with a JSON object on failure:
 
 ## Data Sources
 
+### SHL (Hockey)
 This API acts as a proxy to the official SHL website APIs:
-- `https://www.shl.se/api/sports-v2/game-schedule`
-- `https://www.shl.se/api/sports-v2/game-info/{uuid}`
-- `https://www.shl.se/api/media/videos-for-game?gameUuid={uuid}`
-- `https://www.shl.se/api/gameday/play-by-play/{uuid}`
-- `https://www.shl.se/api/gameday/post-game-data/team-stats/{uuid}`
+- `https://www.shl.se/api/sports-v2/game-schedule` - Game schedule
+- `https://www.shl.se/api/sports-v2/game-info/{uuid}` - Game info
+- `https://www.shl.se/api/media/videos-for-game?gameUuid={uuid}` - Game videos
+- `https://www.shl.se/api/gameday/play-by-play/{uuid}` - Play-by-play events
+- `https://www.shl.se/api/gameday/post-game-data/team-stats/{uuid}` - Team stats
+
+**Note:** Standings are calculated from completed game data since the SHL API doesn't provide a public standings endpoint.
+
+### Biathlon
+Biathlon race schedule is maintained using the official IBU World Cup calendar for the 2025-26 season, including:
+- World Cup events (9 stops)
+- Winter Olympics 2026
+
+## Background Services
+
+### Scheduler
+The server runs a background scheduler that:
+- **Biathlon Refresh**: Updates the biathlon race schedule every hour
+- Validates schedule data for consistency
+
+### Notifier
+Monitors for new video content and sends notifications via ntfy.sh:
+- Normal mode: Checks every 5 minutes
+- Live mode: Checks every 30 seconds during live games

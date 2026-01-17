@@ -100,6 +100,31 @@ export async function fetchGames() {
     }
 }
 
+/**
+ * Fetch SHL league standings
+ * @param {Object} options - Optional filters
+ * @param {string} options.team - Filter by team code
+ * @param {number} options.top - Limit to top N teams
+ * @returns {Promise<Object>} Standings object with season info and team array
+ */
+export async function fetchStandings(options = {}) {
+    try {
+        const params = new URLSearchParams();
+        if (options.team) params.append('team', options.team);
+        if (options.top) params.append('top', options.top);
+
+        const url = `${API_BASE_URL}/api/standings${params.toString() ? '?' + params.toString() : ''}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching standings:', error.message);
+        return { season: null, standings: [] };
+    }
+}
+
 export async function fetchVideosForGame(gameUuid) {
     try {
         const response = await fetch(`${API_BASE_URL}/api/game/${gameUuid}/videos`);
