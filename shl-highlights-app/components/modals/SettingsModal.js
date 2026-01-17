@@ -27,7 +27,10 @@ export const SettingsModal = ({
                 </TouchableOpacity>
                 <Text style={styles.settingsTitle}>Settings</Text>
             </View>
-            <ScrollView style={styles.settingsContent}>
+            <ScrollView
+                style={styles.settingsContent}
+                contentContainerStyle={styles.settingsContentContainer}
+            >
                 <Text style={styles.settingsSection}>Favorites</Text>
                 <Text style={styles.settingsSectionSubtitle}>Customize which sports and teams you follow</Text>
 
@@ -143,8 +146,11 @@ const styles = StyleSheet.create({
         paddingTop: 10
     },
     settingsContent: {
-        flex: 1,
-        padding: 16
+        flex: 1
+    },
+    settingsContentContainer: {
+        padding: 16,
+        paddingBottom: 32
     },
     settingsSection: {
         color: '#fff',

@@ -13,13 +13,12 @@ import {
 } from '../api/shl';
 
 // Constants
-import { APP_NAME, APP_TAGLINE, STORAGE_KEYS, GENDER_OPTIONS, getTeamColor } from '../constants';
+import { STORAGE_KEYS, GENDER_OPTIONS, getTeamColor } from '../constants';
 
 // Utils
 import { getVideoDisplayTitle, getStayLiveVideoId } from '../utils';
 
 // Components
-import { LogoMark } from '../components/LogoMark';
 import { SportTab } from '../components/SportTab';
 import { StatBar } from '../components/StatBar';
 import { TabButton } from '../components/TabButton';
@@ -680,16 +679,9 @@ export default function App() {
 
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.headerBrand}>
-                    <LogoMark />
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.headerTitle}>{APP_NAME}</Text>
-                        <Text style={styles.headerSubtitle}>{APP_TAGLINE}</Text>
-                    </View>
-                    <TouchableOpacity style={styles.settingsButton} onPress={() => setShowSettings(true)}>
-                        <Ionicons name="settings-outline" size={24} color="#888" />
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity style={styles.settingsButton} onPress={() => setShowSettings(true)}>
+                    <Ionicons name="settings-outline" size={24} color="#888" />
+                </TouchableOpacity>
             </View>
 
             {renderSportTabs()}
@@ -820,10 +812,13 @@ export default function App() {
 // Styles
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#000' },
-    header: { paddingHorizontal: 16, paddingBottom: 8, paddingTop: 12 },
-    headerBrand: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    headerTitle: { color: '#fff', fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
-    headerSubtitle: { color: '#8e8e93', fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.2 },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        paddingHorizontal: 16,
+        paddingVertical: 8
+    },
     settingsButton: { padding: 8 },
 
     // Sport Tabs
