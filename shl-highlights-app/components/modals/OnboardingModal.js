@@ -53,21 +53,28 @@ export const OnboardingModal = ({
                     </View>
                     <ScrollView style={styles.onboardingScrollContent} showsVerticalScrollIndicator={false}>
                         <View style={styles.onboardingChipGrid}>
-                            {teams.map(team => (
-                                <TouchableOpacity
-                                    key={team.code}
-                                    style={[styles.onboardingChip, selectedTeams.includes(team.code) && styles.onboardingChipActive]}
-                                    onPress={() => onToggleTeam(team.code)}
-                                >
-                                    <Image source={{ uri: getTeamLogoUrl(team.code) }} style={styles.onboardingChipLogo} resizeMode="contain" />
-                                    <Text style={[styles.onboardingChipText, selectedTeams.includes(team.code) && styles.onboardingChipTextActive]}>
-                                        {team.code}
-                                    </Text>
-                                    {selectedTeams.includes(team.code) && (
-                                        <Ionicons name="checkmark-circle" size={20} color="#0A84FF" style={styles.onboardingChipCheck} />
-                                    )}
-                                </TouchableOpacity>
-                            ))}
+                            {teams.map(team => {
+                                const logoUrl = getTeamLogoUrl(team.code);
+                                return (
+                                    <TouchableOpacity
+                                        key={team.code}
+                                        style={[styles.onboardingChip, selectedTeams.includes(team.code) && styles.onboardingChipActive]}
+                                        onPress={() => onToggleTeam(team.code)}
+                                    >
+                                        {logoUrl ? (
+                                            <Image source={{ uri: logoUrl }} style={styles.onboardingChipLogo} resizeMode="contain" />
+                                        ) : (
+                                            <View style={styles.onboardingChipLogoPlaceholder} />
+                                        )}
+                                        <Text style={[styles.onboardingChipText, selectedTeams.includes(team.code) && styles.onboardingChipTextActive]}>
+                                            {team.code}
+                                        </Text>
+                                        {selectedTeams.includes(team.code) && (
+                                            <Ionicons name="checkmark-circle" size={20} color="#0A84FF" style={styles.onboardingChipCheck} />
+                                        )}
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
                     </ScrollView>
                     <View style={styles.onboardingNav}>
@@ -314,6 +321,12 @@ const styles = StyleSheet.create({
     onboardingChipLogo: {
         width: 32,
         height: 32
+    },
+    onboardingChipLogoPlaceholder: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#1c1c1e'
     },
     onboardingChipText: {
         color: '#888',

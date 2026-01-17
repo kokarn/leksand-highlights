@@ -194,7 +194,7 @@ export default function App() {
         if (!silent) setLoading(true);
         try {
             const data = await fetchGames();
-            setGames(data);
+            setGames(Array.isArray(data) ? data : []);
         } catch (e) {
             console.error("Failed to load games", e);
         } finally {
@@ -211,8 +211,8 @@ export default function App() {
                 fetchBiathlonEvents(),
                 fetchBiathlonNations()
             ]);
-            setBiathlonRaces(races);
-            setBiathlonNations(nations);
+            setBiathlonRaces(Array.isArray(races) ? races : []);
+            setBiathlonNations(Array.isArray(nations) ? nations : []);
         } catch (e) {
             console.error("Failed to load biathlon data", e);
         } finally {
@@ -422,6 +422,10 @@ export default function App() {
     }, [biathlonRaces, selectedNations, selectedGenders]);
 
     const handleGamePress = async (game) => {
+        if (!game?.uuid) {
+            console.warn('Cannot open game without uuid');
+            return;
+        }
         setSelectedGame(game);
         setLoadingModal(true);
         setActiveTab('summary');
@@ -434,7 +438,8 @@ export default function App() {
 
         setGameDetails(details);
 
-        const sortedVids = vids.sort((a, b) => {
+        const safeVids = Array.isArray(vids) ? vids : [];
+        const sortedVids = safeVids.sort((a, b) => {
             const aHigh = a.tags && a.tags.includes('custom.highlights');
             const bHigh = b.tags && b.tags.includes('custom.highlights');
             if (aHigh && !bHigh) return -1;
@@ -729,8 +734,18 @@ export default function App() {
                                 </TouchableOpacity>
                                 <View style={styles.scoreHeader}>
                                     <View style={styles.scoreTeam}>
-                                        <Image source={{ uri: getTeamLogoUrl(selectedGame.homeTeamInfo.code) }} style={styles.scoreTeamLogo} resizeMode="contain" />
-                                        <Text style={styles.scoreTeamCode}>{selectedGame.homeTeamInfo.code}</Text>
+                                {getTeamLogoUrl(selectedGame.homeTeamInfo?.code) ? (
+                                    <Image
+                                        source={{ uri: getTeamLogoUrl(selectedGame.homeTeamInfo?.code) }}
+                                        style={styles.scoreTeamLogo}
+                                        resizeMode="contain"
+                                    />
+                                ) : (
+                                    <View style={styles.scoreTeamLogoPlaceholder} />
+                                )}
+                                <Text style={styles.scoreTeamCode}>
+                                    {selectedGame.homeTeamInfo?.code ?? '-'}
+                                </Text>
                                     </View>
                                     <View style={styles.scoreCenterBlock}>
                                         <Text style={styles.scoreLarge}>
@@ -744,8 +759,18 @@ export default function App() {
                                         </Text>
                                     </View>
                                     <View style={styles.scoreTeam}>
-                                        <Image source={{ uri: getTeamLogoUrl(selectedGame.awayTeamInfo.code) }} style={styles.scoreTeamLogo} resizeMode="contain" />
-                                        <Text style={styles.scoreTeamCode}>{selectedGame.awayTeamInfo.code}</Text>
+                                {getTeamLogoUrl(selectedGame.awayTeamInfo?.code) ? (
+                                    <Image
+                                        source={{ uri: getTeamLogoUrl(selectedGame.awayTeamInfo?.code) }}
+                                        style={styles.scoreTeamLogo}
+                                        resizeMode="contain"
+                                    />
+                                ) : (
+                                    <View style={styles.scoreTeamLogoPlaceholder} />
+                                )}
+                                <Text style={styles.scoreTeamCode}>
+                                    {selectedGame.awayTeamInfo?.code ?? '-'}
+                                </Text>
                                     </View>
                                 </View>
                             </View>
@@ -845,6 +870,13 @@ const styles = StyleSheet.create({
     scoreHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingTop: 20 },
     scoreTeam: { alignItems: 'center', width: 80 },
     scoreTeamLogo: { width: 50, height: 50, marginBottom: 4 },
+    scoreTeamLogoPlaceholder: {
+        width: 50,
+        height: 50,
+        marginBottom: 4,
+        borderRadius: 25,
+        backgroundColor: '#2c2c2e'
+    },
     scoreTeamCode: { color: '#fff', fontSize: 14, fontWeight: '700' },
     scoreCenterBlock: { alignItems: 'center', marginHorizontal: 20 },
     scoreLarge: { color: '#fff', fontSize: 42, fontWeight: '800', fontVariant: ['tabular-nums'] },

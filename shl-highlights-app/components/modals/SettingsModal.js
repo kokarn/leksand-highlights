@@ -40,18 +40,25 @@ export const SettingsModal = ({
                         <Text style={styles.settingsCardTitle}>Hockey Teams</Text>
                     </View>
                     <View style={styles.settingsChipContainer}>
-                        {teams.map(team => (
-                            <TouchableOpacity
-                                key={team.code}
-                                style={[styles.settingsChip, selectedTeams.includes(team.code) && styles.settingsChipActive]}
-                                onPress={() => onToggleTeam(team.code)}
-                            >
-                                <Image source={{ uri: getTeamLogoUrl(team.code) }} style={styles.settingsChipLogo} resizeMode="contain" />
-                                <Text style={[styles.settingsChipText, selectedTeams.includes(team.code) && styles.settingsChipTextActive]}>
-                                    {team.code}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
+                        {teams.map(team => {
+                            const logoUrl = getTeamLogoUrl(team.code);
+                            return (
+                                <TouchableOpacity
+                                    key={team.code}
+                                    style={[styles.settingsChip, selectedTeams.includes(team.code) && styles.settingsChipActive]}
+                                    onPress={() => onToggleTeam(team.code)}
+                                >
+                                    {logoUrl ? (
+                                        <Image source={{ uri: logoUrl }} style={styles.settingsChipLogo} resizeMode="contain" />
+                                    ) : (
+                                        <View style={styles.settingsChipLogoPlaceholder} />
+                                    )}
+                                    <Text style={[styles.settingsChipText, selectedTeams.includes(team.code) && styles.settingsChipTextActive]}>
+                                        {team.code}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
                     {selectedTeams.length > 0 && (
                         <TouchableOpacity style={styles.clearButton} onPress={onClearTeams}>
@@ -203,6 +210,12 @@ const styles = StyleSheet.create({
     settingsChipLogo: {
         width: 24,
         height: 24
+    },
+    settingsChipLogoPlaceholder: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#1c1c1e'
     },
     settingsChipFlag: {
         fontSize: 18
