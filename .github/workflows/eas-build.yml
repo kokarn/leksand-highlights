@@ -22,8 +22,12 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
+      - name: Set working directory
+        run: cd shl-highlights-app
+
       - name: Install dependencies
         run: npm ci
+
 
       - name: Build on EAS
         run: eas build --platform android --non-interactive --no-wait
