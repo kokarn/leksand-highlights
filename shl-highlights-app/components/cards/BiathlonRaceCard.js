@@ -1,16 +1,14 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { format, parseISO } from 'date-fns';
 import { getNationFlag } from '../../api/shl';
-import { formatRelativeDate } from '../../utils';
+import { formatRelativeDate, formatSwedishDate } from '../../utils';
 import { DISCIPLINE_ICONS, GENDER_COLORS } from '../../constants';
 
 export const BiathlonRaceCard = ({ race, onPress }) => {
-    const date = parseISO(race.startDateTime);
-    const relativeDate = formatRelativeDate(race.startDateTime);
-    const time = format(date, 'HH:mm');
-    const isLive = race.state === 'live';
+    const relativeDate = formatRelativeDate(race?.startDateTime);
+    const time = formatSwedishDate(race?.startDateTime, 'HH:mm');
+    const isLive = race?.state === 'live';
 
     return (
         <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
