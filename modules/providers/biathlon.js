@@ -12,6 +12,7 @@ class BiathlonProvider extends BaseProvider {
 
         // IBU Datacenter API base URL
         this.baseUrl = 'https://www.biathlonworld.com';
+        this.resultsApiBaseUrl = 'https://www.biathlonresults.com/modules/sportapi/api';
         this.headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'application/json'
@@ -217,6 +218,158 @@ class BiathlonProvider extends BaseProvider {
         ];
     }
 
+    getSeasonId() {
+        const [startYear, endYearRaw] = this.currentSeason.split('-');
+        const start = String(startYear || '').slice(-2);
+        const end = String(endYearRaw || '').padStart(2, '0');
+        return `${start}${end}`;
+    }
+
+    getStockholmDateTimeParts(date) {
+        return {
+            date: date.toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' }),
+            time: date.toLocaleTimeString('sv-SE', {
+                timeZone: 'Europe/Stockholm',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            })
+        };
+    }
+
+    getGenderFromCategory(categoryId) {
+        if (categoryId === 'SM') return 'men';
+        if (categoryId === 'SW') return 'women';
+        return 'mixed';
+    }
+
+    getDisciplineName(competition) {
+        const description = `${competition.ShortDescription || ''} ${competition.Description || ''}`.toLowerCase();
+
+        if (description.includes('single mixed')) return 'Single Mixed Relay';
+        if (description.includes('mixed relay')) return 'Mixed Relay';
+
+        const disciplineMap = {
+            SP: 'Sprint',
+            PU: 'Pursuit',
+            IN: 'Individual',
+            MS: 'Mass Start',
+            RL: 'Relay',
+            SR: 'Single Mixed Relay',
+            MR: 'Mixed Relay'
+        };
+
+        if (disciplineMap[competition.DisciplineId]) {
+            return disciplineMap[competition.DisciplineId];
+        }
+
+        if (description.includes('mass start')) return 'Mass Start';
+        if (description.includes('individual')) return 'Individual';
+        if (description.includes('pursuit')) return 'Pursuit';
+        if (description.includes('sprint')) return 'Sprint';
+        if (description.includes('relay')) return 'Relay';
+
+        return competition.ShortDescription || competition.Description || 'Race';
+    }
+
+    buildEventName(event) {
+        if (event.EventClassificationId === 'BTSWRLOG') {
+            const year = event.StartDate ? new Date(event.StartDate).getUTCFullYear() : null;
+            return year ? `Winter Olympics ${year}` : 'Winter Olympics';
+        }
+
+        const series = event.EventSeriesNr ? event.EventSeriesNr.trim() : '';
+        const prefix = series ? `World Cup ${series}` : 'World Cup';
+        return `${prefix} - ${event.ShortDescription || event.Organizer || 'TBA'}`;
+    }
+
+    async fetchIbuEvents() {
+        const seasonId = this.getSeasonId();
+        const url = `${this.resultsApiBaseUrl}/Events?SeasonId=${seasonId}`;
+
+        try {
+            const response = await fetch(url, { headers: this.headers });
+            if (!response.ok) {
+                throw new Error(`IBU events fetch failed (${response.status})`);
+            }
+
+            const events = await response.json();
+            if (!Array.isArray(events)) return [];
+
+            return events.filter(event => (
+                event.EventClassificationId === 'BTSWRLCP' ||
+                event.EventClassificationId === 'BTSWRLOG'
+            ));
+        } catch (error) {
+            console.warn(`[${this.name}] Failed to fetch IBU events:`, error.message);
+            return [];
+        }
+    }
+
+    async fetchIbuEventRaces(eventId) {
+        const url = `${this.resultsApiBaseUrl}/Competitions?EventId=${eventId}`;
+
+        try {
+            const response = await fetch(url, { headers: this.headers });
+            if (!response.ok) {
+                throw new Error(`IBU competitions fetch failed (${response.status})`);
+            }
+
+            const competitions = await response.json();
+            if (!Array.isArray(competitions)) return [];
+
+            return competitions
+                .filter(competition => competition.StartTime)
+                .map(competition => {
+                    const startDate = new Date(competition.StartTime);
+                    if (Number.isNaN(startDate.getTime())) {
+                        return null;
+                    }
+
+                    const { date, time } = this.getStockholmDateTimeParts(startDate);
+
+                    return {
+                        id: competition.RaceId,
+                        discipline: this.getDisciplineName(competition),
+                        gender: this.getGenderFromCategory(competition.catId),
+                        date,
+                        time,
+                        startDateTime: competition.StartTime,
+                        isLive: Boolean(competition.IsLive),
+                        scheduleStatus: competition.ScheduleStatus
+                    };
+                })
+                .filter(Boolean);
+        } catch (error) {
+            console.warn(`[${this.name}] Failed to fetch competitions for ${eventId}:`, error.message);
+            return [];
+        }
+    }
+
+    async fetchIbuSchedule() {
+        const events = await this.fetchIbuEvents();
+        if (!events.length) return [];
+
+        const schedule = await Promise.all(events.map(async event => {
+            const races = await this.fetchIbuEventRaces(event.EventId);
+            return {
+                id: event.EventId,
+                name: this.buildEventName(event),
+                type: event.EventClassificationId === 'BTSWRLOG' ? 'olympics' : 'world-cup',
+                location: event.ShortDescription || event.Organizer || 'TBA',
+                country: event.Nat,
+                countryName: event.NatLong,
+                startDate: event.StartDate ? event.StartDate.slice(0, 10) : null,
+                endDate: event.EndDate ? event.EndDate.slice(0, 10) : null,
+                races
+            };
+        }));
+
+        return schedule
+            .filter(event => event.races && event.races.length > 0)
+            .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+    }
+
     /**
      * Transform calendar events into a unified game/race format
      */
@@ -226,25 +379,36 @@ class BiathlonProvider extends BaseProvider {
 
         for (const event of events) {
             for (const race of event.races) {
-                const raceDateTime = new Date(`${race.date}T${race.time}:00`);
+                const startDateTime = race.startDateTime || `${race.date}T${race.time}:00`;
+                const raceDateTime = new Date(startDateTime);
+                if (Number.isNaN(raceDateTime.getTime())) {
+                    continue;
+                }
+
                 const isPast = raceDateTime < now;
-                const isLive = !isPast && (now - raceDateTime) > -3600000 && (now - raceDateTime) < 7200000; // within 1hr before to 2hr after
+                const isLiveWindow = !isPast && (now - raceDateTime) > -3600000 && (now - raceDateTime) < 7200000;
+                const isLive = Boolean(race.isLive) || isLiveWindow;
 
                 let state = 'upcoming';
                 if (isPast) state = 'completed';
                 if (isLive) state = 'live';
 
+                const raceId = race.uuid || race.id || `${event.id}-${race.discipline.toLowerCase().replace(/\s/g, '-')}-${race.gender}`;
+                const dateParts = race.date && race.time
+                    ? { date: race.date, time: race.time }
+                    : this.getStockholmDateTimeParts(raceDateTime);
+
                 races.push({
-                    uuid: `${event.id}-${race.discipline.toLowerCase().replace(/\s/g, '-')}-${race.gender}`,
+                    uuid: raceId,
                     eventId: event.id,
                     eventName: event.name,
                     eventType: event.type,
                     discipline: race.discipline,
                     gender: race.gender,
                     genderDisplay: race.gender === 'mixed' ? 'Mixed' : (race.gender === 'men' ? 'Men' : 'Women'),
-                    startDateTime: `${race.date}T${race.time}:00`,
-                    date: race.date,
-                    time: race.time,
+                    startDateTime,
+                    date: dateParts.date,
+                    time: dateParts.time,
                     location: event.location,
                     country: event.country,
                     countryName: event.countryName,
@@ -260,8 +424,17 @@ class BiathlonProvider extends BaseProvider {
 
     async fetchAllGames() {
         console.log(`[${this.name}] Fetching biathlon race schedule...`);
-        const events = this.getSeasonCalendar();
-        return this.transformToRaces(events);
+        try {
+            const events = await this.fetchIbuSchedule();
+            if (events.length) {
+                return this.transformToRaces(events);
+            }
+        } catch (error) {
+            console.warn(`[${this.name}] Falling back to static calendar:`, error.message);
+        }
+
+        const fallbackEvents = this.getSeasonCalendar();
+        return this.transformToRaces(fallbackEvents);
     }
 
     async fetchActiveGames() {
@@ -307,7 +480,8 @@ class BiathlonProvider extends BaseProvider {
     }
 
     async fetchEvents() {
-        return this.getSeasonCalendar();
+        const events = await this.fetchIbuSchedule();
+        return events.length ? events : this.getSeasonCalendar();
     }
 
     isHighlight(video) {
