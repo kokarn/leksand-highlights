@@ -1,6 +1,5 @@
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, Modal, ScrollView, Image, RefreshControl, Platform } from 'react-native';
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { isToday, parseISO } from 'date-fns';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -55,8 +54,10 @@ export default function App() {
     const [loadingStandings, setLoadingStandings] = useState(false);
     const shlListRef = useRef(null);
     const footballListRef = useRef(null);
+    const biathlonListRef = useRef(null);
     const lastFocusedGameRef = useRef(null);
     const lastFocusedFootballRef = useRef(null);
+    const lastFocusedBiathlonRef = useRef(null);
     const AUTO_REFRESH_INTERVAL_MS = 20000;
     const STARTING_SOON_WINDOW_MINUTES = 30;
     const RECENT_START_WINDOW_MINUTES = 90;
@@ -581,63 +582,67 @@ export default function App() {
         });
     }, [filteredFootballGames]);
 
-    const nextGameIndex = useMemo(() => {
+    const targetGameIndex = useMemo(() => {
         if (!sortedGames.length) return 0;
+
+        // Priority 1: Find live games
+        const liveIndex = sortedGames.findIndex(game => game.state === 'live');
+        if (liveIndex !== -1) return liveIndex;
+
+        // Priority 2: Find next upcoming game (pre-game or not post-game)
         const upcomingIndex = sortedGames.findIndex(game => game.state !== 'post-game');
         if (upcomingIndex !== -1) return upcomingIndex;
+
+        // Priority 3: All games finished - find the most recent one (last in sorted list)
         return sortedGames.length - 1;
     }, [sortedGames]);
-
-    const currentDateIndex = useMemo(() => {
-        if (!sortedGames.length) return 0;
-        return sortedGames.findIndex(game => {
-            if (!game?.startDateTime) return false;
-            try {
-                const parsed = parseISO(game.startDateTime);
-                if (Number.isNaN(parsed.getTime())) return false;
-                return isToday(parsed);
-            } catch (error) {
-                return false;
-            }
-        });
-    }, [sortedGames]);
-
-    const targetGameIndex = useMemo(() => {
-        return currentDateIndex !== -1 ? currentDateIndex : nextGameIndex;
-    }, [currentDateIndex, nextGameIndex]);
 
     const targetGameId = useMemo(() => {
         return sortedGames[targetGameIndex]?.uuid || null;
     }, [sortedGames, targetGameIndex]);
 
-    const footballNextGameIndex = useMemo(() => {
+    const footballTargetGameIndex = useMemo(() => {
         if (!sortedFootballGames.length) return 0;
+
+        // Priority 1: Find live games
+        const liveIndex = sortedFootballGames.findIndex(game => game.state === 'live');
+        if (liveIndex !== -1) return liveIndex;
+
+        // Priority 2: Find next upcoming game (pre-game or not post-game)
         const upcomingIndex = sortedFootballGames.findIndex(game => game.state !== 'post-game');
         if (upcomingIndex !== -1) return upcomingIndex;
+
+        // Priority 3: All games finished - find the most recent one (last in sorted list)
         return sortedFootballGames.length - 1;
     }, [sortedFootballGames]);
-
-    const footballCurrentDateIndex = useMemo(() => {
-        if (!sortedFootballGames.length) return 0;
-        return sortedFootballGames.findIndex(game => {
-            if (!game?.startDateTime) return false;
-            try {
-                const parsed = parseISO(game.startDateTime);
-                if (Number.isNaN(parsed.getTime())) return false;
-                return isToday(parsed);
-            } catch (error) {
-                return false;
-            }
-        });
-    }, [sortedFootballGames]);
-
-    const footballTargetGameIndex = useMemo(() => {
-        return footballCurrentDateIndex !== -1 ? footballCurrentDateIndex : footballNextGameIndex;
-    }, [footballCurrentDateIndex, footballNextGameIndex]);
 
     const footballTargetGameId = useMemo(() => {
         return sortedFootballGames[footballTargetGameIndex]?.uuid || null;
     }, [sortedFootballGames, footballTargetGameIndex]);
+
+    // Estimated item heights for getItemLayout
+    const GAME_CARD_HEIGHT = 160; // GameCard height including marginBottom
+    const FOOTBALL_CARD_HEIGHT = 160;
+    const BIATHLON_CARD_HEIGHT = 140;
+    const LIST_HEADER_HEIGHT = 100; // Approximate header height
+
+    const getGameItemLayout = useCallback((_, index) => ({
+        length: GAME_CARD_HEIGHT,
+        offset: LIST_HEADER_HEIGHT + (GAME_CARD_HEIGHT * index),
+        index
+    }), []);
+
+    const getFootballItemLayout = useCallback((_, index) => ({
+        length: FOOTBALL_CARD_HEIGHT,
+        offset: LIST_HEADER_HEIGHT + (FOOTBALL_CARD_HEIGHT * index),
+        index
+    }), []);
+
+    const getBiathlonItemLayout = useCallback((_, index) => ({
+        length: BIATHLON_CARD_HEIGHT,
+        offset: LIST_HEADER_HEIGHT + (BIATHLON_CARD_HEIGHT * index),
+        index
+    }), []);
 
     const handleScrollToIndexFailed = useCallback((info) => {
         const offset = info.averageItemLength * info.index;
@@ -653,12 +658,22 @@ export default function App() {
         }, 50);
     }, []);
 
+    const handleBiathlonScrollToIndexFailed = useCallback((info) => {
+        const offset = info.averageItemLength * info.index;
+        setTimeout(() => {
+            biathlonListRef.current?.scrollToOffset({ offset, animated: false });
+        }, 50);
+    }, []);
+
     useEffect(() => {
         if (activeSport !== 'shl') {
             lastFocusedGameRef.current = null;
         }
         if (activeSport !== 'football') {
             lastFocusedFootballRef.current = null;
+        }
+        if (activeSport !== 'biathlon') {
+            lastFocusedBiathlonRef.current = null;
         }
     }, [activeSport]);
 
@@ -667,8 +682,15 @@ export default function App() {
         if (lastFocusedGameRef.current === targetGameId) return;
 
         const timeoutId = setTimeout(() => {
-            shlListRef.current?.scrollToIndex({ index: targetGameIndex, animated: false });
-        }, 0);
+            if (shlListRef.current && targetGameIndex > 0) {
+                // Use scrollToOffset for more reliable scrolling on web
+                const offset = LIST_HEADER_HEIGHT + (GAME_CARD_HEIGHT * targetGameIndex);
+                shlListRef.current.scrollToOffset({
+                    offset,
+                    animated: false
+                });
+            }
+        }, 150);
 
         lastFocusedGameRef.current = targetGameId;
         return () => clearTimeout(timeoutId);
@@ -679,8 +701,15 @@ export default function App() {
         if (lastFocusedFootballRef.current === footballTargetGameId) return;
 
         const timeoutId = setTimeout(() => {
-            footballListRef.current?.scrollToIndex({ index: footballTargetGameIndex, animated: false });
-        }, 0);
+            if (footballListRef.current && footballTargetGameIndex > 0) {
+                // Use scrollToOffset for more reliable scrolling on web
+                const offset = LIST_HEADER_HEIGHT + (FOOTBALL_CARD_HEIGHT * footballTargetGameIndex);
+                footballListRef.current.scrollToOffset({
+                    offset,
+                    animated: false
+                });
+            }
+        }, 150);
 
         lastFocusedFootballRef.current = footballTargetGameId;
         return () => clearTimeout(timeoutId);
@@ -705,6 +734,65 @@ export default function App() {
             return timeA - timeB;
         });
     }, [filteredBiathlonRaces]);
+
+    const biathlonTargetRaceIndex = useMemo(() => {
+        if (!sortedBiathlonRaces.length) return 0;
+
+        // Priority 1: Find live/ongoing races
+        const liveIndex = sortedBiathlonRaces.findIndex(race =>
+            race.state === 'live' || race.state === 'ongoing'
+        );
+        if (liveIndex !== -1) return liveIndex;
+
+        // Priority 2: Find first upcoming race (using state field)
+        const upcomingIndex = sortedBiathlonRaces.findIndex(race =>
+            race.state === 'upcoming' || race.state === 'pre-race'
+        );
+        if (upcomingIndex !== -1) {
+            // Show the race just before the upcoming one (most recently completed) for context
+            // unless it's the first race
+            return upcomingIndex > 0 ? upcomingIndex - 1 : upcomingIndex;
+        }
+
+        // Priority 3: All races completed - show the most recent one (last in sorted list)
+        return sortedBiathlonRaces.length - 1;
+    }, [sortedBiathlonRaces]);
+
+    const biathlonTargetRaceId = useMemo(() => {
+        return sortedBiathlonRaces[biathlonTargetRaceIndex]?.uuid || null;
+    }, [sortedBiathlonRaces, biathlonTargetRaceIndex]);
+
+    useEffect(() => {
+        if (activeSport !== 'biathlon' || !sortedBiathlonRaces.length || !biathlonTargetRaceId) return;
+        if (lastFocusedBiathlonRef.current === biathlonTargetRaceId) return;
+
+        // Mark as focused before attempting scroll
+        lastFocusedBiathlonRef.current = biathlonTargetRaceId;
+
+        // Use a longer timeout to ensure the FlatList is fully rendered
+        const timeoutId = setTimeout(() => {
+            if (!biathlonListRef.current || biathlonTargetRaceIndex <= 0) return;
+
+            try {
+                // Try scrollToIndex first
+                biathlonListRef.current.scrollToIndex({
+                    index: biathlonTargetRaceIndex,
+                    animated: false,
+                    viewPosition: 0
+                });
+            } catch (e) {
+                // Fallback to scrollToOffset
+                const offset = LIST_HEADER_HEIGHT + (BIATHLON_CARD_HEIGHT * biathlonTargetRaceIndex);
+                try {
+                    biathlonListRef.current.scrollToOffset({ offset, animated: false });
+                } catch (e2) {
+                    console.warn('Biathlon scroll failed:', e2);
+                }
+            }
+        }, 400);
+
+        return () => clearTimeout(timeoutId);
+    }, [activeSport, sortedBiathlonRaces.length, biathlonTargetRaceId, biathlonTargetRaceIndex]);
 
     const handleGamePress = async (game) => {
         setSelectedGame(game);
@@ -845,11 +933,15 @@ export default function App() {
 
     const renderBiathlonSchedule = () => (
         <FlatList
+            ref={biathlonListRef}
             data={sortedBiathlonRaces}
             renderItem={({ item }) => <BiathlonRaceCard race={item} onPress={() => setSelectedRace(item)} />}
             keyExtractor={item => item.uuid}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+            onScrollToIndexFailed={handleBiathlonScrollToIndexFailed}
+            initialScrollIndex={biathlonTargetRaceIndex > 0 ? biathlonTargetRaceIndex : undefined}
+            getItemLayout={getBiathlonItemLayout}
             ListEmptyComponent={
                 <View style={styles.emptyContainer}>
                     <Text style={styles.emptyText}>No races found.</Text>
@@ -874,6 +966,8 @@ export default function App() {
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
             onScrollToIndexFailed={handleFootballScrollToIndexFailed}
+            initialScrollIndex={footballTargetGameIndex > 0 ? footballTargetGameIndex : undefined}
+            getItemLayout={getFootballItemLayout}
             ListEmptyComponent={
                 <View style={styles.emptyContainer}>
                     <Text style={styles.emptyText}>No matches found.</Text>
@@ -1340,6 +1434,8 @@ export default function App() {
                                 contentContainerStyle={styles.listContent}
                                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
                                 onScrollToIndexFailed={handleScrollToIndexFailed}
+                                initialScrollIndex={targetGameIndex > 0 ? targetGameIndex : undefined}
+                                getItemLayout={getGameItemLayout}
                                 ListHeaderComponent={
                                     <View style={styles.listHeader}>
                                         {renderViewToggle(shlViewMode, handleShlViewChange)}
