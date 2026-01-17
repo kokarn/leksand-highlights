@@ -51,7 +51,9 @@ export default function App() {
     const [loadingVideoDetails, setLoadingVideoDetails] = useState(false);
     const [activeTab, setActiveTab] = useState('summary');
     const shlListRef = useRef(null);
+    const footballListRef = useRef(null);
     const lastFocusedGameRef = useRef(null);
+    const lastFocusedFootballRef = useRef(null);
     const AUTO_REFRESH_INTERVAL_MS = 20000;
     const STARTING_SOON_WINDOW_MINUTES = 30;
     const RECENT_START_WINDOW_MINUTES = 90;
@@ -70,6 +72,7 @@ export default function App() {
     const [selectedFootballGame, setSelectedFootballGame] = useState(null);
     const [footballDetails, setFootballDetails] = useState(null);
     const [loadingFootballDetails, setLoadingFootballDetails] = useState(false);
+    const [selectedFootballTeams, setSelectedFootballTeams] = useState([]);
 
     // Load saved preferences on app start
     useEffect(() => {
@@ -78,11 +81,19 @@ export default function App() {
 
     const loadPreferences = async () => {
         try {
-            const [savedSport, savedTeams, savedNations, savedGenders, onboardingComplete] = await Promise.all([
+            const [
+                savedSport,
+                savedTeams,
+                savedNations,
+                savedGenders,
+                savedFootballTeams,
+                onboardingComplete
+            ] = await Promise.all([
                 AsyncStorage.getItem(STORAGE_KEYS.SELECTED_SPORT),
                 AsyncStorage.getItem(STORAGE_KEYS.SELECTED_TEAMS),
                 AsyncStorage.getItem(STORAGE_KEYS.SELECTED_NATIONS),
                 AsyncStorage.getItem(STORAGE_KEYS.SELECTED_GENDERS),
+                AsyncStorage.getItem(STORAGE_KEYS.SELECTED_FOOTBALL_TEAMS),
                 AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETE)
             ]);
 
@@ -90,6 +101,7 @@ export default function App() {
             if (savedTeams) setSelectedTeams(JSON.parse(savedTeams));
             if (savedNations) setSelectedNations(JSON.parse(savedNations));
             if (savedGenders) setSelectedGenders(JSON.parse(savedGenders));
+            if (savedFootballTeams) setSelectedFootballTeams(JSON.parse(savedFootballTeams));
 
             if (!onboardingComplete) {
                 setShowOnboarding(true);
@@ -288,6 +300,19 @@ export default function App() {
         savePreference(STORAGE_KEYS.SELECTED_TEAMS, []);
     }, []);
 
+    const toggleFootballTeamFilter = useCallback((teamKey) => {
+        const newSelected = selectedFootballTeams.includes(teamKey)
+            ? selectedFootballTeams.filter(t => t !== teamKey)
+            : [...selectedFootballTeams, teamKey];
+        setSelectedFootballTeams(newSelected);
+        savePreference(STORAGE_KEYS.SELECTED_FOOTBALL_TEAMS, newSelected);
+    }, [selectedFootballTeams]);
+
+    const clearFootballTeamFilter = useCallback(() => {
+        setSelectedFootballTeams([]);
+        savePreference(STORAGE_KEYS.SELECTED_FOOTBALL_TEAMS, []);
+    }, []);
+
     const toggleNationFilter = useCallback((nationCode) => {
         const newSelected = selectedNations.includes(nationCode)
             ? selectedNations.filter(n => n !== nationCode)
@@ -362,6 +387,10 @@ export default function App() {
         setActiveTab(tab);
     };
 
+    const getFootballTeamKey = useCallback((team) => {
+        return team?.code || team?.uuid || team?.names?.short || team?.names?.long || null;
+    }, []);
+
     // Derived data
     const teams = useMemo(() => {
         const teamCodes = new Set();
@@ -373,6 +402,23 @@ export default function App() {
             .map(code => ({ code }))
             .sort((a, b) => a.code.localeCompare(b.code));
     }, [games]);
+
+    const footballTeams = useMemo(() => {
+        const teamMap = new Map();
+        footballGames.forEach(game => {
+            [game.homeTeamInfo, game.awayTeamInfo].forEach(team => {
+                const key = getFootballTeamKey(team);
+                if (!key || teamMap.has(key)) return;
+                const name = team?.names?.short || team?.names?.long || team?.code || key;
+                teamMap.set(key, {
+                    key,
+                    name,
+                    icon: team?.icon || null
+                });
+            });
+        });
+        return Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    }, [footballGames, getFootballTeamKey]);
 
     const filteredGames = useMemo(() => {
         return games.filter(game => {
@@ -387,6 +433,19 @@ export default function App() {
         });
     }, [games, selectedTeams]);
 
+    const filteredFootballGames = useMemo(() => {
+        return footballGames.filter(game => {
+            if (selectedFootballTeams.length > 0) {
+                const homeKey = getFootballTeamKey(game.homeTeamInfo);
+                const awayKey = getFootballTeamKey(game.awayTeamInfo);
+                if (!selectedFootballTeams.includes(homeKey) && !selectedFootballTeams.includes(awayKey)) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    }, [footballGames, selectedFootballTeams, getFootballTeamKey]);
+
     const sortedGames = useMemo(() => {
         return [...filteredGames].sort((a, b) => {
             const timeA = new Date(a.startDateTime).getTime();
@@ -396,12 +455,12 @@ export default function App() {
     }, [filteredGames]);
 
     const sortedFootballGames = useMemo(() => {
-        return [...footballGames].sort((a, b) => {
+        return [...filteredFootballGames].sort((a, b) => {
             const timeA = new Date(a.startDateTime).getTime();
             const timeB = new Date(b.startDateTime).getTime();
             return timeA - timeB;
         });
-    }, [footballGames]);
+    }, [filteredFootballGames]);
 
     const nextGameIndex = useMemo(() => {
         if (!sortedGames.length) return 0;
@@ -432,6 +491,35 @@ export default function App() {
         return sortedGames[targetGameIndex]?.uuid || null;
     }, [sortedGames, targetGameIndex]);
 
+    const footballNextGameIndex = useMemo(() => {
+        if (!sortedFootballGames.length) return 0;
+        const upcomingIndex = sortedFootballGames.findIndex(game => game.state !== 'post-game');
+        if (upcomingIndex !== -1) return upcomingIndex;
+        return sortedFootballGames.length - 1;
+    }, [sortedFootballGames]);
+
+    const footballCurrentDateIndex = useMemo(() => {
+        if (!sortedFootballGames.length) return 0;
+        return sortedFootballGames.findIndex(game => {
+            if (!game?.startDateTime) return false;
+            try {
+                const parsed = parseISO(game.startDateTime);
+                if (Number.isNaN(parsed.getTime())) return false;
+                return isToday(parsed);
+            } catch (error) {
+                return false;
+            }
+        });
+    }, [sortedFootballGames]);
+
+    const footballTargetGameIndex = useMemo(() => {
+        return footballCurrentDateIndex !== -1 ? footballCurrentDateIndex : footballNextGameIndex;
+    }, [footballCurrentDateIndex, footballNextGameIndex]);
+
+    const footballTargetGameId = useMemo(() => {
+        return sortedFootballGames[footballTargetGameIndex]?.uuid || null;
+    }, [sortedFootballGames, footballTargetGameIndex]);
+
     const handleScrollToIndexFailed = useCallback((info) => {
         const offset = info.averageItemLength * info.index;
         setTimeout(() => {
@@ -439,9 +527,19 @@ export default function App() {
         }, 50);
     }, []);
 
+    const handleFootballScrollToIndexFailed = useCallback((info) => {
+        const offset = info.averageItemLength * info.index;
+        setTimeout(() => {
+            footballListRef.current?.scrollToOffset({ offset, animated: false });
+        }, 50);
+    }, []);
+
     useEffect(() => {
         if (activeSport !== 'shl') {
             lastFocusedGameRef.current = null;
+        }
+        if (activeSport !== 'football') {
+            lastFocusedFootballRef.current = null;
         }
     }, [activeSport]);
 
@@ -456,6 +554,18 @@ export default function App() {
         lastFocusedGameRef.current = targetGameId;
         return () => clearTimeout(timeoutId);
     }, [activeSport, sortedGames.length, targetGameId, targetGameIndex]);
+
+    useEffect(() => {
+        if (activeSport !== 'football' || !sortedFootballGames.length || !footballTargetGameId) return;
+        if (lastFocusedFootballRef.current === footballTargetGameId) return;
+
+        const timeoutId = setTimeout(() => {
+            footballListRef.current?.scrollToIndex({ index: footballTargetGameIndex, animated: false });
+        }, 0);
+
+        lastFocusedFootballRef.current = footballTargetGameId;
+        return () => clearTimeout(timeoutId);
+    }, [activeSport, sortedFootballGames.length, footballTargetGameId, footballTargetGameIndex]);
 
     const filteredBiathlonRaces = useMemo(() => {
         return biathlonRaces.filter(race => {
@@ -578,11 +688,13 @@ export default function App() {
 
     const renderFootballSchedule = () => (
         <FlatList
+            ref={footballListRef}
             data={sortedFootballGames}
             renderItem={({ item }) => <FootballGameCard game={item} onPress={() => handleFootballGamePress(item)} />}
             keyExtractor={item => item.uuid}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+            onScrollToIndexFailed={handleFootballScrollToIndexFailed}
             ListEmptyComponent={
                 <View style={styles.emptyContainer}>
                     <Text style={styles.emptyText}>No matches found.</Text>
@@ -901,6 +1013,10 @@ export default function App() {
                 selectedTeams={selectedTeams}
                 onToggleTeam={toggleTeamFilter}
                 onClearTeams={clearTeamFilter}
+                footballTeams={footballTeams}
+                selectedFootballTeams={selectedFootballTeams}
+                onToggleFootballTeam={toggleFootballTeamFilter}
+                onClearFootballTeams={clearFootballTeamFilter}
                 biathlonNations={biathlonNations}
                 selectedNations={selectedNations}
                 onToggleNation={toggleNationFilter}
