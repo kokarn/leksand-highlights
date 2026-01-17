@@ -120,7 +120,7 @@ function getCacheStatus() {
             cached: !!cache.games.data,
             ageSeconds: gamesAge,
             hasLiveGame: cache.games.hasLive,
-            cacheDuration: cache.games.hasLive ? '15s (live mode)' : '60s (normal mode)'
+            cacheDuration: cache.games.hasLive ? '15s (live/starting soon mode)' : '60s (normal mode)'
         },
         details: {
             entriesCount: cache.details.size,

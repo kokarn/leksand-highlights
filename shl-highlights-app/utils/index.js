@@ -108,12 +108,45 @@ export const getGoalType = (goal) => {
  * @param {Object} teamInfo - Team info object
  * @returns {string|number} Score value or dash
  */
+export const normalizeScoreValue = (score) => {
+    if (score === null || score === undefined) {
+        return null;
+    }
+    if (typeof score === 'object') {
+        if (Object.prototype.hasOwnProperty.call(score, 'value')) {
+            return normalizeScoreValue(score.value);
+        }
+        return null;
+    }
+    if (typeof score === 'string') {
+        const trimmed = score.trim();
+        if (!trimmed) {
+            return null;
+        }
+        const lowered = trimmed.toLowerCase();
+        if (lowered === 'n/a' || lowered === 'na') {
+            return null;
+        }
+        const numeric = Number(trimmed);
+        if (!Number.isNaN(numeric)) {
+            return numeric;
+        }
+        return trimmed;
+    }
+    if (Number.isNaN(score)) {
+        return null;
+    }
+    return score;
+};
+
 export const extractScore = (teamResult, teamInfo) => {
     if (teamResult?.score !== undefined) {
-        return typeof teamResult.score === 'object' ? teamResult.score.value : teamResult.score;
+        const normalized = normalizeScoreValue(teamResult.score);
+        return normalized ?? '-';
     }
     if (teamInfo?.score !== undefined) {
-        return typeof teamInfo.score === 'object' ? teamInfo.score.value : teamInfo.score;
+        const normalized = normalizeScoreValue(teamInfo.score);
+        return normalized ?? '-';
     }
     return '-';
 };

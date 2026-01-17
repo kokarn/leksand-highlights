@@ -17,7 +17,7 @@ import {
 import { STORAGE_KEYS, GENDER_OPTIONS, getTeamColor } from '../constants';
 
 // Utils
-import { getVideoDisplayTitle, getStayLiveVideoId } from '../utils';
+import { getVideoDisplayTitle, getStayLiveVideoId, normalizeScoreValue } from '../utils';
 
 // Components
 import { SportTab } from '../components/SportTab';
@@ -51,6 +51,9 @@ export default function App() {
     const [activeTab, setActiveTab] = useState('summary');
     const shlListRef = useRef(null);
     const lastFocusedGameRef = useRef(null);
+    const AUTO_REFRESH_INTERVAL_MS = 20000;
+    const STARTING_SOON_WINDOW_MINUTES = 30;
+    const RECENT_START_WINDOW_MINUTES = 90;
 
     // Biathlon state
     const [biathlonRaces, setBiathlonRaces] = useState([]);
@@ -122,9 +125,13 @@ export default function App() {
             }
         });
 
+        const detailHomeScore = normalizeScoreValue(gameDetails.info?.homeTeam?.score);
+        const detailAwayScore = normalizeScoreValue(gameDetails.info?.awayTeam?.score);
+        const fallbackHomeScore = normalizeScoreValue(selectedGame.homeTeamResult?.score) ?? normalizeScoreValue(selectedGame.homeTeamInfo?.score);
+        const fallbackAwayScore = normalizeScoreValue(selectedGame.awayTeamResult?.score) ?? normalizeScoreValue(selectedGame.awayTeamInfo?.score);
         const scoreDisplay = {
-            home: actualScore.home ?? gameDetails.info?.homeTeam?.score ?? selectedGame.homeTeamResult?.score ?? '-',
-            away: actualScore.away ?? gameDetails.info?.awayTeam?.score ?? selectedGame.awayTeamResult?.score ?? '-'
+            home: actualScore.home ?? detailHomeScore ?? fallbackHomeScore ?? '-',
+            away: actualScore.away ?? detailAwayScore ?? fallbackAwayScore ?? '-'
         };
 
         const interestingEvents = [];
@@ -162,17 +169,25 @@ export default function App() {
         }
     }, [activeSport]);
 
-    // Auto-refresh for live games
+    // Auto-refresh for live or starting-soon games
     useEffect(() => {
-        const hasLiveGame = games.some(g => g.state === 'live');
-        let intervalId;
-        if (hasLiveGame && activeSport === 'shl') {
-            intervalId = setInterval(() => {
-                console.log('Auto-refreshing live games...');
-                loadGames(true);
-            }, 30800);
-        }
-        return () => { if (intervalId) clearInterval(intervalId); };
+        if (activeSport !== 'shl') return;
+        const now = Date.now();
+        const shouldAutoRefresh = games.some(game => {
+            if (game.state === 'live') return true;
+            if (game.state === 'post-game') return false;
+            const startTime = new Date(game.startDateTime).getTime();
+            if (Number.isNaN(startTime)) return false;
+            const minutesFromStart = (startTime - now) / (1000 * 60);
+            return minutesFromStart <= STARTING_SOON_WINDOW_MINUTES
+                && minutesFromStart >= -RECENT_START_WINDOW_MINUTES;
+        });
+        if (!shouldAutoRefresh) return;
+        const intervalId = setInterval(() => {
+            console.log('Auto-refreshing live or starting-soon games...');
+            loadGames(true);
+        }, AUTO_REFRESH_INTERVAL_MS);
+        return () => clearInterval(intervalId);
     }, [games, activeSport]);
 
     const loadGames = async (silent = false) => {
