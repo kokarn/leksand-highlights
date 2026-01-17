@@ -10,7 +10,8 @@ import { WebView } from 'react-native-webview';
 // API
 import {
     fetchGames, fetchVideosForGame, fetchGameDetails, fetchVideoDetails, getTeamLogoUrl,
-    fetchBiathlonRaces, fetchBiathlonEvents, fetchBiathlonNations
+    fetchBiathlonRaces, fetchBiathlonEvents, fetchBiathlonNations,
+    fetchFootballGames, fetchFootballGameDetails
 } from '../api/shl';
 
 // Constants
@@ -23,9 +24,9 @@ import { getVideoDisplayTitle, getStayLiveVideoId, normalizeScoreValue } from '.
 import { SportTab } from '../components/SportTab';
 import { StatBar } from '../components/StatBar';
 import { TabButton } from '../components/TabButton';
-import { GameCard, BiathlonRaceCard, VideoCard } from '../components/cards';
+import { GameCard, FootballGameCard, BiathlonRaceCard, VideoCard } from '../components/cards';
 import { GoalItem, PenaltyItem, GoalkeeperItem, TimeoutItem, PeriodMarker } from '../components/events';
-import { RaceModal, SettingsModal, OnboardingModal } from '../components/modals';
+import { RaceModal, FootballMatchModal, SettingsModal, OnboardingModal } from '../components/modals';
 
 export default function App() {
     // Onboarding & Settings state
@@ -62,6 +63,13 @@ export default function App() {
     const [selectedNations, setSelectedNations] = useState([]);
     const [selectedGenders, setSelectedGenders] = useState([]);
     const [selectedRace, setSelectedRace] = useState(null);
+
+    // Football state
+    const [footballGames, setFootballGames] = useState([]);
+    const [loadingFootball, setLoadingFootball] = useState(false);
+    const [selectedFootballGame, setSelectedFootballGame] = useState(null);
+    const [footballDetails, setFootballDetails] = useState(null);
+    const [loadingFootballDetails, setLoadingFootballDetails] = useState(false);
 
     // Load saved preferences on app start
     useEffect(() => {
@@ -166,14 +174,14 @@ export default function App() {
             loadGames();
         } else if (activeSport === 'biathlon') {
             loadBiathlonData();
+        } else if (activeSport === 'football') {
+            loadFootballGames();
         }
     }, [activeSport]);
 
-    // Auto-refresh for live or starting-soon games
-    useEffect(() => {
-        if (activeSport !== 'shl') return;
+    const shouldAutoRefreshGames = (gamesList) => {
         const now = Date.now();
-        const shouldAutoRefresh = games.some(game => {
+        return gamesList.some(game => {
             if (game.state === 'live') return true;
             if (game.state === 'post-game') return false;
             const startTime = new Date(game.startDateTime).getTime();
@@ -182,6 +190,12 @@ export default function App() {
             return minutesFromStart <= STARTING_SOON_WINDOW_MINUTES
                 && minutesFromStart >= -RECENT_START_WINDOW_MINUTES;
         });
+    };
+
+    // Auto-refresh for live or starting-soon games
+    useEffect(() => {
+        if (activeSport !== 'shl') return;
+        const shouldAutoRefresh = shouldAutoRefreshGames(games);
         if (!shouldAutoRefresh) return;
         const intervalId = setInterval(() => {
             console.log('Auto-refreshing live or starting-soon games...');
@@ -189,6 +203,17 @@ export default function App() {
         }, AUTO_REFRESH_INTERVAL_MS);
         return () => clearInterval(intervalId);
     }, [games, activeSport]);
+
+    useEffect(() => {
+        if (activeSport !== 'football') return;
+        const shouldAutoRefresh = shouldAutoRefreshGames(footballGames);
+        if (!shouldAutoRefresh) return;
+        const intervalId = setInterval(() => {
+            console.log('Auto-refreshing live or starting-soon football matches...');
+            loadFootballGames(true);
+        }, AUTO_REFRESH_INTERVAL_MS);
+        return () => clearInterval(intervalId);
+    }, [footballGames, activeSport]);
 
     const loadGames = async (silent = false) => {
         if (!silent) setLoading(true);
@@ -221,12 +246,27 @@ export default function App() {
         }
     };
 
+    const loadFootballGames = async (silent = false) => {
+        if (!silent) setLoadingFootball(true);
+        try {
+            const data = await fetchFootballGames();
+            setFootballGames(data);
+        } catch (e) {
+            console.error("Failed to load football games", e);
+        } finally {
+            if (!silent) setLoadingFootball(false);
+            setRefreshing(false);
+        }
+    };
+
     const onRefresh = () => {
         setRefreshing(true);
         if (activeSport === 'shl') {
             loadGames();
-        } else {
+        } else if (activeSport === 'biathlon') {
             loadBiathlonData();
+        } else if (activeSport === 'football') {
+            loadFootballGames();
         }
     };
 
@@ -355,6 +395,14 @@ export default function App() {
         });
     }, [filteredGames]);
 
+    const sortedFootballGames = useMemo(() => {
+        return [...footballGames].sort((a, b) => {
+            const timeA = new Date(a.startDateTime).getTime();
+            const timeB = new Date(b.startDateTime).getTime();
+            return timeA - timeB;
+        });
+    }, [footballGames]);
+
     const nextGameIndex = useMemo(() => {
         if (!sortedGames.length) return 0;
         const upcomingIndex = sortedGames.findIndex(game => game.state !== 'post-game');
@@ -445,11 +493,31 @@ export default function App() {
         setLoadingModal(false);
     };
 
+    const handleFootballGamePress = async (game) => {
+        setSelectedFootballGame(game);
+        setLoadingFootballDetails(true);
+        setFootballDetails(null);
+        try {
+            const details = await fetchFootballGameDetails(game.uuid);
+            setFootballDetails(details);
+        } catch (error) {
+            console.error('Failed to load football match details', error);
+        } finally {
+            setLoadingFootballDetails(false);
+        }
+    };
+
     const closeModal = () => {
         stopVideo();
         setSelectedGame(null);
         setGameDetails(null);
         setVideos([]);
+    };
+
+    const closeFootballModal = () => {
+        setSelectedFootballGame(null);
+        setFootballDetails(null);
+        setLoadingFootballDetails(false);
     };
 
     // Helper to check if a goal has an associated video clip
@@ -473,6 +541,7 @@ export default function App() {
     const renderSportTabs = () => (
         <View style={styles.sportTabsContainer}>
             <SportTab sport="shl" isActive={activeSport === 'shl'} onPress={() => handleSportChange('shl')} />
+            <SportTab sport="football" isActive={activeSport === 'football'} onPress={() => handleSportChange('football')} />
             <SportTab sport="biathlon" isActive={activeSport === 'biathlon'} onPress={() => handleSportChange('biathlon')} />
         </View>
     );
@@ -494,6 +563,28 @@ export default function App() {
                     <Ionicons name="calendar-outline" size={20} color="#0A84FF" />
                     <Text style={styles.scheduleHeaderText}>All Races</Text>
                     <Text style={styles.scheduleCount}>{filteredBiathlonRaces.length} races</Text>
+                </View>
+            }
+        />
+    );
+
+    const renderFootballSchedule = () => (
+        <FlatList
+            data={sortedFootballGames}
+            renderItem={({ item }) => <FootballGameCard game={item} onPress={() => handleFootballGamePress(item)} />}
+            keyExtractor={item => item.uuid}
+            contentContainerStyle={styles.listContent}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+            ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>No matches found.</Text>
+                </View>
+            }
+            ListHeaderComponent={
+                <View style={styles.scheduleHeader}>
+                    <Ionicons name="football-outline" size={20} color="#0A84FF" />
+                    <Text style={styles.scheduleHeaderText}>Allsvenskan</Text>
+                    <Text style={styles.scheduleCount}>{sortedFootballGames.length} matches</Text>
                 </View>
             }
         />
@@ -708,6 +799,14 @@ export default function App() {
                         />
                     )}
                 </>
+            ) : activeSport === 'football' ? (
+                <>
+                    {loadingFootball ? (
+                        <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
+                    ) : (
+                        renderFootballSchedule()
+                    )}
+                </>
             ) : (
                 <>
                     {loadingBiathlon ? (
@@ -770,6 +869,15 @@ export default function App() {
                 </SafeAreaView>
             </Modal>
 
+            {/* Football Match Modal */}
+            <FootballMatchModal
+                match={selectedFootballGame}
+                details={footballDetails}
+                visible={!!selectedFootballGame}
+                loading={loadingFootballDetails}
+                onClose={closeFootballModal}
+            />
+
             {/* Biathlon Race Modal */}
             <RaceModal
                 race={selectedRace}
@@ -827,7 +935,7 @@ const styles = StyleSheet.create({
     settingsButton: { padding: 8 },
 
     // Sport Tabs
-    sportTabsContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    sportTabsContainer: { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap', flex: 1 },
 
     listContent: { padding: 16, paddingTop: 8 },
 
