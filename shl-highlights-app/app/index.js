@@ -28,16 +28,19 @@ const TEAM_COLORS = {
     'MODO': ['#D31022', '#005336'],
 };
 
-const APP_NAME = 'IceClips';
-const APP_TAGLINE = 'SHL highlights';
+const APP_NAME = 'GamePulse';
+const APP_TAGLINE = 'Scores, stats, and more';
 
 // ============ COMPONENTS ============
 
 const LogoMark = () => (
     <LinearGradient colors={['#0A84FF', '#5AC8FA']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.logoMark}>
-        <View style={styles.logoStreak} />
-        <View style={styles.logoStreakLight} />
-        <View style={styles.logoPuck} />
+        <View style={styles.logoBars}>
+            <View style={[styles.logoBar, styles.logoBarShort]} />
+            <View style={[styles.logoBar, styles.logoBarTall]} />
+            <View style={[styles.logoBar, styles.logoBarMid]} />
+        </View>
+        <View style={styles.logoAccentDot} />
     </LinearGradient>
 );
 
@@ -928,9 +931,12 @@ const styles = StyleSheet.create({
     headerTitle: { color: '#fff', fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
     headerSubtitle: { color: '#8e8e93', fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.2 },
     logoMark: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-    logoStreak: { position: 'absolute', width: 26, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.9)', top: 14, left: 10 },
-    logoStreakLight: { position: 'absolute', width: 20, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.7)', top: 22, left: 12 },
-    logoPuck: { position: 'absolute', width: 12, height: 12, borderRadius: 6, backgroundColor: '#0b0d10', bottom: 10, right: 10 },
+    logoBars: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 22 },
+    logoBar: { width: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.9)' },
+    logoBarShort: { height: 8 },
+    logoBarMid: { height: 14 },
+    logoBarTall: { height: 20 },
+    logoAccentDot: { position: 'absolute', width: 8, height: 8, borderRadius: 4, backgroundColor: '#0b0d10', right: 10, top: 10 },
     filterContainer: { height: 60 },
     filterContent: { paddingHorizontal: 16, alignItems: 'center', gap: 8 },
     filterPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#1c1c1e', borderWidth: 1, borderColor: '#333' },

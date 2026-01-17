@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "IceClips",
-    "slug": "ice-clips",
+    "name": "GamePulse",
+    "slug": "game-pulse",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "iceclips",
+    "scheme": "gamepulse",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
