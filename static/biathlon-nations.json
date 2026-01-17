@@ -1,0 +1,213 @@
+{
+  "nations": [
+    {
+      "code": "NOR",
+      "name": "Norway",
+      "shortName": "Norge",
+      "flag": "🇳🇴",
+      "colors": {
+        "primary": "#BA0C2F",
+        "secondary": "#00205B"
+      }
+    },
+    {
+      "code": "SWE",
+      "name": "Sweden",
+      "shortName": "Sverige",
+      "flag": "🇸🇪",
+      "colors": {
+        "primary": "#006AA7",
+        "secondary": "#FECC02"
+      }
+    },
+    {
+      "code": "FRA",
+      "name": "France",
+      "shortName": "France",
+      "flag": "🇫🇷",
+      "colors": {
+        "primary": "#0055A4",
+        "secondary": "#EF4135"
+      }
+    },
+    {
+      "code": "GER",
+      "name": "Germany",
+      "shortName": "Deutschland",
+      "flag": "🇩🇪",
+      "colors": {
+        "primary": "#000000",
+        "secondary": "#DD0000"
+      }
+    },
+    {
+      "code": "ITA",
+      "name": "Italy",
+      "shortName": "Italia",
+      "flag": "🇮🇹",
+      "colors": {
+        "primary": "#009246",
+        "secondary": "#CE2B37"
+      }
+    },
+    {
+      "code": "AUT",
+      "name": "Austria",
+      "shortName": "Österreich",
+      "flag": "🇦🇹",
+      "colors": {
+        "primary": "#ED2939",
+        "secondary": "#FFFFFF"
+      }
+    },
+    {
+      "code": "SUI",
+      "name": "Switzerland",
+      "shortName": "Schweiz",
+      "flag": "🇨🇭",
+      "colors": {
+        "primary": "#FF0000",
+        "secondary": "#FFFFFF"
+      }
+    },
+    {
+      "code": "FIN",
+      "name": "Finland",
+      "shortName": "Suomi",
+      "flag": "🇫🇮",
+      "colors": {
+        "primary": "#003580",
+        "secondary": "#FFFFFF"
+      }
+    },
+    {
+      "code": "USA",
+      "name": "United States",
+      "shortName": "USA",
+      "flag": "🇺🇸",
+      "colors": {
+        "primary": "#3C3B6E",
+        "secondary": "#B22234"
+      }
+    },
+    {
+      "code": "CAN",
+      "name": "Canada",
+      "shortName": "Canada",
+      "flag": "🇨🇦",
+      "colors": {
+        "primary": "#FF0000",
+        "secondary": "#FFFFFF"
+      }
+    },
+    {
+      "code": "CZE",
+      "name": "Czech Republic",
+      "shortName": "Česko",
+      "flag": "🇨🇿",
+      "colors": {
+        "primary": "#11457E",
+        "secondary": "#D7141A"
+      }
+    },
+    {
+      "code": "SLO",
+      "name": "Slovenia",
+      "shortName": "Slovenija",
+      "flag": "🇸🇮",
+      "colors": {
+        "primary": "#005DA4",
+        "secondary": "#ED1C24"
+      }
+    },
+    {
+      "code": "UKR",
+      "name": "Ukraine",
+      "shortName": "Україна",
+      "flag": "🇺🇦",
+      "colors": {
+        "primary": "#005BBB",
+        "secondary": "#FFD500"
+      }
+    },
+    {
+      "code": "BLR",
+      "name": "Belarus",
+      "shortName": "Беларусь",
+      "flag": "🇧🇾",
+      "colors": {
+        "primary": "#C8313E",
+        "secondary": "#4AA657"
+      }
+    },
+    {
+      "code": "POL",
+      "name": "Poland",
+      "shortName": "Polska",
+      "flag": "🇵🇱",
+      "colors": {
+        "primary": "#DC143C",
+        "secondary": "#FFFFFF"
+      }
+    },
+    {
+      "code": "EST",
+      "name": "Estonia",
+      "shortName": "Eesti",
+      "flag": "🇪🇪",
+      "colors": {
+        "primary": "#0072CE",
+        "secondary": "#000000"
+      }
+    },
+    {
+      "code": "BUL",
+      "name": "Bulgaria",
+      "shortName": "България",
+      "flag": "🇧🇬",
+      "colors": {
+        "primary": "#00966E",
+        "secondary": "#D62612"
+      }
+    },
+    {
+      "code": "CHN",
+      "name": "China",
+      "shortName": "中国",
+      "flag": "🇨🇳",
+      "colors": {
+        "primary": "#DE2910",
+        "secondary": "#FFDE00"
+      }
+    },
+    {
+      "code": "JPN",
+      "name": "Japan",
+      "shortName": "日本",
+      "flag": "🇯🇵",
+      "colors": {
+        "primary": "#BC002D",
+        "secondary": "#FFFFFF"
+      }
+    },
+    {
+      "code": "KOR",
+      "name": "South Korea",
+      "shortName": "한국",
+      "flag": "🇰🇷",
+      "colors": {
+        "primary": "#003478",
+        "secondary": "#C60C30"
+      }
+    }
+  ],
+  "disciplines": [
+    { "id": "sprint", "name": "Sprint", "shortName": "SP" },
+    { "id": "pursuit", "name": "Pursuit", "shortName": "PU" },
+    { "id": "individual", "name": "Individual", "shortName": "IN" },
+    { "id": "mass-start", "name": "Mass Start", "shortName": "MS" },
+    { "id": "relay", "name": "Relay", "shortName": "RL" },
+    { "id": "mixed-relay", "name": "Mixed Relay", "shortName": "MR" },
+    { "id": "single-mixed-relay", "name": "Single Mixed Relay", "shortName": "SMR" }
+  ]
+}

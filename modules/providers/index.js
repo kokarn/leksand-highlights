@@ -1,51 +1,82 @@
 const SHLProvider = require('./shl');
+const BiathlonProvider = require('./biathlon');
 
-// Available providers
+// Available providers by sport
 const providers = {
-    shl: SHLProvider
+    shl: SHLProvider,
+    biathlon: BiathlonProvider
 };
 
-// Active provider instance (singleton)
-let activeProvider = null;
+// Provider instances (singletons per sport)
+const providerInstances = {};
 
 /**
- * Get the active data provider
- * @returns {BaseProvider} The active provider instance
+ * Get a provider by sport name
+ * @param {string} sport - Sport name (e.g., 'shl', 'biathlon')
+ * @returns {BaseProvider} The provider instance
  */
-function getProvider() {
-    if (!activeProvider) {
-        // Default to SHL provider
-        const providerName = process.env.DATA_PROVIDER || 'shl';
-        const Provider = providers[providerName.toLowerCase()];
+function getProvider(sport = 'shl') {
+    const sportKey = sport.toLowerCase();
+
+    if (!providerInstances[sportKey]) {
+        const Provider = providers[sportKey];
 
         if (!Provider) {
-            throw new Error(`Unknown provider: ${providerName}. Available: ${Object.keys(providers).join(', ')}`);
+            throw new Error(`Unknown provider: ${sport}. Available: ${Object.keys(providers).join(', ')}`);
         }
 
-        activeProvider = new Provider();
-        console.log(`[Provider] Using ${activeProvider.getName()} data provider`);
+        providerInstances[sportKey] = new Provider();
+        console.log(`[Provider] Initialized ${providerInstances[sportKey].getName()} data provider`);
     }
-    return activeProvider;
+
+    return providerInstances[sportKey];
+}
+
+/**
+ * Get all available sport providers
+ * @returns {Object} Map of sport name to provider instance
+ */
+function getAllProviders() {
+    return Object.keys(providers).reduce((acc, sport) => {
+        acc[sport] = getProvider(sport);
+        return acc;
+    }, {});
+}
+
+/**
+ * Get list of available sports
+ * @returns {Array<string>} List of sport identifiers
+ */
+function getAvailableSports() {
+    return Object.keys(providers);
 }
 
 /**
  * Set a specific provider (useful for testing)
+ * @param {string} sport - Sport name
  * @param {BaseProvider} provider - Provider instance
  */
-function setProvider(provider) {
-    activeProvider = provider;
-    console.log(`[Provider] Switched to ${provider.getName()} data provider`);
+function setProvider(sport, provider) {
+    providerInstances[sport.toLowerCase()] = provider;
+    console.log(`[Provider] Switched to ${provider.getName()} data provider for ${sport}`);
 }
 
 /**
- * Reset the provider (useful for testing)
+ * Reset a specific provider or all providers (useful for testing)
+ * @param {string} sport - Optional sport name. If not provided, resets all.
  */
-function resetProvider() {
-    activeProvider = null;
+function resetProvider(sport = null) {
+    if (sport) {
+        delete providerInstances[sport.toLowerCase()];
+    } else {
+        Object.keys(providerInstances).forEach(key => delete providerInstances[key]);
+    }
 }
 
 module.exports = {
     getProvider,
+    getAllProviders,
+    getAvailableSports,
     setProvider,
     resetProvider,
     providers

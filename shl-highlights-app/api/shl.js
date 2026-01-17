@@ -15,6 +15,28 @@ const API_BASE_URL = getApiBaseUrl();
 
 // Team data cache
 let teamsCache = null;
+let nationsCache = null;
+
+// ============ GENERAL API ============
+
+/**
+ * Fetch all available sports
+ * @returns {Promise<Array>} Array of sport objects
+ */
+export async function fetchSports() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/sports`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching sports:', error.message);
+        return [];
+    }
+}
+
+// ============ SHL/HOCKEY API ============
 
 /**
  * Get team logo URL (local static file)
@@ -118,4 +140,138 @@ export async function fetchVideoDetails(videoId) {
         console.error(`Error fetching video details for ${videoId}:`, error.message);
         return null;
     }
+}
+
+// ============ BIATHLON API ============
+
+/**
+ * Fetch all biathlon nations
+ * @returns {Promise<Array>} Array of nation objects
+ */
+export async function fetchBiathlonNations() {
+    if (nationsCache) return nationsCache;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/biathlon/nations`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const nations = await response.json();
+        nationsCache = nations;
+        return nations;
+    } catch (error) {
+        console.error('Error fetching biathlon nations:', error.message);
+        return [];
+    }
+}
+
+/**
+ * Fetch biathlon disciplines
+ * @returns {Promise<Array>} Array of discipline objects
+ */
+export async function fetchBiathlonDisciplines() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/biathlon/disciplines`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching biathlon disciplines:', error.message);
+        return [];
+    }
+}
+
+/**
+ * Fetch biathlon events (World Cup stops, etc.)
+ * @returns {Promise<Array>} Array of event objects
+ */
+export async function fetchBiathlonEvents() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/biathlon/events`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching biathlon events:', error.message);
+        return [];
+    }
+}
+
+/**
+ * Fetch upcoming biathlon race schedule
+ * @param {number} limit - Max number of races to return
+ * @returns {Promise<Array>} Array of race objects
+ */
+export async function fetchBiathlonSchedule(limit = 30) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/biathlon/schedule?limit=${limit}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching biathlon schedule:', error.message);
+        return [];
+    }
+}
+
+/**
+ * Fetch all biathlon races with optional filters
+ * @param {Object} filters - Optional filters (upcoming, country, discipline, gender)
+ * @returns {Promise<Array>} Array of race objects
+ */
+export async function fetchBiathlonRaces(filters = {}) {
+    try {
+        const params = new URLSearchParams();
+        if (filters.upcoming) params.append('upcoming', 'true');
+        if (filters.limit) params.append('limit', filters.limit);
+        if (filters.country) params.append('country', filters.country);
+        if (filters.discipline) params.append('discipline', filters.discipline);
+        if (filters.gender) params.append('gender', filters.gender);
+
+        const url = `${API_BASE_URL}/api/biathlon/races${params.toString() ? '?' + params.toString() : ''}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching biathlon races:', error.message);
+        return [];
+    }
+}
+
+/**
+ * Fetch details for a specific biathlon race
+ * @param {string} raceId - Race identifier
+ * @returns {Promise<Object|null>} Race details or null
+ */
+export async function fetchBiathlonRaceDetails(raceId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/biathlon/race/${raceId}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching biathlon race details for ${raceId}:`, error.message);
+        return null;
+    }
+}
+
+/**
+ * Get nation flag emoji by code
+ * @param {string} nationCode - Nation code (e.g., 'SWE', 'NOR')
+ * @returns {string} Flag emoji
+ */
+export function getNationFlag(nationCode) {
+    const flags = {
+        'NOR': '🇳🇴', 'SWE': '🇸🇪', 'FRA': '🇫🇷', 'GER': '🇩🇪', 'ITA': '🇮🇹',
+        'AUT': '🇦🇹', 'SUI': '🇨🇭', 'FIN': '🇫🇮', 'USA': '🇺🇸', 'CAN': '🇨🇦',
+        'CZE': '🇨🇿', 'SLO': '🇸🇮', 'UKR': '🇺🇦', 'BLR': '🇧🇾', 'POL': '🇵🇱',
+        'EST': '🇪🇪', 'BUL': '🇧🇬', 'CHN': '🇨🇳', 'JPN': '🇯🇵', 'KOR': '🇰🇷'
+    };
+    return flags[nationCode] || '🏳️';
 }

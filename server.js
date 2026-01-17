@@ -16,7 +16,7 @@ const {
     getCacheStatus,
     setGamesLiveFlag
 } = require('./modules/cache');
-const { getProvider } = require('./modules/providers');
+const { getProvider, getAvailableSports } = require('./modules/providers');
 const { formatSwedishTimestamp } = require('./modules/utils');
 const notifier = require('./modules/notifier');
 const {
@@ -36,13 +36,20 @@ app.use(express.json({ limit: '1mb' }));
 // Serve static files (logos, etc.)
 app.use('/static', express.static(path.join(__dirname, 'static')));
 
-// Load teams data
+// Load teams data for SHL
 const teamsDataPath = path.join(__dirname, 'static', 'teams.json');
 let teamsData = { teams: [] };
 if (fs.existsSync(teamsDataPath)) {
     teamsData = JSON.parse(fs.readFileSync(teamsDataPath, 'utf8'));
 }
 const teamsByCode = new Map(teamsData.teams.map(team => [team.code, team]));
+
+// Load biathlon nations data
+const biathlonNationsPath = path.join(__dirname, 'static', 'biathlon-nations.json');
+let biathlonData = { nations: [], disciplines: [] };
+if (fs.existsSync(biathlonNationsPath)) {
+    biathlonData = JSON.parse(fs.readFileSync(biathlonNationsPath, 'utf8'));
+}
 
 function getAdminGameSchedule() {
     return listAdminGames(teamsByCode).map(record => record.game);
@@ -78,6 +85,22 @@ app.get('/admin', (req, res) => {
 });
 
 /**
+ * GET /api/sports
+ * Get all available sports
+ */
+app.get('/api/sports', (req, res) => {
+    const sports = getAvailableSports().map(sport => {
+        const provider = getProvider(sport);
+        return {
+            id: sport,
+            name: provider.getName(),
+            icon: sport === 'shl' ? 'hockey-puck' : 'target'
+        };
+    });
+    res.json(sports);
+});
+
+/**
  * GET /api/teams
  * Get all SHL teams with their logos and info
  */
@@ -99,6 +122,122 @@ app.get('/api/teams/:code', (req, res) => {
 
     res.json(team);
 });
+
+// ============ BIATHLON ENDPOINTS ============
+
+/**
+ * GET /api/biathlon/nations
+ * Get all biathlon nations/teams
+ */
+app.get('/api/biathlon/nations', (req, res) => {
+    res.json(biathlonData.nations);
+});
+
+/**
+ * GET /api/biathlon/disciplines
+ * Get all biathlon race disciplines
+ */
+app.get('/api/biathlon/disciplines', (req, res) => {
+    res.json(biathlonData.disciplines);
+});
+
+/**
+ * GET /api/biathlon/events
+ * Get all biathlon events (World Cup stops, Olympics, etc.)
+ */
+app.get('/api/biathlon/events', async (req, res) => {
+    try {
+        const provider = getProvider('biathlon');
+        const events = await provider.fetchEvents();
+        res.json(events);
+    } catch (error) {
+        console.error('Error fetching biathlon events:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/biathlon/races
+ * Get all biathlon races (individual race sessions)
+ * Query params:
+ *   - upcoming: only show upcoming races if 'true'
+ *   - limit: max number of races to return
+ *   - country: filter by host country code
+ *   - discipline: filter by discipline (sprint, pursuit, etc.)
+ *   - gender: filter by gender (men, women, mixed)
+ */
+app.get('/api/biathlon/races', async (req, res) => {
+    try {
+        const provider = getProvider('biathlon');
+        let races;
+
+        if (req.query.upcoming === 'true') {
+            const limit = parseInt(req.query.limit) || 20;
+            races = await provider.fetchUpcomingRaces(limit);
+        } else {
+            races = await provider.fetchAllGames();
+        }
+
+        // Apply filters
+        if (req.query.country) {
+            const country = req.query.country.toUpperCase();
+            races = races.filter(r => r.country === country);
+        }
+
+        if (req.query.discipline) {
+            const discipline = req.query.discipline.toLowerCase();
+            races = races.filter(r => r.discipline.toLowerCase().includes(discipline));
+        }
+
+        if (req.query.gender) {
+            const gender = req.query.gender.toLowerCase();
+            races = races.filter(r => r.gender === gender);
+        }
+
+        res.json(races);
+    } catch (error) {
+        console.error('Error fetching biathlon races:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/biathlon/schedule
+ * Get upcoming biathlon schedule (convenience endpoint)
+ */
+app.get('/api/biathlon/schedule', async (req, res) => {
+    try {
+        const provider = getProvider('biathlon');
+        const limit = parseInt(req.query.limit) || 30;
+        const races = await provider.fetchUpcomingRaces(limit);
+        res.json(races);
+    } catch (error) {
+        console.error('Error fetching biathlon schedule:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/biathlon/race/:id
+ * Get details for a specific race
+ */
+app.get('/api/biathlon/race/:id', async (req, res) => {
+    try {
+        const provider = getProvider('biathlon');
+        const details = await provider.fetchGameDetails(req.params.id);
+
+        if (!details) {
+            return res.status(404).json({ error: 'Race not found' });
+        }
+
+        res.json(details);
+    } catch (error) {
+        console.error(`Error fetching race details for ${req.params.id}:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ============ SHL/HOCKEY ENDPOINTS ============
 
 /**
  * Admin: list, create, update, delete manual games
@@ -146,7 +285,7 @@ app.get('/api/games', async (req, res) => {
         } else {
             usedCache = false;
             console.log('[Cache MISS] /api/games - fetching fresh data...');
-            const provider = getProvider();
+            const provider = getProvider('shl');
             const games = await provider.fetchAllGames();
 
             baseGames = games.length
@@ -197,7 +336,7 @@ app.get('/api/game/:uuid/videos', async (req, res) => {
     console.log(`[Cache MISS] /api/game/${uuid}/videos - fetching...`);
 
     try {
-        const provider = getProvider();
+        const provider = getProvider('shl');
         const videos = await provider.fetchGameVideos(uuid);
         setCachedVideos(uuid, videos);
         res.json(videos);
@@ -223,7 +362,7 @@ app.get('/api/video/:id', async (req, res) => {
     console.log(`[API] Fetching video details for ${id}...`);
 
     try {
-        const provider = getProvider();
+        const provider = getProvider('shl');
         const details = await provider.fetchVideoDetails(id);
 
         if (!details) {
@@ -284,7 +423,7 @@ app.get('/api/game/:uuid/details', async (req, res) => {
     console.log(`[Cache MISS] /api/game/${uuid}/details - fetching...`);
 
     try {
-        const provider = getProvider();
+        const provider = getProvider('shl');
         const details = await provider.fetchGameDetails(uuid);
         setCachedDetails(uuid, details);
         res.json(details);
@@ -295,13 +434,19 @@ app.get('/api/game/:uuid/details', async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => {
-    const provider = getProvider();
+    const shlProvider = getProvider('shl');
+    const biathlonProvider = getProvider('biathlon');
+
     res.json({
         server: {
             uptime: process.uptime(),
             timestamp: formatSwedishTimestamp()
         },
-        provider: provider.getName(),
+        providers: {
+            shl: shlProvider.getName(),
+            biathlon: biathlonProvider.getName()
+        },
+        availableSports: getAvailableSports(),
         notifier: notifier.getStats(),
         cache: getCacheStatus(),
         refreshRates: {
@@ -337,12 +482,15 @@ app.post('/api/notifier/check', async (req, res) => {
 
 // ============ START SERVER ============
 app.listen(PORT, () => {
-    const provider = getProvider();
+    const shlProvider = getProvider('shl');
+    const biathlonProvider = getProvider('biathlon');
+
     console.log(`\n========================================`);
-    console.log(`  SHL Proxy Server + Notifier`);
+    console.log(`  GamePulse API Server`);
     console.log(`========================================`);
     console.log(`Server running at http://localhost:${PORT}`);
-    console.log(`Data provider: ${provider.getName()}`);
+    console.log(`Available sports: ${getAvailableSports().join(', ')}`);
+    console.log(`Providers: ${shlProvider.getName()}, ${biathlonProvider.getName()}`);
     console.log(`Started at: ${formatSwedishTimestamp()}`);
     console.log(`\nCache durations:`);
     console.log(`  - Games: 60s (15s during live games)`);

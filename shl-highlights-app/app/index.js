@@ -1,12 +1,16 @@
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, Modal, Dimensions, ScrollView, Image, RefreshControl, Platform } from 'react-native';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isToday, isTomorrow, differenceInDays } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { fetchGames, fetchVideosForGame, fetchGameDetails, fetchVideoDetails, getTeamLogoUrl, fetchTeams } from '../api/shl';
+import {
+    fetchGames, fetchVideosForGame, fetchGameDetails, fetchVideoDetails, getTeamLogoUrl, fetchTeams,
+    fetchBiathlonSchedule, fetchBiathlonEvents, fetchBiathlonNations, getNationFlag
+} from '../api/shl';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -28,8 +32,30 @@ const TEAM_COLORS = {
     'MODO': ['#D31022', '#005336'],
 };
 
+// Nation colors for biathlon
+const NATION_COLORS = {
+    'NOR': '#BA0C2F',
+    'SWE': '#006AA7',
+    'FRA': '#0055A4',
+    'GER': '#000000',
+    'ITA': '#009246',
+    'AUT': '#ED2939',
+    'SUI': '#FF0000',
+    'FIN': '#003580',
+    'USA': '#3C3B6E',
+    'CAN': '#FF0000',
+    'CZE': '#11457E',
+};
+
 const APP_NAME = 'GamePulse';
-const APP_TAGLINE = 'Scores, stats, and more';
+const APP_TAGLINE = 'Sports schedule & highlights';
+
+// Storage keys
+const STORAGE_KEYS = {
+    SELECTED_SPORT: 'selectedSport',
+    SELECTED_TEAM: 'selectedTeam',
+    SELECTED_NATIONS: 'selectedNations'
+};
 
 // ============ COMPONENTS ============
 
@@ -43,6 +69,36 @@ const LogoMark = () => (
         <View style={styles.logoAccentDot} />
     </LinearGradient>
 );
+
+// Sport Tab Component
+const SportTab = ({ sport, isActive, onPress }) => {
+    const icons = {
+        shl: 'hockey-puck',
+        biathlon: 'locate-outline'
+    };
+
+    const names = {
+        shl: 'Hockey',
+        biathlon: 'Biathlon'
+    };
+
+    return (
+        <TouchableOpacity
+            style={[styles.sportTab, isActive && styles.sportTabActive]}
+            onPress={onPress}
+            activeOpacity={0.7}
+        >
+            <Ionicons
+                name={sport === 'biathlon' ? 'locate-outline' : 'snow-outline'}
+                size={18}
+                color={isActive ? '#0A84FF' : '#666'}
+            />
+            <Text style={[styles.sportTabText, isActive && styles.sportTabTextActive]}>
+                {names[sport] || sport}
+            </Text>
+        </TouchableOpacity>
+    );
+};
 
 // Stats Bar Component
 const StatBar = ({ label, homeValue, awayValue, homeColor, awayColor }) => {
@@ -67,10 +123,8 @@ const StatBar = ({ label, homeValue, awayValue, homeColor, awayColor }) => {
 // Helper to safely get player name from different API formats
 const getPlayerName = (player) => {
     if (!player) return 'Unknown';
-    // API might use familyName/givenName or lastName/firstName
     const firstName = player.givenName || player.firstName || '';
     const lastName = player.familyName || player.lastName || '';
-    // Handle if these are objects with value property
     const fn = typeof firstName === 'string' ? firstName : firstName?.value || '';
     const ln = typeof lastName === 'string' ? lastName : lastName?.value || '';
     if (fn && ln) return `${fn.charAt(0)}. ${ln}`;
@@ -81,39 +135,27 @@ const getPlayerName = (player) => {
 // Helper to generate a display title from video tags when title is null
 const getVideoDisplayTitle = (video) => {
     if (video.title) return video.title;
-
     const tags = video.tags || [];
-
-    // Check for highlights tag
-    if (tags.includes('custom.highlights')) {
-        return 'Game Highlights';
-    }
-
-    // Check for goal tags like "goal.4-5"
+    if (tags.includes('custom.highlights')) return 'Game Highlights';
     const goalTag = tags.find(t => t.startsWith('goal.'));
     if (goalTag) {
         const score = goalTag.replace('goal.', '');
         return `Goal (${score})`;
     }
-
-    // Check for other common tags
     if (tags.includes('penalty')) return 'Penalty';
     if (tags.includes('save')) return 'Save';
     if (tags.includes('interview')) return 'Interview';
-
     return 'Video Clip';
 };
 
 const getAssistName = (assist) => {
     if (!assist) return null;
     const lastName = assist.familyName || assist.lastName;
-    const ln = typeof lastName === 'string' ? lastName : lastName?.value || null;
-    return ln;
+    return typeof lastName === 'string' ? lastName : lastName?.value || null;
 };
 
 // Extract StayLive video ID from SHL video object
 const getStayLiveVideoId = (video) => {
-    // mediaString format: "video|staylive|488394"
     if (video.mediaString) {
         const parts = video.mediaString.split('|');
         if (parts.length === 3 && parts[1] === 'staylive') {
@@ -123,9 +165,18 @@ const getStayLiveVideoId = (video) => {
     return video.id || null;
 };
 
+// Format relative date
+const formatRelativeDate = (dateStr) => {
+    const date = parseISO(dateStr);
+    if (isToday(date)) return 'Idag';
+    if (isTomorrow(date)) return 'Imorgon';
+    const days = differenceInDays(date, new Date());
+    if (days > 0 && days <= 7) return format(date, 'EEEE', { locale: sv });
+    return format(date, 'd MMM', { locale: sv });
+};
+
 // Goal Item Component
 const GoalItem = ({ goal, homeTeamCode, hasVideo, onVideoPress }) => {
-    // Check if it's a home goal using eventTeam.place or eventTeam.teamCode
     const isHomeGoal = goal.eventTeam?.place === 'home' || goal.eventTeam?.teamCode === homeTeamCode;
     const playerName = getPlayerName(goal.player);
     const assists = [];
@@ -133,12 +184,9 @@ const GoalItem = ({ goal, homeTeamCode, hasVideo, onVideoPress }) => {
     const a2 = getAssistName(goal.assist2);
     if (a1) assists.push(a1);
     if (a2) assists.push(a2);
-
-    // Get the score after this goal
     const homeGoals = goal.homeGoals ?? goal.homeScore ?? 0;
     const awayGoals = goal.awayGoals ?? goal.awayScore ?? 0;
 
-    // Get goal type description
     const getGoalType = () => {
         const types = [];
         if (goal.isPowerPlay) types.push('PP');
@@ -186,7 +234,6 @@ const GoalItem = ({ goal, homeTeamCode, hasVideo, onVideoPress }) => {
 
 // Goalkeeper Item Component
 const GoalkeeperItem = ({ event, homeTeamCode }) => {
-    const isHomeTeam = event.eventTeam?.place === 'home' || event.eventTeam?.teamCode === homeTeamCode;
     const playerName = getPlayerName(event.player);
     const jersey = event.player?.jerseyToday;
     const isEntering = event.isEntering;
@@ -220,8 +267,7 @@ const GoalkeeperItem = ({ event, homeTeamCode }) => {
 };
 
 // Timeout Item Component
-const TimeoutItem = ({ event, homeTeamCode }) => {
-    const isHomeTeam = event.eventTeam?.place === 'home' || event.eventTeam?.teamCode === homeTeamCode;
+const TimeoutItem = ({ event }) => {
     const teamName = event.eventTeam?.teamName || event.eventTeam?.teamCode || 'Team';
 
     return (
@@ -253,9 +299,86 @@ const TabButton = ({ title, isActive, onPress, icon }) => (
     </TouchableOpacity>
 );
 
+// Biathlon Race Card Component
+const BiathlonRaceCard = ({ race, onPress }) => {
+    const date = parseISO(race.startDateTime);
+    const relativeDate = formatRelativeDate(race.startDateTime);
+    const time = format(date, 'HH:mm');
+    const isUpcoming = race.state === 'upcoming';
+    const isLive = race.state === 'live';
+
+    const disciplineIcons = {
+        'Sprint': 'flash-outline',
+        'Pursuit': 'trending-up-outline',
+        'Individual': 'person-outline',
+        'Mass Start': 'people-outline',
+        'Relay': 'swap-horizontal-outline',
+        'Mixed Relay': 'git-merge-outline',
+        'Single Mixed Relay': 'git-branch-outline'
+    };
+
+    const genderColors = {
+        'men': '#4A90D9',
+        'women': '#D94A8C',
+        'mixed': '#9B59B6'
+    };
+
+    return (
+        <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+            <LinearGradient
+                colors={isLive ? ['#2a1c1c', '#1c1c1e'] : ['#1c1c1e', '#2c2c2e']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.raceCard, isLive && styles.raceCardLive]}
+            >
+                <View style={styles.raceCardHeader}>
+                    <View style={styles.raceTypeContainer}>
+                        <Text style={styles.raceEventType}>
+                            {race.eventType === 'olympics' ? '🏅 Olympics' : 'World Cup'}
+                        </Text>
+                    </View>
+                    <View style={styles.raceDateTimeContainer}>
+                        <Text style={[styles.raceDate, isLive && styles.liveTextAccented]}>
+                            {isLive ? 'LIVE' : relativeDate}
+                        </Text>
+                        <Text style={styles.raceTime}>{time}</Text>
+                    </View>
+                </View>
+
+                <View style={styles.raceMainContent}>
+                    <View style={styles.raceDisciplineRow}>
+                        <Ionicons
+                            name={disciplineIcons[race.discipline] || 'ellipse-outline'}
+                            size={22}
+                            color={genderColors[race.gender] || '#fff'}
+                        />
+                        <Text style={styles.raceDiscipline}>{race.discipline}</Text>
+                        <View style={[styles.genderBadge, { backgroundColor: genderColors[race.gender] || '#666' }]}>
+                            <Text style={styles.genderBadgeText}>{race.genderDisplay}</Text>
+                        </View>
+                    </View>
+                    <View style={styles.raceLocationRow}>
+                        <Text style={styles.raceFlag}>{getNationFlag(race.country)}</Text>
+                        <Text style={styles.raceLocation}>{race.location}</Text>
+                        <Text style={styles.raceCountry}>{race.countryName}</Text>
+                    </View>
+                </View>
+
+                {race.eventName && (
+                    <Text style={styles.raceEventName}>{race.eventName}</Text>
+                )}
+            </LinearGradient>
+        </TouchableOpacity>
+    );
+};
+
 // ============ MAIN APP ============
 
 export default function App() {
+    // Sport selection
+    const [activeSport, setActiveSport] = useState('shl');
+
+    // SHL state
     const [games, setGames] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -269,6 +392,43 @@ export default function App() {
     const [loadingVideoDetails, setLoadingVideoDetails] = useState(false);
     const [activeTab, setActiveTab] = useState('summary');
 
+    // Biathlon state
+    const [biathlonRaces, setBiathlonRaces] = useState([]);
+    const [biathlonEvents, setBiathlonEvents] = useState([]);
+    const [biathlonNations, setBiathlonNations] = useState([]);
+    const [loadingBiathlon, setLoadingBiathlon] = useState(false);
+    const [selectedNations, setSelectedNations] = useState([]);
+    const [selectedRace, setSelectedRace] = useState(null);
+
+    // Load saved preferences
+    useEffect(() => {
+        loadPreferences();
+    }, []);
+
+    const loadPreferences = async () => {
+        try {
+            const [savedSport, savedTeam, savedNations] = await Promise.all([
+                AsyncStorage.getItem(STORAGE_KEYS.SELECTED_SPORT),
+                AsyncStorage.getItem(STORAGE_KEYS.SELECTED_TEAM),
+                AsyncStorage.getItem(STORAGE_KEYS.SELECTED_NATIONS)
+            ]);
+
+            if (savedSport) setActiveSport(savedSport);
+            if (savedTeam) setSelectedTeam(savedTeam);
+            if (savedNations) setSelectedNations(JSON.parse(savedNations));
+        } catch (e) {
+            console.error('Error loading preferences:', e);
+        }
+    };
+
+    const savePreference = async (key, value) => {
+        try {
+            await AsyncStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+        } catch (e) {
+            console.error('Error saving preference:', e);
+        }
+    };
+
     const processedGameData = useMemo(() => {
         if (!gameDetails || !selectedGame) return null;
 
@@ -280,7 +440,6 @@ export default function App() {
         const statsArray = gameDetails.teamStats?.stats || [];
         statsArray.forEach(stat => {
             const key = stat.homeTeam?.sideTranslateKey || stat.awayTeam?.sideTranslateKey;
-
             if (key === 'G') {
                 actualScore.home = stat.homeTeam?.left?.value;
                 actualScore.away = stat.awayTeam?.left?.value;
@@ -300,24 +459,17 @@ export default function App() {
             away: actualScore.away ?? gameDetails.info?.awayTeam?.score ?? selectedGame.awayTeamResult?.score ?? '-'
         };
 
-        // Group events by period
         const interestingEvents = [];
         let currentPeriod = -1;
         const allEvents = gameDetails.events?.all || [];
         const sortedEvents = [...allEvents]
             .filter(e => {
-                // Include goals, penalties, and timeouts
                 if (e.type === 'goal' || e.type === 'penalty' || e.type === 'timeout') return true;
-
-                // For goalkeeper events, filter out start/end of game changes
                 if (e.type === 'goalkeeper') {
-                    // Hide goalkeeper IN at start of game (P1 00:00)
                     if (e.isEntering && e.period === 1 && e.time === '00:00') return false;
-                    // Hide goalkeeper OUT at end of game (gameState indicates game ended)
                     if (!e.isEntering && e.gameState === 'GameEnded') return false;
                     return true;
                 }
-
                 return false;
             })
             .sort((a, b) => b.period - a.period || (b.time > a.time ? 1 : -1));
@@ -333,21 +485,27 @@ export default function App() {
         return { sog, pp, pim, scoreDisplay, events: interestingEvents };
     }, [gameDetails, selectedGame]);
 
+    // Load data based on active sport
     useEffect(() => {
-        loadGames();
-    }, []);
+        if (activeSport === 'shl') {
+            loadGames();
+        } else if (activeSport === 'biathlon') {
+            loadBiathlonData();
+        }
+    }, [activeSport]);
 
+    // Auto-refresh for live games
     useEffect(() => {
         const hasLiveGame = games.some(g => g.state === 'live');
         let intervalId;
-        if (hasLiveGame) {
+        if (hasLiveGame && activeSport === 'shl') {
             intervalId = setInterval(() => {
                 console.log('Auto-refreshing live games...');
                 loadGames(true);
             }, 30800);
         }
         return () => { if (intervalId) clearInterval(intervalId); };
-    }, [games]);
+    }, [games, activeSport]);
 
     const loadGames = async (silent = false) => {
         if (!silent) setLoading(true);
@@ -362,12 +520,53 @@ export default function App() {
         }
     };
 
-    const onRefresh = () => {
-        setRefreshing(true);
-        loadGames();
+    const loadBiathlonData = async (silent = false) => {
+        if (!silent) setLoadingBiathlon(true);
+        try {
+            const [races, events, nations] = await Promise.all([
+                fetchBiathlonSchedule(50),
+                fetchBiathlonEvents(),
+                fetchBiathlonNations()
+            ]);
+            setBiathlonRaces(races);
+            setBiathlonEvents(events);
+            setBiathlonNations(nations);
+        } catch (e) {
+            console.error("Failed to load biathlon data", e);
+        } finally {
+            if (!silent) setLoadingBiathlon(false);
+            setRefreshing(false);
+        }
     };
 
-    // Play video with HLS streaming URL from new API
+    const onRefresh = () => {
+        setRefreshing(true);
+        if (activeSport === 'shl') {
+            loadGames();
+        } else {
+            loadBiathlonData();
+        }
+    };
+
+    const handleSportChange = (sport) => {
+        setActiveSport(sport);
+        savePreference(STORAGE_KEYS.SELECTED_SPORT, sport);
+    };
+
+    const handleTeamChange = (team) => {
+        setSelectedTeam(team);
+        savePreference(STORAGE_KEYS.SELECTED_TEAM, team);
+    };
+
+    const toggleNationFilter = (nationCode) => {
+        const newSelected = selectedNations.includes(nationCode)
+            ? selectedNations.filter(n => n !== nationCode)
+            : [...selectedNations, nationCode];
+        setSelectedNations(newSelected);
+        savePreference(STORAGE_KEYS.SELECTED_NATIONS, newSelected);
+    };
+
+    // Video playback
     const playVideo = async (video) => {
         const stayLiveId = getStayLiveVideoId(video);
         if (!stayLiveId) {
@@ -396,7 +595,6 @@ export default function App() {
     };
 
     const handleTabChange = (tab) => {
-        // Stop video when leaving highlights tab
         if (activeTab === 'highlights' && tab !== 'highlights') {
             stopVideo();
         }
@@ -409,7 +607,6 @@ export default function App() {
             if (g.homeTeamInfo?.code) teamCodes.add(g.homeTeamInfo.code);
             if (g.awayTeamInfo?.code) teamCodes.add(g.awayTeamInfo.code);
         });
-        // Return array of {code} sorted alphabetically
         return Array.from(teamCodes)
             .map(code => ({ code }))
             .sort((a, b) => a.code.localeCompare(b.code));
@@ -427,13 +624,37 @@ export default function App() {
         });
     }, [games, selectedTeam]);
 
+    // Filter biathlon races by selected nations (host country)
+    const filteredBiathlonRaces = useMemo(() => {
+        if (selectedNations.length === 0) return biathlonRaces;
+        return biathlonRaces.filter(race => selectedNations.includes(race.country));
+    }, [biathlonRaces, selectedNations]);
+
+    // Group races by event
+    const groupedBiathlonRaces = useMemo(() => {
+        const groups = {};
+        filteredBiathlonRaces.forEach(race => {
+            if (!groups[race.eventId]) {
+                groups[race.eventId] = {
+                    eventId: race.eventId,
+                    eventName: race.eventName,
+                    location: race.location,
+                    country: race.country,
+                    countryName: race.countryName,
+                    races: []
+                };
+            }
+            groups[race.eventId].races.push(race);
+        });
+        return Object.values(groups);
+    }, [filteredBiathlonRaces]);
+
     const handleGamePress = async (game) => {
         setSelectedGame(game);
         setLoadingModal(true);
         setActiveTab('summary');
         setPlayingVideoId(null);
 
-        // Fetch both details and videos in parallel
         const [details, vids] = await Promise.all([
             fetchGameDetails(game.uuid),
             fetchVideosForGame(game.uuid)
@@ -441,7 +662,6 @@ export default function App() {
 
         setGameDetails(details);
 
-        // Sort videos: highlights first
         const sortedVids = vids.sort((a, b) => {
             const aHigh = a.tags && a.tags.includes('custom.highlights');
             const bHigh = b.tags && b.tags.includes('custom.highlights');
@@ -453,28 +673,57 @@ export default function App() {
         setLoadingModal(false);
     };
 
+    const handleRacePress = (race) => {
+        setSelectedRace(race);
+    };
+
     const closeModal = () => {
-        stopVideo(); // Clean up video state
+        stopVideo();
         setSelectedGame(null);
         setGameDetails(null);
         setVideos([]);
     };
 
+    const closeRaceModal = () => {
+        setSelectedRace(null);
+    };
+
     const getTeamColor = (code) => TEAM_COLORS[code]?.[0] || '#333';
 
+    // Helper to check if a goal has an associated video clip
+    const getGoalVideoId = (goal) => {
+        const homeGoals = goal.homeGoals;
+        const awayGoals = goal.awayGoals;
+        if (homeGoals === undefined || awayGoals === undefined) return null;
+        const scoreTag = `goal.${homeGoals}-${awayGoals}`;
+        const matchingVideo = videos.find(v => v.tags?.includes(scoreTag));
+        if (matchingVideo) return matchingVideo.id;
+        const playerLast = goal.player?.familyName || goal.player?.lastName || '';
+        const ln = typeof playerLast === 'string' ? playerLast.toLowerCase() : (playerLast?.value || '').toLowerCase();
+        if (ln.length > 2) {
+            const titleMatch = videos.find(v => v.title?.toLowerCase()?.includes(ln));
+            if (titleMatch) return titleMatch.id;
+        }
+        return null;
+    };
+
     // ============ RENDER FUNCTIONS ============
+
+    const renderSportTabs = () => (
+        <View style={styles.sportTabsContainer}>
+            <SportTab sport="shl" isActive={activeSport === 'shl'} onPress={() => handleSportChange('shl')} />
+            <SportTab sport="biathlon" isActive={activeSport === 'biathlon'} onPress={() => handleSportChange('biathlon')} />
+        </View>
+    );
 
     const renderGameItem = ({ item }) => {
         const date = parseISO(item.startDateTime);
         const formattedDate = format(date, 'd MMMM HH:mm', { locale: sv });
         const isLive = item.state === 'live';
-        // Properly extract scores - may be nested in objects with 'value' property
         const extractScore = (teamResult, teamInfo) => {
-            // Check teamResult first (live/post-game)
             if (teamResult?.score !== undefined) {
                 return typeof teamResult.score === 'object' ? teamResult.score.value : teamResult.score;
             }
-            // Fallback to teamInfo
             if (teamInfo?.score !== undefined) {
                 return typeof teamInfo.score === 'object' ? teamInfo.score.value : teamInfo.score;
             }
@@ -482,8 +731,6 @@ export default function App() {
         };
         const homeScore = extractScore(item.homeTeamResult, item.homeTeamInfo);
         const awayScore = extractScore(item.awayTeamResult, item.awayTeamInfo);
-        const homeColor = getTeamColor(item.homeTeamInfo.code);
-        const awayColor = getTeamColor(item.awayTeamInfo.code);
 
         return (
             <TouchableOpacity onPress={() => handleGamePress(item)} activeOpacity={0.8}>
@@ -516,20 +763,67 @@ export default function App() {
     const renderTeamFilter = () => (
         <View style={styles.filterContainer}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterContent}>
-                <TouchableOpacity style={[styles.filterPill, selectedTeam === 'ALL' && styles.filterPillActive]} onPress={() => setSelectedTeam('ALL')}>
+                <TouchableOpacity style={[styles.filterPill, selectedTeam === 'ALL' && styles.filterPillActive]} onPress={() => handleTeamChange('ALL')}>
                     <Text style={[styles.filterText, selectedTeam === 'ALL' && styles.filterTextActive]}>All</Text>
                 </TouchableOpacity>
                 {teams.map(team => (
                     <TouchableOpacity
                         key={team.code}
                         style={[styles.filterPill, styles.filterPillTeam, selectedTeam === team.code && styles.filterPillActive]}
-                        onPress={() => setSelectedTeam(team.code)}
+                        onPress={() => handleTeamChange(team.code)}
                     >
                         <Image source={{ uri: getTeamLogoUrl(team.code) }} style={styles.filterTeamLogo} resizeMode="contain" />
                     </TouchableOpacity>
                 ))}
             </ScrollView>
         </View>
+    );
+
+    const renderNationFilter = () => (
+        <View style={styles.filterContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterContent}>
+                <TouchableOpacity
+                    style={[styles.filterPill, selectedNations.length === 0 && styles.filterPillActive]}
+                    onPress={() => { setSelectedNations([]); savePreference(STORAGE_KEYS.SELECTED_NATIONS, []); }}
+                >
+                    <Text style={[styles.filterText, selectedNations.length === 0 && styles.filterTextActive]}>All Venues</Text>
+                </TouchableOpacity>
+                {biathlonNations.slice(0, 10).map(nation => (
+                    <TouchableOpacity
+                        key={nation.code}
+                        style={[styles.filterPill, selectedNations.includes(nation.code) && styles.filterPillActive]}
+                        onPress={() => toggleNationFilter(nation.code)}
+                    >
+                        <Text style={styles.filterFlagText}>{nation.flag}</Text>
+                        <Text style={[styles.filterText, selectedNations.includes(nation.code) && styles.filterTextActive]}>
+                            {nation.code}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
+        </View>
+    );
+
+    const renderBiathlonSchedule = () => (
+        <FlatList
+            data={filteredBiathlonRaces}
+            renderItem={({ item }) => <BiathlonRaceCard race={item} onPress={() => handleRacePress(item)} />}
+            keyExtractor={item => item.uuid}
+            contentContainerStyle={styles.listContent}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+            ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>No upcoming races found.</Text>
+                </View>
+            }
+            ListHeaderComponent={
+                <View style={styles.scheduleHeader}>
+                    <Ionicons name="calendar-outline" size={20} color="#0A84FF" />
+                    <Text style={styles.scheduleHeaderText}>Upcoming Races</Text>
+                    <Text style={styles.scheduleCount}>{filteredBiathlonRaces.length} races</Text>
+                </View>
+            }
+        />
     );
 
     // ============ TAB CONTENT ============
@@ -545,7 +839,6 @@ export default function App() {
 
         return (
             <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-                {/* Stats Section */}
                 <View style={styles.sectionCard}>
                     <Text style={styles.sectionTitle}>Team Stats</Text>
                     <StatBar label="Shots" homeValue={sog.home} awayValue={sog.away} homeColor={homeColor} awayColor={awayColor} />
@@ -553,7 +846,6 @@ export default function App() {
                     <StatBar label="Penalty Min" homeValue={pim.home} awayValue={pim.away} homeColor={homeColor} awayColor={awayColor} />
                 </View>
 
-                {/* Goals Section */}
                 <View style={styles.sectionCard}>
                     <Text style={styles.sectionTitle}>Goals</Text>
                     {goals.length === 0 ? (
@@ -580,43 +872,6 @@ export default function App() {
                 </View>
             </ScrollView>
         );
-    };
-
-    // Helper to check if a goal has an associated video clip
-    const getGoalVideoId = (goal) => {
-        // Match by score tag (e.g., "goal.4-5" matches homeGoals:4, awayGoals:5)
-        const homeGoals = goal.homeGoals;
-        const awayGoals = goal.awayGoals;
-
-        if (homeGoals === undefined || awayGoals === undefined) {
-            return null;
-        }
-
-        // Look for video with matching score tag
-        const scoreTag = `goal.${homeGoals}-${awayGoals}`;
-        const matchingVideo = videos.find(v => {
-            const tags = v.tags || [];
-            return tags.includes(scoreTag);
-        });
-
-        if (matchingVideo) {
-            return matchingVideo.id;
-        }
-
-        // Fallback: try to match by player name in title (for older videos)
-        const playerLast = goal.player?.familyName || goal.player?.lastName || '';
-        const ln = typeof playerLast === 'string' ? playerLast.toLowerCase() : (playerLast?.value || '').toLowerCase();
-        if (ln.length > 2) {
-            const titleMatch = videos.find(v => {
-                const title = v.title?.toLowerCase() || '';
-                return title.includes(ln);
-            });
-            if (titleMatch) {
-                return titleMatch.id;
-            }
-        }
-
-        return null;
     };
 
     const renderEventsTab = () => {
@@ -660,18 +915,14 @@ export default function App() {
                         const playerName = getPlayerName(item.player);
                         const offence = typeof item.offence === 'string' ? item.offence : (item.offence?.shortName || item.offence?.name || 'Penalty');
                         const variant = item.variant;
-
-                        // Extract penalty minutes - check all possible time fields
-                        let penaltyMinutes = '2'; // default
+                        let penaltyMinutes = '2';
                         if (item.penaltyMinutes) {
                             penaltyMinutes = String(item.penaltyMinutes);
                         } else if (variant && typeof variant === 'object') {
-                            // Use description if available (e.g., "5 min", "2 min")
                             if (variant.description) {
                                 const match = variant.description.match(/(\d+)/);
                                 if (match) penaltyMinutes = match[1];
                             } else {
-                                // Check all time fields and use the non-zero one
                                 const times = [
                                     parseInt(variant.majorTime) || 0,
                                     parseInt(variant.minorTime) || 0,
@@ -685,8 +936,6 @@ export default function App() {
                                 if (maxTime > 0) penaltyMinutes = String(maxTime);
                             }
                         }
-
-                        // Get penalty type (Minor, Major, etc.)
                         const penaltyType = variant?.shortName || '';
 
                         return (
@@ -714,7 +963,7 @@ export default function App() {
                     }
 
                     if (item.type === 'timeout') {
-                        return <TimeoutItem event={item} homeTeamCode={homeCode} />;
+                        return <TimeoutItem event={item} />;
                     }
 
                     return null;
@@ -724,12 +973,10 @@ export default function App() {
         );
     };
 
-    // Get the currently playing video for the title box
     const currentlyPlayingVideo = videos.find(v => v.id === playingVideoId);
 
     const renderHighlightsTab = () => (
         <View style={{ flex: 1 }}>
-            {/* Header outside FlatList to avoid numColumns issues */}
             <View style={styles.highlightsTitleBox}>
                 <View style={styles.highlightsTitleHeader}>
                     <Ionicons name="videocam" size={20} color="#0A84FF" />
@@ -747,7 +994,6 @@ export default function App() {
                 )}
             </View>
 
-            {/* Large video player when a video is playing */}
             {currentlyPlayingVideo && (
                 <View style={styles.activePlayerContainer}>
                     <View style={styles.activePlayer}>
@@ -795,7 +1041,6 @@ export default function App() {
                 </View>
             )}
 
-            {/* Video thumbnails grid */}
             <FlatList
                 data={videos}
                 keyExtractor={item => item.id}
@@ -803,37 +1048,119 @@ export default function App() {
                 columnWrapperStyle={styles.videoGridRow}
                 contentContainerStyle={styles.videoList}
                 renderItem={({ item }) => {
-                const isPlaying = playingVideoId === item.id;
-
-                return (
-                    <TouchableOpacity
-                        style={[styles.videoGridCard, isPlaying && styles.videoGridCardPlaying]}
-                        onPress={() => playVideo(item)}
-                        activeOpacity={0.9}
-                    >
-                        <View style={styles.videoGridThumbnailContainer}>
-                            <Image source={{ uri: item.renderedMedia.url || item.thumbnail }} style={styles.thumbnail} resizeMode="cover" />
-                            {isPlaying ? (
-                                <View style={styles.nowPlayingBadge}>
-                                    <Ionicons name="volume-high" size={14} color="#fff" />
-                                    <Text style={styles.nowPlayingBadgeText}>Playing</Text>
-                                </View>
-                            ) : (
-                                <View style={styles.miniPlayIconContainer}>
-                                    <Ionicons name="play" size={24} color="#fff" />
-                                </View>
-                            )}
-                            <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.thumbnailGradient} />
-                        </View>
-                        <View style={styles.videoGridInfo}>
-                            <Text style={[styles.videoGridTitle, isPlaying && styles.videoGridTitlePlaying]} numberOfLines={2}>{getVideoDisplayTitle(item)}</Text>
-                        </View>
-                    </TouchableOpacity>
-                );
-            }}
+                    const isPlaying = playingVideoId === item.id;
+                    return (
+                        <TouchableOpacity
+                            style={[styles.videoGridCard, isPlaying && styles.videoGridCardPlaying]}
+                            onPress={() => playVideo(item)}
+                            activeOpacity={0.9}
+                        >
+                            <View style={styles.videoGridThumbnailContainer}>
+                                <Image source={{ uri: item.renderedMedia.url || item.thumbnail }} style={styles.thumbnail} resizeMode="cover" />
+                                {isPlaying ? (
+                                    <View style={styles.nowPlayingBadge}>
+                                        <Ionicons name="volume-high" size={14} color="#fff" />
+                                        <Text style={styles.nowPlayingBadgeText}>Playing</Text>
+                                    </View>
+                                ) : (
+                                    <View style={styles.miniPlayIconContainer}>
+                                        <Ionicons name="play" size={24} color="#fff" />
+                                    </View>
+                                )}
+                                <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.thumbnailGradient} />
+                            </View>
+                            <View style={styles.videoGridInfo}>
+                                <Text style={[styles.videoGridTitle, isPlaying && styles.videoGridTitlePlaying]} numberOfLines={2}>{getVideoDisplayTitle(item)}</Text>
+                            </View>
+                        </TouchableOpacity>
+                    );
+                }}
                 ListEmptyComponent={<Text style={styles.emptyText}>No videos available yet.</Text>}
             />
         </View>
+    );
+
+    // ============ RACE DETAIL MODAL ============
+
+    const renderRaceModal = () => (
+        <Modal visible={!!selectedRace} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeRaceModal}>
+            <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
+                {selectedRace && (
+                    <>
+                        <View style={styles.raceModalHeader}>
+                            <TouchableOpacity onPress={closeRaceModal} style={styles.closeButton}>
+                                <Ionicons name="close" size={24} color="#fff" />
+                            </TouchableOpacity>
+                            <View style={styles.raceModalTitleContainer}>
+                                <Text style={styles.raceModalEventName}>{selectedRace.eventName}</Text>
+                                <Text style={styles.raceModalLocation}>
+                                    {getNationFlag(selectedRace.country)} {selectedRace.location}, {selectedRace.countryName}
+                                </Text>
+                            </View>
+                        </View>
+
+                        <ScrollView style={styles.raceModalContent}>
+                            <View style={styles.raceDetailCard}>
+                                <View style={styles.raceDetailHeader}>
+                                    <Text style={styles.raceDetailDiscipline}>{selectedRace.discipline}</Text>
+                                    <View style={[styles.genderBadgeLarge, {
+                                        backgroundColor: selectedRace.gender === 'men' ? '#4A90D9' :
+                                            selectedRace.gender === 'women' ? '#D94A8C' : '#9B59B6'
+                                    }]}>
+                                        <Text style={styles.genderBadgeTextLarge}>{selectedRace.genderDisplay}</Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.raceDetailRow}>
+                                    <Ionicons name="calendar-outline" size={20} color="#888" />
+                                    <Text style={styles.raceDetailLabel}>Date</Text>
+                                    <Text style={styles.raceDetailValue}>
+                                        {format(parseISO(selectedRace.startDateTime), 'd MMMM yyyy', { locale: sv })}
+                                    </Text>
+                                </View>
+
+                                <View style={styles.raceDetailRow}>
+                                    <Ionicons name="time-outline" size={20} color="#888" />
+                                    <Text style={styles.raceDetailLabel}>Start Time</Text>
+                                    <Text style={styles.raceDetailValue}>
+                                        {format(parseISO(selectedRace.startDateTime), 'HH:mm')} CET
+                                    </Text>
+                                </View>
+
+                                <View style={styles.raceDetailRow}>
+                                    <Ionicons name="trophy-outline" size={20} color="#888" />
+                                    <Text style={styles.raceDetailLabel}>Competition</Text>
+                                    <Text style={styles.raceDetailValue}>
+                                        {selectedRace.eventType === 'olympics' ? 'Winter Olympics 2026' : 'IBU World Cup 2025/26'}
+                                    </Text>
+                                </View>
+
+                                <View style={styles.raceDetailRow}>
+                                    <Ionicons name="pulse-outline" size={20} color="#888" />
+                                    <Text style={styles.raceDetailLabel}>Status</Text>
+                                    <View style={[styles.statusBadge, {
+                                        backgroundColor: selectedRace.state === 'live' ? '#FF453A' :
+                                            selectedRace.state === 'upcoming' ? '#30D158' : '#666'
+                                    }]}>
+                                        <Text style={styles.statusBadgeText}>
+                                            {selectedRace.state === 'live' ? 'LIVE' :
+                                                selectedRace.state === 'upcoming' ? 'Upcoming' : 'Completed'}
+                                        </Text>
+                                    </View>
+                                </View>
+                            </View>
+
+                            <View style={styles.raceInfoNote}>
+                                <Ionicons name="information-circle-outline" size={18} color="#666" />
+                                <Text style={styles.raceInfoNoteText}>
+                                    Results and start lists will be available closer to race time.
+                                </Text>
+                            </View>
+                        </ScrollView>
+                    </>
+                )}
+            </SafeAreaView>
+        </Modal>
     );
 
     // ============ MAIN RENDER ============
@@ -850,26 +1177,41 @@ export default function App() {
                     </View>
                 </View>
             </View>
-            {!loading && renderTeamFilter()}
-            {loading ? (
-                <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
+
+            {renderSportTabs()}
+
+            {activeSport === 'shl' ? (
+                <>
+                    {!loading && renderTeamFilter()}
+                    {loading ? (
+                        <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
+                    ) : (
+                        <FlatList
+                            data={filteredGames}
+                            renderItem={renderGameItem}
+                            keyExtractor={item => item.uuid}
+                            contentContainerStyle={styles.listContent}
+                            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+                            ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.emptyText}>No games found.</Text></View>}
+                        />
+                    )}
+                </>
             ) : (
-                <FlatList
-                    data={filteredGames}
-                    renderItem={renderGameItem}
-                    keyExtractor={item => item.uuid}
-                    contentContainerStyle={styles.listContent}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
-                    ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.emptyText}>No games found.</Text></View>}
-                />
+                <>
+                    {!loadingBiathlon && renderNationFilter()}
+                    {loadingBiathlon ? (
+                        <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
+                    ) : (
+                        renderBiathlonSchedule()
+                    )}
+                </>
             )}
 
-            {/* Game Modal */}
+            {/* SHL Game Modal */}
             <Modal visible={!!selectedGame} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeModal}>
                 <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
                     {selectedGame && (
                         <>
-                            {/* Header with Score */}
                             <View style={styles.modalHeader}>
                                 <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
                                     <Ionicons name="close" size={24} color="#fff" />
@@ -897,14 +1239,12 @@ export default function App() {
                                 </View>
                             </View>
 
-                            {/* Tab Navigation */}
                             <View style={styles.tabBar}>
                                 <TabButton title="Summary" icon="stats-chart" isActive={activeTab === 'summary'} onPress={() => handleTabChange('summary')} />
                                 <TabButton title="Events" icon="list" isActive={activeTab === 'events'} onPress={() => handleTabChange('events')} />
                                 <TabButton title="Highlights" icon="videocam" isActive={activeTab === 'highlights'} onPress={() => handleTabChange('highlights')} />
                             </View>
 
-                            {/* Tab Content */}
                             {loadingModal ? (
                                 <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
                             ) : (
@@ -918,6 +1258,9 @@ export default function App() {
                     )}
                 </SafeAreaView>
             </Modal>
+
+            {/* Biathlon Race Modal */}
+            {renderRaceModal()}
         </SafeAreaView>
     );
 }
@@ -926,7 +1269,7 @@ export default function App() {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#000' },
-    header: { paddingHorizontal: 16, paddingBottom: 12, paddingTop: 12 },
+    header: { paddingHorizontal: 16, paddingBottom: 8, paddingTop: 12 },
     headerBrand: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     headerTitle: { color: '#fff', fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
     headerSubtitle: { color: '#8e8e93', fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.2 },
@@ -937,15 +1280,30 @@ const styles = StyleSheet.create({
     logoBarMid: { height: 14 },
     logoBarTall: { height: 20 },
     logoAccentDot: { position: 'absolute', width: 8, height: 8, borderRadius: 4, backgroundColor: '#0b0d10', right: 10, top: 10 },
-    filterContainer: { height: 60 },
+
+    // Sport Tabs
+    sportTabsContainer: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 8, gap: 12 },
+    sportTab: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#1c1c1e', borderRadius: 10, borderWidth: 1, borderColor: '#333' },
+    sportTabActive: { backgroundColor: 'rgba(10, 132, 255, 0.15)', borderColor: '#0A84FF' },
+    sportTabText: { color: '#666', fontSize: 14, fontWeight: '600' },
+    sportTabTextActive: { color: '#0A84FF' },
+
+    // Filters
+    filterContainer: { height: 52 },
     filterContent: { paddingHorizontal: 16, alignItems: 'center', gap: 8 },
-    filterPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#1c1c1e', borderWidth: 1, borderColor: '#333' },
+    filterPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#1c1c1e', borderWidth: 1, borderColor: '#333' },
     filterPillTeam: { paddingHorizontal: 8, paddingVertical: 6 },
     filterPillActive: { backgroundColor: '#0A84FF', borderColor: '#0A84FF' },
-    filterText: { color: '#8e8e93', fontWeight: '600', fontSize: 14 },
+    filterText: { color: '#8e8e93', fontWeight: '600', fontSize: 13 },
     filterTextActive: { color: '#fff' },
     filterTeamLogo: { width: 28, height: 28 },
-    listContent: { padding: 16, paddingTop: 0 },
+    filterFlagText: { fontSize: 18 },
+    listContent: { padding: 16, paddingTop: 8 },
+
+    // Schedule Header
+    scheduleHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16, paddingHorizontal: 4 },
+    scheduleHeaderText: { color: '#fff', fontSize: 18, fontWeight: '700', flex: 1 },
+    scheduleCount: { color: '#666', fontSize: 13, fontWeight: '600' },
 
     // Game Card
     gameCard: { borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#333' },
@@ -961,10 +1319,49 @@ const styles = StyleSheet.create({
     scoreText: { color: '#fff', fontSize: 28, fontWeight: '800', fontVariant: ['tabular-nums'] },
     statusText: { color: '#666', fontSize: 12, marginTop: 4, textTransform: 'uppercase' },
 
+    // Biathlon Race Card
+    raceCard: { borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#333' },
+    raceCardLive: { borderColor: '#FF453A' },
+    raceCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+    raceTypeContainer: {},
+    raceEventType: { color: '#666', fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+    raceDateTimeContainer: { alignItems: 'flex-end' },
+    raceDate: { color: '#8e8e93', fontSize: 13, fontWeight: '600' },
+    raceTime: { color: '#666', fontSize: 12, marginTop: 2 },
+    raceMainContent: { gap: 10 },
+    raceDisciplineRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    raceDiscipline: { color: '#fff', fontSize: 20, fontWeight: '700', flex: 1 },
+    genderBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+    genderBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+    raceLocationRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    raceFlag: { fontSize: 20 },
+    raceLocation: { color: '#fff', fontSize: 15, fontWeight: '600' },
+    raceCountry: { color: '#666', fontSize: 13 },
+    raceEventName: { color: '#555', fontSize: 12, marginTop: 10, fontWeight: '500' },
+
     // Modal
     modalContainer: { flex: 1, backgroundColor: '#0a0a0a' },
     modalHeader: { paddingTop: 20, paddingBottom: 16, paddingHorizontal: 16, backgroundColor: '#1c1c1e', borderBottomWidth: 1, borderBottomColor: '#333' },
     closeButton: { position: 'absolute', top: 20, right: 16, zIndex: 10, padding: 8 },
+
+    // Race Modal
+    raceModalHeader: { paddingTop: 20, paddingBottom: 20, paddingHorizontal: 16, backgroundColor: '#1c1c1e', borderBottomWidth: 1, borderBottomColor: '#333' },
+    raceModalTitleContainer: { paddingTop: 10 },
+    raceModalEventName: { color: '#fff', fontSize: 22, fontWeight: '800', marginBottom: 6 },
+    raceModalLocation: { color: '#888', fontSize: 15 },
+    raceModalContent: { flex: 1, padding: 16 },
+    raceDetailCard: { backgroundColor: '#1c1c1e', borderRadius: 16, padding: 20 },
+    raceDetailHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
+    raceDetailDiscipline: { color: '#fff', fontSize: 26, fontWeight: '800' },
+    genderBadgeLarge: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8 },
+    genderBadgeTextLarge: { color: '#fff', fontSize: 13, fontWeight: '700' },
+    raceDetailRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#2a2a2a' },
+    raceDetailLabel: { color: '#888', fontSize: 14, flex: 1 },
+    raceDetailValue: { color: '#fff', fontSize: 15, fontWeight: '600' },
+    statusBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 6 },
+    statusBadgeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+    raceInfoNote: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20, padding: 16, backgroundColor: '#1a1a1a', borderRadius: 12 },
+    raceInfoNoteText: { color: '#666', fontSize: 13, flex: 1 },
 
     // Score Header
     scoreHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingTop: 20 },
@@ -1043,8 +1440,7 @@ const styles = StyleSheet.create({
     timeoutItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#252525', borderRadius: 8, padding: 12, marginBottom: 8, borderLeftWidth: 3, borderLeftColor: '#2196F3' },
     timeoutTeam: { color: '#fff', fontSize: 15, fontWeight: '600' },
 
-    // Video Grid
-    // Highlights Title Box
+    // Highlights
     highlightsTitleBox: { padding: 16, paddingBottom: 8 },
     highlightsTitleHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
     highlightsTitleLabel: { color: '#fff', fontSize: 20, fontWeight: '700' },
@@ -1056,8 +1452,6 @@ const styles = StyleSheet.create({
     // Video Grid
     videoList: { padding: 8 },
     videoGridRow: { justifyContent: 'space-between', paddingHorizontal: 8 },
-
-    // Active/large video player styles
     activePlayerContainer: { marginBottom: 20, paddingHorizontal: 16 },
     activePlayer: { width: '100%', aspectRatio: 16 / 9, backgroundColor: '#000', borderRadius: 12, overflow: 'hidden' },
     activePlayerInfo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, paddingHorizontal: 4 },
@@ -1065,7 +1459,6 @@ const styles = StyleSheet.create({
     closePlayerButton: { padding: 4 },
     nowPlayingBadge: { position: 'absolute', top: 8, left: 8, flexDirection: 'row', alignItems: 'center', backgroundColor: '#0A84FF', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, gap: 4 },
     nowPlayingBadgeText: { color: '#fff', fontSize: 11, fontWeight: '600' },
-
     videoGridCard: { flex: 1, marginBottom: 16, backgroundColor: '#1c1c1e', borderRadius: 8, overflow: 'hidden', marginHorizontal: 4, maxWidth: (width - 48) / 2 },
     videoGridCardPlaying: { borderWidth: 2, borderColor: '#0A84FF' },
     videoLoadingContainer: { width: '100%', aspectRatio: 16 / 9, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' },
