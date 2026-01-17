@@ -43,7 +43,7 @@ import {
 const GAME_CARD_HEIGHT = 160;
 const FOOTBALL_CARD_HEIGHT = 160;
 const BIATHLON_CARD_HEIGHT = 140;
-const LIST_HEADER_HEIGHT = 100;
+const LIST_HEADER_HEIGHT = 50; // Just the ScheduleHeader height (no ViewToggle in FlatList)
 
 export default function App() {
     // User preferences
@@ -229,10 +229,7 @@ export default function App() {
             getItemLayout={getGameItemLayout}
             ListEmptyComponent={<EmptyState message="No games found." />}
             ListHeaderComponent={
-                <View style={styles.listHeader}>
-                    <ViewToggle mode={shl.viewMode} onChange={shl.handleViewChange} />
-                    <ScheduleHeader icon="snow-outline" title="SHL" count={shl.games.length} countLabel="games" />
-                </View>
+                <ScheduleHeader icon="snow-outline" title="SHL" count={shl.games.length} countLabel="games" />
             }
         />
     );
@@ -304,10 +301,7 @@ export default function App() {
             getItemLayout={getFootballItemLayout}
             ListEmptyComponent={<EmptyState message="No matches found." />}
             ListHeaderComponent={
-                <View style={styles.listHeader}>
-                    <ViewToggle mode={football.viewMode} onChange={football.handleViewChange} />
-                    <ScheduleHeader icon="football-outline" title="Allsvenskan" count={football.games.length} countLabel="matches" />
-                </View>
+                <ScheduleHeader icon="football-outline" title="Allsvenskan" count={football.games.length} countLabel="matches" />
             }
         />
     );
@@ -396,34 +390,40 @@ export default function App() {
                 shl.viewMode === 'standings' ? (
                     renderShlStandings()
                 ) : (
-                    <>
+                    <View style={styles.scheduleContainer}>
+                        <View style={styles.stickyToggle}>
+                            <ViewToggle mode={shl.viewMode} onChange={shl.handleViewChange} />
+                        </View>
                         {shl.loading ? (
                             <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
                         ) : (
                             renderShlSchedule()
                         )}
-                    </>
+                    </View>
                 )
             ) : activeSport === 'football' ? (
                 football.viewMode === 'standings' ? (
                     renderFootballStandings()
                 ) : (
-                    <>
+                    <View style={styles.scheduleContainer}>
+                        <View style={styles.stickyToggle}>
+                            <ViewToggle mode={football.viewMode} onChange={football.handleViewChange} />
+                        </View>
                         {football.loading ? (
                             <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
                         ) : (
                             renderFootballSchedule()
                         )}
-                    </>
+                    </View>
                 )
             ) : (
-                <>
+                <View style={styles.scheduleContainer}>
                     {biathlon.loading ? (
                         <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
                     ) : (
                         renderBiathlonSchedule()
                     )}
-                </>
+                </View>
             )}
 
             {/* SHL Game Modal */}
@@ -521,13 +521,18 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         flex: 1
     },
+    scheduleContainer: {
+        flex: 1
+    },
+    stickyToggle: {
+        paddingHorizontal: 16,
+        paddingTop: 8,
+        paddingBottom: 4,
+        backgroundColor: '#000'
+    },
     listContent: {
         padding: 16,
         paddingTop: 8
-    },
-    listHeader: {
-        gap: 12,
-        marginBottom: 12
     },
     standingsHeader: {
         backgroundColor: '#1c1c1e',
