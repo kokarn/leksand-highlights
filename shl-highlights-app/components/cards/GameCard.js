@@ -4,10 +4,19 @@ import { getTeamLogoUrl } from '../../api/shl';
 import { extractScore, formatSwedishDate } from '../../utils';
 
 export const GameCard = ({ game, onPress }) => {
-    const formattedDate = formatSwedishDate(game.startDateTime);
-    const isLive = game.state === 'live';
-    const homeScore = extractScore(game.homeTeamResult, game.homeTeamInfo);
-    const awayScore = extractScore(game.awayTeamResult, game.awayTeamInfo);
+    const homeTeam = game?.homeTeamInfo ?? {};
+    const awayTeam = game?.awayTeamInfo ?? {};
+    const homeCode = homeTeam.code;
+    const awayCode = awayTeam.code;
+    const homeName = homeTeam?.names?.short ?? homeCode ?? 'Home';
+    const awayName = awayTeam?.names?.short ?? awayCode ?? 'Away';
+    const homeLogo = getTeamLogoUrl(homeCode);
+    const awayLogo = getTeamLogoUrl(awayCode);
+    const formattedDate = formatSwedishDate(game?.startDateTime);
+    const isLive = game?.state === 'live';
+    const homeScore = extractScore(game?.homeTeamResult, homeTeam);
+    const awayScore = extractScore(game?.awayTeamResult, awayTeam);
+    const gameState = game?.state ?? '-';
 
     return (
         <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
@@ -25,29 +34,37 @@ export const GameCard = ({ game, onPress }) => {
                 </View>
                 <View style={styles.matchupContainer}>
                     <View style={styles.teamContainer}>
-                        <Image
-                            source={{ uri: getTeamLogoUrl(game.homeTeamInfo.code) }}
-                            style={styles.teamLogo}
-                            resizeMode="contain"
-                        />
+                        {homeLogo ? (
+                            <Image
+                                source={{ uri: homeLogo }}
+                                style={styles.teamLogo}
+                                resizeMode="contain"
+                            />
+                        ) : (
+                            <View style={styles.teamLogoPlaceholder} />
+                        )}
                         <Text style={styles.teamName} numberOfLines={1}>
-                            {game.homeTeamInfo.names.short}
+                            {homeName}
                         </Text>
                     </View>
                     <View style={styles.scoreContainer}>
                         <Text style={styles.scoreText}>{homeScore} - {awayScore}</Text>
                         <Text style={styles.statusText}>
-                            {game.state === 'post-game' ? 'Final' : game.state}
+                            {gameState === 'post-game' ? 'Final' : gameState}
                         </Text>
                     </View>
                     <View style={styles.teamContainer}>
-                        <Image
-                            source={{ uri: getTeamLogoUrl(game.awayTeamInfo.code) }}
-                            style={styles.teamLogo}
-                            resizeMode="contain"
-                        />
+                        {awayLogo ? (
+                            <Image
+                                source={{ uri: awayLogo }}
+                                style={styles.teamLogo}
+                                resizeMode="contain"
+                            />
+                        ) : (
+                            <View style={styles.teamLogoPlaceholder} />
+                        )}
                         <Text style={styles.teamName} numberOfLines={1}>
-                            {game.awayTeamInfo.names.short}
+                            {awayName}
                         </Text>
                     </View>
                 </View>
@@ -97,6 +114,13 @@ const styles = StyleSheet.create({
         width: 60,
         height: 60,
         marginBottom: 8
+    },
+    teamLogoPlaceholder: {
+        width: 60,
+        height: 60,
+        marginBottom: 8,
+        borderRadius: 30,
+        backgroundColor: '#2c2c2e'
     },
     teamName: {
         color: '#fff',

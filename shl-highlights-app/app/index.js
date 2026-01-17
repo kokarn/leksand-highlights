@@ -337,7 +337,9 @@ export default function App() {
     const filteredGames = useMemo(() => {
         return games.filter(game => {
             if (selectedTeams.length > 0) {
-                if (!selectedTeams.includes(game.homeTeamInfo.code) && !selectedTeams.includes(game.awayTeamInfo.code)) {
+                const homeCode = game.homeTeamInfo?.code;
+                const awayCode = game.awayTeamInfo?.code;
+                if (!selectedTeams.includes(homeCode) && !selectedTeams.includes(awayCode)) {
                     return false;
                 }
             }
@@ -362,7 +364,16 @@ export default function App() {
 
     const currentDateIndex = useMemo(() => {
         if (!sortedGames.length) return 0;
-        return sortedGames.findIndex(game => isToday(parseISO(game.startDateTime)));
+        return sortedGames.findIndex(game => {
+            if (!game?.startDateTime) return false;
+            try {
+                const parsed = parseISO(game.startDateTime);
+                if (Number.isNaN(parsed.getTime())) return false;
+                return isToday(parsed);
+            } catch (error) {
+                return false;
+            }
+        });
     }, [sortedGames]);
 
     const targetGameIndex = useMemo(() => {

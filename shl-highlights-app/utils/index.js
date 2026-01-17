@@ -69,12 +69,18 @@ export const getStayLiveVideoId = (video) => {
  * @returns {string} Formatted relative date in Swedish
  */
 export const formatRelativeDate = (dateStr) => {
-    const date = parseISO(dateStr);
-    if (isToday(date)) return 'Idag';
-    if (isTomorrow(date)) return 'Imorgon';
-    const days = differenceInDays(date, new Date());
-    if (days > 0 && days <= 7) return format(date, 'EEEE', { locale: sv });
-    return format(date, 'd MMM', { locale: sv });
+    if (!dateStr) return '-';
+    try {
+        const date = parseISO(dateStr);
+        if (Number.isNaN(date.getTime())) return '-';
+        if (isToday(date)) return 'Idag';
+        if (isTomorrow(date)) return 'Imorgon';
+        const days = differenceInDays(date, new Date());
+        if (days > 0 && days <= 7) return format(date, 'EEEE', { locale: sv });
+        return format(date, 'd MMM', { locale: sv });
+    } catch (error) {
+        return '-';
+    }
 };
 
 /**
@@ -84,7 +90,14 @@ export const formatRelativeDate = (dateStr) => {
  * @returns {string} Formatted date
  */
 export const formatSwedishDate = (dateStr, formatStr = 'd MMMM HH:mm') => {
-    return format(parseISO(dateStr), formatStr, { locale: sv });
+    if (!dateStr) return '-';
+    try {
+        const date = parseISO(dateStr);
+        if (Number.isNaN(date.getTime())) return '-';
+        return format(date, formatStr, { locale: sv });
+    } catch (error) {
+        return '-';
+    }
 };
 
 /**
