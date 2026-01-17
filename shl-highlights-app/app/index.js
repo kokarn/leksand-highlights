@@ -13,13 +13,12 @@ import {
 } from '../api/shl';
 
 // Constants
-import { APP_NAME, APP_TAGLINE, STORAGE_KEYS, GENDER_OPTIONS, getTeamColor } from '../constants';
+import { STORAGE_KEYS, GENDER_OPTIONS, getTeamColor } from '../constants';
 
 // Utils
 import { getVideoDisplayTitle, getStayLiveVideoId } from '../utils';
 
 // Components
-import { LogoMark } from '../components/LogoMark';
 import { SportTab } from '../components/SportTab';
 import { StatBar } from '../components/StatBar';
 import { TabButton } from '../components/TabButton';
@@ -397,82 +396,6 @@ export default function App() {
         </View>
     );
 
-    const renderTeamFilter = () => (
-        <View style={styles.filterContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterContent}>
-                <TouchableOpacity
-                    style={[styles.filterPill, selectedTeams.length === 0 && styles.filterPillActive]}
-                    onPress={clearTeamFilter}
-                >
-                    <Text style={[styles.filterText, selectedTeams.length === 0 && styles.filterTextActive]}>All</Text>
-                </TouchableOpacity>
-                {teams.map(team => (
-                    <TouchableOpacity
-                        key={team.code}
-                        style={[styles.filterPill, styles.filterPillTeam, selectedTeams.includes(team.code) && styles.filterPillActive]}
-                        onPress={() => toggleTeamFilter(team.code)}
-                    >
-                        <Image source={{ uri: getTeamLogoUrl(team.code) }} style={styles.filterTeamLogo} resizeMode="contain" />
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
-        </View>
-    );
-
-    const renderBiathlonFilters = () => (
-        <View style={styles.biathlonFiltersContainer}>
-            <View style={styles.filterRow}>
-                <Text style={styles.filterRowLabel}>Gender</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRowContent}>
-                    <TouchableOpacity
-                        style={[styles.filterPillSmall, selectedGenders.length === 0 && styles.filterPillActive]}
-                        onPress={clearGenderFilter}
-                    >
-                        <Text style={[styles.filterTextSmall, selectedGenders.length === 0 && styles.filterTextActive]}>All</Text>
-                    </TouchableOpacity>
-                    {GENDER_OPTIONS.map(gender => (
-                        <TouchableOpacity
-                            key={gender.id}
-                            style={[
-                                styles.filterPillSmall,
-                                selectedGenders.includes(gender.id) && { backgroundColor: gender.color, borderColor: gender.color }
-                            ]}
-                            onPress={() => toggleGenderFilter(gender.id)}
-                        >
-                            <Text style={[styles.filterTextSmall, selectedGenders.includes(gender.id) && styles.filterTextActive]}>
-                                {gender.label}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-            </View>
-
-            <View style={styles.filterRow}>
-                <Text style={styles.filterRowLabel}>Country</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRowContent}>
-                    <TouchableOpacity
-                        style={[styles.filterPillSmall, selectedNations.length === 0 && styles.filterPillActive]}
-                        onPress={clearNationFilter}
-                    >
-                        <Text style={[styles.filterTextSmall, selectedNations.length === 0 && styles.filterTextActive]}>All</Text>
-                    </TouchableOpacity>
-                    {biathlonNations.slice(0, 10).map(nation => (
-                        <TouchableOpacity
-                            key={nation.code}
-                            style={[styles.filterPillSmall, selectedNations.includes(nation.code) && styles.filterPillActive]}
-                            onPress={() => toggleNationFilter(nation.code)}
-                        >
-                            <Text style={styles.filterFlagTextSmall}>{nation.flag}</Text>
-                            <Text style={[styles.filterTextSmall, selectedNations.includes(nation.code) && styles.filterTextActive]}>
-                                {nation.code}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-            </View>
-        </View>
-    );
-
     const renderBiathlonSchedule = () => (
         <FlatList
             data={filteredBiathlonRaces}
@@ -680,24 +603,15 @@ export default function App() {
 
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.headerBrand}>
-                    <LogoMark />
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.headerTitle}>{APP_NAME}</Text>
-                        <Text style={styles.headerSubtitle}>{APP_TAGLINE}</Text>
-                    </View>
-                    <TouchableOpacity style={styles.settingsButton} onPress={() => setShowSettings(true)}>
-                        <Ionicons name="settings-outline" size={24} color="#888" />
-                    </TouchableOpacity>
-                </View>
+                {renderSportTabs()}
+                <TouchableOpacity style={styles.settingsButton} onPress={() => setShowSettings(true)}>
+                    <Ionicons name="settings-outline" size={24} color="#888" />
+                </TouchableOpacity>
             </View>
-
-            {renderSportTabs()}
 
             {/* Sport-specific content */}
             {activeSport === 'shl' ? (
                 <>
-                    {!loading && renderTeamFilter()}
                     {loading ? (
                         <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
                     ) : (
@@ -713,7 +627,6 @@ export default function App() {
                 </>
             ) : (
                 <>
-                    {!loadingBiathlon && renderBiathlonFilters()}
                     {loadingBiathlon ? (
                         <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
                     ) : (
@@ -820,39 +733,25 @@ export default function App() {
 // Styles
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#000' },
-    header: { paddingHorizontal: 16, paddingBottom: 8, paddingTop: 12 },
-    headerBrand: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    headerTitle: { color: '#fff', fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
-    headerSubtitle: { color: '#8e8e93', fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.2 },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        gap: 12
+    },
     settingsButton: { padding: 8 },
 
     // Sport Tabs
-    sportTabsContainer: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 8, gap: 12 },
+    sportTabsContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
 
-    // Filters
-    filterContainer: { height: 52 },
-    filterContent: { paddingHorizontal: 16, alignItems: 'center', gap: 8 },
-    filterPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#1c1c1e', borderWidth: 1, borderColor: '#333' },
-    filterPillTeam: { paddingHorizontal: 8, paddingVertical: 6 },
-    filterPillActive: { backgroundColor: '#0A84FF', borderColor: '#0A84FF' },
-    filterText: { color: '#8e8e93', fontWeight: '600', fontSize: 13 },
-    filterTextActive: { color: '#fff' },
-    filterTeamLogo: { width: 28, height: 28 },
     listContent: { padding: 16, paddingTop: 8 },
 
     // Schedule Header
     scheduleHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16, paddingHorizontal: 4 },
     scheduleHeaderText: { color: '#fff', fontSize: 18, fontWeight: '700', flex: 1 },
     scheduleCount: { color: '#666', fontSize: 13, fontWeight: '600' },
-
-    // Biathlon Filters
-    biathlonFiltersContainer: { paddingBottom: 8 },
-    filterRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginBottom: 8 },
-    filterRowLabel: { color: '#666', fontSize: 11, fontWeight: '600', width: 55, textTransform: 'uppercase' },
-    filterRowContent: { flexDirection: 'row', gap: 6 },
-    filterPillSmall: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, backgroundColor: '#1c1c1e', borderWidth: 1, borderColor: '#333' },
-    filterTextSmall: { color: '#8e8e93', fontWeight: '600', fontSize: 12 },
-    filterFlagTextSmall: { fontSize: 14 },
 
     // Modal
     modalContainer: { flex: 1, backgroundColor: '#0a0a0a' },
