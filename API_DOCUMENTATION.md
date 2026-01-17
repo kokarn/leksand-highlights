@@ -1,6 +1,6 @@
 # GamePulse API Documentation
 
-This document describes the available API endpoints for the GamePulse server, supporting SHL (Swedish Hockey League) and Biathlon sports data.
+This document describes the available API endpoints for the GamePulse server, supporting SHL (Swedish Hockey League), Allsvenskan football, and Biathlon sports data.
 
 ## Base URL
 
@@ -11,6 +11,21 @@ http://localhost:3080
 ---
 
 ## Endpoints
+
+### `GET /api/sports`
+
+Returns a list of available sports supported by the API.
+
+**Response:**
+```json
+[
+  { "id": "shl", "name": "SHL", "icon": "hockey-puck" },
+  { "id": "allsvenskan", "name": "Allsvenskan", "icon": "soccer-ball" },
+  { "id": "biathlon", "name": "Biathlon", "icon": "target" }
+]
+```
+
+---
 
 ### `GET /api/games`
 
@@ -225,6 +240,113 @@ Returns the current SHL league standings, calculated from completed games.
 
 ---
 
+### `GET /api/football/games`
+
+Returns a list of Allsvenskan matches for the current season.
+
+**Query Parameters:**
+- `team` (optional): Filter by team code, id, or name (e.g., `AIK`)
+- `state` (optional): Filter by match state (`pre-game`, `live`, `post-game`)
+- `upcoming` (optional): Set to `true` to only show upcoming matches
+- `limit` (optional): Max number of matches to return
+
+**Response:**
+```json
+[
+  {
+    "uuid": "401842658",
+    "startDateTime": "2026-04-05T18:00Z",
+    "state": "pre-game",
+    "homeTeamInfo": {
+      "code": "AIK",
+      "names": { "short": "AIK", "long": "AIK" },
+      "score": null,
+      "icon": "https://a.espncdn.com/i/teamlogos/soccer/500/994.png"
+    },
+    "awayTeamInfo": {
+      "code": "HBK",
+      "names": { "short": "Halmstads BK", "long": "Halmstads BK" },
+      "score": null,
+      "icon": "https://a.espncdn.com/i/teamlogos/soccer/500/3017.png"
+    },
+    "venueInfo": { "name": "Friends Arena" },
+    "statusText": "18:00",
+    "sport": "allsvenskan",
+    "source": "espn"
+  }
+]
+```
+
+---
+
+### `GET /api/football/game/:id/details`
+
+Returns summary details for a specific Allsvenskan match.
+
+**Parameters:**
+- `id` (path): The match identifier.
+
+**Response:**
+```json
+{
+  "info": {
+    "uuid": "401842658",
+    "startDateTime": "2026-04-05T18:00Z",
+    "state": "pre-game",
+    "homeTeamInfo": { "code": "AIK", "names": { "short": "AIK", "long": "AIK" } },
+    "awayTeamInfo": { "code": "HBK", "names": { "short": "Halmstads BK", "long": "Halmstads BK" } },
+    "venueInfo": { "name": "Friends Arena" },
+    "statusText": "18:00",
+    "sport": "allsvenskan",
+    "source": "espn"
+  },
+  "venue": { "fullName": "Friends Arena" },
+  "boxscore": { "teams": [ /* team stats */ ] },
+  "format": "soccer"
+}
+```
+
+---
+
+### `GET /api/football/standings`
+
+Returns the current Allsvenskan league standings.
+
+**Query Parameters:**
+- `team` (optional): Filter by team code or name (e.g., `AIK`)
+- `top` (optional): Limit to top N teams
+
+**Response:**
+```json
+{
+  "season": "2026",
+  "league": "Allsvenskan",
+  "lastUpdated": "2026-01-17T10:17:15.163Z",
+  "standings": [
+    {
+      "position": 1,
+      "teamCode": "AIK",
+      "teamName": "AIK",
+      "teamShortName": "AIK",
+      "teamUuid": "994",
+      "teamIcon": "https://a.espncdn.com/i/teamlogos/soccer/500/994.png",
+      "gamesPlayed": 0,
+      "wins": 0,
+      "draws": 0,
+      "losses": 0,
+      "points": 0,
+      "goalsFor": 0,
+      "goalsAgainst": 0,
+      "goalDiff": 0,
+      "note": null
+    }
+  ],
+  "source": "espn"
+}
+```
+
+---
+
 ### `GET /api/biathlon/races`
 
 Returns all biathlon races for the current season.
@@ -317,9 +439,10 @@ Returns server status including cache info, scheduler status, and notifier stats
   },
   "providers": {
     "shl": "SHL",
+    "allsvenskan": "Allsvenskan",
     "biathlon": "Biathlon"
   },
-  "availableSports": ["shl", "biathlon"],
+  "availableSports": ["shl", "allsvenskan", "biathlon"],
   "notifier": { ... },
   "scheduler": { ... },
   "cache": {
@@ -377,6 +500,12 @@ This API acts as a proxy to the official SHL website APIs:
 - `https://www.shl.se/api/gameday/post-game-data/team-stats/{uuid}` - Team stats
 
 **Note:** Standings are calculated from completed game data since the SHL API doesn't provide a public standings endpoint.
+
+### Allsvenskan (Football)
+Allsvenskan data is sourced from ESPN public site APIs:
+- `https://site.api.espn.com/apis/site/v2/sports/soccer/swe.1/scoreboard` - Fixtures and scores
+- `https://site.api.espn.com/apis/site/v2/sports/soccer/swe.1/summary?event={id}` - Match summaries
+- `https://site.web.api.espn.com/apis/v2/sports/soccer/swe.1/standings` - League standings
 
 ### Biathlon
 Biathlon race schedule is maintained using the official IBU World Cup calendar for the 2025-26 season, including:
