@@ -47,19 +47,24 @@ jobs:
         run: eas build --platform android --profile preview --local --output ${{ github.workspace }}/app-release.apk
         working-directory: shl-highlights-app
 
+      - name: Read app version
+        id: app_version
+        run: echo "version=$(node -p 'require("./shl-highlights-app/app.json").expo.version')" >> "$GITHUB_OUTPUT"
+
       - name: Upload APK artifact
         id: upload_apk
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: app-release-v${{ steps.app_version.outputs.version }}
           path: ${{ github.workspace }}/app-release.apk
 
       - name: Notify ntfy with artifact link
         if: ${{ success() }}
         env:
-          NTFY_TOPIC: "-gamepulse-release"
+          NTFY_TOPIC: "gamepulse-release"
+          APP_VERSION: ${{ steps.app_version.outputs.version }}
           ARTIFACT_URL: ${{ steps.upload_apk.outputs.artifact-url }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          message="APK artifact uploaded: ${ARTIFACT_URL}\nRun: ${RUN_URL}"
+          message="APK v${APP_VERSION} artifact uploaded: ${ARTIFACT_URL}\nRun: ${RUN_URL}"
           curl -s -X POST -d "$message" "https://ntfy.sh/${NTFY_TOPIC}"
