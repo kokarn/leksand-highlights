@@ -114,7 +114,7 @@ class BiathlonProvider extends BaseProvider {
                     { discipline: 'Sprint', gender: 'men', date: '2026-01-15', time: '14:20' },
                     { discipline: 'Sprint', gender: 'women', date: '2026-01-16', time: '14:20' },
                     { discipline: 'Pursuit', gender: 'men', date: '2026-01-17', time: '12:20' },
-                    { discipline: 'Pursuit', gender: 'women', date: '2026-01-17', time: '14:40' },
+                    { discipline: 'Pursuit', gender: 'women', date: '2026-01-17', time: '14:30' },
                     { discipline: 'Mixed Relay', gender: 'mixed', date: '2026-01-18', time: '11:30' },
                     { discipline: 'Single Mixed Relay', gender: 'mixed', date: '2026-01-18', time: '14:15' }
                 ]
