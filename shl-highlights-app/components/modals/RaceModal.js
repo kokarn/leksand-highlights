@@ -1,10 +1,9 @@
 import { View, Text, Modal, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { format, parseISO } from 'date-fns';
-import { sv } from 'date-fns/locale';
 import { getNationFlag } from '../../api/shl';
 import { GENDER_COLORS } from '../../constants';
+import { formatSwedishDate } from '../../utils';
 
 export const RaceModal = ({ race, visible, onClose }) => (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -38,7 +37,7 @@ export const RaceModal = ({ race, visible, onClose }) => (
                                 <Ionicons name="calendar-outline" size={20} color="#888" />
                                 <Text style={styles.raceDetailLabel}>Date</Text>
                                 <Text style={styles.raceDetailValue}>
-                                    {format(parseISO(race.startDateTime), 'd MMMM yyyy', { locale: sv })}
+                                    {formatSwedishDate(race?.startDateTime, 'd MMMM yyyy')}
                                 </Text>
                             </View>
 
@@ -46,7 +45,7 @@ export const RaceModal = ({ race, visible, onClose }) => (
                                 <Ionicons name="time-outline" size={20} color="#888" />
                                 <Text style={styles.raceDetailLabel}>Start Time</Text>
                                 <Text style={styles.raceDetailValue}>
-                                    {format(parseISO(race.startDateTime), 'HH:mm')} CET
+                                    {formatSwedishDate(race?.startDateTime, 'HH:mm')} CET
                                 </Text>
                             </View>
 

@@ -45,8 +45,10 @@ export async function fetchSports() {
  * @returns {string} Logo URL
  */
 export function getTeamLogoUrl(teamCode) {
-    if (!teamCode) return null;
-    return `${API_BASE_URL}/static/logos/${teamCode.toLowerCase()}.png`;
+    if (typeof teamCode !== 'string') return null;
+    const trimmedCode = teamCode.trim();
+    if (!trimmedCode) return null;
+    return `${API_BASE_URL}/static/logos/${trimmedCode.toLowerCase()}.png`;
 }
 
 /**
