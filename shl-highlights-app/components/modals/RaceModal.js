@@ -288,33 +288,6 @@ export const RaceModal = ({ race, details, visible, onClose, loading }) => {
                             </View>
                         </View>
 
-                        {/* Shooting legend for races with results */}
-                        {hasResults && shootingsCount && (
-                            <View style={styles.shootingLegend}>
-                                <Text style={styles.legendTitle}>🎯 Shooting Legend</Text>
-                                <View style={styles.legendRow}>
-                                    <View style={styles.legendItem}>
-                                        <View style={[styles.legendDot, styles.legendDotHit]} />
-                                        <Text style={styles.legendText}>Hit</Text>
-                                    </View>
-                                    <View style={styles.legendItem}>
-                                        <View style={[styles.legendDot, styles.legendDotMiss]} />
-                                        <Text style={styles.legendText}>Miss (+penalty)</Text>
-                                    </View>
-                                </View>
-                                <Text style={styles.legendNote}>
-                                    P = Prone • S = Standing • Tap row to see details
-                                </Text>
-                            </View>
-                        )}
-
-                        <View style={styles.raceInfoNote}>
-                            <Ionicons name="information-circle-outline" size={18} color="#666" />
-                            <Text style={styles.raceInfoNoteText}>
-                                {infoNoteText}
-                            </Text>
-                        </View>
-
                         <View style={styles.resultsCard}>
                             <View style={styles.resultsHeaderRow}>
                                 <Text style={styles.resultsTitle}>{resultTitle}</Text>
@@ -345,6 +318,33 @@ export const RaceModal = ({ race, details, visible, onClose, loading }) => {
                             ) : (
                                 <Text style={styles.emptyText}>Results are not available yet.</Text>
                             )}
+                        </View>
+
+                        {/* Shooting legend for races with results */}
+                        {hasResults && shootingsCount && (
+                            <View style={styles.shootingLegend}>
+                                <Text style={styles.legendTitle}>🎯 Shooting Legend</Text>
+                                <View style={styles.legendRow}>
+                                    <View style={styles.legendItem}>
+                                        <View style={[styles.legendDot, styles.legendDotHit]} />
+                                        <Text style={styles.legendText}>Hit</Text>
+                                    </View>
+                                    <View style={styles.legendItem}>
+                                        <View style={[styles.legendDot, styles.legendDotMiss]} />
+                                        <Text style={styles.legendText}>Miss (+penalty)</Text>
+                                    </View>
+                                </View>
+                                <Text style={styles.legendNote}>
+                                    P = Prone • S = Standing • Tap row to see details
+                                </Text>
+                            </View>
+                        )}
+
+                        <View style={styles.raceInfoNote}>
+                            <Ionicons name="information-circle-outline" size={18} color="#666" />
+                            <Text style={styles.raceInfoNoteText}>
+                                {infoNoteText}
+                            </Text>
                         </View>
                     </ScrollView>
                 </>
@@ -459,9 +459,9 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '700'
     },
-    // Shooting legend
+    // Shooting legend (shown at bottom of results)
     shootingLegend: {
-        marginTop: 16,
+        marginTop: 20,
         padding: 16,
         backgroundColor: '#1a1a1a',
         borderRadius: 12,
@@ -511,7 +511,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        marginTop: 16,
+        marginTop: 20,
+        marginBottom: 40,
         padding: 16,
         backgroundColor: '#1a1a1a',
         borderRadius: 12
@@ -525,8 +526,7 @@ const styles = StyleSheet.create({
         marginTop: 20,
         backgroundColor: '#1c1c1e',
         borderRadius: 16,
-        padding: 16,
-        marginBottom: 40
+        padding: 16
     },
     resultsHeaderRow: {
         marginBottom: 12

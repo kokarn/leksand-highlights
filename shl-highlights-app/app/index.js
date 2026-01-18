@@ -39,11 +39,6 @@ import {
     ShlGameModal
 } from '../components/modals';
 
-// Constants for scroll layout
-const GAME_CARD_HEIGHT = 160;
-const FOOTBALL_CARD_HEIGHT = 160;
-const BIATHLON_CARD_HEIGHT = 140;
-const LIST_HEADER_HEIGHT = 50; // Just the ScheduleHeader height (no ViewToggle in FlatList)
 
 export default function App() {
     // User preferences
@@ -97,45 +92,6 @@ export default function App() {
             ? football.refreshing
             : biathlon.refreshing;
 
-    // FlatList layout helpers
-    const getGameItemLayout = useCallback((_, index) => ({
-        length: GAME_CARD_HEIGHT,
-        offset: LIST_HEADER_HEIGHT + (GAME_CARD_HEIGHT * index),
-        index
-    }), []);
-
-    const getFootballItemLayout = useCallback((_, index) => ({
-        length: FOOTBALL_CARD_HEIGHT,
-        offset: LIST_HEADER_HEIGHT + (FOOTBALL_CARD_HEIGHT * index),
-        index
-    }), []);
-
-    const getBiathlonItemLayout = useCallback((_, index) => ({
-        length: BIATHLON_CARD_HEIGHT,
-        offset: LIST_HEADER_HEIGHT + (BIATHLON_CARD_HEIGHT * index),
-        index
-    }), []);
-
-    const handleScrollToIndexFailed = useCallback((info) => {
-        const offset = info.averageItemLength * info.index;
-        setTimeout(() => {
-            shl.listRef.current?.scrollToOffset({ offset, animated: false });
-        }, 50);
-    }, [shl.listRef]);
-
-    const handleFootballScrollToIndexFailed = useCallback((info) => {
-        const offset = info.averageItemLength * info.index;
-        setTimeout(() => {
-            football.listRef.current?.scrollToOffset({ offset, animated: false });
-        }, 50);
-    }, [football.listRef]);
-
-    const handleBiathlonScrollToIndexFailed = useCallback((info) => {
-        const offset = info.averageItemLength * info.index;
-        setTimeout(() => {
-            biathlon.listRef.current?.scrollToOffset({ offset, animated: false });
-        }, 50);
-    }, [biathlon.listRef]);
 
     // Handle SHL game press - reset tab and open modal
     const handleShlGamePress = useCallback((game) => {
@@ -161,8 +117,6 @@ export default function App() {
             keyExtractor={item => item.uuid}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
-            onScrollToIndexFailed={handleScrollToIndexFailed}
-            getItemLayout={getGameItemLayout}
             initialScrollIndex={shl.targetGameIndex > 0 ? shl.targetGameIndex : undefined}
             removeClippedSubviews={true}
             maxToRenderPerBatch={10}
@@ -190,6 +144,11 @@ export default function App() {
             <View style={styles.scheduleContainer}>
                 <View style={styles.stickyToggle}>
                     <ViewToggle mode={shl.viewMode} onChange={shl.handleViewChange} />
+                    <LinearGradient
+                        colors={['#000000', 'transparent']}
+                        style={styles.toggleGradient}
+                        pointerEvents="none"
+                    />
                 </View>
                 <ScrollView
                     contentContainerStyle={styles.listContent}
@@ -240,8 +199,6 @@ export default function App() {
             keyExtractor={item => item.uuid}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
-            onScrollToIndexFailed={handleFootballScrollToIndexFailed}
-            getItemLayout={getFootballItemLayout}
             initialScrollIndex={football.targetGameIndex > 0 ? football.targetGameIndex : undefined}
             removeClippedSubviews={true}
             maxToRenderPerBatch={10}
@@ -265,6 +222,11 @@ export default function App() {
             <View style={styles.scheduleContainer}>
                 <View style={styles.stickyToggle}>
                     <ViewToggle mode={football.viewMode} onChange={football.handleViewChange} />
+                    <LinearGradient
+                        colors={['#000000', 'transparent']}
+                        style={styles.toggleGradient}
+                        pointerEvents="none"
+                    />
                 </View>
                 <ScrollView
                     contentContainerStyle={styles.listContent}
@@ -313,8 +275,6 @@ export default function App() {
             keyExtractor={item => item.uuid}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
-            onScrollToIndexFailed={handleBiathlonScrollToIndexFailed}
-            getItemLayout={getBiathlonItemLayout}
             initialScrollIndex={biathlon.targetRaceIndex > 0 ? biathlon.targetRaceIndex : undefined}
             removeClippedSubviews={true}
             maxToRenderPerBatch={10}
@@ -343,6 +303,11 @@ export default function App() {
             <View style={styles.scheduleContainer}>
                 <View style={styles.stickyToggle}>
                     <ViewToggle mode={biathlon.viewMode} onChange={biathlon.handleViewChange} />
+                    <LinearGradient
+                        colors={['#000000', 'transparent']}
+                        style={styles.toggleGradient}
+                        pointerEvents="none"
+                    />
                 </View>
                 <ScrollView
                     contentContainerStyle={styles.listContent}
@@ -447,12 +412,14 @@ export default function App() {
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <LinearGradient colors={['#000000', '#121212']} style={StyleSheet.absoluteFill} />
 
-            {/* Header */}
-            <View style={styles.header}>
-                {renderSportTabs()}
-                <TouchableOpacity style={styles.settingsButton} onPress={() => setShowSettings(true)}>
-                    <Ionicons name="settings-outline" size={18} color="#888" />
-                </TouchableOpacity>
+            {/* Header with gradient fade */}
+            <View style={styles.headerContainer}>
+                <View style={styles.header}>
+                    {renderSportTabs()}
+                    <TouchableOpacity style={styles.settingsButton} onPress={() => setShowSettings(true)}>
+                        <Ionicons name="settings-outline" size={18} color="#888" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Sport-specific content */}
@@ -463,6 +430,11 @@ export default function App() {
                     <View style={styles.scheduleContainer}>
                         <View style={styles.stickyToggle}>
                             <ViewToggle mode={shl.viewMode} onChange={shl.handleViewChange} />
+                            <LinearGradient
+                                colors={['#000000', 'transparent']}
+                                style={styles.toggleGradient}
+                                pointerEvents="none"
+                            />
                         </View>
                         {shl.loading ? (
                             <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
@@ -478,6 +450,11 @@ export default function App() {
                     <View style={styles.scheduleContainer}>
                         <View style={styles.stickyToggle}>
                             <ViewToggle mode={football.viewMode} onChange={football.handleViewChange} />
+                            <LinearGradient
+                                colors={['#000000', 'transparent']}
+                                style={styles.toggleGradient}
+                                pointerEvents="none"
+                            />
                         </View>
                         {football.loading ? (
                             <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
@@ -493,6 +470,11 @@ export default function App() {
                     <View style={styles.scheduleContainer}>
                         <View style={styles.stickyToggle}>
                             <ViewToggle mode={biathlon.viewMode} onChange={biathlon.handleViewChange} />
+                            <LinearGradient
+                                colors={['#000000', 'transparent']}
+                                style={styles.toggleGradient}
+                                pointerEvents="none"
+                            />
                         </View>
                         {biathlon.loading ? (
                             <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
@@ -582,13 +564,18 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#000'
     },
+    headerContainer: {
+        position: 'relative',
+        zIndex: 10
+    },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 12,
         paddingVertical: 6,
-        gap: 8
+        gap: 8,
+        backgroundColor: '#000'
     },
     settingsButton: {
         padding: 6,
@@ -611,7 +598,17 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingTop: 8,
         paddingBottom: 4,
-        backgroundColor: '#000'
+        backgroundColor: '#000',
+        position: 'relative',
+        zIndex: 10
+    },
+    toggleGradient: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: -30,
+        height: 30,
+        zIndex: 5
     },
     listContent: {
         padding: 16,
