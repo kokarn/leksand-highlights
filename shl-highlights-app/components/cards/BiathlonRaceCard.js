@@ -13,38 +13,11 @@ const CARD_COLORS_DEFAULT = ['#1c1c1e', '#2c2c2e'];
 const GRADIENT_START = { x: 0, y: 0 };
 const GRADIENT_END = { x: 1, y: 1 };
 
-/**
- * Get shooting stage description based on discipline
- */
-function getShootingInfo(race) {
-    const shootings = race?.shootings;
-    if (!shootings) {
-        return null;
-    }
-
-    // Format: "4 × 5 targets" for pursuit/individual, "2 × 5 targets" for sprint
-    return `${shootings} × 5 🎯`;
-}
-
-/**
- * Get distance if available
- */
-function getDistanceInfo(race) {
-    const km = race?.km;
-    if (!km) {
-        return null;
-    }
-    return `${km} km`;
-}
-
 export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }) {
     const relativeDate = formatRelativeDate(race?.startDateTime);
     const time = formatSwedishDate(race?.startDateTime, 'HH:mm');
     const isLive = race?.state === 'live';
     const isStartingSoon = race?.state === 'starting-soon';
-
-    const shootingInfo = getShootingInfo(race);
-    const distanceInfo = getDistanceInfo(race);
 
     const statusText = useMemo(() => {
         if (isLive) {
@@ -66,6 +39,18 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
         return CARD_COLORS_DEFAULT;
     }, [isLive, isStartingSoon]);
 
+    // Compact race info string: "10 km • 4×5 🎯"
+    const raceDetails = useMemo(() => {
+        const parts = [];
+        if (race?.km) {
+            parts.push(`${race.km} km`);
+        }
+        if (race?.shootings) {
+            parts.push(`${race.shootings}×5 🎯`);
+        }
+        return parts.join(' • ');
+    }, [race?.km, race?.shootings]);
+
     const handlePress = useCallback(() => onPress(race), [onPress, race]);
 
     return (
@@ -76,67 +61,50 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
                 end={GRADIENT_END}
                 style={[styles.raceCard, isLive && styles.raceCardLive, isStartingSoon && styles.raceCardStartingSoon]}
             >
-                <View style={styles.raceCardHeader}>
-                    <View style={styles.raceTypeContainer}>
-                        <Text style={styles.raceEventType}>
+                {/* Header row */}
+                <View style={styles.cardHeader}>
+                    <View style={styles.headerLeft}>
+                        <Text style={styles.eventType}>
                             {race.eventType === 'olympics' ? '🏅 Olympics' : 'World Cup'}
                         </Text>
+                        <Text style={styles.eventStage}>{race.eventName}</Text>
                     </View>
-                    <View style={styles.raceDateTimeContainer}>
-                        <Text style={[styles.raceDate, isLive && styles.liveTextAccented, isStartingSoon && styles.startingSoonTextAccented]}>
+                    <View style={styles.headerRight}>
+                        <Text style={[styles.dateText, isLive && styles.liveText, isStartingSoon && styles.startingSoonText]}>
                             {statusText}
                         </Text>
-                        <Text style={styles.raceTime}>{time}</Text>
+                        <Text style={styles.timeText}>{time}</Text>
                     </View>
                 </View>
 
-                <View style={styles.raceMainContent}>
-                    <View style={styles.raceDisciplineRow}>
+                {/* Main content row - discipline centered */}
+                <View style={styles.mainRow}>
+                    <View style={styles.locationContainer}>
+                        <Text style={styles.flag}>{getNationFlag(race.country)}</Text>
+                        <Text style={styles.location} numberOfLines={1}>{race.location}</Text>
+                    </View>
+
+                    <View style={styles.disciplineContainer}>
                         <Ionicons
                             name={DISCIPLINE_ICONS[race.discipline] || 'ellipse-outline'}
-                            size={22}
+                            size={28}
                             color={GENDER_COLORS[race.gender] || '#fff'}
                         />
-                        <Text style={styles.raceDiscipline}>{race.discipline}</Text>
-                        <View style={[styles.genderBadge, { backgroundColor: GENDER_COLORS[race.gender] || '#666' }]}>
-                            <Text style={styles.genderBadgeText}>{race.genderDisplay}</Text>
-                        </View>
+                        <Text style={styles.discipline}>{race.discipline}</Text>
+                        {raceDetails ? <Text style={styles.raceDetails}>{raceDetails}</Text> : null}
                     </View>
 
-                    {/* Race info row with distance and shooting */}
-                    {(distanceInfo || shootingInfo) && (
-                        <View style={styles.raceInfoRow}>
-                            {distanceInfo && (
-                                <View style={styles.infoChip}>
-                                    <Ionicons name="trail-sign-outline" size={12} color="#888" />
-                                    <Text style={styles.infoChipText}>{distanceInfo}</Text>
-                                </View>
-                            )}
-                            {shootingInfo && (
-                                <View style={styles.infoChip}>
-                                    <Text style={styles.infoChipText}>{shootingInfo}</Text>
-                                </View>
-                            )}
-                        </View>
-                    )}
-
-                    <View style={styles.raceLocationRow}>
-                        <Text style={styles.raceFlag}>{getNationFlag(race.country)}</Text>
-                        <Text style={styles.raceLocation}>{race.location}</Text>
-                        <Text style={styles.raceCountry}>{race.countryName}</Text>
+                    <View style={[styles.genderBadge, { backgroundColor: GENDER_COLORS[race.gender] || '#666' }]}>
+                        <Text style={styles.genderText}>{race.genderDisplay}</Text>
                     </View>
                 </View>
 
-                {/* Live indicator with pulsing animation hint */}
+                {/* Live indicator */}
                 {isLive && (
                     <View style={styles.liveIndicator}>
                         <View style={styles.liveDot} />
-                        <Text style={styles.liveText}>Race in progress - tap for live results</Text>
+                        <Text style={styles.liveIndicatorText}>Tap for live results</Text>
                     </View>
-                )}
-
-                {race.eventName && !isLive && (
-                    <Text style={styles.raceEventName}>{race.eventName}</Text>
                 )}
             </LinearGradient>
         </TouchableOpacity>
@@ -157,127 +125,116 @@ const styles = StyleSheet.create({
     raceCardStartingSoon: {
         borderColor: '#FF9500'
     },
-    raceCardHeader: {
+    // Header
+    cardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 12
+        marginBottom: 16
     },
-    raceTypeContainer: {},
-    raceEventType: {
+    headerLeft: {
+        flex: 1
+    },
+    eventType: {
         color: '#666',
         fontSize: 11,
         fontWeight: '700',
         textTransform: 'uppercase'
     },
-    raceDateTimeContainer: {
-        alignItems: 'flex-end'
-    },
-    raceDate: {
-        color: '#8e8e93',
-        fontSize: 13,
-        fontWeight: '600'
-    },
-    raceTime: {
-        color: '#666',
-        fontSize: 12,
+    eventStage: {
+        color: '#555',
+        fontSize: 11,
         marginTop: 2
     },
-    liveTextAccented: {
+    headerRight: {
+        alignItems: 'flex-end'
+    },
+    dateText: {
+        color: '#8e8e93',
+        fontSize: 12,
+        fontWeight: '600'
+    },
+    timeText: {
+        color: '#666',
+        fontSize: 11,
+        marginTop: 2
+    },
+    liveText: {
         color: '#FF453A',
         fontWeight: '800'
     },
-    startingSoonTextAccented: {
+    startingSoonText: {
         color: '#FF9500',
         fontWeight: '800'
     },
-    raceMainContent: {
-        gap: 10
-    },
-    raceDisciplineRow: {
+    // Main row
+    mainRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10
+        justifyContent: 'space-between'
     },
-    raceDiscipline: {
-        color: '#fff',
-        fontSize: 20,
-        fontWeight: '700',
-        flex: 1
+    locationContainer: {
+        flex: 1,
+        alignItems: 'center'
     },
-    genderBadge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 6
+    flag: {
+        fontSize: 28
     },
-    genderBadgeText: {
-        color: '#fff',
-        fontSize: 11,
-        fontWeight: '700'
-    },
-    // New race info row
-    raceInfoRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        marginTop: 2
-    },
-    infoChip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        backgroundColor: 'rgba(255,255,255,0.08)',
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        borderRadius: 6
-    },
-    infoChipText: {
+    location: {
         color: '#888',
         fontSize: 11,
-        fontWeight: '600'
+        fontWeight: '600',
+        marginTop: 4,
+        textAlign: 'center'
     },
-    raceLocationRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8
+    disciplineContainer: {
+        flex: 2,
+        alignItems: 'center'
     },
-    raceFlag: {
-        fontSize: 20
-    },
-    raceLocation: {
+    discipline: {
         color: '#fff',
-        fontSize: 15,
-        fontWeight: '600'
+        fontSize: 18,
+        fontWeight: '700',
+        marginTop: 4
     },
-    raceCountry: {
+    raceDetails: {
         color: '#666',
-        fontSize: 13
+        fontSize: 11,
+        marginTop: 2
+    },
+    genderBadge: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 8
+    },
+    genderText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '700'
     },
     // Live indicator
     liveIndicator: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        justifyContent: 'center',
+        gap: 6,
         marginTop: 12,
         paddingTop: 12,
         borderTopWidth: 1,
         borderTopColor: 'rgba(255, 69, 58, 0.3)'
     },
     liveDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
+        width: 6,
+        height: 6,
+        borderRadius: 3,
         backgroundColor: '#FF453A'
     },
-    liveText: {
+    liveIndicatorText: {
         color: '#FF453A',
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: '600'
-    },
-    raceEventName: {
-        color: '#555',
-        fontSize: 12,
-        marginTop: 10,
-        fontWeight: '500'
-    },
+    }
 });
+
