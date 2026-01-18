@@ -1,4 +1,5 @@
 const BaseProvider = require('./base');
+const { formatSwedishTimestamp } = require('../utils');
 
 /**
  * Biathlon Data Provider
@@ -249,16 +250,24 @@ class BiathlonProvider extends BaseProvider {
     }
 
     getGenderFromCategory(categoryId) {
-        if (categoryId === 'SM') return 'men';
-        if (categoryId === 'SW') return 'women';
+        if (categoryId === 'SM') {
+            return 'men';
+        }
+        if (categoryId === 'SW') {
+            return 'women';
+        }
         return 'mixed';
     }
 
     getDisciplineName(competition) {
         const description = `${competition.ShortDescription || ''} ${competition.Description || ''}`.toLowerCase();
 
-        if (description.includes('single mixed')) return 'Single Mixed Relay';
-        if (description.includes('mixed relay')) return 'Mixed Relay';
+        if (description.includes('single mixed')) {
+            return 'Single Mixed Relay';
+        }
+        if (description.includes('mixed relay')) {
+            return 'Mixed Relay';
+        }
 
         const disciplineMap = {
             SP: 'Sprint',
@@ -274,11 +283,21 @@ class BiathlonProvider extends BaseProvider {
             return disciplineMap[competition.DisciplineId];
         }
 
-        if (description.includes('mass start')) return 'Mass Start';
-        if (description.includes('individual')) return 'Individual';
-        if (description.includes('pursuit')) return 'Pursuit';
-        if (description.includes('sprint')) return 'Sprint';
-        if (description.includes('relay')) return 'Relay';
+        if (description.includes('mass start')) {
+            return 'Mass Start';
+        }
+        if (description.includes('individual')) {
+            return 'Individual';
+        }
+        if (description.includes('pursuit')) {
+            return 'Pursuit';
+        }
+        if (description.includes('sprint')) {
+            return 'Sprint';
+        }
+        if (description.includes('relay')) {
+            return 'Relay';
+        }
 
         return competition.ShortDescription || competition.Description || 'Race';
     }
@@ -294,67 +313,82 @@ class BiathlonProvider extends BaseProvider {
         return `${prefix} - ${event.ShortDescription || event.Organizer || 'TBA'}`;
     }
 
-    async fetchIbuEvents(season = this.currentSeason) {
-        const seasonId = this.getSeasonId(season);
-        const url = `${this.resultsApiBaseUrl}/Events?SeasonId=${seasonId}`;
+    async fetchIbuJson(endpoint, label) {
+        const isAbsolute = typeof endpoint === 'string' && endpoint.startsWith('http');
+        const url = isAbsolute ? endpoint : `${this.resultsApiBaseUrl}/${endpoint}`;
+        const context = label || 'data';
 
         try {
             const response = await fetch(url, { headers: this.headers });
             if (!response.ok) {
-                throw new Error(`IBU events fetch failed (${response.status})`);
+                throw new Error(`IBU ${context} fetch failed (${response.status})`);
             }
-
-            const events = await response.json();
-            if (!Array.isArray(events)) return [];
-
-            return events.filter(event => (
-                event.EventClassificationId === 'BTSWRLCP' ||
-                event.EventClassificationId === 'BTSWRLOG'
-            ));
+            return await response.json();
         } catch (error) {
-            console.warn(`[${this.name}] Failed to fetch IBU events:`, error.message);
-            return [];
+            console.warn(`[${this.name}] Failed to fetch IBU ${context}:`, error.message);
+            return null;
         }
     }
 
-    async fetchIbuEventRaces(eventId) {
-        const url = `${this.resultsApiBaseUrl}/Competitions?EventId=${eventId}`;
-
-        try {
-            const response = await fetch(url, { headers: this.headers });
-            if (!response.ok) {
-                throw new Error(`IBU competitions fetch failed (${response.status})`);
-            }
-
-            const competitions = await response.json();
-            if (!Array.isArray(competitions)) return [];
-
-            return competitions
-                .filter(competition => competition.StartTime)
-                .map(competition => {
-                    const startDate = new Date(competition.StartTime);
-                    if (Number.isNaN(startDate.getTime())) {
-                        return null;
-                    }
-
-                    const { date, time } = this.getStockholmDateTimeParts(startDate);
-
-                    return {
-                        id: competition.RaceId,
-                        discipline: this.getDisciplineName(competition),
-                        gender: this.getGenderFromCategory(competition.catId),
-                        date,
-                        time,
-                        startDateTime: competition.StartTime,
-                        isLive: Boolean(competition.IsLive),
-                        scheduleStatus: competition.ScheduleStatus
-                    };
-                })
-                .filter(Boolean);
-        } catch (error) {
-            console.warn(`[${this.name}] Failed to fetch competitions for ${eventId}:`, error.message);
+    async fetchIbuEvents(season = this.currentSeason) {
+        const seasonId = this.getSeasonId(season);
+        const events = await this.fetchIbuJson(`Events?SeasonId=${seasonId}`, 'events');
+        if (!Array.isArray(events)) {
             return [];
         }
+
+        return events.filter(event => (
+            event.EventClassificationId === 'BTSWRLCP' ||
+            event.EventClassificationId === 'BTSWRLOG'
+        ));
+    }
+
+    async fetchIbuEventRaces(eventId) {
+        const competitions = await this.fetchIbuJson(`Competitions?EventId=${eventId}`, `competitions for ${eventId}`);
+        if (!Array.isArray(competitions)) {
+            return [];
+        }
+
+        return competitions
+            .filter(competition => competition.StartTime)
+            .map(competition => {
+                const startDate = new Date(competition.StartTime);
+                if (Number.isNaN(startDate.getTime())) {
+                    return null;
+                }
+
+                const { date, time } = this.getStockholmDateTimeParts(startDate);
+
+                return {
+                    id: competition.RaceId,
+                    discipline: this.getDisciplineName(competition),
+                    disciplineId: competition.DisciplineId || null,
+                    gender: this.getGenderFromCategory(competition.catId),
+                    categoryId: competition.catId || null,
+                    km: competition.km || null,
+                    date,
+                    time,
+                    startDateTime: competition.StartTime,
+                    isLive: Boolean(competition.IsLive),
+                    hasLiveData: Boolean(competition.HasLiveData),
+                    scheduleStatus: competition.ScheduleStatus || null,
+                    resultStatus: competition.ResultStatus || null,
+                    statusText: competition.StatusText || null,
+                    startMode: competition.StartMode || null,
+                    shootings: competition.NrShootings ?? null,
+                    spareRounds: competition.NrSpareRounds ?? null,
+                    hasSpareRounds: Boolean(competition.HasSpareRounds),
+                    penaltySeconds: competition.PenaltySeconds ?? null,
+                    legs: competition.NrLegs ?? null,
+                    shootingPositions: competition.ShootingPositions || null,
+                    localUtcOffset: competition.LocalUTCOffset ?? null,
+                    rsc: competition.RSC || null,
+                    resultsCredit: competition.ResultsCredit || null,
+                    timingCredit: competition.TimingCredit || null,
+                    hasAnalysis: Boolean(competition.HasAnalysis)
+                };
+            })
+            .filter(Boolean);
     }
 
     async fetchIbuSchedule(season = this.currentSeason) {
@@ -398,11 +432,19 @@ class BiathlonProvider extends BaseProvider {
 
                 const isPast = raceDateTime < now;
                 const isLiveWindow = !isPast && (now - raceDateTime) > -3600000 && (now - raceDateTime) < 7200000;
-                const isLive = Boolean(race.isLive) || isLiveWindow;
+                const scheduleStatus = race.scheduleStatus ? String(race.scheduleStatus).toUpperCase() : '';
+                const resultStatus = race.resultStatus ? String(race.resultStatus).toUpperCase() : '';
+                const hasResultStatus = ['OFFICIAL', 'PROVISIONAL', 'UNOFFICIAL'].includes(resultStatus);
+                const isFinished = scheduleStatus === 'FINISHED' || scheduleStatus === 'COMPLETED' || hasResultStatus;
+                const isLive = Boolean(race.isLive) || Boolean(race.hasLiveData) || isLiveWindow;
 
                 let state = 'upcoming';
-                if (isPast) state = 'completed';
-                if (isLive) state = 'live';
+                if (isFinished || isPast) {
+                    state = 'completed';
+                }
+                if (isLive) {
+                    state = 'live';
+                }
 
                 const raceId = race.uuid || race.id || `${event.id}-${race.discipline.toLowerCase().replace(/\s/g, '-')}-${race.gender}`;
                 const dateParts = race.date && race.time
@@ -411,10 +453,12 @@ class BiathlonProvider extends BaseProvider {
 
                 races.push({
                     uuid: raceId,
+                    ibuRaceId: race.id || null,
                     eventId: event.id,
                     eventName: event.name,
                     eventType: event.type,
                     discipline: race.discipline,
+                    disciplineId: race.disciplineId || null,
                     gender: race.gender,
                     genderDisplay: race.gender === 'mixed' ? 'Mixed' : (race.gender === 'men' ? 'Men' : 'Women'),
                     startDateTime,
@@ -423,7 +467,26 @@ class BiathlonProvider extends BaseProvider {
                     location: event.location,
                     country: event.country,
                     countryName: event.countryName,
+                    statusText: race.statusText || null,
+                    scheduleStatus: race.scheduleStatus || null,
+                    resultStatus: race.resultStatus || null,
+                    hasLiveData: Boolean(race.hasLiveData),
+                    startMode: race.startMode || null,
+                    shootings: race.shootings ?? null,
+                    spareRounds: race.spareRounds ?? null,
+                    hasSpareRounds: Boolean(race.hasSpareRounds),
+                    penaltySeconds: race.penaltySeconds ?? null,
+                    legs: race.legs ?? null,
+                    shootingPositions: race.shootingPositions || null,
+                    localUtcOffset: race.localUtcOffset ?? null,
+                    rsc: race.rsc || null,
+                    categoryId: race.categoryId || null,
+                    km: race.km || null,
+                    resultsCredit: race.resultsCredit || null,
+                    timingCredit: race.timingCredit || null,
+                    hasAnalysis: Boolean(race.hasAnalysis),
                     state,
+                    source: race.id ? 'ibu' : 'static',
                     sport: 'biathlon'
                 });
             }
@@ -496,16 +559,160 @@ class BiathlonProvider extends BaseProvider {
         return [];
     }
 
-    async fetchGameDetails(gameId) {
-        const allRaces = await this.fetchAllGames();
-        const race = allRaces.find(r => r.uuid === gameId);
+    isIbuRaceId(raceId) {
+        if (typeof raceId !== 'string') {
+            return false;
+        }
+        return /^[A-Z]{2}\d{4}[A-Z0-9]+$/.test(raceId);
+    }
 
-        if (!race) return null;
+    async fetchIbuRaceResults(raceId) {
+        if (!raceId) {
+            return null;
+        }
+        const encodedRaceId = encodeURIComponent(raceId);
+        return await this.fetchIbuJson(`Results?RaceId=${encodedRaceId}`, `results for ${raceId}`);
+    }
+
+    async fetchIbuRaceStartList(raceId) {
+        if (!raceId) {
+            return null;
+        }
+        const encodedRaceId = encodeURIComponent(raceId);
+        return await this.fetchIbuJson(`StartList?RaceId=${encodedRaceId}`, `start list for ${raceId}`);
+    }
+
+    buildRaceFromIbuPayload(payload) {
+        if (!payload?.Competition || !payload?.SportEvt) {
+            return null;
+        }
+
+        const competition = payload.Competition;
+        const event = payload.SportEvt;
+        const gender = this.getGenderFromCategory(competition.catId);
+        const startDateTime = competition.StartTime || null;
+        const raceDateTime = startDateTime ? new Date(startDateTime) : null;
+        const hasValidDate = raceDateTime && !Number.isNaN(raceDateTime.getTime());
+        const dateParts = hasValidDate
+            ? this.getStockholmDateTimeParts(raceDateTime)
+            : { date: null, time: null };
+
+        const race = {
+            uuid: competition.RaceId || payload.RaceId,
+            ibuRaceId: competition.RaceId || payload.RaceId || null,
+            eventId: event.EventId,
+            eventName: this.buildEventName(event),
+            eventType: event.EventClassificationId === 'BTSWRLOG' ? 'olympics' : 'world-cup',
+            discipline: this.getDisciplineName(competition),
+            disciplineId: competition.DisciplineId || null,
+            gender,
+            genderDisplay: gender === 'mixed' ? 'Mixed' : (gender === 'men' ? 'Men' : 'Women'),
+            startDateTime,
+            date: dateParts.date,
+            time: dateParts.time,
+            location: competition.Location || event.ShortDescription || event.Organizer || 'TBA',
+            country: event.Nat || null,
+            countryName: event.NatLong || null,
+            statusText: competition.StatusText || null,
+            scheduleStatus: competition.ScheduleStatus || null,
+            resultStatus: competition.ResultStatus || null,
+            hasLiveData: Boolean(competition.HasLiveData),
+            isLive: Boolean(competition.IsLive),
+            startMode: competition.StartMode || null,
+            shootings: competition.NrShootings ?? null,
+            spareRounds: competition.NrSpareRounds ?? null,
+            hasSpareRounds: Boolean(competition.HasSpareRounds),
+            penaltySeconds: competition.PenaltySeconds ?? null,
+            legs: competition.NrLegs ?? null,
+            shootingPositions: competition.ShootingPositions || null,
+            localUtcOffset: competition.LocalUTCOffset ?? null,
+            rsc: competition.RSC || null,
+            categoryId: competition.catId || null,
+            km: competition.km || null,
+            resultsCredit: competition.ResultsCredit || null,
+            timingCredit: competition.TimingCredit || null,
+            hasAnalysis: Boolean(competition.HasAnalysis),
+            source: 'ibu',
+            sport: 'biathlon'
+        };
+
+        if (hasValidDate) {
+            const scheduleStatus = race.scheduleStatus ? String(race.scheduleStatus).toUpperCase() : '';
+            const resultStatus = race.resultStatus ? String(race.resultStatus).toUpperCase() : '';
+            const hasResultStatus = ['OFFICIAL', 'PROVISIONAL', 'UNOFFICIAL'].includes(resultStatus);
+            const isFinished = scheduleStatus === 'FINISHED' || scheduleStatus === 'COMPLETED' || hasResultStatus;
+            const now = new Date();
+            const diffMs = now - raceDateTime;
+            const isPast = raceDateTime < now;
+            const isLiveWindow = !isPast && diffMs > -3600000 && diffMs < 7200000;
+            const isLive = Boolean(race.isLive) || Boolean(race.hasLiveData) || isLiveWindow;
+
+            if (isLive) {
+                race.state = 'live';
+            } else if (isFinished || isPast) {
+                race.state = 'completed';
+            } else {
+                race.state = 'upcoming';
+            }
+        } else {
+            race.state = 'upcoming';
+        }
+
+        return race;
+    }
+
+    async fetchGameDetails(gameId, options = {}) {
+        const races = Array.isArray(options.races) ? options.races : null;
+        const allRaces = races || await this.fetchAllGames();
+        let race = allRaces.find(r => r.uuid === gameId);
+
+        const ibuRaceId = race?.ibuRaceId || (this.isIbuRaceId(gameId) ? gameId : null);
+        let resultsPayload = null;
+        let startListPayload = null;
+
+        if (ibuRaceId) {
+            resultsPayload = await this.fetchIbuRaceResults(ibuRaceId);
+            const hasResults = Boolean(resultsPayload?.IsResult);
+            const hasStartList = Boolean(resultsPayload?.IsStartList);
+            if (!hasStartList && !hasResults) {
+                startListPayload = await this.fetchIbuRaceStartList(ibuRaceId);
+            }
+        }
+
+        if (!race && resultsPayload) {
+            race = this.buildRaceFromIbuPayload(resultsPayload);
+        }
+
+        if (!race) {
+            return null;
+        }
+
+        const resultStatus = resultsPayload?.Competition?.ResultStatus;
+        const normalizedResultStatus = resultStatus ? String(resultStatus).toUpperCase() : '';
+        const hasResultStatus = ['OFFICIAL', 'PROVISIONAL', 'UNOFFICIAL'].includes(normalizedResultStatus);
+        const hasResults = Boolean(resultsPayload?.IsResult) || hasResultStatus;
+        const resultsList = Array.isArray(resultsPayload?.Results) ? resultsPayload.Results : null;
+        const results = hasResults ? resultsList : null;
+        let startList = (!hasResults && resultsPayload?.IsStartList && resultsList) ? resultsList : null;
+        if (!startList && Array.isArray(startListPayload?.Results) && startListPayload.Results.length > 0) {
+            startList = startListPayload.Results;
+        }
+
+        const competition = resultsPayload?.Competition || startListPayload?.Competition || null;
+        const event = resultsPayload?.SportEvt || startListPayload?.SportEvt || null;
 
         return {
             info: race,
-            results: null, // Would contain race results when available
-            startList: null // Would contain start list when available
+            competition,
+            event,
+            results,
+            startList,
+            resultMeta: resultsPayload ? {
+                isResult: Boolean(resultsPayload.IsResult),
+                isStartList: Boolean(resultsPayload.IsStartList)
+            } : null,
+            source: race.source || (competition ? 'ibu' : 'static'),
+            lastUpdated: formatSwedishTimestamp()
         };
     }
 

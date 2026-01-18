@@ -320,7 +320,8 @@ app.get('/api/biathlon/schedule', async (req, res) => {
 app.get('/api/biathlon/race/:id', async (req, res) => {
     try {
         const provider = getProvider('biathlon');
-        const details = await provider.fetchGameDetails(req.params.id);
+        const cachedRaces = getCachedBiathlon();
+        const details = await provider.fetchGameDetails(req.params.id, { races: cachedRaces });
 
         if (!details) {
             return res.status(404).json({ error: 'Race not found' });
