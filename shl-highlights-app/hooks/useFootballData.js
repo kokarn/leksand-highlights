@@ -38,6 +38,10 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
     const listRef = useRef(null);
     const lastFocusedGameRef = useRef(null);
 
+    // Scroll position persistence
+    const savedScrollOffset = useRef(null);
+    const hasUserScrolled = useRef(false);
+
     // Get team key helper
     const getTeamKey = useCallback((team) => {
         return team?.code || team?.uuid || team?.names?.short || team?.names?.long || null;
@@ -135,12 +139,26 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
         return () => clearInterval(intervalId);
     }, [games, activeSport, shouldAutoRefreshGames, loadGames]);
 
-    // Reset focused game ref when switching sports
+    // Restore scroll position when switching back to Football
     useEffect(() => {
-        if (activeSport !== 'football') {
-            lastFocusedGameRef.current = null;
+        if (activeSport === 'football' && hasUserScrolled.current && savedScrollOffset.current !== null) {
+            // Small delay to ensure FlatList is mounted
+            const timeoutId = setTimeout(() => {
+                listRef.current?.scrollToOffset({
+                    offset: savedScrollOffset.current,
+                    animated: false
+                });
+            }, 50);
+            return () => clearTimeout(timeoutId);
         }
     }, [activeSport]);
+
+    // Handle scroll event to save position
+    const handleScroll = useCallback((event) => {
+        const offset = event.nativeEvent.contentOffset.y;
+        savedScrollOffset.current = offset;
+        hasUserScrolled.current = true;
+    }, []);
 
     // Derived teams list
     const teams = useMemo(() => {
@@ -269,6 +287,9 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
         setLoadingDetails(false);
     }, []);
 
+    // Determine effective initial scroll index (skip if user has scrolled before)
+    const effectiveInitialScrollIndex = hasUserScrolled.current ? undefined : (targetGameIndex > 0 ? targetGameIndex : undefined);
+
     return {
         // State
         games: sortedGames,
@@ -285,6 +306,7 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
         activeSeason,
         targetGameIndex,
         targetGameId,
+        effectiveInitialScrollIndex,
 
         // Refs
         listRef,
@@ -301,6 +323,7 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
         handleSeasonSelect,
         onRefresh,
         handleGamePress,
+        handleScroll,
         closeModal
     };
 }

@@ -161,9 +161,11 @@ export default function App() {
             keyExtractor={item => item.uuid}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
-            initialScrollIndex={shl.targetGameIndex > 0 ? shl.targetGameIndex : undefined}
+            initialScrollIndex={shl.effectiveInitialScrollIndex}
             getItemLayout={getShlItemLayout}
             onScrollToIndexFailed={handleScrollToIndexFailed}
+            onScroll={shl.handleScroll}
+            scrollEventThrottle={100}
             removeClippedSubviews={true}
             maxToRenderPerBatch={10}
             windowSize={11}
@@ -245,9 +247,11 @@ export default function App() {
             keyExtractor={item => item.uuid}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
-            initialScrollIndex={football.targetGameIndex > 0 ? football.targetGameIndex : undefined}
+            initialScrollIndex={football.effectiveInitialScrollIndex}
             getItemLayout={getFootballItemLayout}
             onScrollToIndexFailed={handleScrollToIndexFailed}
+            onScroll={football.handleScroll}
+            scrollEventThrottle={100}
             removeClippedSubviews={true}
             maxToRenderPerBatch={10}
             windowSize={11}
@@ -331,9 +335,11 @@ export default function App() {
             keyExtractor={biathlonKeyExtractor}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
-            initialScrollIndex={biathlon.targetRaceIndex > 0 ? biathlon.targetRaceIndex : undefined}
+            initialScrollIndex={biathlon.effectiveInitialScrollIndex}
             getItemLayout={getBiathlonItemLayout}
             onScrollToIndexFailed={handleScrollToIndexFailed}
+            onScroll={biathlon.handleScroll}
+            scrollEventThrottle={100}
             removeClippedSubviews={true}
             maxToRenderPerBatch={10}
             windowSize={11}

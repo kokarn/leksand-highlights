@@ -45,6 +45,10 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
     const listRef = useRef(null);
     const lastFocusedRaceRef = useRef(null);
 
+    // Scroll position persistence
+    const savedScrollOffset = useRef(null);
+    const hasUserScrolled = useRef(false);
+
     // Load biathlon data
     const loadData = useCallback(async (silent = false) => {
         if (!silent) {
@@ -131,12 +135,26 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
         setStandingsGender(gender);
     }, []);
 
-    // Reset focused race ref when switching sports
+    // Restore scroll position when switching back to Biathlon
     useEffect(() => {
-        if (activeSport !== 'biathlon') {
-            lastFocusedRaceRef.current = null;
+        if (activeSport === 'biathlon' && hasUserScrolled.current && savedScrollOffset.current !== null) {
+            // Small delay to ensure FlatList is mounted
+            const timeoutId = setTimeout(() => {
+                listRef.current?.scrollToOffset({
+                    offset: savedScrollOffset.current,
+                    animated: false
+                });
+            }, 50);
+            return () => clearTimeout(timeoutId);
         }
     }, [activeSport]);
+
+    // Handle scroll event to save position
+    const handleScroll = useCallback((event) => {
+        const offset = event.nativeEvent.contentOffset.y;
+        savedScrollOffset.current = offset;
+        hasUserScrolled.current = true;
+    }, []);
 
     // Filtered and sorted races
     const filteredRaces = useMemo(() => {
@@ -239,6 +257,9 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
         setLoadingDetails(false);
     }, []);
 
+    // Determine effective initial scroll index (skip if user has scrolled before)
+    const effectiveInitialScrollIndex = hasUserScrolled.current ? undefined : (targetRaceIndex > 0 ? targetRaceIndex : undefined);
+
     return {
         // State
         races: sortedRaces,
@@ -250,6 +271,7 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
         loadingDetails,
         targetRaceIndex,
         targetRaceId,
+        effectiveInitialScrollIndex,
         viewMode,
         standings,
         loadingStandings,
@@ -264,6 +286,7 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
         loadData,
         onRefresh,
         handleRacePress,
+        handleScroll,
         closeModal,
         handleViewChange,
         handleStandingsTypeChange,

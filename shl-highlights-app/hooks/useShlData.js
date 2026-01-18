@@ -38,6 +38,10 @@ export function useShlData(activeSport, selectedTeams, options = {}) {
     const listRef = useRef(null);
     const lastFocusedGameRef = useRef(null);
 
+    // Scroll position persistence
+    const savedScrollOffset = useRef(null);
+    const hasUserScrolled = useRef(false);
+
     // Check if auto-refresh should be enabled
     const shouldAutoRefreshGames = useCallback((gamesList) => {
         const now = Date.now();
@@ -110,12 +114,26 @@ export function useShlData(activeSport, selectedTeams, options = {}) {
         return () => clearInterval(intervalId);
     }, [games, activeSport, shouldAutoRefreshGames, loadGames]);
 
-    // Reset focused game ref when switching sports
+    // Restore scroll position when switching back to SHL
     useEffect(() => {
-        if (activeSport !== 'shl') {
-            lastFocusedGameRef.current = null;
+        if (activeSport === 'shl' && hasUserScrolled.current && savedScrollOffset.current !== null) {
+            // Small delay to ensure FlatList is mounted
+            const timeoutId = setTimeout(() => {
+                listRef.current?.scrollToOffset({
+                    offset: savedScrollOffset.current,
+                    animated: false
+                });
+            }, 50);
+            return () => clearTimeout(timeoutId);
         }
     }, [activeSport]);
+
+    // Handle scroll event to save position
+    const handleScroll = useCallback((event) => {
+        const offset = event.nativeEvent.contentOffset.y;
+        savedScrollOffset.current = offset;
+        hasUserScrolled.current = true;
+    }, []);
 
     // Derived teams list
     const teams = useMemo(() => {
@@ -217,6 +235,9 @@ export function useShlData(activeSport, selectedTeams, options = {}) {
         setVideos([]);
     }, []);
 
+    // Determine effective initial scroll index (skip if user has scrolled before)
+    const effectiveInitialScrollIndex = hasUserScrolled.current ? undefined : (targetGameIndex > 0 ? targetGameIndex : undefined);
+
     return {
         // State
         games: sortedGames,
@@ -232,6 +253,7 @@ export function useShlData(activeSport, selectedTeams, options = {}) {
         teams,
         targetGameIndex,
         targetGameId,
+        effectiveInitialScrollIndex,
 
         // Refs
         listRef,
@@ -243,6 +265,7 @@ export function useShlData(activeSport, selectedTeams, options = {}) {
         handleViewChange,
         onRefresh,
         handleGamePress,
+        handleScroll,
         closeModal
     };
 }
