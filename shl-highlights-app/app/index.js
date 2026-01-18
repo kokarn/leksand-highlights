@@ -450,6 +450,8 @@ export default function App() {
             {/* Biathlon Race Modal */}
             <RaceModal
                 race={biathlon.selectedRace}
+                details={biathlon.raceDetails}
+                loading={biathlon.loadingDetails}
                 visible={!!biathlon.selectedRace}
                 onClose={biathlon.closeModal}
             />

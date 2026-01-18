@@ -1,5 +1,10 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { fetchBiathlonRaces, fetchBiathlonEvents, fetchBiathlonNations } from '../api/shl';
+import {
+    fetchBiathlonRaces,
+    fetchBiathlonEvents,
+    fetchBiathlonNations,
+    fetchBiathlonRaceDetails
+} from '../api/shl';
 
 /**
  * Hook for managing Biathlon data
@@ -13,6 +18,9 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders) {
 
     // Selected race modal state
     const [selectedRace, setSelectedRace] = useState(null);
+    const [raceDetails, setRaceDetails] = useState(null);
+    const [loadingDetails, setLoadingDetails] = useState(false);
+    const detailsRequestIdRef = useRef(0);
 
     // List scroll ref
     const listRef = useRef(null);
@@ -20,19 +28,37 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders) {
 
     // Load biathlon data
     const loadData = useCallback(async (silent = false) => {
-        if (!silent) setLoading(true);
+        if (!silent) {
+            setLoading(true);
+        }
         try {
-            const [racesData, , nationsData] = await Promise.all([
+            const [racesResult, eventsResult, nationsResult] = await Promise.allSettled([
                 fetchBiathlonRaces(),
                 fetchBiathlonEvents(),
                 fetchBiathlonNations()
             ]);
-            setRaces(racesData);
-            setNations(nationsData);
+
+            if (racesResult.status === 'fulfilled') {
+                setRaces(racesResult.value);
+            } else {
+                console.error('Failed to load biathlon races', racesResult.reason);
+            }
+
+            if (nationsResult.status === 'fulfilled') {
+                setNations(nationsResult.value);
+            } else {
+                console.error('Failed to load biathlon nations', nationsResult.reason);
+            }
+
+            if (eventsResult.status === 'rejected') {
+                console.warn('Failed to load biathlon events', eventsResult.reason);
+            }
         } catch (e) {
             console.error("Failed to load biathlon data", e);
         } finally {
-            if (!silent) setLoading(false);
+            if (!silent) {
+                setLoading(false);
+            }
             setRefreshing(false);
         }
     }, []);
@@ -105,13 +131,45 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders) {
     }, [loadData]);
 
     // Race press handler
-    const handleRacePress = useCallback((race) => {
+    const handleRacePress = useCallback(async (race) => {
+        if (!race) {
+            return;
+        }
         setSelectedRace(race);
+        setRaceDetails(null);
+        setLoadingDetails(true);
+
+        const requestId = detailsRequestIdRef.current + 1;
+        detailsRequestIdRef.current = requestId;
+        const raceId = race.ibuRaceId || race.uuid;
+
+        if (!raceId) {
+            setLoadingDetails(false);
+            return;
+        }
+
+        try {
+            const details = await fetchBiathlonRaceDetails(raceId);
+            if (detailsRequestIdRef.current === requestId) {
+                setRaceDetails(details);
+            }
+        } catch (error) {
+            if (detailsRequestIdRef.current === requestId) {
+                console.error('Failed to load biathlon race details', error);
+            }
+        } finally {
+            if (detailsRequestIdRef.current === requestId) {
+                setLoadingDetails(false);
+            }
+        }
     }, []);
 
     // Close modal handler
     const closeModal = useCallback(() => {
+        detailsRequestIdRef.current += 1;
         setSelectedRace(null);
+        setRaceDetails(null);
+        setLoadingDetails(false);
     }, []);
 
     return {
@@ -121,6 +179,8 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders) {
         loading,
         refreshing,
         selectedRace,
+        raceDetails,
+        loadingDetails,
         targetRaceIndex,
         targetRaceId,
 
