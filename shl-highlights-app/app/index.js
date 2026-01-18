@@ -1,8 +1,14 @@
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+// Card height constants for consistent scroll behavior
+// Height = padding (32) + header (~36) + content (~90) + marginBottom (16)
+const GAME_CARD_HEIGHT = 174;
+const FOOTBALL_CARD_HEIGHT = 174;
+const BIATHLON_CARD_HEIGHT = 190; // Slightly taller due to extra info rows
 
 // API
 import { getTeamLogoUrl, getNationFlag } from '../api/shl';
@@ -85,6 +91,44 @@ export default function App() {
         }
     }, [activeSport, shl, football, biathlon]);
 
+    // getItemLayout functions for consistent scroll behavior
+    const getShlItemLayout = useCallback((data, index) => ({
+        length: GAME_CARD_HEIGHT,
+        offset: GAME_CARD_HEIGHT * index,
+        index
+    }), []);
+
+    const getFootballItemLayout = useCallback((data, index) => ({
+        length: FOOTBALL_CARD_HEIGHT,
+        offset: FOOTBALL_CARD_HEIGHT * index,
+        index
+    }), []);
+
+    const getBiathlonItemLayout = useCallback((data, index) => ({
+        length: BIATHLON_CARD_HEIGHT,
+        offset: BIATHLON_CARD_HEIGHT * index,
+        index
+    }), []);
+
+    // onScrollToIndexFailed handler for robustness
+    const handleScrollToIndexFailed = useCallback((info) => {
+        // Wait a bit and retry scrolling
+        setTimeout(() => {
+            if (info.index >= 0 && info.index < (info.highestMeasuredFrameIndex + 1)) {
+                // We have measured frames up to this point, try again
+                const listRef =
+                    activeSport === 'shl' ? shl.listRef :
+                    activeSport === 'football' ? football.listRef :
+                    biathlon.listRef;
+
+                listRef.current?.scrollToIndex({
+                    index: info.index,
+                    animated: false
+                });
+            }
+        }, 100);
+    }, [activeSport, shl.listRef, football.listRef, biathlon.listRef]);
+
     // Get current refreshing state
     const refreshing = activeSport === 'shl'
         ? shl.refreshing
@@ -118,6 +162,8 @@ export default function App() {
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
             initialScrollIndex={shl.targetGameIndex > 0 ? shl.targetGameIndex : undefined}
+            getItemLayout={getShlItemLayout}
+            onScrollToIndexFailed={handleScrollToIndexFailed}
             removeClippedSubviews={true}
             maxToRenderPerBatch={10}
             windowSize={11}
@@ -200,6 +246,8 @@ export default function App() {
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
             initialScrollIndex={football.targetGameIndex > 0 ? football.targetGameIndex : undefined}
+            getItemLayout={getFootballItemLayout}
+            onScrollToIndexFailed={handleScrollToIndexFailed}
             removeClippedSubviews={true}
             maxToRenderPerBatch={10}
             windowSize={11}
@@ -276,6 +324,8 @@ export default function App() {
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
             initialScrollIndex={biathlon.targetRaceIndex > 0 ? biathlon.targetRaceIndex : undefined}
+            getItemLayout={getBiathlonItemLayout}
+            onScrollToIndexFailed={handleScrollToIndexFailed}
             removeClippedSubviews={true}
             maxToRenderPerBatch={10}
             windowSize={11}
