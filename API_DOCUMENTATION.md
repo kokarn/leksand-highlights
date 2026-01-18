@@ -384,6 +384,61 @@ Returns all biathlon races for the current season.
 ]
 ```
 
+Additional fields are included when data is sourced from IBU (race IDs, status metadata, and format details), such as:
+- `ibuRaceId`
+- `scheduleStatus`, `resultStatus`, `statusText`
+- `hasLiveData`
+- `startMode`, `shootings`, `spareRounds`, `legs`, `shootingPositions`
+- `source`
+
+---
+
+### `GET /api/biathlon/race/:id`
+
+Returns detailed data for a specific biathlon race, including IBU competition metadata, results, and start lists when available.
+
+**Parameters:**
+- `id` (path): The race identifier (IBU RaceId or internal UUID)
+
+**Response:**
+```json
+{
+  "info": {
+    "uuid": "BT2526SWRLCP01SWRL",
+    "eventId": "BT2526SWRLCP01",
+    "eventName": "World Cup 1 - Oestersund",
+    "eventType": "world-cup",
+    "discipline": "Relay",
+    "gender": "women",
+    "genderDisplay": "Women",
+    "startDateTime": "2025-11-29T12:15:00Z",
+    "location": "Swedish National Biathlon Arena",
+    "country": "SWE",
+    "countryName": "Sweden",
+    "state": "completed",
+    "source": "ibu"
+  },
+  "competition": {
+    "RaceId": "BT2526SWRLCP01SWRL",
+    "StatusText": "Final",
+    "ScheduleStatus": "FINISHED",
+    "ResultStatus": "OFFICIAL",
+    "StartTime": "2025-11-29T12:15:00Z"
+  },
+  "event": {
+    "EventId": "BT2526SWRLCP01",
+    "ShortDescription": "Oestersund",
+    "Nat": "SWE",
+    "NatLong": "Sweden"
+  },
+  "results": [ /* IBU result rows */ ],
+  "startList": null,
+  "resultMeta": { "isResult": true, "isStartList": false },
+  "source": "ibu",
+  "lastUpdated": "2026-01-18 12:30:04"
+}
+```
+
 ---
 
 ### `POST /api/biathlon/refresh`
@@ -511,9 +566,13 @@ Allsvenskan data is sourced from ESPN public site APIs:
 - `https://site.web.api.espn.com/apis/v2/sports/soccer/swe.1/standings` - League standings
 
 ### Biathlon
-Biathlon race schedule is maintained using the official IBU World Cup calendar for the 2025-26 season, including:
+Biathlon race schedule and results are maintained using the official IBU APIs for the 2025-26 season, including:
 - World Cup events (9 stops)
 - Winter Olympics 2026
+- `https://www.biathlonresults.com/modules/sportapi/api/Events?SeasonId={season}` - Event calendar
+- `https://www.biathlonresults.com/modules/sportapi/api/Competitions?EventId={id}` - Race schedule
+- `https://www.biathlonresults.com/modules/sportapi/api/Results?RaceId={id}` - Race results/start lists
+- `https://www.biathlonresults.com/modules/sportapi/api/StartList?RaceId={id}` - Start lists fallback
 
 ## Background Services
 

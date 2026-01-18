@@ -1,6 +1,6 @@
 {
     "name": "shl-highlights-notify",
-    "version": "2.3.0",
+    "version": "2.3.1",
     "description": "SHL game API server with push notifications for highlights",
     "main": "server.js",
     "scripts": {
