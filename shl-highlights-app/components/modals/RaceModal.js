@@ -30,7 +30,7 @@ function getMedalEmoji(rank) {
 /**
  * Result row component with enhanced shooting display
  */
-const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceCompleted }) => {
+const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceCompleted, discipline }) => {
     const rank = (() => {
         const resultOrder = item?.ResultOrder !== 10000 ? item?.ResultOrder : null;
         const r = item?.Rank ?? resultOrder ?? item?.StartOrder;
@@ -54,7 +54,6 @@ const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceComple
         if (hasResults) {
             return item.Result || item.TotalTime || item.RunTime || item.Behind || '-';
         }
-        if (item.Bib) return `Bib ${item.Bib}`;
         return '-';
     })();
 
@@ -109,6 +108,7 @@ const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceComple
                         <ShootingDisplay
                             shootings={shootings}
                             shootingTotal={shootingTotal}
+                            discipline={discipline}
                             compact={false}
                             showTotal={true}
                             showLabel={false}
@@ -312,6 +312,7 @@ export const RaceModal = ({ race, details, visible, onClose, loading }) => {
                                             isExpanded={expandedRows.has(index)}
                                             onToggle={() => toggleRow(index)}
                                             isRaceCompleted={!isLiveRace && !isStartingSoon && !isUpcomingRace}
+                                            discipline={raceInfo.discipline}
                                         />
                                     );
                                 })

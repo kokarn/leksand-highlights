@@ -14,23 +14,30 @@ function parseShootings(shootings) {
 }
 
 /**
- * Get shooting position for each stage
- * Sprint: Prone, Standing
- * Pursuit/Mass Start: Prone, Standing, Prone, Standing
- * Individual: Prone, Standing, Prone, Standing (but with time penalties)
+ * Get shooting position for each stage based on discipline
+ * Sprint: Prone, Standing (PS - 2 stages)
+ * Pursuit: Prone, Prone, Standing, Standing (PPSS - 4 stages)
+ * Mass Start: Prone, Prone, Standing, Standing (PPSS - 4 stages)
+ * Individual: Prone, Standing, Prone, Standing (PSPS - 4 stages)
  */
-function getShootingPositions(stageCount, positions = null) {
+function getShootingPositions(stageCount, positions = null, discipline = null) {
     // If positions are provided (e.g., "PPSS"), use them
     if (positions && typeof positions === 'string') {
         return positions.split('').map(p => (p === 'P' ? 'prone' : 'standing'));
     }
 
-    // Default patterns based on stage count
+    // Default patterns based on stage count and discipline
     if (stageCount === 2) {
         return ['prone', 'standing'];
     }
     if (stageCount === 4) {
-        return ['prone', 'standing', 'prone', 'standing'];
+        // Individual races use PSPS pattern
+        const normalizedDiscipline = (discipline || '').toLowerCase();
+        if (normalizedDiscipline.includes('individual')) {
+            return ['prone', 'standing', 'prone', 'standing'];
+        }
+        // Pursuit, Mass Start use PPSS pattern
+        return ['prone', 'prone', 'standing', 'standing'];
     }
     // For relay and other formats
     return Array(stageCount).fill('prone');
@@ -85,6 +92,7 @@ export const ShootingDisplay = memo(function ShootingDisplay({
     shootings,
     shootingTotal,
     shootingPositions = null,
+    discipline = null,
     compact = false,
     showTotal = true,
     showLabel = true
@@ -95,16 +103,53 @@ export const ShootingDisplay = memo(function ShootingDisplay({
         return null;
     }
 
-    const positions = getShootingPositions(stages.length, shootingPositions);
+    const positions = getShootingPositions(stages.length, shootingPositions, discipline);
     const totalMisses = parseInt(shootingTotal, 10) || stages.reduce((sum, m) => sum + m, 0);
     const totalShots = stages.length * 5;
     const totalHits = totalShots - totalMisses;
 
-    return (
-        <View style={[styles.container, compact && styles.containerCompact]}>
-            {showLabel && !compact && (
-                <Text style={styles.label}>Shooting</Text>
-            )}
+    // For 4 stages, render in 2x2 grid: top-left, top-right, bottom-left, bottom-right
+    const renderStages = () => {
+        if (stages.length === 4) {
+            return (
+                <View style={styles.stagesGrid}>
+                    <View style={[styles.stagesRow, compact && styles.stagesRowCompact]}>
+                        <ShootingStage
+                            key={0}
+                            misses={stages[0]}
+                            position={positions[0]}
+                            stageIndex={0}
+                            compact={compact}
+                        />
+                        <ShootingStage
+                            key={1}
+                            misses={stages[1]}
+                            position={positions[1]}
+                            stageIndex={1}
+                            compact={compact}
+                        />
+                    </View>
+                    <View style={[styles.stagesRow, compact && styles.stagesRowCompact]}>
+                        <ShootingStage
+                            key={2}
+                            misses={stages[2]}
+                            position={positions[2]}
+                            stageIndex={2}
+                            compact={compact}
+                        />
+                        <ShootingStage
+                            key={3}
+                            misses={stages[3]}
+                            position={positions[3]}
+                            stageIndex={3}
+                            compact={compact}
+                        />
+                    </View>
+                </View>
+            );
+        }
+        // For 2 stages or other counts, render in a single row
+        return (
             <View style={[styles.stagesRow, compact && styles.stagesRowCompact]}>
                 {stages.map((misses, index) => (
                     <ShootingStage
@@ -116,6 +161,15 @@ export const ShootingDisplay = memo(function ShootingDisplay({
                     />
                 ))}
             </View>
+        );
+    };
+
+    return (
+        <View style={[styles.container, compact && styles.containerCompact]}>
+            {showLabel && !compact && (
+                <Text style={styles.label}>Shooting</Text>
+            )}
+            {renderStages()}
             {showTotal && (
                 <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>
@@ -223,10 +277,12 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         marginBottom: 4
     },
+    stagesGrid: {
+        gap: 12
+    },
     stagesRow: {
         flexDirection: 'row',
-        gap: 16,
-        flexWrap: 'wrap'
+        gap: 16
     },
     stagesRowCompact: {
         gap: 8
