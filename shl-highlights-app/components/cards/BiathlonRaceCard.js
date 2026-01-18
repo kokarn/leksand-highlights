@@ -10,14 +10,35 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
     const relativeDate = formatRelativeDate(race?.startDateTime);
     const time = formatSwedishDate(race?.startDateTime, 'HH:mm');
     const isLive = race?.state === 'live';
+    const isStartingSoon = race?.state === 'starting-soon';
+
+    const getStatusText = () => {
+        if (isLive) {
+            return 'LIVE';
+        }
+        if (isStartingSoon) {
+            return 'STARTING SOON';
+        }
+        return relativeDate;
+    };
+
+    const getCardColors = () => {
+        if (isLive) {
+            return ['#2a1c1c', '#1c1c1e'];
+        }
+        if (isStartingSoon) {
+            return ['#2a2a1c', '#1c1c1e'];
+        }
+        return ['#1c1c1e', '#2c2c2e'];
+    };
 
     return (
         <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
             <LinearGradient
-                colors={isLive ? ['#2a1c1c', '#1c1c1e'] : ['#1c1c1e', '#2c2c2e']}
+                colors={getCardColors()}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={[styles.raceCard, isLive && styles.raceCardLive]}
+                style={[styles.raceCard, isLive && styles.raceCardLive, isStartingSoon && styles.raceCardStartingSoon]}
             >
                 <View style={styles.raceCardHeader}>
                     <View style={styles.raceTypeContainer}>
@@ -26,8 +47,8 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
                         </Text>
                     </View>
                     <View style={styles.raceDateTimeContainer}>
-                        <Text style={[styles.raceDate, isLive && styles.liveTextAccented]}>
-                            {isLive ? 'LIVE' : relativeDate}
+                        <Text style={[styles.raceDate, isLive && styles.liveTextAccented, isStartingSoon && styles.startingSoonTextAccented]}>
+                            {getStatusText()}
                         </Text>
                         <Text style={styles.raceTime}>{time}</Text>
                     </View>
@@ -71,6 +92,9 @@ const styles = StyleSheet.create({
     raceCardLive: {
         borderColor: '#FF453A'
     },
+    raceCardStartingSoon: {
+        borderColor: '#FF9500'
+    },
     raceCardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -99,6 +123,10 @@ const styles = StyleSheet.create({
     },
     liveTextAccented: {
         color: '#FF453A',
+        fontWeight: '800'
+    },
+    startingSoonTextAccented: {
+        color: '#FF9500',
         fontWeight: '800'
     },
     raceMainContent: {

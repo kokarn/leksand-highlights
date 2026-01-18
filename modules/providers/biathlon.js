@@ -441,10 +441,16 @@ class BiathlonProvider extends BaseProvider {
                 const isFinished = scheduleStatus === 'FINISHED' || scheduleStatus === 'COMPLETED' || hasResultStatus;
                 // Only use isLiveWindow if the race is actually ongoing (not finished)
                 const isLive = Boolean(race.isLive) || Boolean(race.hasLiveData) || (isLiveWindow && !isFinished);
+                // Check if IBU has marked the race as started but no live data yet (athletes warming up, about to start)
+                const isIbuStarted = scheduleStatus === 'STARTED' || scheduleStatus === 'IN PROGRESS';
+                const isStartingSoon = isIbuStarted && !Boolean(race.hasLiveData) && !isFinished;
 
                 let state = 'upcoming';
                 if (isFinished || isPast) {
                     state = 'completed';
+                }
+                if (isStartingSoon) {
+                    state = 'starting-soon';
                 }
                 if (isLive) {
                     state = 'live';
@@ -650,9 +656,14 @@ class BiathlonProvider extends BaseProvider {
             const isPast = raceDateTime < now;
             const isLiveWindow = !isPast && diffMs > -3600000 && diffMs < 7200000;
             const isLive = Boolean(race.isLive) || Boolean(race.hasLiveData) || isLiveWindow;
+            // Check if IBU has marked the race as started but no live data yet
+            const isIbuStarted = scheduleStatus === 'STARTED' || scheduleStatus === 'IN PROGRESS';
+            const isStartingSoon = isIbuStarted && !Boolean(race.hasLiveData) && !isFinished;
 
             if (isLive) {
                 race.state = 'live';
+            } else if (isStartingSoon) {
+                race.state = 'starting-soon';
             } else if (isFinished || isPast) {
                 race.state = 'completed';
             } else {

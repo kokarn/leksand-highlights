@@ -169,7 +169,13 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
         );
         if (liveIndex !== -1) return liveIndex;
 
-        // Priority 2: Find first upcoming race
+        // Priority 2: Find races that are starting soon
+        const startingSoonIndex = sortedRaces.findIndex(race =>
+            race.state === 'starting-soon'
+        );
+        if (startingSoonIndex !== -1) return startingSoonIndex;
+
+        // Priority 3: Find first upcoming race
         const upcomingIndex = sortedRaces.findIndex(race =>
             race.state === 'upcoming' || race.state === 'pre-race'
         );
@@ -177,7 +183,7 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
             return upcomingIndex > 0 ? upcomingIndex - 1 : upcomingIndex;
         }
 
-        // Priority 3: All races completed - show the most recent one
+        // Priority 4: All races completed - show the most recent one
         return sortedRaces.length - 1;
     }, [sortedRaces]);
 

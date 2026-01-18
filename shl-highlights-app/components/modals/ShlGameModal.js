@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getTeamLogoUrl } from '../../api/shl';
 import { getTeamColor } from '../../constants';
-import { getVideoDisplayTitle } from '../../utils';
+import { getVideoDisplayTitle, formatSwedishDate } from '../../utils';
 import { useGameDetails } from '../../hooks/useGameDetails';
 import { useVideoPlayer } from '../../hooks/useVideoPlayer';
 import { TabButton } from '../TabButton';
@@ -217,6 +217,11 @@ export const ShlGameModal = ({
                                     <Text style={styles.gameStateText}>
                                         {game.state === 'post-game' ? 'Final' : game.state}
                                     </Text>
+                                    {game.state === 'pre-game' && game.startDateTime && (
+                                        <Text style={styles.gameDateText}>
+                                            {formatSwedishDate(game.startDateTime, 'd MMMM HH:mm')}
+                                        </Text>
+                                    )}
                                 </View>
                                 <View style={styles.scoreTeam}>
                                     <Image
@@ -323,6 +328,11 @@ const styles = StyleSheet.create({
         fontSize: 14,
         marginTop: 4,
         textTransform: 'uppercase'
+    },
+    gameDateText: {
+        color: '#aaa',
+        fontSize: 13,
+        marginTop: 4
     },
     tabBar: {
         flexDirection: 'row',

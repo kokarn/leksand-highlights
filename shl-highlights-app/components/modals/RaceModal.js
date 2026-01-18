@@ -16,10 +16,28 @@ export const RaceModal = ({ race, details, visible, onClose, loading }) => {
     const hasStartList = Boolean(startList?.length);
     const resultRows = hasResults ? results : (hasStartList ? startList : []);
     const isLiveRace = raceInfo?.state === 'live' || raceInfo?.state === 'ongoing';
+    const isStartingSoon = raceInfo?.state === 'starting-soon';
     const isUpcomingRace = raceInfo?.state === 'upcoming' || raceInfo?.state === 'pre-race';
-    const statusLabel = competition?.StatusText
-        || raceInfo?.statusText
-        || (isLiveRace ? 'Live' : (isUpcomingRace ? 'Upcoming' : 'Completed'));
+
+    const getStatusLabel = () => {
+        if (competition?.StatusText) {
+            return competition.StatusText;
+        }
+        if (raceInfo?.statusText) {
+            return raceInfo.statusText;
+        }
+        if (isLiveRace) {
+            return 'Live';
+        }
+        if (isStartingSoon) {
+            return 'Starting Soon';
+        }
+        if (isUpcomingRace) {
+            return 'Upcoming';
+        }
+        return 'Completed';
+    };
+    const statusLabel = getStatusLabel();
     const resultTitle = hasResults ? 'Results' : (hasStartList ? 'Start list' : 'Results');
 
     let infoNoteText = 'Official results will appear here once published.';
@@ -29,12 +47,16 @@ export const RaceModal = ({ race, details, visible, onClose, loading }) => {
         infoNoteText = 'Start list loaded for this race.';
     } else if (isLiveRace) {
         infoNoteText = 'Live results will appear here during the race.';
+    } else if (isStartingSoon) {
+        infoNoteText = 'Race is about to begin. Live results will appear shortly.';
     } else if (isUpcomingRace) {
         infoNoteText = 'Start lists and results will be available closer to race time.';
     }
 
     const getResultRank = (item, index) => {
-        const rank = item?.Rank ?? item?.ResultOrder ?? item?.StartOrder;
+        // ResultOrder of 10000 is IBU's placeholder for "no result yet"
+        const resultOrder = item?.ResultOrder !== 10000 ? item?.ResultOrder : null;
+        const rank = item?.Rank ?? resultOrder ?? item?.StartOrder;
         return rank ? String(rank) : String(index + 1);
     };
 
@@ -133,7 +155,7 @@ export const RaceModal = ({ race, details, visible, onClose, loading }) => {
                                 <Ionicons name="pulse-outline" size={20} color="#888" />
                                 <Text style={styles.raceDetailLabel}>Status</Text>
                                 <View style={[styles.statusBadge, {
-                                    backgroundColor: isLiveRace ? '#FF453A' : isUpcomingRace ? '#30D158' : '#666'
+                                    backgroundColor: isLiveRace ? '#FF453A' : isStartingSoon ? '#FF9500' : isUpcomingRace ? '#30D158' : '#666'
                                 }]}>
                                     <Text style={styles.statusBadgeText}>
                                         {statusLabel}
