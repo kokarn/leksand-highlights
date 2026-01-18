@@ -314,13 +314,21 @@ export default function App() {
         );
     };
 
+    // Memoized render function for biathlon race items
+    const renderBiathlonRaceItem = useCallback(({ item }) => (
+        <BiathlonRaceCard race={item} onPress={biathlon.handleRacePress} />
+    ), [biathlon.handleRacePress]);
+
+    // Memoized key extractor for biathlon
+    const biathlonKeyExtractor = useCallback((item) => item.uuid, []);
+
     // Render Biathlon schedule - start at the most recent/current race
     const renderBiathlonSchedule = () => (
         <FlatList
             ref={biathlon.listRef}
             data={biathlon.races}
-            renderItem={({ item }) => <BiathlonRaceCard race={item} onPress={() => biathlon.handleRacePress(item)} />}
-            keyExtractor={item => item.uuid}
+            renderItem={renderBiathlonRaceItem}
+            keyExtractor={biathlonKeyExtractor}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
             initialScrollIndex={biathlon.targetRaceIndex > 0 ? biathlon.targetRaceIndex : undefined}

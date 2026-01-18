@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useMemo, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,12 +6,21 @@ import { getNationFlag } from '../../api/shl';
 import { formatRelativeDate, formatSwedishDate } from '../../utils';
 import { DISCIPLINE_ICONS, GENDER_COLORS } from '../../constants';
 
+// Static color arrays to avoid re-creating on every render
+const CARD_COLORS_LIVE = ['#2a1c1c', '#1c1c1e'];
+const CARD_COLORS_STARTING = ['#2a2a1c', '#1c1c1e'];
+const CARD_COLORS_DEFAULT = ['#1c1c1e', '#2c2c2e'];
+const GRADIENT_START = { x: 0, y: 0 };
+const GRADIENT_END = { x: 1, y: 1 };
+
 /**
  * Get shooting stage description based on discipline
  */
 function getShootingInfo(race) {
     const shootings = race?.shootings;
-    if (!shootings) return null;
+    if (!shootings) {
+        return null;
+    }
 
     // Format: "4 × 5 targets" for pursuit/individual, "2 × 5 targets" for sprint
     return `${shootings} × 5 🎯`;
@@ -22,7 +31,9 @@ function getShootingInfo(race) {
  */
 function getDistanceInfo(race) {
     const km = race?.km;
-    if (!km) return null;
+    if (!km) {
+        return null;
+    }
     return `${km} km`;
 }
 
@@ -31,12 +42,11 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
     const time = formatSwedishDate(race?.startDateTime, 'HH:mm');
     const isLive = race?.state === 'live';
     const isStartingSoon = race?.state === 'starting-soon';
-    const isCompleted = race?.state === 'completed';
 
     const shootingInfo = getShootingInfo(race);
     const distanceInfo = getDistanceInfo(race);
 
-    const getStatusText = () => {
+    const statusText = useMemo(() => {
         if (isLive) {
             return 'LIVE';
         }
@@ -44,24 +54,26 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
             return 'STARTING SOON';
         }
         return relativeDate;
-    };
+    }, [isLive, isStartingSoon, relativeDate]);
 
-    const getCardColors = () => {
+    const cardColors = useMemo(() => {
         if (isLive) {
-            return ['#2a1c1c', '#1c1c1e'];
+            return CARD_COLORS_LIVE;
         }
         if (isStartingSoon) {
-            return ['#2a2a1c', '#1c1c1e'];
+            return CARD_COLORS_STARTING;
         }
-        return ['#1c1c1e', '#2c2c2e'];
-    };
+        return CARD_COLORS_DEFAULT;
+    }, [isLive, isStartingSoon]);
+
+    const handlePress = useCallback(() => onPress(race), [onPress, race]);
 
     return (
-        <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+        <TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
             <LinearGradient
-                colors={getCardColors()}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+                colors={cardColors}
+                start={GRADIENT_START}
+                end={GRADIENT_END}
                 style={[styles.raceCard, isLive && styles.raceCardLive, isStartingSoon && styles.raceCardStartingSoon]}
             >
                 <View style={styles.raceCardHeader}>
@@ -72,7 +84,7 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
                     </View>
                     <View style={styles.raceDateTimeContainer}>
                         <Text style={[styles.raceDate, isLive && styles.liveTextAccented, isStartingSoon && styles.startingSoonTextAccented]}>
-                            {getStatusText()}
+                            {statusText}
                         </Text>
                         <Text style={styles.raceTime}>{time}</Text>
                     </View>
