@@ -6,11 +6,35 @@ import { getNationFlag } from '../../api/shl';
 import { formatRelativeDate, formatSwedishDate } from '../../utils';
 import { DISCIPLINE_ICONS, GENDER_COLORS } from '../../constants';
 
+/**
+ * Get shooting stage description based on discipline
+ */
+function getShootingInfo(race) {
+    const shootings = race?.shootings;
+    if (!shootings) return null;
+
+    // Format: "4 × 5 targets" for pursuit/individual, "2 × 5 targets" for sprint
+    return `${shootings} × 5 🎯`;
+}
+
+/**
+ * Get distance if available
+ */
+function getDistanceInfo(race) {
+    const km = race?.km;
+    if (!km) return null;
+    return `${km} km`;
+}
+
 export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }) {
     const relativeDate = formatRelativeDate(race?.startDateTime);
     const time = formatSwedishDate(race?.startDateTime, 'HH:mm');
     const isLive = race?.state === 'live';
     const isStartingSoon = race?.state === 'starting-soon';
+    const isCompleted = race?.state === 'completed';
+
+    const shootingInfo = getShootingInfo(race);
+    const distanceInfo = getDistanceInfo(race);
 
     const getStatusText = () => {
         if (isLive) {
@@ -66,6 +90,24 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
                             <Text style={styles.genderBadgeText}>{race.genderDisplay}</Text>
                         </View>
                     </View>
+
+                    {/* Race info row with distance and shooting */}
+                    {(distanceInfo || shootingInfo) && (
+                        <View style={styles.raceInfoRow}>
+                            {distanceInfo && (
+                                <View style={styles.infoChip}>
+                                    <Ionicons name="trail-sign-outline" size={12} color="#888" />
+                                    <Text style={styles.infoChipText}>{distanceInfo}</Text>
+                                </View>
+                            )}
+                            {shootingInfo && (
+                                <View style={styles.infoChip}>
+                                    <Text style={styles.infoChipText}>{shootingInfo}</Text>
+                                </View>
+                            )}
+                        </View>
+                    )}
+
                     <View style={styles.raceLocationRow}>
                         <Text style={styles.raceFlag}>{getNationFlag(race.country)}</Text>
                         <Text style={styles.raceLocation}>{race.location}</Text>
@@ -73,7 +115,15 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
                     </View>
                 </View>
 
-                {race.eventName && (
+                {/* Live indicator with pulsing animation hint */}
+                {isLive && (
+                    <View style={styles.liveIndicator}>
+                        <View style={styles.liveDot} />
+                        <Text style={styles.liveText}>Race in progress - tap for live results</Text>
+                    </View>
+                )}
+
+                {race.eventName && !isLive && (
                     <Text style={styles.raceEventName}>{race.eventName}</Text>
                 )}
             </LinearGradient>
@@ -153,6 +203,27 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: '700'
     },
+    // New race info row
+    raceInfoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginTop: 2
+    },
+    infoChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6
+    },
+    infoChipText: {
+        color: '#888',
+        fontSize: 11,
+        fontWeight: '600'
+    },
     raceLocationRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -169,6 +240,27 @@ const styles = StyleSheet.create({
     raceCountry: {
         color: '#666',
         fontSize: 13
+    },
+    // Live indicator
+    liveIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginTop: 12,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255, 69, 58, 0.3)'
+    },
+    liveDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#FF453A'
+    },
+    liveText: {
+        color: '#FF453A',
+        fontSize: 12,
+        fontWeight: '600'
     },
     raceEventName: {
         color: '#555',

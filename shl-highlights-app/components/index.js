@@ -17,3 +17,6 @@ export * from './events';
 
 // Modal components
 export * from './modals';
+
+// Biathlon components
+export * from './biathlon';

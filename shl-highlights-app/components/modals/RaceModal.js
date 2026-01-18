@@ -4,6 +4,135 @@ import { Ionicons } from '@expo/vector-icons';
 import { getNationFlag } from '../../api/shl';
 import { GENDER_COLORS } from '../../constants';
 import { formatSwedishDate } from '../../utils';
+import { ShootingDisplay, ShootingInline } from '../biathlon';
+
+/**
+ * Parse shooting string into array of misses per stage
+ */
+function parseShootings(shootings) {
+    if (!shootings || typeof shootings !== 'string') {
+        return null;
+    }
+    return shootings.split('+').map(s => parseInt(s, 10) || 0);
+}
+
+/**
+ * Get medal emoji for top 3 positions
+ */
+function getMedalEmoji(rank) {
+    const r = parseInt(rank, 10);
+    if (r === 1) return '🥇';
+    if (r === 2) return '🥈';
+    if (r === 3) return '🥉';
+    return null;
+}
+
+/**
+ * Result row component with enhanced shooting display
+ */
+const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceCompleted }) => {
+    const rank = (() => {
+        const resultOrder = item?.ResultOrder !== 10000 ? item?.ResultOrder : null;
+        const r = item?.Rank ?? resultOrder ?? item?.StartOrder;
+        return r ? String(r) : String(index + 1);
+    })();
+
+    const name = (() => {
+        if (!item) return 'Unknown';
+        if (item.Name) return item.Name;
+        const givenName = item.GivenName || '';
+        const familyName = item.FamilyName || '';
+        const combined = `${givenName} ${familyName}`.trim();
+        return combined || item.ShortName || 'Unknown';
+    })();
+
+    const nation = item?.Nat || item?.Nation || item?.Country || null;
+
+    const resultValue = (() => {
+        if (!item) return '-';
+        if (item.IRM) return item.IRM;
+        if (hasResults) {
+            return item.Result || item.TotalTime || item.RunTime || item.Behind || '-';
+        }
+        if (item.Bib) return `Bib ${item.Bib}`;
+        return '-';
+    })();
+
+    const shootings = item?.Shootings;
+    const shootingTotal = item?.ShootingTotal;
+    const hasShootingData = Boolean(shootings);
+    // Only show medals if the race is completed (not live or upcoming)
+    const medal = isRaceCompleted ? getMedalEmoji(rank) : null;
+    const isTopThree = isRaceCompleted && parseInt(rank, 10) <= 3;
+
+    // For start list, show start info
+    const startInfo = !hasResults ? item?.StartInfo : null;
+
+    return (
+        <TouchableOpacity
+            style={[styles.resultRow, isTopThree && styles.resultRowHighlight]}
+            onPress={hasShootingData ? onToggle : undefined}
+            activeOpacity={hasShootingData ? 0.7 : 1}
+        >
+            <View style={styles.resultRankContainer}>
+                {medal ? (
+                    <Text style={styles.medalEmoji}>{medal}</Text>
+                ) : (
+                    <Text style={styles.resultRank}>{rank}</Text>
+                )}
+            </View>
+
+            <View style={styles.resultMain}>
+                <View style={styles.resultNameRow}>
+                    <Text style={[styles.resultName, isTopThree && styles.resultNameHighlight]} numberOfLines={1}>
+                        {name}
+                    </Text>
+                </View>
+
+                <View style={styles.resultMetaRow}>
+                    {nation && (
+                        <Text style={styles.resultNation}>
+                            {getNationFlag(nation)} {nation}
+                        </Text>
+                    )}
+                    {hasShootingData && !isExpanded && (
+                        <ShootingInline shootings={shootings} shootingTotal={shootingTotal} />
+                    )}
+                    {startInfo && !hasResults && (
+                        <Text style={styles.startInfoText}>Start: {startInfo}</Text>
+                    )}
+                </View>
+
+                {/* Expanded shooting view */}
+                {isExpanded && hasShootingData && (
+                    <View style={styles.expandedShooting}>
+                        <ShootingDisplay
+                            shootings={shootings}
+                            shootingTotal={shootingTotal}
+                            compact={false}
+                            showTotal={true}
+                            showLabel={false}
+                        />
+                    </View>
+                )}
+            </View>
+
+            <View style={styles.resultValueContainer}>
+                <Text style={[styles.resultValue, isTopThree && styles.resultValueHighlight]}>
+                    {resultValue}
+                </Text>
+                {hasShootingData && (
+                    <Ionicons
+                        name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                        size={14}
+                        color="#555"
+                        style={styles.expandIcon}
+                    />
+                )}
+            </View>
+        </TouchableOpacity>
+    );
+};
 
 export const RaceModal = ({ race, details, visible, onClose, loading }) => {
     if (!race) return null;
@@ -18,6 +147,26 @@ export const RaceModal = ({ race, details, visible, onClose, loading }) => {
     const isLiveRace = raceInfo?.state === 'live' || raceInfo?.state === 'ongoing';
     const isStartingSoon = raceInfo?.state === 'starting-soon';
     const isUpcomingRace = raceInfo?.state === 'upcoming' || raceInfo?.state === 'pre-race';
+
+    // State for expanded rows
+    const [expandedRows, setExpandedRows] = React.useState(new Set());
+
+    const toggleRow = React.useCallback((index) => {
+        setExpandedRows(prev => {
+            const next = new Set(prev);
+            if (next.has(index)) {
+                next.delete(index);
+            } else {
+                next.add(index);
+            }
+            return next;
+        });
+    }, []);
+
+    // Reset expanded rows when results change
+    React.useEffect(() => {
+        setExpandedRows(new Set());
+    }, [results, startList]);
 
     const getStatusLabel = () => {
         if (competition?.StatusText) {
@@ -40,9 +189,16 @@ export const RaceModal = ({ race, details, visible, onClose, loading }) => {
     const statusLabel = getStatusLabel();
     const resultTitle = hasResults ? 'Results' : (hasStartList ? 'Start list' : 'Results');
 
+    // Race format info
+    const shootingsCount = competition?.NrShootings || raceInfo?.shootings;
+    const km = competition?.km || raceInfo?.km;
+
     let infoNoteText = 'Official results will appear here once published.';
     if (hasResults) {
-        infoNoteText = 'Official results are available below.';
+        const shootingNote = shootingsCount
+            ? `This race has ${shootingsCount} shooting stages (5 targets each).`
+            : '';
+        infoNoteText = shootingNote || 'Official results are available below. Tap a row to see shooting details.';
     } else if (hasStartList) {
         infoNoteText = 'Start list loaded for this race.';
     } else if (isLiveRace) {
@@ -52,53 +208,6 @@ export const RaceModal = ({ race, details, visible, onClose, loading }) => {
     } else if (isUpcomingRace) {
         infoNoteText = 'Start lists and results will be available closer to race time.';
     }
-
-    const getResultRank = (item, index) => {
-        // ResultOrder of 10000 is IBU's placeholder for "no result yet"
-        const resultOrder = item?.ResultOrder !== 10000 ? item?.ResultOrder : null;
-        const rank = item?.Rank ?? resultOrder ?? item?.StartOrder;
-        return rank ? String(rank) : String(index + 1);
-    };
-
-    const getResultName = (item) => {
-        if (!item) return 'Unknown';
-        if (item.Name) return item.Name;
-        const givenName = item.GivenName || '';
-        const familyName = item.FamilyName || '';
-        const combined = `${givenName} ${familyName}`.trim();
-        return combined || item.ShortName || 'Unknown';
-    };
-
-    const getResultNation = (item) => {
-        const nation = item?.Nat || item?.Nation || item?.Country;
-        return nation ? String(nation) : null;
-    };
-
-    const getResultValue = (item) => {
-        if (!item) return '-';
-        if (item.IRM) return item.IRM;
-        if (hasResults) {
-            return item.Result || item.TotalTime || item.RunTime || item.Behind || '-';
-        }
-        if (item.Bib) return `Bib ${item.Bib}`;
-        return '-';
-    };
-
-    const getResultMeta = (item) => {
-        if (!item) return null;
-        if (hasResults) {
-            const metaParts = [];
-            const shooting = item.ShootingTotal || item.Shootings;
-            if (shooting) {
-                metaParts.push(`Shoot ${shooting}`);
-            }
-            if (item.Behind && item.Behind !== '0.0' && item.Behind !== '0') {
-                metaParts.push(item.Behind);
-            }
-            return metaParts.length ? metaParts.join(' • ') : null;
-        }
-        return item.StartInfo || null;
-    };
 
     return (
         <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -119,7 +228,12 @@ export const RaceModal = ({ race, details, visible, onClose, loading }) => {
                     <ScrollView style={styles.raceModalContent}>
                         <View style={styles.raceDetailCard}>
                             <View style={styles.raceDetailHeader}>
-                                <Text style={styles.raceDetailDiscipline}>{raceInfo.discipline}</Text>
+                                <View style={styles.disciplineContainer}>
+                                    <Text style={styles.raceDetailDiscipline}>{raceInfo.discipline}</Text>
+                                    {km && (
+                                        <Text style={styles.distanceText}>{km} km</Text>
+                                    )}
+                                </View>
                                 <View style={[styles.genderBadgeLarge, {
                                     backgroundColor: GENDER_COLORS[raceInfo.gender] || '#666'
                                 }]}>
@@ -143,6 +257,16 @@ export const RaceModal = ({ race, details, visible, onClose, loading }) => {
                                 </Text>
                             </View>
 
+                            {shootingsCount && (
+                                <View style={styles.raceDetailRow}>
+                                    <Ionicons name="ellipse" size={20} color="#888" />
+                                    <Text style={styles.raceDetailLabel}>Shooting Stages</Text>
+                                    <Text style={styles.raceDetailValue}>
+                                        {shootingsCount} × 5 targets
+                                    </Text>
+                                </View>
+                            )}
+
                             <View style={styles.raceDetailRow}>
                                 <Ionicons name="trophy-outline" size={20} color="#888" />
                                 <Text style={styles.raceDetailLabel}>Competition</Text>
@@ -151,7 +275,7 @@ export const RaceModal = ({ race, details, visible, onClose, loading }) => {
                                 </Text>
                             </View>
 
-                            <View style={styles.raceDetailRow}>
+                            <View style={[styles.raceDetailRow, styles.raceDetailRowLast]}>
                                 <Ionicons name="pulse-outline" size={20} color="#888" />
                                 <Text style={styles.raceDetailLabel}>Status</Text>
                                 <View style={[styles.statusBadge, {
@@ -163,6 +287,26 @@ export const RaceModal = ({ race, details, visible, onClose, loading }) => {
                                 </View>
                             </View>
                         </View>
+
+                        {/* Shooting legend for races with results */}
+                        {hasResults && shootingsCount && (
+                            <View style={styles.shootingLegend}>
+                                <Text style={styles.legendTitle}>🎯 Shooting Legend</Text>
+                                <View style={styles.legendRow}>
+                                    <View style={styles.legendItem}>
+                                        <View style={[styles.legendDot, styles.legendDotHit]} />
+                                        <Text style={styles.legendText}>Hit</Text>
+                                    </View>
+                                    <View style={styles.legendItem}>
+                                        <View style={[styles.legendDot, styles.legendDotMiss]} />
+                                        <Text style={styles.legendText}>Miss (+penalty)</Text>
+                                    </View>
+                                </View>
+                                <Text style={styles.legendNote}>
+                                    P = Prone • S = Standing • Tap row to see details
+                                </Text>
+                            </View>
+                        )}
 
                         <View style={styles.raceInfoNote}>
                             <Ionicons name="information-circle-outline" size={18} color="#666" />
@@ -185,29 +329,17 @@ export const RaceModal = ({ race, details, visible, onClose, loading }) => {
                                 </View>
                             ) : resultRows.length > 0 ? (
                                 resultRows.map((item, index) => {
-                                    const nation = getResultNation(item);
-                                    const meta = getResultMeta(item);
                                     const rowKey = item?.IBUId || item?.Name || item?.Bib || item?.StartOrder || index;
                                     return (
-                                        <View key={String(rowKey)} style={styles.resultRow}>
-                                            <Text style={styles.resultRank}>{getResultRank(item, index)}</Text>
-                                            <View style={styles.resultMain}>
-                                                <Text style={styles.resultName}>{getResultName(item)}</Text>
-                                                {(nation || meta) && (
-                                                    <View style={styles.resultMetaRow}>
-                                                        {nation && (
-                                                            <Text style={styles.resultNation}>
-                                                                {getNationFlag(nation)} {nation}
-                                                            </Text>
-                                                        )}
-                                                        {meta && (
-                                                            <Text style={styles.resultMetaText}>{meta}</Text>
-                                                        )}
-                                                    </View>
-                                                )}
-                                            </View>
-                                            <Text style={styles.resultValue}>{getResultValue(item)}</Text>
-                                        </View>
+                                        <ResultRow
+                                            key={String(rowKey)}
+                                            item={item}
+                                            index={index}
+                                            hasResults={hasResults}
+                                            isExpanded={expandedRows.has(index)}
+                                            onToggle={() => toggleRow(index)}
+                                            isRaceCompleted={!isLiveRace && !isStartingSoon && !isUpcomingRace}
+                                        />
                                     );
                                 })
                             ) : (
@@ -220,6 +352,9 @@ export const RaceModal = ({ race, details, visible, onClose, loading }) => {
         </Modal>
     );
 };
+
+// Need React for useState and useEffect
+import React from 'react';
 
 const styles = StyleSheet.create({
     modalContainer: {
@@ -265,14 +400,23 @@ const styles = StyleSheet.create({
     },
     raceDetailHeader: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'space-between',
         marginBottom: 24
+    },
+    disciplineContainer: {
+        flex: 1,
+        gap: 4
     },
     raceDetailDiscipline: {
         color: '#fff',
         fontSize: 26,
         fontWeight: '800'
+    },
+    distanceText: {
+        color: '#888',
+        fontSize: 14,
+        fontWeight: '600'
     },
     genderBadgeLarge: {
         paddingHorizontal: 14,
@@ -291,6 +435,9 @@ const styles = StyleSheet.create({
         paddingVertical: 14,
         borderBottomWidth: 1,
         borderBottomColor: '#2a2a2a'
+    },
+    raceDetailRowLast: {
+        borderBottomWidth: 0
     },
     raceDetailLabel: {
         color: '#888',
@@ -312,11 +459,59 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '700'
     },
+    // Shooting legend
+    shootingLegend: {
+        marginTop: 16,
+        padding: 16,
+        backgroundColor: '#1a1a1a',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#2a2a2a'
+    },
+    legendTitle: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '700',
+        marginBottom: 10
+    },
+    legendRow: {
+        flexDirection: 'row',
+        gap: 20,
+        marginBottom: 8
+    },
+    legendItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6
+    },
+    legendDot: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        borderWidth: 1.5
+    },
+    legendDotHit: {
+        backgroundColor: '#30D158',
+        borderColor: '#30D158'
+    },
+    legendDotMiss: {
+        backgroundColor: 'transparent',
+        borderColor: '#FF453A'
+    },
+    legendText: {
+        color: '#888',
+        fontSize: 12
+    },
+    legendNote: {
+        color: '#555',
+        fontSize: 11,
+        marginTop: 4
+    },
     raceInfoNote: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        marginTop: 20,
+        marginTop: 16,
         padding: 16,
         backgroundColor: '#1a1a1a',
         borderRadius: 12
@@ -330,7 +525,8 @@ const styles = StyleSheet.create({
         marginTop: 20,
         backgroundColor: '#1c1c1e',
         borderRadius: 16,
-        padding: 16
+        padding: 16,
+        marginBottom: 40
     },
     resultsHeaderRow: {
         marginBottom: 12
@@ -355,47 +551,86 @@ const styles = StyleSheet.create({
         color: '#888',
         fontSize: 13
     },
+    // Result rows
     resultRow: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         gap: 12,
-        paddingVertical: 10,
+        paddingVertical: 12,
         borderBottomWidth: 1,
         borderBottomColor: '#2a2a2a'
     },
+    resultRowHighlight: {
+        backgroundColor: 'rgba(255, 215, 0, 0.05)',
+        marginHorizontal: -8,
+        paddingHorizontal: 8,
+        borderRadius: 8
+    },
+    resultRankContainer: {
+        width: 32,
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
     resultRank: {
-        color: '#fff',
+        color: '#888',
         fontSize: 14,
-        fontWeight: '700',
-        width: 28,
-        textAlign: 'center'
+        fontWeight: '700'
+    },
+    medalEmoji: {
+        fontSize: 18
     },
     resultMain: {
-        flex: 1
+        flex: 1,
+        gap: 4
+    },
+    resultNameRow: {
+        flexDirection: 'row',
+        alignItems: 'center'
     },
     resultName: {
         color: '#fff',
         fontSize: 14,
-        fontWeight: '600'
+        fontWeight: '600',
+        flex: 1
+    },
+    resultNameHighlight: {
+        fontWeight: '700'
     },
     resultMetaRow: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 8,
-        marginTop: 4
+        alignItems: 'center',
+        gap: 10
     },
     resultNation: {
         color: '#888',
         fontSize: 12
     },
-    resultMetaText: {
+    startInfoText: {
         color: '#666',
         fontSize: 12
+    },
+    expandedShooting: {
+        marginTop: 12,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#2a2a2a'
+    },
+    resultValueContainer: {
+        alignItems: 'flex-end',
+        gap: 2
     },
     resultValue: {
         color: '#fff',
         fontSize: 13,
         fontWeight: '600'
+    },
+    resultValueHighlight: {
+        fontSize: 14,
+        fontWeight: '700'
+    },
+    expandIcon: {
+        marginTop: 2
     },
     emptyText: {
         color: '#666',
