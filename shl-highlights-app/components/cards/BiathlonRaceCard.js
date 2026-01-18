@@ -39,14 +39,14 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
         return CARD_COLORS_DEFAULT;
     }, [isLive, isStartingSoon]);
 
-    // Compact race info string: "10 km • 4×5 🎯"
+    // Compact race info string: "10 km • 4×5 shots"
     const raceDetails = useMemo(() => {
         const parts = [];
         if (race?.km) {
             parts.push(`${race.km} km`);
         }
         if (race?.shootings) {
-            parts.push(`${race.shootings}×5 🎯`);
+            parts.push(`${race.shootings}×5 shots`);
         }
         return parts.join(' • ');
     }, [race?.km, race?.shootings]);

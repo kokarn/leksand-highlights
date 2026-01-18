@@ -8,7 +8,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // Height = padding (32) + header (~36) + content (~90) + marginBottom (16)
 const GAME_CARD_HEIGHT = 174;
 const FOOTBALL_CARD_HEIGHT = 174;
-const BIATHLON_CARD_HEIGHT = 190; // Slightly taller due to extra info rows
 
 // API
 import { getTeamLogoUrl, getNationFlag } from '../api/shl';
@@ -113,12 +112,6 @@ export default function App() {
     const getFootballItemLayout = useCallback((data, index) => ({
         length: FOOTBALL_CARD_HEIGHT,
         offset: FOOTBALL_CARD_HEIGHT * index,
-        index
-    }), []);
-
-    const getBiathlonItemLayout = useCallback((data, index) => ({
-        length: BIATHLON_CARD_HEIGHT,
-        offset: BIATHLON_CARD_HEIGHT * index,
         index
     }), []);
 
@@ -348,7 +341,6 @@ export default function App() {
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
             initialScrollIndex={biathlon.effectiveInitialScrollIndex}
-            getItemLayout={getBiathlonItemLayout}
             onScrollToIndexFailed={handleScrollToIndexFailed}
             onScroll={biathlon.handleScroll}
             scrollEventThrottle={100}
