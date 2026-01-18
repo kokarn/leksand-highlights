@@ -1,10 +1,16 @@
-import { View, Text, Modal, ScrollView, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, Modal, ScrollView, TouchableOpacity, Image, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { getTeamLogoUrl } from '../../api/shl';
 import { APP_NAME, GENDER_OPTIONS } from '../../constants';
 import { LogoMark } from '../LogoMark';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const CHIP_GAP = 8;
+const CONTENT_PADDING = 24;
+// Calculate chip width for 3 columns with gaps
+const CHIP_WIDTH = (SCREEN_WIDTH - (CONTENT_PADDING * 2) - (CHIP_GAP * 2)) / 3;
 
 export const OnboardingModal = ({
     visible,
@@ -14,6 +20,9 @@ export const OnboardingModal = ({
     teams,
     selectedTeams,
     onToggleTeam,
+    footballTeams = [],
+    selectedFootballTeams = [],
+    onToggleFootballTeam,
     biathlonNations,
     selectedNations,
     onToggleNation,
@@ -47,24 +56,25 @@ export const OnboardingModal = ({
             {step === 1 && (
                 <View style={styles.onboardingStep}>
                     <View style={styles.onboardingStepHeader}>
-                        <Text style={styles.onboardingStepNumber}>1 of 3</Text>
+                        <Text style={styles.onboardingStepNumber}>1 of 4</Text>
+                        <Ionicons name="snow-outline" size={32} color="#0A84FF" style={styles.stepIcon} />
                         <Text style={styles.onboardingStepTitle}>Pick your Hockey teams</Text>
                         <Text style={styles.onboardingStepSubtitle}>Select the SHL teams you want to follow</Text>
                     </View>
                     <ScrollView style={styles.onboardingScrollContent} showsVerticalScrollIndicator={false}>
-                        <View style={styles.onboardingChipGrid}>
+                        <View style={styles.chipGrid}>
                             {teams.map(team => (
                                 <TouchableOpacity
                                     key={team.code}
-                                    style={[styles.onboardingChip, selectedTeams.includes(team.code) && styles.onboardingChipActive]}
+                                    style={[styles.teamChip, selectedTeams.includes(team.code) && styles.chipActive]}
                                     onPress={() => onToggleTeam(team.code)}
                                 >
-                                    <Image source={{ uri: getTeamLogoUrl(team.code) }} style={styles.onboardingChipLogo} resizeMode="contain" />
-                                    <Text style={[styles.onboardingChipText, selectedTeams.includes(team.code) && styles.onboardingChipTextActive]}>
+                                    <Image source={{ uri: getTeamLogoUrl(team.code) }} style={styles.chipLogo} resizeMode="contain" />
+                                    <Text style={[styles.chipText, selectedTeams.includes(team.code) && styles.chipTextActive]} numberOfLines={1}>
                                         {team.code}
                                     </Text>
                                     {selectedTeams.includes(team.code) && (
-                                        <Ionicons name="checkmark-circle" size={20} color="#0A84FF" style={styles.onboardingChipCheck} />
+                                        <Ionicons name="checkmark-circle" size={16} color="#0A84FF" style={styles.chipCheck} />
                                     )}
                                 </TouchableOpacity>
                             ))}
@@ -86,44 +96,40 @@ export const OnboardingModal = ({
             {step === 2 && (
                 <View style={styles.onboardingStep}>
                     <View style={styles.onboardingStepHeader}>
-                        <Text style={styles.onboardingStepNumber}>2 of 3</Text>
-                        <Text style={styles.onboardingStepTitle}>Biathlon preferences</Text>
-                        <Text style={styles.onboardingStepSubtitle}>Which race categories interest you?</Text>
+                        <Text style={styles.onboardingStepNumber}>2 of 4</Text>
+                        <Ionicons name="football-outline" size={32} color="#30D158" style={styles.stepIcon} />
+                        <Text style={styles.onboardingStepTitle}>Pick your Football teams</Text>
+                        <Text style={styles.onboardingStepSubtitle}>Select the Allsvenskan teams you want to follow</Text>
                     </View>
                     <ScrollView style={styles.onboardingScrollContent} showsVerticalScrollIndicator={false}>
-                        <Text style={styles.onboardingSectionLabel}>Gender</Text>
-                        <View style={styles.onboardingChipRow}>
-                            {GENDER_OPTIONS.map(gender => (
-                                <TouchableOpacity
-                                    key={gender.id}
-                                    style={[
-                                        styles.onboardingGenderChip,
-                                        selectedGenders.includes(gender.id) && { backgroundColor: gender.color, borderColor: gender.color }
-                                    ]}
-                                    onPress={() => onToggleGender(gender.id)}
-                                >
-                                    <Text style={[styles.onboardingGenderText, selectedGenders.includes(gender.id) && styles.onboardingGenderTextActive]}>
-                                        {gender.label}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-
-                        <Text style={styles.onboardingSectionLabel}>Countries</Text>
-                        <View style={styles.onboardingChipGrid}>
-                            {biathlonNations.map(nation => (
-                                <TouchableOpacity
-                                    key={nation.code}
-                                    style={[styles.onboardingNationChip, selectedNations.includes(nation.code) && styles.onboardingChipActive]}
-                                    onPress={() => onToggleNation(nation.code)}
-                                >
-                                    <Text style={styles.onboardingNationFlag}>{nation.flag}</Text>
-                                    <Text style={[styles.onboardingNationText, selectedNations.includes(nation.code) && styles.onboardingChipTextActive]}>
-                                        {nation.name || nation.code}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
+                        {footballTeams.length > 0 ? (
+                            <View style={styles.chipGrid}>
+                                {footballTeams.map(team => (
+                                    <TouchableOpacity
+                                        key={team.key}
+                                        style={[styles.teamChip, selectedFootballTeams.includes(team.key) && styles.chipActiveGreen]}
+                                        onPress={() => onToggleFootballTeam(team.key)}
+                                    >
+                                        {team.icon ? (
+                                            <Image source={{ uri: team.icon }} style={styles.chipLogo} resizeMode="contain" />
+                                        ) : (
+                                            <View style={styles.chipLogoPlaceholder} />
+                                        )}
+                                        <Text style={[styles.chipText, selectedFootballTeams.includes(team.key) && styles.chipTextActive]} numberOfLines={1}>
+                                            {team.shortName || team.name}
+                                        </Text>
+                                        {selectedFootballTeams.includes(team.key) && (
+                                            <Ionicons name="checkmark-circle" size={16} color="#30D158" style={styles.chipCheck} />
+                                        )}
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        ) : (
+                            <View style={styles.emptyState}>
+                                <Ionicons name="cloud-offline-outline" size={48} color="#555" />
+                                <Text style={styles.emptyStateText}>Football teams will appear here once loaded</Text>
+                            </View>
+                        )}
                     </ScrollView>
                     <View style={styles.onboardingNav}>
                         <TouchableOpacity style={styles.onboardingNavButton} onPress={() => onStepChange(1)}>
@@ -131,7 +137,7 @@ export const OnboardingModal = ({
                             <Text style={styles.onboardingNavButtonText}>Back</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.onboardingButton} onPress={() => onStepChange(3)}>
-                            <Text style={styles.onboardingButtonText}>Continue</Text>
+                            <Text style={styles.onboardingButtonText}>{selectedFootballTeams.length > 0 ? 'Continue' : 'Skip'}</Text>
                             <Ionicons name="arrow-forward" size={20} color="#fff" />
                         </TouchableOpacity>
                     </View>
@@ -139,6 +145,62 @@ export const OnboardingModal = ({
             )}
 
             {step === 3 && (
+                <View style={styles.onboardingStep}>
+                    <View style={styles.onboardingStepHeader}>
+                        <Text style={styles.onboardingStepNumber}>3 of 4</Text>
+                        <Ionicons name="locate-outline" size={32} color="#D94A8C" style={styles.stepIcon} />
+                        <Text style={styles.onboardingStepTitle}>Biathlon preferences</Text>
+                        <Text style={styles.onboardingStepSubtitle}>Which race categories interest you?</Text>
+                    </View>
+                    <ScrollView style={styles.onboardingScrollContent} showsVerticalScrollIndicator={false}>
+                        <Text style={styles.sectionLabel}>Gender</Text>
+                        <View style={styles.genderRow}>
+                            {GENDER_OPTIONS.map(gender => (
+                                <TouchableOpacity
+                                    key={gender.id}
+                                    style={[
+                                        styles.genderChip,
+                                        selectedGenders.includes(gender.id) && { backgroundColor: gender.color, borderColor: gender.color }
+                                    ]}
+                                    onPress={() => onToggleGender(gender.id)}
+                                >
+                                    <Text style={[styles.genderText, selectedGenders.includes(gender.id) && styles.genderTextActive]}>
+                                        {gender.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <Text style={styles.sectionLabel}>Countries</Text>
+                        <View style={styles.chipGrid}>
+                            {biathlonNations.map(nation => (
+                                <TouchableOpacity
+                                    key={nation.code}
+                                    style={[styles.nationChip, selectedNations.includes(nation.code) && styles.chipActivePink]}
+                                    onPress={() => onToggleNation(nation.code)}
+                                >
+                                    <Text style={styles.nationFlag}>{nation.flag}</Text>
+                                    <Text style={[styles.chipText, selectedNations.includes(nation.code) && styles.chipTextActive]} numberOfLines={1}>
+                                        {nation.code}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </ScrollView>
+                    <View style={styles.onboardingNav}>
+                        <TouchableOpacity style={styles.onboardingNavButton} onPress={() => onStepChange(2)}>
+                            <Ionicons name="arrow-back" size={20} color="#888" />
+                            <Text style={styles.onboardingNavButtonText}>Back</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.onboardingButton} onPress={() => onStepChange(4)}>
+                            <Text style={styles.onboardingButtonText}>Continue</Text>
+                            <Ionicons name="arrow-forward" size={20} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            )}
+
+            {step === 4 && (
                 <View style={styles.onboardingStep}>
                     <View style={styles.onboardingHeader}>
                         <Ionicons name="checkmark-circle" size={80} color="#30D158" />
@@ -153,6 +215,14 @@ export const OnboardingModal = ({
                                 <Ionicons name="snow-outline" size={20} color="#0A84FF" />
                                 <Text style={styles.onboardingSummaryText}>
                                     Following {selectedTeams.length} hockey team{selectedTeams.length > 1 ? 's' : ''}
+                                </Text>
+                            </View>
+                        )}
+                        {selectedFootballTeams.length > 0 && (
+                            <View style={styles.onboardingSummaryItem}>
+                                <Ionicons name="football-outline" size={20} color="#30D158" />
+                                <Text style={styles.onboardingSummaryText}>
+                                    Following {selectedFootballTeams.length} football team{selectedFootballTeams.length > 1 ? 's' : ''}
                                 </Text>
                             </View>
                         )}
@@ -172,7 +242,7 @@ export const OnboardingModal = ({
                                 </Text>
                             </View>
                         )}
-                        {selectedTeams.length === 0 && selectedGenders.length === 0 && selectedNations.length === 0 && (
+                        {selectedTeams.length === 0 && selectedFootballTeams.length === 0 && selectedGenders.length === 0 && selectedNations.length === 0 && (
                             <View style={styles.onboardingSummaryItem}>
                                 <Ionicons name="globe-outline" size={20} color="#888" />
                                 <Text style={styles.onboardingSummaryText}>
@@ -197,7 +267,7 @@ const styles = StyleSheet.create({
     },
     onboardingStep: {
         flex: 1,
-        padding: 24,
+        padding: CONTENT_PADDING,
         justifyContent: 'space-between'
     },
     onboardingHeader: {
@@ -262,15 +332,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 24
     },
+    stepIcon: {
+        marginBottom: 8
+    },
     onboardingStepNumber: {
         color: '#0A84FF',
         fontSize: 13,
         fontWeight: '700',
-        marginBottom: 8
+        marginBottom: 12
     },
     onboardingStepTitle: {
         color: '#fff',
-        fontSize: 28,
+        fontSize: 26,
         fontWeight: '800',
         textAlign: 'center'
     },
@@ -283,50 +356,88 @@ const styles = StyleSheet.create({
     onboardingScrollContent: {
         flex: 1
     },
-    onboardingChipGrid: {
+    // Unified chip grid
+    chipGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 10,
-        justifyContent: 'center'
+        gap: CHIP_GAP,
+        justifyContent: 'flex-start'
     },
-    onboardingChipRow: {
-        flexDirection: 'row',
-        gap: 10,
-        justifyContent: 'center',
-        marginBottom: 20
-    },
-    onboardingChip: {
-        flexDirection: 'row',
+    // Base team chip style (used for hockey and football)
+    teamChip: {
+        width: CHIP_WIDTH,
+        flexDirection: 'column',
         alignItems: 'center',
-        gap: 8,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 14,
+        paddingHorizontal: 8,
         borderRadius: 12,
         backgroundColor: '#1c1c1e',
         borderWidth: 2,
-        borderColor: '#333',
-        minWidth: 100
+        borderColor: '#333'
     },
-    onboardingChipActive: {
+    // Nation chip (slightly smaller, horizontal layout)
+    nationChip: {
+        width: CHIP_WIDTH,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 12,
+        paddingHorizontal: 8,
+        borderRadius: 12,
+        backgroundColor: '#1c1c1e',
+        borderWidth: 2,
+        borderColor: '#333'
+    },
+    chipActive: {
         backgroundColor: 'rgba(10, 132, 255, 0.2)',
         borderColor: '#0A84FF'
     },
-    onboardingChipLogo: {
-        width: 32,
-        height: 32
+    chipActiveGreen: {
+        backgroundColor: 'rgba(48, 209, 88, 0.2)',
+        borderColor: '#30D158'
     },
-    onboardingChipText: {
+    chipActivePink: {
+        backgroundColor: 'rgba(217, 74, 140, 0.2)',
+        borderColor: '#D94A8C'
+    },
+    chipLogo: {
+        width: 36,
+        height: 36
+    },
+    chipLogoPlaceholder: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#2c2c2e'
+    },
+    chipText: {
         color: '#888',
-        fontSize: 14,
-        fontWeight: '600'
+        fontSize: 12,
+        fontWeight: '600',
+        textAlign: 'center'
     },
-    onboardingChipTextActive: {
+    chipTextActive: {
         color: '#fff'
     },
-    onboardingChipCheck: {
-        marginLeft: 'auto'
+    chipCheck: {
+        position: 'absolute',
+        top: 6,
+        right: 6
     },
-    onboardingGenderChip: {
+    nationFlag: {
+        fontSize: 20
+    },
+    // Gender chips
+    genderRow: {
+        flexDirection: 'row',
+        gap: 10,
+        justifyContent: 'center',
+        marginBottom: 24
+    },
+    genderChip: {
         flex: 1,
         alignItems: 'center',
         paddingVertical: 16,
@@ -335,15 +446,15 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: '#333'
     },
-    onboardingGenderText: {
+    genderText: {
         color: '#888',
         fontSize: 16,
         fontWeight: '700'
     },
-    onboardingGenderTextActive: {
+    genderTextActive: {
         color: '#fff'
     },
-    onboardingSectionLabel: {
+    sectionLabel: {
         color: '#888',
         fontSize: 13,
         fontWeight: '600',
@@ -351,25 +462,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         marginTop: 8
     },
-    onboardingNationChip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        borderRadius: 10,
-        backgroundColor: '#1c1c1e',
-        borderWidth: 2,
-        borderColor: '#333'
-    },
-    onboardingNationFlag: {
-        fontSize: 22
-    },
-    onboardingNationText: {
-        color: '#888',
-        fontSize: 13,
-        fontWeight: '600'
-    },
+    // Navigation
     onboardingNav: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -387,6 +480,7 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '600'
     },
+    // Complete screen
     onboardingCompleteTitle: {
         color: '#fff',
         fontSize: 32,
@@ -419,4 +513,16 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '500'
     },
+    // Empty state
+    emptyState: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 60,
+        gap: 16
+    },
+    emptyStateText: {
+        color: '#666',
+        fontSize: 14,
+        textAlign: 'center'
+    }
 });

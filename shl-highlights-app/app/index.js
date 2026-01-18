@@ -606,6 +606,9 @@ export default function App() {
                 teams={shl.teams}
                 selectedTeams={selectedTeams}
                 onToggleTeam={toggleTeamFilter}
+                footballTeams={football.teams}
+                selectedFootballTeams={selectedFootballTeams}
+                onToggleFootballTeam={toggleFootballTeamFilter}
                 biathlonNations={biathlon.nations}
                 selectedNations={selectedNations}
                 onToggleNation={toggleNationFilter}

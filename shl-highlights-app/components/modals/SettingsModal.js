@@ -1,8 +1,15 @@
-import { View, Text, Modal, ScrollView, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, Modal, ScrollView, TouchableOpacity, Image, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getTeamLogoUrl } from '../../api/shl';
 import { GENDER_OPTIONS } from '../../constants';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const CHIP_GAP = 8;
+const CONTENT_PADDING = 16;
+// Calculate chip width for 3 columns with gaps (inside card which has 16px padding)
+const CARD_INNER_PADDING = 16;
+const CHIP_WIDTH = (SCREEN_WIDTH - (CONTENT_PADDING * 2) - (CARD_INNER_PADDING * 2) - (CHIP_GAP * 2)) / 3;
 
 export const SettingsModal = ({
     visible,
@@ -38,20 +45,24 @@ export const SettingsModal = ({
                 <Text style={styles.settingsSection}>Favorites</Text>
                 <Text style={styles.settingsSectionSubtitle}>Customize which sports and teams you follow</Text>
 
+                {/* Hockey Teams */}
                 <View style={styles.settingsCard}>
                     <View style={styles.settingsCardHeader}>
                         <Ionicons name="snow-outline" size={22} color="#0A84FF" />
                         <Text style={styles.settingsCardTitle}>Hockey Teams</Text>
+                        <Text style={styles.settingsCardCount}>
+                            {selectedTeams.length > 0 ? `${selectedTeams.length} selected` : ''}
+                        </Text>
                     </View>
-                    <View style={styles.settingsChipContainer}>
+                    <View style={styles.chipGrid}>
                         {teams.map(team => (
                             <TouchableOpacity
                                 key={team.code}
-                                style={[styles.settingsChip, selectedTeams.includes(team.code) && styles.settingsChipActive]}
+                                style={[styles.teamChip, selectedTeams.includes(team.code) && styles.chipActive]}
                                 onPress={() => onToggleTeam(team.code)}
                             >
-                                <Image source={{ uri: getTeamLogoUrl(team.code) }} style={styles.settingsChipLogo} resizeMode="contain" />
-                                <Text style={[styles.settingsChipText, selectedTeams.includes(team.code) && styles.settingsChipTextActive]}>
+                                <Image source={{ uri: getTeamLogoUrl(team.code) }} style={styles.chipLogo} resizeMode="contain" />
+                                <Text style={[styles.chipText, selectedTeams.includes(team.code) && styles.chipTextActive]} numberOfLines={1}>
                                     {team.code}
                                 </Text>
                             </TouchableOpacity>
@@ -64,36 +75,37 @@ export const SettingsModal = ({
                     )}
                 </View>
 
+                {/* Football Teams */}
                 <View style={styles.settingsCard}>
                     <View style={styles.settingsCardHeader}>
-                        <Ionicons name="football-outline" size={22} color="#0A84FF" />
+                        <Ionicons name="football-outline" size={22} color="#30D158" />
                         <Text style={styles.settingsCardTitle}>Football Teams</Text>
+                        <Text style={styles.settingsCardCount}>
+                            {selectedFootballTeams.length > 0 ? `${selectedFootballTeams.length} selected` : ''}
+                        </Text>
                     </View>
-                    <View style={styles.settingsChipContainer}>
-                        {footballTeams.length > 0 ? (
-                            footballTeams.map(team => (
+                    {footballTeams.length > 0 ? (
+                        <View style={styles.chipGrid}>
+                            {footballTeams.map(team => (
                                 <TouchableOpacity
                                     key={team.key}
-                                    style={[styles.settingsChip, selectedFootballTeams.includes(team.key) && styles.settingsChipActive]}
+                                    style={[styles.teamChip, selectedFootballTeams.includes(team.key) && styles.chipActiveGreen]}
                                     onPress={() => onToggleFootballTeam(team.key)}
                                 >
                                     {team.icon ? (
-                                        <Image source={{ uri: team.icon }} style={styles.settingsChipLogo} resizeMode="contain" />
+                                        <Image source={{ uri: team.icon }} style={styles.chipLogo} resizeMode="contain" />
                                     ) : (
-                                        <View style={styles.settingsChipLogoPlaceholder} />
+                                        <View style={styles.chipLogoPlaceholder} />
                                     )}
-                                    <Text
-                                        style={[styles.settingsChipText, selectedFootballTeams.includes(team.key) && styles.settingsChipTextActive]}
-                                        numberOfLines={1}
-                                    >
-                                        {team.name}
+                                    <Text style={[styles.chipText, selectedFootballTeams.includes(team.key) && styles.chipTextActive]} numberOfLines={1}>
+                                        {team.shortName || team.name}
                                     </Text>
                                 </TouchableOpacity>
-                            ))
-                        ) : (
-                            <Text style={styles.settingsEmptyText}>No football teams available yet.</Text>
-                        )}
-                    </View>
+                            ))}
+                        </View>
+                    ) : (
+                        <Text style={styles.settingsEmptyText}>No football teams available yet.</Text>
+                    )}
                     {selectedFootballTeams.length > 0 && (
                         <TouchableOpacity style={styles.clearButton} onPress={onClearFootballTeams}>
                             <Text style={styles.clearButtonText}>Clear selection</Text>
@@ -101,22 +113,23 @@ export const SettingsModal = ({
                     )}
                 </View>
 
+                {/* Biathlon Gender */}
                 <View style={styles.settingsCard}>
                     <View style={styles.settingsCardHeader}>
-                        <Ionicons name="locate-outline" size={22} color="#0A84FF" />
+                        <Ionicons name="locate-outline" size={22} color="#D94A8C" />
                         <Text style={styles.settingsCardTitle}>Biathlon Gender</Text>
                     </View>
-                    <View style={styles.settingsChipContainer}>
+                    <View style={styles.genderRow}>
                         {GENDER_OPTIONS.map(gender => (
                             <TouchableOpacity
                                 key={gender.id}
                                 style={[
-                                    styles.settingsChip,
+                                    styles.genderChip,
                                     selectedGenders.includes(gender.id) && { backgroundColor: gender.color, borderColor: gender.color }
                                 ]}
                                 onPress={() => onToggleGender(gender.id)}
                             >
-                                <Text style={[styles.settingsChipText, selectedGenders.includes(gender.id) && styles.settingsChipTextActive]}>
+                                <Text style={[styles.genderText, selectedGenders.includes(gender.id) && styles.genderTextActive]}>
                                     {gender.label}
                                 </Text>
                             </TouchableOpacity>
@@ -124,20 +137,24 @@ export const SettingsModal = ({
                     </View>
                 </View>
 
+                {/* Biathlon Countries */}
                 <View style={styles.settingsCard}>
                     <View style={styles.settingsCardHeader}>
-                        <Ionicons name="flag-outline" size={22} color="#0A84FF" />
+                        <Ionicons name="flag-outline" size={22} color="#FF9F0A" />
                         <Text style={styles.settingsCardTitle}>Biathlon Countries</Text>
+                        <Text style={styles.settingsCardCount}>
+                            {selectedNations.length > 0 ? `${selectedNations.length} selected` : ''}
+                        </Text>
                     </View>
-                    <View style={styles.settingsChipContainer}>
+                    <View style={styles.chipGrid}>
                         {biathlonNations.map(nation => (
                             <TouchableOpacity
                                 key={nation.code}
-                                style={[styles.settingsChip, selectedNations.includes(nation.code) && styles.settingsChipActive]}
+                                style={[styles.nationChip, selectedNations.includes(nation.code) && styles.chipActiveOrange]}
                                 onPress={() => onToggleNation(nation.code)}
                             >
-                                <Text style={styles.settingsChipFlag}>{nation.flag}</Text>
-                                <Text style={[styles.settingsChipText, selectedNations.includes(nation.code) && styles.settingsChipTextActive]}>
+                                <Text style={styles.nationFlag}>{nation.flag}</Text>
+                                <Text style={[styles.chipText, selectedNations.includes(nation.code) && styles.chipTextActive]} numberOfLines={1}>
                                     {nation.code}
                                 </Text>
                             </TouchableOpacity>
@@ -190,7 +207,7 @@ const styles = StyleSheet.create({
         flex: 1
     },
     settingsContentContainer: {
-        padding: 16,
+        padding: CONTENT_PADDING,
         paddingBottom: 32
     },
     settingsSection: {
@@ -207,7 +224,7 @@ const styles = StyleSheet.create({
     settingsCard: {
         backgroundColor: '#1c1c1e',
         borderRadius: 16,
-        padding: 16,
+        padding: CARD_INNER_PADDING,
         marginBottom: 16
     },
     settingsCardHeader: {
@@ -219,48 +236,102 @@ const styles = StyleSheet.create({
     settingsCardTitle: {
         color: '#fff',
         fontSize: 16,
-        fontWeight: '700'
+        fontWeight: '700',
+        flex: 1
     },
-    settingsChipContainer: {
+    settingsCardCount: {
+        color: '#666',
+        fontSize: 12,
+        fontWeight: '600'
+    },
+    // Unified chip grid
+    chipGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 8
+        gap: CHIP_GAP
     },
-    settingsChip: {
-        flexDirection: 'row',
+    // Base team chip style
+    teamChip: {
+        width: CHIP_WIDTH,
+        flexDirection: 'column',
         alignItems: 'center',
+        justifyContent: 'center',
         gap: 6,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 20,
+        paddingVertical: 12,
+        paddingHorizontal: 6,
+        borderRadius: 12,
         backgroundColor: '#252525',
-        borderWidth: 1,
+        borderWidth: 2,
         borderColor: '#333'
     },
-    settingsChipActive: {
-        backgroundColor: '#0A84FF',
+    // Nation chip
+    nationChip: {
+        width: CHIP_WIDTH,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 10,
+        paddingHorizontal: 6,
+        borderRadius: 12,
+        backgroundColor: '#252525',
+        borderWidth: 2,
+        borderColor: '#333'
+    },
+    chipActive: {
+        backgroundColor: 'rgba(10, 132, 255, 0.2)',
         borderColor: '#0A84FF'
     },
-    settingsChipLogo: {
-        width: 24,
-        height: 24
+    chipActiveGreen: {
+        backgroundColor: 'rgba(48, 209, 88, 0.2)',
+        borderColor: '#30D158'
     },
-    settingsChipLogoPlaceholder: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
+    chipActiveOrange: {
+        backgroundColor: 'rgba(255, 159, 10, 0.2)',
+        borderColor: '#FF9F0A'
+    },
+    chipLogo: {
+        width: 32,
+        height: 32
+    },
+    chipLogoPlaceholder: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         backgroundColor: '#2c2c2e'
     },
-    settingsChipFlag: {
+    chipText: {
+        color: '#888',
+        fontSize: 11,
+        fontWeight: '600',
+        textAlign: 'center'
+    },
+    chipTextActive: {
+        color: '#fff'
+    },
+    nationFlag: {
         fontSize: 18
     },
-    settingsChipText: {
-        color: '#888',
-        fontSize: 13,
-        fontWeight: '600',
-        flexShrink: 1
+    // Gender chips
+    genderRow: {
+        flexDirection: 'row',
+        gap: 10
     },
-    settingsChipTextActive: {
+    genderChip: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 14,
+        borderRadius: 12,
+        backgroundColor: '#252525',
+        borderWidth: 2,
+        borderColor: '#333'
+    },
+    genderText: {
+        color: '#888',
+        fontSize: 15,
+        fontWeight: '700'
+    },
+    genderTextActive: {
         color: '#fff'
     },
     clearButton: {
@@ -292,5 +363,5 @@ const styles = StyleSheet.create({
         color: '#FF9F0A',
         fontSize: 15,
         fontWeight: '600'
-    },
+    }
 });
