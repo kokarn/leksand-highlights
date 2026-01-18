@@ -31,6 +31,8 @@ const { getProvider, getAvailableSports } = require('./modules/providers');
 const { formatSwedishTimestamp } = require('./modules/utils');
 const notifier = require('./modules/notifier');
 const scheduler = require('./modules/scheduler');
+const goalWatcher = require('./modules/goal-watcher');
+const pushNotifications = require('./modules/push-notifications');
 const {
     listAdminGames,
     findAdminGameRecord,
@@ -758,6 +760,8 @@ app.get('/api/status', (req, res) => {
         availableSports: getAvailableSports(),
         notifier: notifier.getStats(),
         scheduler: scheduler.getStats(),
+        goalWatcher: goalWatcher.getStats(),
+        pushNotifications: pushNotifications.getStats(),
         cache: getCacheStatus(),
         refreshRates: {
             gamesNormal: '60 seconds',
@@ -771,7 +775,8 @@ app.get('/api/status', (req, res) => {
             allsvenskanStandings: '5 minutes',
             notifierNormal: '5 minutes',
             notifierLive: '30 seconds',
-            biathlonScheduler: '1 hour'
+            biathlonScheduler: '1 hour',
+            goalWatcher: '15 seconds (live games)'
         }
     });
 });
@@ -832,6 +837,66 @@ app.get('/api/scheduler/status', (req, res) => {
     });
 });
 
+// ============ PUSH NOTIFICATION ENDPOINTS ============
+
+/**
+ * GET /api/notifications/status
+ * Get push notification service status
+ */
+app.get('/api/notifications/status', (req, res) => {
+    res.json({
+        timestamp: formatSwedishTimestamp(),
+        pushNotifications: pushNotifications.getStats(),
+        goalWatcher: goalWatcher.getStats()
+    });
+});
+
+/**
+ * POST /api/notifications/test
+ * Send a test notification (for debugging)
+ */
+app.post('/api/notifications/test', async (req, res) => {
+    console.log('[API] Test notification triggered');
+
+    if (!pushNotifications.isConfigured()) {
+        return res.status(503).json({
+            error: 'Push notifications not configured. Set ONESIGNAL_APP_ID and ONESIGNAL_REST_API_KEY environment variables.'
+        });
+    }
+
+    try {
+        const message = req.body?.message || 'Test notification from GamePulse!';
+        const result = await pushNotifications.sendTestNotification(message);
+        res.json({
+            success: result.success,
+            message: 'Test notification sent',
+            timestamp: formatSwedishTimestamp(),
+            result
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /api/goal-watcher/check
+ * Manually trigger a goal check
+ */
+app.post('/api/goal-watcher/check', async (req, res) => {
+    console.log('[API] Manual goal watcher check triggered');
+
+    try {
+        const results = await goalWatcher.runCheck();
+        res.json({
+            message: 'Goal check completed',
+            timestamp: formatSwedishTimestamp(),
+            ...results
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ============ START SERVER ============
 app.listen(PORT, () => {
     const providerNames = getAvailableSports().map(sport => getProvider(sport).getName());
@@ -854,6 +919,9 @@ app.listen(PORT, () => {
     console.log(`  - Live games: 30 seconds`);
     console.log(`\nScheduler intervals:`);
     console.log(`  - Biathlon refresh: 1 hour`);
+    console.log(`\nGoal Watcher:`);
+    console.log(`  - Check interval: 15 seconds (live games)`);
+    console.log(`  - Push notifications: ${pushNotifications.isConfigured() ? 'Configured' : 'Not configured (set ONESIGNAL_APP_ID and ONESIGNAL_REST_API_KEY)'}`);
     console.log(`========================================\n`);
 
     // Start the notifier loop after server is ready
@@ -861,6 +929,9 @@ app.listen(PORT, () => {
 
     // Start the scheduler for periodic updates
     scheduler.startLoop();
+
+    // Start the goal watcher for push notifications
+    goalWatcher.startLoop();
 });
 
 // Export for testing

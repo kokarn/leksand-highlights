@@ -1,4 +1,4 @@
-import { View, Text, Modal, ScrollView, TouchableOpacity, Image, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Modal, ScrollView, TouchableOpacity, Image, StyleSheet, Dimensions, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getTeamLogoUrl } from '../../api/shl';
@@ -28,7 +28,14 @@ export const SettingsModal = ({
     onClearNations,
     selectedGenders,
     onToggleGender,
-    onResetOnboarding
+    onResetOnboarding,
+    // Push notification props
+    notificationsEnabled = false,
+    goalNotificationsEnabled = true,
+    hasNotificationPermission = false,
+    onToggleNotifications,
+    onToggleGoalNotifications,
+    onRequestNotificationPermission
 }) => (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
         <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
@@ -42,6 +49,73 @@ export const SettingsModal = ({
                 style={styles.settingsContent}
                 contentContainerStyle={styles.settingsContentContainer}
             >
+                {/* Notifications Section */}
+                <Text style={styles.settingsSection}>Notifications</Text>
+                <Text style={styles.settingsSectionSubtitle}>Get notified when goals are scored</Text>
+
+                <View style={styles.settingsCard}>
+                    <View style={styles.settingsCardHeader}>
+                        <Ionicons name="notifications-outline" size={22} color="#FF453A" />
+                        <Text style={styles.settingsCardTitle}>Push Notifications</Text>
+                    </View>
+
+                    <View style={styles.notificationRow}>
+                        <View style={styles.notificationTextContainer}>
+                            <Text style={styles.notificationLabel}>Enable Notifications</Text>
+                            <Text style={styles.notificationDescription}>
+                                Receive push notifications on this device
+                            </Text>
+                        </View>
+                        <Switch
+                            value={notificationsEnabled}
+                            onValueChange={(value) => {
+                                if (value && !hasNotificationPermission) {
+                                    onRequestNotificationPermission?.();
+                                } else {
+                                    onToggleNotifications?.(value);
+                                }
+                            }}
+                            trackColor={{ false: '#3a3a3c', true: '#34C759' }}
+                            thumbColor="#fff"
+                        />
+                    </View>
+
+                    {notificationsEnabled && (
+                        <View style={styles.notificationRow}>
+                            <View style={styles.notificationTextContainer}>
+                                <Text style={styles.notificationLabel}>Goal Alerts</Text>
+                                <Text style={styles.notificationDescription}>
+                                    Get notified when your favorite teams score
+                                </Text>
+                            </View>
+                            <Switch
+                                value={goalNotificationsEnabled}
+                                onValueChange={onToggleGoalNotifications}
+                                trackColor={{ false: '#3a3a3c', true: '#34C759' }}
+                                thumbColor="#fff"
+                            />
+                        </View>
+                    )}
+
+                    {notificationsEnabled && (selectedTeams.length > 0 || selectedFootballTeams.length > 0) && (
+                        <View style={styles.notificationInfo}>
+                            <Ionicons name="information-circle-outline" size={16} color="#8E8E93" />
+                            <Text style={styles.notificationInfoText}>
+                                You'll receive goal alerts for your selected teams below
+                            </Text>
+                        </View>
+                    )}
+
+                    {notificationsEnabled && selectedTeams.length === 0 && selectedFootballTeams.length === 0 && (
+                        <View style={styles.notificationWarning}>
+                            <Ionicons name="warning-outline" size={16} color="#FF9F0A" />
+                            <Text style={styles.notificationWarningText}>
+                                Select teams below to receive goal notifications
+                            </Text>
+                        </View>
+                    )}
+                </View>
+
                 <Text style={styles.settingsSection}>Favorites</Text>
                 <Text style={styles.settingsSectionSubtitle}>Customize which sports and teams you follow</Text>
 
@@ -363,5 +437,58 @@ const styles = StyleSheet.create({
         color: '#FF9F0A',
         fontSize: 15,
         fontWeight: '600'
+    },
+    // Notification styles
+    notificationRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#2c2c2e'
+    },
+    notificationTextContainer: {
+        flex: 1,
+        marginRight: 12
+    },
+    notificationLabel: {
+        color: '#fff',
+        fontSize: 15,
+        fontWeight: '600',
+        marginBottom: 2
+    },
+    notificationDescription: {
+        color: '#8E8E93',
+        fontSize: 12
+    },
+    notificationInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginTop: 12,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        backgroundColor: 'rgba(142, 142, 147, 0.1)',
+        borderRadius: 8
+    },
+    notificationInfoText: {
+        color: '#8E8E93',
+        fontSize: 12,
+        flex: 1
+    },
+    notificationWarning: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginTop: 12,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        backgroundColor: 'rgba(255, 159, 10, 0.1)',
+        borderRadius: 8
+    },
+    notificationWarningText: {
+        color: '#FF9F0A',
+        fontSize: 12,
+        flex: 1
     }
 });

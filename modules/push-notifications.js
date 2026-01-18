@@ -1,0 +1,224 @@
+const { formatSwedishTimestamp } = require('./utils');
+
+// ============ ONESIGNAL CONFIGURATION ============
+// These should be set via environment variables
+const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID || '';
+const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY || '';
+const ONESIGNAL_API_URL = 'https://onesignal.com/api/v1/notifications';
+
+// ============ STATS ============
+let stats = {
+    notificationsSent: 0,
+    errors: 0,
+    lastSent: null
+};
+
+/**
+ * Check if OneSignal is properly configured
+ * @returns {boolean} Whether OneSignal is configured
+ */
+function isConfigured() {
+    return Boolean(ONESIGNAL_APP_ID && ONESIGNAL_REST_API_KEY);
+}
+
+/**
+ * Send a push notification via OneSignal REST API
+ * @param {Object} options - Notification options
+ * @param {string} options.title - Notification title
+ * @param {string} options.message - Notification message
+ * @param {Array} options.filters - OneSignal filters for targeting
+ * @param {Object} options.data - Additional data to include
+ * @returns {Promise<Object>} OneSignal API response
+ */
+async function sendNotification({ title, message, filters = [], data = {} }) {
+    if (!isConfigured()) {
+        console.warn('[PushNotifications] OneSignal not configured. Set ONESIGNAL_APP_ID and ONESIGNAL_REST_API_KEY environment variables.');
+        return { success: false, error: 'Not configured' };
+    }
+
+    const payload = {
+        app_id: ONESIGNAL_APP_ID,
+        headings: { en: title },
+        contents: { en: message },
+        data
+    };
+
+    // Add targeting filters if provided
+    if (filters.length > 0) {
+        payload.filters = filters;
+    } else {
+        // Default: send to all subscribed users with goal_notifications tag
+        payload.filters = [
+            { field: 'tag', key: 'goal_notifications', relation: '=', value: 'true' }
+        ];
+    }
+
+    try {
+        const response = await fetch(ONESIGNAL_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            stats.notificationsSent++;
+            stats.lastSent = formatSwedishTimestamp();
+            console.log(`[PushNotifications] Sent notification: "${title}" to ${result.recipients || 0} recipients`);
+            return { success: true, recipients: result.recipients, id: result.id };
+        } else {
+            stats.errors++;
+            console.error('[PushNotifications] API error:', result);
+            return { success: false, error: result.errors?.[0] || 'Unknown error' };
+        }
+    } catch (error) {
+        stats.errors++;
+        console.error('[PushNotifications] Error sending notification:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Send a goal notification
+ * @param {Object} goal - Goal details from goal-watcher
+ * @returns {Promise<Object>} Send result
+ */
+async function sendGoalNotification(goal) {
+    const {
+        sport,
+        gameId,
+        scorerName,
+        scoringTeamCode,
+        scoringTeamName,
+        opposingTeamName,
+        homeTeamCode,
+        awayTeamCode,
+        homeScore,
+        awayScore,
+        time,
+        period
+    } = goal;
+
+    // Build notification content
+    const sportEmoji = sport === 'shl' ? '🏒' : '⚽';
+    const title = `${sportEmoji} GOAL! ${scoringTeamName}`;
+
+    let message = `${scorerName} scores!`;
+    if (homeScore !== undefined && awayScore !== undefined) {
+        message += ` ${homeScore}-${awayScore}`;
+    }
+    if (time) {
+        message += ` (${time}`;
+        if (period) {
+            message += ` ${period}`;
+        }
+        message += ')';
+    }
+
+    // Build filters to target users following either team
+    // Users can have tags like: team_lif=true, shl_teams=LIF,FBK
+    const filters = [
+        // Match users with goal_notifications enabled AND following the scoring team
+        { field: 'tag', key: 'goal_notifications', relation: '=', value: 'true' },
+        { operator: 'AND' },
+        {
+            operator: 'OR',
+            // User follows the scoring team
+            filters: [
+                { field: 'tag', key: `team_${scoringTeamCode.toLowerCase()}`, relation: '=', value: 'true' },
+                { field: 'tag', key: `team_${homeTeamCode?.toLowerCase()}`, relation: '=', value: 'true' },
+                { field: 'tag', key: `team_${awayTeamCode?.toLowerCase()}`, relation: '=', value: 'true' }
+            ]
+        }
+    ];
+
+    // Simplified filter approach: target by individual team tags
+    // OneSignal filter syntax doesn't support nested OR easily, so we use a simpler approach
+    const simpleFilters = [
+        { field: 'tag', key: 'goal_notifications', relation: '=', value: 'true' },
+        { operator: 'AND' },
+        { field: 'tag', key: `team_${scoringTeamCode.toLowerCase()}`, relation: '=', value: 'true' }
+    ];
+
+    // Also send to users following the opposing team (they want to know too!)
+    const data = {
+        type: 'goal',
+        sport,
+        gameId,
+        scoringTeam: scoringTeamCode,
+        homeTeam: homeTeamCode,
+        awayTeam: awayTeamCode,
+        homeScore,
+        awayScore
+    };
+
+    // Send notification to scoring team followers
+    const result = await sendNotification({
+        title,
+        message,
+        filters: simpleFilters,
+        data
+    });
+
+    // Also send to opposing team followers with slightly different message
+    if (homeTeamCode && awayTeamCode) {
+        const opposingCode = scoringTeamCode === homeTeamCode ? awayTeamCode : homeTeamCode;
+        const opposingFilters = [
+            { field: 'tag', key: 'goal_notifications', relation: '=', value: 'true' },
+            { operator: 'AND' },
+            { field: 'tag', key: `team_${opposingCode.toLowerCase()}`, relation: '=', value: 'true' }
+        ];
+
+        // Don't await - fire and forget for the second notification
+        sendNotification({
+            title: `${sportEmoji} Goal Against`,
+            message: `${scoringTeamName} scored. ${homeScore}-${awayScore}`,
+            filters: opposingFilters,
+            data
+        }).catch(err => console.error('[PushNotifications] Error sending opposing team notification:', err));
+    }
+
+    return result;
+}
+
+/**
+ * Send a test notification
+ * @param {string} message - Test message
+ * @returns {Promise<Object>} Send result
+ */
+async function sendTestNotification(message = 'This is a test notification from GamePulse!') {
+    return sendNotification({
+        title: '🔔 Test Notification',
+        message,
+        filters: [
+            // Send to all users with goal_notifications enabled
+            { field: 'tag', key: 'goal_notifications', relation: '=', value: 'true' }
+        ],
+        data: { type: 'test' }
+    });
+}
+
+/**
+ * Get notification stats
+ * @returns {Object} Stats object
+ */
+function getStats() {
+    return {
+        configured: isConfigured(),
+        notificationsSent: stats.notificationsSent,
+        errors: stats.errors,
+        lastSent: stats.lastSent
+    };
+}
+
+module.exports = {
+    isConfigured,
+    sendNotification,
+    sendGoalNotification,
+    sendTestNotification,
+    getStats
+};

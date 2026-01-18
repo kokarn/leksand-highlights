@@ -5,3 +5,4 @@ export { useFootballData } from './useFootballData';
 export { useBiathlonData } from './useBiathlonData';
 export { useGameDetails } from './useGameDetails';
 export { useVideoPlayer } from './useVideoPlayer';
+export { usePushNotifications } from './usePushNotifications';

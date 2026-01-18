@@ -28,7 +28,9 @@ export const STORAGE_KEYS = {
     SELECTED_NATIONS: 'selectedNations',
     SELECTED_GENDERS: 'selectedGenders',
     ONBOARDING_COMPLETE: 'onboardingComplete',
-    ENABLED_SPORTS: 'enabledSports'
+    ENABLED_SPORTS: 'enabledSports',
+    NOTIFICATIONS_ENABLED: 'notificationsEnabled',
+    GOAL_NOTIFICATIONS_ENABLED: 'goalNotificationsEnabled'
 };
 
 // Gender options for biathlon

@@ -23,7 +23,8 @@ import {
     usePreferences,
     useShlData,
     useFootballData,
-    useBiathlonData
+    useBiathlonData,
+    usePushNotifications
 } from '../hooks';
 
 // Components
@@ -73,6 +74,17 @@ export default function App() {
     const shl = useShlData(activeSport, selectedTeams, { eagerLoad: true });
     const football = useFootballData(activeSport, selectedFootballTeams, { eagerLoad: true });
     const biathlon = useBiathlonData(activeSport, selectedNations, selectedGenders, { eagerLoad: true });
+
+    // Push notifications
+    const {
+        notificationsEnabled,
+        goalNotificationsEnabled,
+        hasPermission: hasNotificationPermission,
+        toggleNotifications,
+        toggleGoalNotifications,
+        requestPermission: requestNotificationPermission,
+        setTeamTags
+    } = usePushNotifications();
 
     // Settings modal
     const [showSettings, setShowSettings] = useState(false);
@@ -585,12 +597,32 @@ export default function App() {
                 onClose={() => setShowSettings(false)}
                 teams={shl.teams}
                 selectedTeams={selectedTeams}
-                onToggleTeam={toggleTeamFilter}
-                onClearTeams={clearTeamFilter}
+                onToggleTeam={(teamCode) => {
+                    toggleTeamFilter(teamCode);
+                    // Update OneSignal tags when teams change
+                    const newTeams = selectedTeams.includes(teamCode)
+                        ? selectedTeams.filter(t => t !== teamCode)
+                        : [...selectedTeams, teamCode];
+                    setTeamTags('shl', newTeams);
+                }}
+                onClearTeams={() => {
+                    clearTeamFilter();
+                    setTeamTags('shl', []);
+                }}
                 footballTeams={football.teams}
                 selectedFootballTeams={selectedFootballTeams}
-                onToggleFootballTeam={toggleFootballTeamFilter}
-                onClearFootballTeams={clearFootballTeamFilter}
+                onToggleFootballTeam={(teamKey) => {
+                    toggleFootballTeamFilter(teamKey);
+                    // Update OneSignal tags when teams change
+                    const newTeams = selectedFootballTeams.includes(teamKey)
+                        ? selectedFootballTeams.filter(t => t !== teamKey)
+                        : [...selectedFootballTeams, teamKey];
+                    setTeamTags('allsvenskan', newTeams);
+                }}
+                onClearFootballTeams={() => {
+                    clearFootballTeamFilter();
+                    setTeamTags('allsvenskan', []);
+                }}
                 biathlonNations={biathlon.nations}
                 selectedNations={selectedNations}
                 onToggleNation={toggleNationFilter}
@@ -601,6 +633,13 @@ export default function App() {
                     await resetOnboarding();
                     setShowSettings(false);
                 }}
+                // Push notification props
+                notificationsEnabled={notificationsEnabled}
+                goalNotificationsEnabled={goalNotificationsEnabled}
+                hasNotificationPermission={hasNotificationPermission}
+                onToggleNotifications={toggleNotifications}
+                onToggleGoalNotifications={toggleGoalNotifications}
+                onRequestNotificationPermission={requestNotificationPermission}
             />
 
             {/* Onboarding Modal */}

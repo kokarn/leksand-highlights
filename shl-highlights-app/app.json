@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "GamePulse",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "gamepulse",
@@ -11,7 +11,11 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.kokarn.sportsapp",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["remote-notification"]
+      },
+      "entitlements": {
+        "aps-environment": "development"
       }
     },
     "android": {
@@ -42,6 +46,12 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "development"
+        }
       ]
     ],
     "experiments": {
@@ -52,7 +62,8 @@
       "router": {},
       "eas": {
         "projectId": "a66a979e-84b8-49d2-91ea-c20ce6131456"
-      }
+      },
+      "oneSignalAppId": "3c70d29f-23ae-48f4-83d9-5166ad379700"
     },
     "owner": "kokarn"
   }
