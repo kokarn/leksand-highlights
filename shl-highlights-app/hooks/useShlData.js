@@ -7,12 +7,19 @@ const RECENT_START_WINDOW_MINUTES = 90;
 
 /**
  * Hook for managing SHL games data, standings, and auto-refresh
+ * @param {string} activeSport - Currently active sport tab
+ * @param {string[]} selectedTeams - Selected team filters
+ * @param {object} options - Additional options
+ * @param {boolean} options.eagerLoad - Load data immediately on mount regardless of activeSport
  */
-export function useShlData(activeSport, selectedTeams) {
+export function useShlData(activeSport, selectedTeams, options = {}) {
+    const { eagerLoad = false } = options;
+
     // Games state
     const [games, setGames] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const hasLoadedOnce = useRef(false);
 
     // Standings state
     const [standings, setStandings] = useState(null);
@@ -73,12 +80,14 @@ export function useShlData(activeSport, selectedTeams) {
         }
     }, []);
 
-    // Initial data load
+    // Initial data load (eager load on mount if enabled, otherwise wait for active sport)
     useEffect(() => {
-        if (activeSport === 'shl') {
+        // First load: load immediately if eagerLoad or if sport is active
+        if (!hasLoadedOnce.current && (eagerLoad || activeSport === 'shl')) {
+            hasLoadedOnce.current = true;
             loadGames();
         }
-    }, [activeSport, loadGames]);
+    }, [activeSport, loadGames, eagerLoad]);
 
     // Load standings when view mode changes
     useEffect(() => {

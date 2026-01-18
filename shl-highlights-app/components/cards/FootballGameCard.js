@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { extractScore, formatSwedishDate } from '../../utils';
@@ -10,7 +11,7 @@ const getTeamLogo = (team) => {
     return team?.icon || null;
 };
 
-export const FootballGameCard = ({ game, onPress }) => {
+export const FootballGameCard = memo(function FootballGameCard({ game, onPress }) {
     const homeTeam = game?.homeTeamInfo ?? {};
     const awayTeam = game?.awayTeamInfo ?? {};
     const isLive = game?.state === 'live';
@@ -77,7 +78,7 @@ export const FootballGameCard = ({ game, onPress }) => {
             </LinearGradient>
         </TouchableOpacity>
     );
-};
+});
 
 const styles = StyleSheet.create({
     gameCard: {

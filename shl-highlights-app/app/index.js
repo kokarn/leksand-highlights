@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -68,14 +68,10 @@ export default function App() {
         resetOnboarding
     } = usePreferences();
 
-    // SHL data
-    const shl = useShlData(activeSport, selectedTeams);
-
-    // Football data
-    const football = useFootballData(activeSport, selectedFootballTeams);
-
-    // Biathlon data
-    const biathlon = useBiathlonData(activeSport, selectedNations, selectedGenders);
+    // Eager load all sports data on app start for instant scroll
+    const shl = useShlData(activeSport, selectedTeams, { eagerLoad: true });
+    const football = useFootballData(activeSport, selectedFootballTeams, { eagerLoad: true });
+    const biathlon = useBiathlonData(activeSport, selectedNations, selectedGenders, { eagerLoad: true });
 
     // Settings modal
     const [showSettings, setShowSettings] = useState(false);
@@ -123,82 +119,23 @@ export default function App() {
     const handleScrollToIndexFailed = useCallback((info) => {
         const offset = info.averageItemLength * info.index;
         setTimeout(() => {
-            shl.listRef.current?.scrollToOffset({ offset, animated: true });
+            shl.listRef.current?.scrollToOffset({ offset, animated: false });
         }, 50);
     }, [shl.listRef]);
 
     const handleFootballScrollToIndexFailed = useCallback((info) => {
         const offset = info.averageItemLength * info.index;
         setTimeout(() => {
-            football.listRef.current?.scrollToOffset({ offset, animated: true });
+            football.listRef.current?.scrollToOffset({ offset, animated: false });
         }, 50);
     }, [football.listRef]);
 
     const handleBiathlonScrollToIndexFailed = useCallback((info) => {
         const offset = info.averageItemLength * info.index;
         setTimeout(() => {
-            biathlon.listRef.current?.scrollToOffset({ offset, animated: true });
+            biathlon.listRef.current?.scrollToOffset({ offset, animated: false });
         }, 50);
     }, [biathlon.listRef]);
-
-    // Auto-scroll to target game/race
-    useEffect(() => {
-        if (activeSport !== 'shl' || !shl.games.length || !shl.targetGameId) return;
-        if (shl.lastFocusedGameRef.current === shl.targetGameId) return;
-
-        const timeoutId = setTimeout(() => {
-            if (shl.listRef.current && shl.targetGameIndex > 0) {
-                const offset = LIST_HEADER_HEIGHT + (GAME_CARD_HEIGHT * shl.targetGameIndex);
-                shl.listRef.current.scrollToOffset({ offset, animated: true });
-            }
-        }, 150);
-
-        shl.lastFocusedGameRef.current = shl.targetGameId;
-        return () => clearTimeout(timeoutId);
-    }, [activeSport, shl.games.length, shl.targetGameId, shl.targetGameIndex, shl.listRef, shl.lastFocusedGameRef]);
-
-    useEffect(() => {
-        if (activeSport !== 'football' || !football.games.length || !football.targetGameId) return;
-        if (football.lastFocusedGameRef.current === football.targetGameId) return;
-
-        const timeoutId = setTimeout(() => {
-            if (football.listRef.current && football.targetGameIndex > 0) {
-                const offset = LIST_HEADER_HEIGHT + (FOOTBALL_CARD_HEIGHT * football.targetGameIndex);
-                football.listRef.current.scrollToOffset({ offset, animated: true });
-            }
-        }, 150);
-
-        football.lastFocusedGameRef.current = football.targetGameId;
-        return () => clearTimeout(timeoutId);
-    }, [activeSport, football.games.length, football.targetGameId, football.targetGameIndex, football.listRef, football.lastFocusedGameRef]);
-
-    useEffect(() => {
-        if (activeSport !== 'biathlon' || !biathlon.races.length || !biathlon.targetRaceId) return;
-        if (biathlon.lastFocusedRaceRef.current === biathlon.targetRaceId) return;
-
-        biathlon.lastFocusedRaceRef.current = biathlon.targetRaceId;
-
-        const timeoutId = setTimeout(() => {
-            if (!biathlon.listRef.current || biathlon.targetRaceIndex <= 0) return;
-
-            try {
-                biathlon.listRef.current.scrollToIndex({
-                    index: biathlon.targetRaceIndex,
-                    animated: true,
-                    viewPosition: 0
-                });
-            } catch (_e) {
-                const offset = LIST_HEADER_HEIGHT + (BIATHLON_CARD_HEIGHT * biathlon.targetRaceIndex);
-                try {
-                    biathlon.listRef.current.scrollToOffset({ offset, animated: true });
-                } catch (_e2) {
-                    console.warn('Biathlon scroll failed');
-                }
-            }
-        }, 400);
-
-        return () => clearTimeout(timeoutId);
-    }, [activeSport, biathlon.races.length, biathlon.targetRaceId, biathlon.targetRaceIndex, biathlon.listRef, biathlon.lastFocusedRaceRef]);
 
     // Handle SHL game press - reset tab and open modal
     const handleShlGamePress = useCallback((game) => {
@@ -215,7 +152,7 @@ export default function App() {
         </View>
     );
 
-    // Render SHL schedule
+    // Render SHL schedule - start at the most recent/current game
     const renderShlSchedule = () => (
         <FlatList
             ref={shl.listRef}
@@ -225,8 +162,11 @@ export default function App() {
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
             onScrollToIndexFailed={handleScrollToIndexFailed}
-            initialScrollIndex={shl.targetGameIndex > 0 ? shl.targetGameIndex : undefined}
             getItemLayout={getGameItemLayout}
+            initialScrollIndex={shl.targetGameIndex > 0 ? shl.targetGameIndex : undefined}
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={10}
+            windowSize={11}
             ListEmptyComponent={<EmptyState message="No games found." />}
             ListHeaderComponent={
                 <ScheduleHeader icon="snow-outline" title="SHL" count={shl.games.length} countLabel="games" />
@@ -287,7 +227,7 @@ export default function App() {
         );
     };
 
-    // Render Football schedule
+    // Render Football schedule - start at the most recent/current match
     const renderFootballSchedule = () => (
         <FlatList
             ref={football.listRef}
@@ -297,8 +237,11 @@ export default function App() {
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
             onScrollToIndexFailed={handleFootballScrollToIndexFailed}
-            initialScrollIndex={football.targetGameIndex > 0 ? football.targetGameIndex : undefined}
             getItemLayout={getFootballItemLayout}
+            initialScrollIndex={football.targetGameIndex > 0 ? football.targetGameIndex : undefined}
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={10}
+            windowSize={11}
             ListEmptyComponent={<EmptyState message="No matches found." />}
             ListHeaderComponent={
                 <ScheduleHeader icon="football-outline" title="Allsvenskan" count={football.games.length} countLabel="matches" />
@@ -353,7 +296,7 @@ export default function App() {
         );
     };
 
-    // Render Biathlon schedule
+    // Render Biathlon schedule - start at the most recent/current race
     const renderBiathlonSchedule = () => (
         <FlatList
             ref={biathlon.listRef}
@@ -363,8 +306,11 @@ export default function App() {
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
             onScrollToIndexFailed={handleBiathlonScrollToIndexFailed}
-            initialScrollIndex={biathlon.targetRaceIndex > 0 ? biathlon.targetRaceIndex : undefined}
             getItemLayout={getBiathlonItemLayout}
+            initialScrollIndex={biathlon.targetRaceIndex > 0 ? biathlon.targetRaceIndex : undefined}
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={10}
+            windowSize={11}
             ListEmptyComponent={<EmptyState message="No races found." />}
             ListHeaderComponent={
                 <ScheduleHeader icon="calendar-outline" title="All Races" count={biathlon.races.length} countLabel="races" />

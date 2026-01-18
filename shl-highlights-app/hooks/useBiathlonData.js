@@ -8,13 +8,21 @@ import {
 
 /**
  * Hook for managing Biathlon data
+ * @param {string} activeSport - Currently active sport tab
+ * @param {string[]} selectedNations - Selected nation filters
+ * @param {string[]} selectedGenders - Selected gender filters
+ * @param {object} options - Additional options
+ * @param {boolean} options.eagerLoad - Load data immediately on mount regardless of activeSport
  */
-export function useBiathlonData(activeSport, selectedNations, selectedGenders) {
+export function useBiathlonData(activeSport, selectedNations, selectedGenders, options = {}) {
+    const { eagerLoad = false } = options;
+
     // Races state
     const [races, setRaces] = useState([]);
     const [nations, setNations] = useState([]);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const hasLoadedOnce = useRef(false);
 
     // Selected race modal state
     const [selectedRace, setSelectedRace] = useState(null);
@@ -63,12 +71,13 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders) {
         }
     }, []);
 
-    // Initial data load
+    // Initial data load (eager load on mount if enabled, otherwise wait for active sport)
     useEffect(() => {
-        if (activeSport === 'biathlon') {
+        if (!hasLoadedOnce.current && (eagerLoad || activeSport === 'biathlon')) {
+            hasLoadedOnce.current = true;
             loadData();
         }
-    }, [activeSport, loadData]);
+    }, [activeSport, loadData, eagerLoad]);
 
     // Reset focused race ref when switching sports
     useEffect(() => {

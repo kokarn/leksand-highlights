@@ -1,9 +1,10 @@
+import { memo } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getTeamLogoUrl } from '../../api/shl';
 import { extractScore, formatSwedishDate } from '../../utils';
 
-export const GameCard = ({ game, onPress }) => {
+export const GameCard = memo(function GameCard({ game, onPress }) {
     const homeTeam = game?.homeTeamInfo ?? {};
     const awayTeam = game?.awayTeamInfo ?? {};
     const homeCode = homeTeam.code;
@@ -71,7 +72,7 @@ export const GameCard = ({ game, onPress }) => {
             </LinearGradient>
         </TouchableOpacity>
     );
-};
+});
 
 const styles = StyleSheet.create({
     gameCard: {

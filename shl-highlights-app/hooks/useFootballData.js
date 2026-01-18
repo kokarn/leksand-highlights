@@ -7,12 +7,19 @@ const RECENT_START_WINDOW_MINUTES = 90;
 
 /**
  * Hook for managing Football/Allsvenskan data
+ * @param {string} activeSport - Currently active sport tab
+ * @param {string[]} selectedFootballTeams - Selected team filters
+ * @param {object} options - Additional options
+ * @param {boolean} options.eagerLoad - Load data immediately on mount regardless of activeSport
  */
-export function useFootballData(activeSport, selectedFootballTeams) {
+export function useFootballData(activeSport, selectedFootballTeams, options = {}) {
+    const { eagerLoad = false } = options;
+
     // Games state
     const [games, setGames] = useState([]);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const hasLoadedOnce = useRef(false);
 
     // Standings state
     const [standings, setStandings] = useState(null);
@@ -99,12 +106,13 @@ export function useFootballData(activeSport, selectedFootballTeams) {
         }
     }, [selectedSeason]);
 
-    // Initial data load
+    // Initial data load (eager load on mount if enabled, otherwise wait for active sport)
     useEffect(() => {
-        if (activeSport === 'football') {
+        if (!hasLoadedOnce.current && (eagerLoad || activeSport === 'football')) {
+            hasLoadedOnce.current = true;
             loadGames();
         }
-    }, [activeSport, loadGames]);
+    }, [activeSport, loadGames, eagerLoad]);
 
     // Load standings when view mode changes
     useEffect(() => {
