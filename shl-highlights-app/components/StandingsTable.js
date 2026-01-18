@@ -28,28 +28,79 @@ export const StandingsTable = ({
     }
 
     const isHockey = sport === 'shl';
+    const useCompactColumns = isHockey;
 
     return (
         <View style={styles.tableCard}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View>
                     {/* Header Row */}
-                    <View style={[styles.tableRow, styles.tableRowHeader]}>
-                        <Text style={[styles.tableHeaderText, styles.colRank]}>#</Text>
-                        <Text style={[styles.tableHeaderText, styles.colTeamHeader]}>Team</Text>
-                        <Text style={[styles.tableHeaderText, styles.colStat]}>GP</Text>
-                        <Text style={[styles.tableHeaderText, styles.colStat]}>W</Text>
+                    <View
+                        style={[
+                            styles.tableRow,
+                            styles.tableRowHeader,
+                            useCompactColumns && styles.tableRowCompact
+                        ]}
+                    >
+                        <Text style={[styles.tableHeaderText, styles.colRank, useCompactColumns && styles.colRankCompact]}>
+                            #
+                        </Text>
+                        <Text
+                            style={[
+                                styles.tableHeaderText,
+                                styles.colTeamHeader,
+                                useCompactColumns && styles.colTeamHeaderCompact
+                            ]}
+                        >
+                            Team
+                        </Text>
+                        <Text style={[styles.tableHeaderText, styles.colStat, useCompactColumns && styles.colStatCompact]}>
+                            GP
+                        </Text>
+                        <Text style={[styles.tableHeaderText, styles.colStat, useCompactColumns && styles.colStatCompact]}>
+                            W
+                        </Text>
                         {isHockey ? (
                             <>
-                                <Text style={[styles.tableHeaderText, styles.colStat]}>OTW</Text>
-                                <Text style={[styles.tableHeaderText, styles.colStat]}>OTL</Text>
+                                <Text
+                                    style={[
+                                        styles.tableHeaderText,
+                                        styles.colStat,
+                                        useCompactColumns && styles.colStatCompact
+                                    ]}
+                                >
+                                    OTW
+                                </Text>
+                                <Text
+                                    style={[
+                                        styles.tableHeaderText,
+                                        styles.colStat,
+                                        useCompactColumns && styles.colStatCompact
+                                    ]}
+                                >
+                                    OTL
+                                </Text>
                             </>
                         ) : (
-                            <Text style={[styles.tableHeaderText, styles.colStat]}>D</Text>
+                            <Text style={[styles.tableHeaderText, styles.colStat, useCompactColumns && styles.colStatCompact]}>
+                                D
+                            </Text>
                         )}
-                        <Text style={[styles.tableHeaderText, styles.colStat]}>L</Text>
-                        <Text style={[styles.tableHeaderText, styles.colPoints]}>PTS</Text>
-                        <Text style={[styles.tableHeaderText, styles.colGoalDiff]}>GD</Text>
+                        <Text style={[styles.tableHeaderText, styles.colStat, useCompactColumns && styles.colStatCompact]}>
+                            L
+                        </Text>
+                        <Text style={[styles.tableHeaderText, styles.colPoints, useCompactColumns && styles.colPointsCompact]}>
+                            PTS
+                        </Text>
+                        <Text
+                            style={[
+                                styles.tableHeaderText,
+                                styles.colGoalDiff,
+                                useCompactColumns && styles.colGoalDiffCompact
+                            ]}
+                        >
+                            GD
+                        </Text>
                     </View>
 
                     {/* Data Rows */}
@@ -62,20 +113,29 @@ export const StandingsTable = ({
                         return (
                             <View
                                 key={team.teamUuid || team.teamCode || team.teamName}
-                                style={[styles.tableRow, isFavorite && styles.tableRowActive]}
+                                style={[
+                                    styles.tableRow,
+                                    useCompactColumns && styles.tableRowCompact,
+                                    isFavorite && styles.tableRowActive
+                                ]}
                             >
-                                <Text style={[styles.tableCell, styles.colRank]}>
+                                <Text style={[styles.tableCell, styles.colRank, useCompactColumns && styles.colRankCompact]}>
                                     {formatStatValue(team.position)}
                                 </Text>
-                                <View style={styles.teamCell}>
+                                <View style={[styles.teamCell, useCompactColumns && styles.teamCellCompact]}>
                                     {logoUrl ? (
                                         <Image
                                             source={{ uri: logoUrl }}
-                                            style={styles.teamLogo}
+                                            style={[styles.teamLogo, useCompactColumns && styles.teamLogoCompact]}
                                             resizeMode="contain"
                                         />
                                     ) : (
-                                        <View style={styles.teamLogoPlaceholder} />
+                                        <View
+                                            style={[
+                                                styles.teamLogoPlaceholder,
+                                                useCompactColumns && styles.teamLogoPlaceholderCompact
+                                            ]}
+                                        />
                                     )}
                                     <View style={styles.teamTextBlock}>
                                         <Text style={styles.teamName} numberOfLines={1}>
@@ -88,36 +148,37 @@ export const StandingsTable = ({
                                         ) : null}
                                     </View>
                                 </View>
-                                <Text style={[styles.tableCell, styles.colStat]}>
+                                <Text style={[styles.tableCell, styles.colStat, useCompactColumns && styles.colStatCompact]}>
                                     {formatStatValue(team.gamesPlayed)}
                                 </Text>
-                                <Text style={[styles.tableCell, styles.colStat]}>
+                                <Text style={[styles.tableCell, styles.colStat, useCompactColumns && styles.colStatCompact]}>
                                     {formatStatValue(team.wins)}
                                 </Text>
                                 {isHockey ? (
                                     <>
-                                        <Text style={[styles.tableCell, styles.colStat]}>
+                                        <Text style={[styles.tableCell, styles.colStat, useCompactColumns && styles.colStatCompact]}>
                                             {formatStatValue(team.overtimeWins)}
                                         </Text>
-                                        <Text style={[styles.tableCell, styles.colStat]}>
+                                        <Text style={[styles.tableCell, styles.colStat, useCompactColumns && styles.colStatCompact]}>
                                             {formatStatValue(team.overtimeLosses)}
                                         </Text>
                                     </>
                                 ) : (
-                                    <Text style={[styles.tableCell, styles.colStat]}>
+                                    <Text style={[styles.tableCell, styles.colStat, useCompactColumns && styles.colStatCompact]}>
                                         {formatStatValue(team.draws)}
                                     </Text>
                                 )}
-                                <Text style={[styles.tableCell, styles.colStat]}>
+                                <Text style={[styles.tableCell, styles.colStat, useCompactColumns && styles.colStatCompact]}>
                                     {formatStatValue(team.losses)}
                                 </Text>
-                                <Text style={[styles.tableCell, styles.colPoints]}>
+                                <Text style={[styles.tableCell, styles.colPoints, useCompactColumns && styles.colPointsCompact]}>
                                     {formatStatValue(team.points)}
                                 </Text>
                                 <Text
                                     style={[
                                         styles.tableCell,
                                         styles.colGoalDiff,
+                                        useCompactColumns && styles.colGoalDiffCompact,
                                         Number.isFinite(goalDiffValue) && goalDiffValue > 0 && styles.positiveValue,
                                         Number.isFinite(goalDiffValue) && goalDiffValue < 0 && styles.negativeValue
                                     ]}
@@ -149,6 +210,9 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#2c2c2e'
     },
+    tableRowCompact: {
+        paddingHorizontal: 8
+    },
     tableRowHeader: {
         backgroundColor: '#2c2c2e',
         borderBottomColor: '#333'
@@ -170,22 +234,37 @@ const styles = StyleSheet.create({
         textAlign: 'center'
     },
     colRank: { width: 32 },
+    colRankCompact: { width: 26 },
     colTeamHeader: { width: 170, textAlign: 'left' },
+    colTeamHeaderCompact: { width: 120, textAlign: 'left' },
     colStat: { width: 42 },
+    colStatCompact: { width: 30 },
     colPoints: { width: 50 },
+    colPointsCompact: { width: 38 },
     colGoalDiff: { width: 50 },
+    colGoalDiffCompact: { width: 38 },
     teamCell: {
         width: 170,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8
     },
+    teamCellCompact: {
+        width: 120,
+        gap: 6
+    },
     teamLogo: { width: 24, height: 24 },
+    teamLogoCompact: { width: 20, height: 20 },
     teamLogoPlaceholder: {
         width: 24,
         height: 24,
         borderRadius: 12,
         backgroundColor: '#2c2c2e'
+    },
+    teamLogoPlaceholderCompact: {
+        width: 20,
+        height: 20,
+        borderRadius: 10
     },
     teamTextBlock: { flex: 1 },
     teamName: { color: '#fff', fontSize: 13, fontWeight: '600' },
