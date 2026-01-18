@@ -5,85 +5,93 @@ import { getNationFlag } from '../../api/shl';
 import { GENDER_COLORS } from '../../constants';
 import { formatSwedishDate } from '../../utils';
 
-export const RaceModal = ({ race, visible, onClose }) => (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-        <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
-            {race && (
-                <>
-                    <View style={styles.raceModalHeader}>
-                        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                            <Ionicons name="close" size={24} color="#fff" />
-                        </TouchableOpacity>
-                        <View style={styles.raceModalTitleContainer}>
-                            <Text style={styles.raceModalEventName}>{race.eventName}</Text>
-                            <Text style={styles.raceModalLocation}>
-                                {getNationFlag(race.country)} {race.location}, {race.countryName}
-                            </Text>
+export const RaceModal = ({ race, visible, onClose }) => {
+    const isLiveRace = race?.state === 'live' || race?.state === 'ongoing';
+    const isUpcomingRace = race?.state === 'upcoming' || race?.state === 'pre-race';
+    const infoNoteText = isLiveRace
+        ? 'Live results will appear here during the race.'
+        : isUpcomingRace
+            ? 'Start lists and results will be available closer to race time.'
+            : 'Official results will appear here once published.';
+
+    return (
+        <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+            <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
+                {race && (
+                    <>
+                        <View style={styles.raceModalHeader}>
+                            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                                <Ionicons name="close" size={24} color="#fff" />
+                            </TouchableOpacity>
+                            <View style={styles.raceModalTitleContainer}>
+                                <Text style={styles.raceModalEventName}>{race.eventName}</Text>
+                                <Text style={styles.raceModalLocation}>
+                                    {getNationFlag(race.country)} {race.location}, {race.countryName}
+                                </Text>
+                            </View>
                         </View>
-                    </View>
 
-                    <ScrollView style={styles.raceModalContent}>
-                        <View style={styles.raceDetailCard}>
-                            <View style={styles.raceDetailHeader}>
-                                <Text style={styles.raceDetailDiscipline}>{race.discipline}</Text>
-                                <View style={[styles.genderBadgeLarge, {
-                                    backgroundColor: GENDER_COLORS[race.gender] || '#666'
-                                }]}>
-                                    <Text style={styles.genderBadgeTextLarge}>{race.genderDisplay}</Text>
+                        <ScrollView style={styles.raceModalContent}>
+                            <View style={styles.raceDetailCard}>
+                                <View style={styles.raceDetailHeader}>
+                                    <Text style={styles.raceDetailDiscipline}>{race.discipline}</Text>
+                                    <View style={[styles.genderBadgeLarge, {
+                                        backgroundColor: GENDER_COLORS[race.gender] || '#666'
+                                    }]}>
+                                        <Text style={styles.genderBadgeTextLarge}>{race.genderDisplay}</Text>
+                                    </View>
                                 </View>
-                            </View>
 
-                            <View style={styles.raceDetailRow}>
-                                <Ionicons name="calendar-outline" size={20} color="#888" />
-                                <Text style={styles.raceDetailLabel}>Date</Text>
-                                <Text style={styles.raceDetailValue}>
-                                    {formatSwedishDate(race?.startDateTime, 'd MMMM yyyy')}
-                                </Text>
-                            </View>
-
-                            <View style={styles.raceDetailRow}>
-                                <Ionicons name="time-outline" size={20} color="#888" />
-                                <Text style={styles.raceDetailLabel}>Start Time</Text>
-                                <Text style={styles.raceDetailValue}>
-                                    {formatSwedishDate(race?.startDateTime, 'HH:mm')} CET
-                                </Text>
-                            </View>
-
-                            <View style={styles.raceDetailRow}>
-                                <Ionicons name="trophy-outline" size={20} color="#888" />
-                                <Text style={styles.raceDetailLabel}>Competition</Text>
-                                <Text style={styles.raceDetailValue}>
-                                    {race.eventType === 'olympics' ? 'Winter Olympics 2026' : 'IBU World Cup 2025/26'}
-                                </Text>
-                            </View>
-
-                            <View style={styles.raceDetailRow}>
-                                <Ionicons name="pulse-outline" size={20} color="#888" />
-                                <Text style={styles.raceDetailLabel}>Status</Text>
-                                <View style={[styles.statusBadge, {
-                                    backgroundColor: race.state === 'live' ? '#FF453A' :
-                                        race.state === 'upcoming' ? '#30D158' : '#666'
-                                }]}>
-                                    <Text style={styles.statusBadgeText}>
-                                        {race.state === 'live' ? 'LIVE' :
-                                            race.state === 'upcoming' ? 'Upcoming' : 'Completed'}
+                                <View style={styles.raceDetailRow}>
+                                    <Ionicons name="calendar-outline" size={20} color="#888" />
+                                    <Text style={styles.raceDetailLabel}>Date</Text>
+                                    <Text style={styles.raceDetailValue}>
+                                        {formatSwedishDate(race?.startDateTime, 'd MMMM yyyy')}
                                     </Text>
                                 </View>
-                            </View>
-                        </View>
 
-                        <View style={styles.raceInfoNote}>
-                            <Ionicons name="information-circle-outline" size={18} color="#666" />
-                            <Text style={styles.raceInfoNoteText}>
-                                Results and start lists will be available closer to race time.
-                            </Text>
-                        </View>
-                    </ScrollView>
-                </>
-            )}
-        </SafeAreaView>
-    </Modal>
-);
+                                <View style={styles.raceDetailRow}>
+                                    <Ionicons name="time-outline" size={20} color="#888" />
+                                    <Text style={styles.raceDetailLabel}>Start Time</Text>
+                                    <Text style={styles.raceDetailValue}>
+                                        {formatSwedishDate(race?.startDateTime, 'HH:mm')} CET
+                                    </Text>
+                                </View>
+
+                                <View style={styles.raceDetailRow}>
+                                    <Ionicons name="trophy-outline" size={20} color="#888" />
+                                    <Text style={styles.raceDetailLabel}>Competition</Text>
+                                    <Text style={styles.raceDetailValue}>
+                                        {race.eventType === 'olympics' ? 'Winter Olympics 2026' : 'IBU World Cup 2025/26'}
+                                    </Text>
+                                </View>
+
+                                <View style={styles.raceDetailRow}>
+                                    <Ionicons name="pulse-outline" size={20} color="#888" />
+                                    <Text style={styles.raceDetailLabel}>Status</Text>
+                                    <View style={[styles.statusBadge, {
+                                        backgroundColor: isLiveRace ? '#FF453A' : isUpcomingRace ? '#30D158' : '#666'
+                                    }]}>
+                                        <Text style={styles.statusBadgeText}>
+                                            {isLiveRace ? 'LIVE' : isUpcomingRace ? 'Upcoming' : 'Completed'}
+                                        </Text>
+                                    </View>
+                                </View>
+                            </View>
+
+                            <View style={styles.raceInfoNote}>
+                                <Ionicons name="information-circle-outline" size={18} color="#666" />
+                                <Text style={styles.raceInfoNoteText}>
+                                    {infoNoteText}
+                                </Text>
+                            </View>
+                        </ScrollView>
+                    </>
+                )}
+            </SafeAreaView>
+        </Modal>
+    );
+};
 
 const styles = StyleSheet.create({
     modalContainer: {

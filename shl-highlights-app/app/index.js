@@ -123,21 +123,21 @@ export default function App() {
     const handleScrollToIndexFailed = useCallback((info) => {
         const offset = info.averageItemLength * info.index;
         setTimeout(() => {
-            shl.listRef.current?.scrollToOffset({ offset, animated: false });
+            shl.listRef.current?.scrollToOffset({ offset, animated: true });
         }, 50);
     }, [shl.listRef]);
 
     const handleFootballScrollToIndexFailed = useCallback((info) => {
         const offset = info.averageItemLength * info.index;
         setTimeout(() => {
-            football.listRef.current?.scrollToOffset({ offset, animated: false });
+            football.listRef.current?.scrollToOffset({ offset, animated: true });
         }, 50);
     }, [football.listRef]);
 
     const handleBiathlonScrollToIndexFailed = useCallback((info) => {
         const offset = info.averageItemLength * info.index;
         setTimeout(() => {
-            biathlon.listRef.current?.scrollToOffset({ offset, animated: false });
+            biathlon.listRef.current?.scrollToOffset({ offset, animated: true });
         }, 50);
     }, [biathlon.listRef]);
 
@@ -149,7 +149,7 @@ export default function App() {
         const timeoutId = setTimeout(() => {
             if (shl.listRef.current && shl.targetGameIndex > 0) {
                 const offset = LIST_HEADER_HEIGHT + (GAME_CARD_HEIGHT * shl.targetGameIndex);
-                shl.listRef.current.scrollToOffset({ offset, animated: false });
+                shl.listRef.current.scrollToOffset({ offset, animated: true });
             }
         }, 150);
 
@@ -164,7 +164,7 @@ export default function App() {
         const timeoutId = setTimeout(() => {
             if (football.listRef.current && football.targetGameIndex > 0) {
                 const offset = LIST_HEADER_HEIGHT + (FOOTBALL_CARD_HEIGHT * football.targetGameIndex);
-                football.listRef.current.scrollToOffset({ offset, animated: false });
+                football.listRef.current.scrollToOffset({ offset, animated: true });
             }
         }, 150);
 
@@ -184,13 +184,13 @@ export default function App() {
             try {
                 biathlon.listRef.current.scrollToIndex({
                     index: biathlon.targetRaceIndex,
-                    animated: false,
+                    animated: true,
                     viewPosition: 0
                 });
             } catch (_e) {
                 const offset = LIST_HEADER_HEIGHT + (BIATHLON_CARD_HEIGHT * biathlon.targetRaceIndex);
                 try {
-                    biathlon.listRef.current.scrollToOffset({ offset, animated: false });
+                    biathlon.listRef.current.scrollToOffset({ offset, animated: true });
                 } catch (_e2) {
                     console.warn('Biathlon scroll failed');
                 }
