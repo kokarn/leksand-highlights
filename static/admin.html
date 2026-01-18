@@ -265,6 +265,22 @@
         </section>
 
         <section class="panel">
+            <h2>Push notifications</h2>
+            <p class="muted">Goal alerts via OneSignal. Monitors live games and sends notifications when goals are scored.</p>
+            <div class="status-grid" id="push-status-grid"></div>
+            <div class="actions" style="margin-top: 1rem;">
+                <button id="refresh-push-status" class="secondary">Refresh status</button>
+                <button id="run-goal-watcher" class="secondary">Run goal check</button>
+                <button id="send-test-push">Send test notification</button>
+            </div>
+            <div style="margin-top: 1rem;">
+                <label for="test-push-message">Test message (optional)</label>
+                <input id="test-push-message" type="text" placeholder="Custom message for test notification" style="max-width: 400px;" />
+            </div>
+            <div class="feedback" id="push-feedback"></div>
+        </section>
+
+        <section class="panel">
             <h2>Create manual game</h2>
             <form id="create-game-form">
                 <div>
@@ -321,6 +337,9 @@
         const gamesFeedback = document.getElementById('games-feedback');
         const gamesList = document.getElementById('games-list');
         const gamesCount = document.getElementById('games-count');
+        const pushStatusGrid = document.getElementById('push-status-grid');
+        const pushFeedback = document.getElementById('push-feedback');
+        const testPushMessageInput = document.getElementById('test-push-message');
 
         const homeTeamSelect = document.getElementById('home-team');
         const awayTeamSelect = document.getElementById('away-team');
@@ -336,6 +355,9 @@
         const refreshBiathlonButton = document.getElementById('refresh-biathlon');
         const refreshSportsButton = document.getElementById('refresh-sports');
         const createForm = document.getElementById('create-game-form');
+        const refreshPushStatusButton = document.getElementById('refresh-push-status');
+        const runGoalWatcherButton = document.getElementById('run-goal-watcher');
+        const sendTestPushButton = document.getElementById('send-test-push');
 
         let teams = [];
         let sports = [];
@@ -712,6 +734,40 @@
             }
         }
 
+        async function loadPushStatus(options = {}) {
+            const { showMessage = false } = options;
+            try {
+                const status = await apiRequest('/api/notifications/status');
+
+                const pushRows = [
+                    { label: 'Configured', value: status.pushNotifications?.configured ? 'Yes' : 'No' },
+                    { label: 'Notifications sent', value: status.pushNotifications?.notificationsSent ?? 0 },
+                    { label: 'Errors', value: status.pushNotifications?.errors ?? 0 },
+                    { label: 'Last sent', value: formatTimestamp(status.pushNotifications?.lastSent) }
+                ];
+
+                const goalWatcherRows = [
+                    { label: 'Running', value: status.goalWatcher?.running ? 'Yes' : 'No' },
+                    { label: 'Last check', value: formatTimestamp(status.goalWatcher?.lastCheck) },
+                    { label: 'Games checked', value: status.goalWatcher?.gamesChecked ?? 0 },
+                    { label: 'Goals detected', value: status.goalWatcher?.totalGoalsDetected ?? 0 },
+                    { label: 'Notifications sent', value: status.goalWatcher?.totalNotificationsSent ?? 0 },
+                    { label: 'Tracked games', value: status.goalWatcher?.trackedGames ?? 0 }
+                ];
+
+                pushStatusGrid.innerHTML = [
+                    buildStatusCard('OneSignal', pushRows),
+                    buildStatusCard('Goal Watcher', goalWatcherRows)
+                ].join('');
+
+                if (showMessage) {
+                    showFeedback(pushFeedback, 'Push status updated', 'success');
+                }
+            } catch (error) {
+                showFeedback(pushFeedback, error.message, 'error');
+            }
+        }
+
         refreshStatusButton.addEventListener('click', () => loadStatus({ showMessage: true }));
         refreshSportsButton.addEventListener('click', () => loadSports({ showMessage: true }));
         clearCacheButton.addEventListener('click', async () => {
@@ -783,6 +839,53 @@
         });
         homeTeamSelect.addEventListener('change', updateVenueFromHomeTeam);
 
+        refreshPushStatusButton.addEventListener('click', () => loadPushStatus({ showMessage: true }));
+
+        runGoalWatcherButton.addEventListener('click', async () => {
+            try {
+                runGoalWatcherButton.disabled = true;
+                const result = await apiRequest('/api/goal-watcher/check', { method: 'POST' });
+                const details = [
+                    result.message || 'Goal check completed',
+                    result.timestamp ? `Timestamp: ${formatTimestamp(result.timestamp)}` : null,
+                    result.gamesChecked !== undefined ? `Games checked: ${result.gamesChecked}` : null,
+                    result.newGoals?.length ? `New goals found: ${result.newGoals.length}` : 'No new goals',
+                    result.notificationsSent !== undefined ? `Notifications sent: ${result.notificationsSent}` : null
+                ].filter(Boolean);
+                showFeedback(pushFeedback, details.join('\n'), 'success');
+                await loadPushStatus();
+            } catch (error) {
+                showFeedback(pushFeedback, error.message, 'error');
+            } finally {
+                runGoalWatcherButton.disabled = false;
+            }
+        });
+
+        sendTestPushButton.addEventListener('click', async () => {
+            try {
+                sendTestPushButton.disabled = true;
+                const message = testPushMessageInput.value.trim() || undefined;
+                const body = message ? JSON.stringify({ message }) : '{}';
+                const result = await apiRequest('/api/notifications/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body
+                });
+                const details = [
+                    result.success ? 'Test notification sent!' : 'Failed to send notification',
+                    result.timestamp ? `Timestamp: ${formatTimestamp(result.timestamp)}` : null,
+                    result.result?.recipients !== undefined ? `Recipients: ${result.result.recipients}` : null,
+                    result.result?.error ? `Error: ${result.result.error}` : null
+                ].filter(Boolean);
+                showFeedback(pushFeedback, details.join('\n'), result.success ? 'success' : 'error');
+                await loadPushStatus();
+            } catch (error) {
+                showFeedback(pushFeedback, error.message, 'error');
+            } finally {
+                sendTestPushButton.disabled = false;
+            }
+        });
+
         createForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const payload = {
@@ -831,7 +934,9 @@
                 .catch(error => showFeedback(createFeedback, error.message, 'error'));
             loadStatus({ showMessage: true });
             loadSports();
+            loadPushStatus();
             setInterval(() => loadStatus(), 15000);
+            setInterval(() => loadPushStatus(), 15000);
         }
 
         init();

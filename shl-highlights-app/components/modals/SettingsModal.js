@@ -1,8 +1,11 @@
 import { View, Text, Modal, ScrollView, TouchableOpacity, Image, StyleSheet, Dimensions, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { getTeamLogoUrl } from '../../api/shl';
 import { GENDER_OPTIONS } from '../../constants';
+
+const APP_VERSION = Constants.expoConfig?.version || '1.0.0';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CHIP_GAP = 8;
@@ -245,6 +248,11 @@ export const SettingsModal = ({
                     <Ionicons name="refresh-outline" size={20} color="#FF9F0A" />
                     <Text style={styles.resetOnboardingText}>Restart setup wizard</Text>
                 </TouchableOpacity>
+
+                {/* Version */}
+                <View style={styles.versionContainer}>
+                    <Text style={styles.versionText}>GamePulse v{APP_VERSION}</Text>
+                </View>
             </ScrollView>
         </SafeAreaView>
     </Modal>
@@ -490,5 +498,16 @@ const styles = StyleSheet.create({
         color: '#FF9F0A',
         fontSize: 12,
         flex: 1
+    },
+    // Version styles
+    versionContainer: {
+        marginTop: 32,
+        alignItems: 'center',
+        paddingBottom: 16
+    },
+    versionText: {
+        color: '#4a4a4a',
+        fontSize: 12,
+        fontWeight: '500'
     }
 });
