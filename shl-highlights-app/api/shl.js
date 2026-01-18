@@ -360,16 +360,60 @@ export async function fetchBiathlonRaceDetails(raceId) {
 }
 
 /**
+ * Fetch biathlon World Cup standings
+ * @param {Object} options - Optional filters
+ * @param {string} options.gender - 'men', 'women', or 'all' (default: 'all')
+ * @param {string} options.type - 'overall', 'sprint', 'pursuit', 'individual', 'mass-start' (default: 'overall')
+ * @returns {Promise<Object>} Standings payload with categories
+ */
+export async function fetchBiathlonStandings(options = {}) {
+    try {
+        const params = new URLSearchParams();
+        if (options.gender) {
+            params.append('gender', options.gender);
+        }
+        if (options.type) {
+            params.append('type', options.type);
+        }
+        const url = `${API_BASE_URL}/api/biathlon/standings${params.toString() ? '?' + params.toString() : ''}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching biathlon standings:', error.message);
+        return { season: null, categories: [], availableTypes: [] };
+    }
+}
+
+/**
  * Get nation flag emoji by code
  * @param {string} nationCode - Nation code (e.g., 'SWE', 'NOR')
  * @returns {string} Flag emoji
  */
 export function getNationFlag(nationCode) {
     const flags = {
-        'NOR': '🇳🇴', 'SWE': '🇸🇪', 'FRA': '🇫🇷', 'GER': '🇩🇪', 'ITA': '🇮🇹',
-        'AUT': '🇦🇹', 'SUI': '🇨🇭', 'FIN': '🇫🇮', 'USA': '🇺🇸', 'CAN': '🇨🇦',
-        'CZE': '🇨🇿', 'SLO': '🇸🇮', 'UKR': '🇺🇦', 'BLR': '🇧🇾', 'POL': '🇵🇱',
-        'EST': '🇪🇪', 'BUL': '🇧🇬', 'CHN': '🇨🇳', 'JPN': '🇯🇵', 'KOR': '🇰🇷'
+        // Scandinavian
+        'NOR': '🇳🇴', 'SWE': '🇸🇪', 'FIN': '🇫🇮', 'DEN': '🇩🇰',
+        // Central Europe
+        'GER': '🇩🇪', 'AUT': '🇦🇹', 'SUI': '🇨🇭', 'FRA': '🇫🇷', 'ITA': '🇮🇹',
+        'BEL': '🇧🇪', 'NED': '🇳🇱', 'LUX': '🇱🇺',
+        // Eastern Europe
+        'CZE': '🇨🇿', 'POL': '🇵🇱', 'SVK': '🇸🇰', 'SLO': '🇸🇮', 'HUN': '🇭🇺',
+        'UKR': '🇺🇦', 'BLR': '🇧🇾', 'RUS': '🇷🇺', 'MDA': '🇲🇩', 'ROU': '🇷🇴',
+        // Baltic
+        'EST': '🇪🇪', 'LAT': '🇱🇻', 'LTU': '🇱🇹',
+        // Balkans
+        'BUL': '🇧🇬', 'SRB': '🇷🇸', 'CRO': '🇭🇷', 'BIH': '🇧🇦', 'MKD': '🇲🇰', 'MNE': '🇲🇪',
+        // Americas
+        'USA': '🇺🇸', 'CAN': '🇨🇦', 'MEX': '🇲🇽', 'ARG': '🇦🇷', 'BRA': '🇧🇷', 'CHI': '🇨🇱',
+        // Asia
+        'CHN': '🇨🇳', 'JPN': '🇯🇵', 'KOR': '🇰🇷', 'KAZ': '🇰🇿', 'MGL': '🇲🇳',
+        // Oceania
+        'AUS': '🇦🇺', 'NZL': '🇳🇿',
+        // Other
+        'GBR': '🇬🇧', 'IRL': '🇮🇪', 'ESP': '🇪🇸', 'POR': '🇵🇹', 'GRE': '🇬🇷', 'TUR': '🇹🇷'
     };
     return flags[nationCode] || '🏳️';
 }

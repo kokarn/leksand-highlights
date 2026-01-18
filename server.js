@@ -314,6 +314,30 @@ app.get('/api/biathlon/schedule', async (req, res) => {
 });
 
 /**
+ * GET /api/biathlon/standings
+ * Get World Cup standings
+ * Query params:
+ *   - gender: 'men', 'women', or 'all' (default: 'all')
+ *   - type: 'overall', 'sprint', 'pursuit', 'individual', 'mass-start' (default: 'overall')
+ */
+app.get('/api/biathlon/standings', async (req, res) => {
+    try {
+        const gender = req.query.gender || 'all';
+        const type = req.query.type || 'overall';
+
+        console.log(`[API] Fetching biathlon standings - gender: ${gender}, type: ${type}`);
+
+        const provider = getProvider('biathlon');
+        const standings = await provider.fetchStandings({ gender, type });
+
+        res.json(standings);
+    } catch (error) {
+        console.error('Error fetching biathlon standings:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
  * GET /api/biathlon/race/:id
  * Get details for a specific race
  */

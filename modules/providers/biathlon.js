@@ -431,12 +431,16 @@ class BiathlonProvider extends BaseProvider {
                 }
 
                 const isPast = raceDateTime < now;
-                const isLiveWindow = !isPast && (now - raceDateTime) > -3600000 && (now - raceDateTime) < 7200000;
+                const timeSinceStart = now - raceDateTime; // positive if race has started
+                // Only consider "live" if race started within last 2 hours (races typically last 30min-2hrs)
+                // Do NOT mark upcoming races as live just because they're about to start
+                const isLiveWindow = timeSinceStart > 0 && timeSinceStart < 7200000; // 0-2 hours after start
                 const scheduleStatus = race.scheduleStatus ? String(race.scheduleStatus).toUpperCase() : '';
                 const resultStatus = race.resultStatus ? String(race.resultStatus).toUpperCase() : '';
                 const hasResultStatus = ['OFFICIAL', 'PROVISIONAL', 'UNOFFICIAL'].includes(resultStatus);
                 const isFinished = scheduleStatus === 'FINISHED' || scheduleStatus === 'COMPLETED' || hasResultStatus;
-                const isLive = Boolean(race.isLive) || Boolean(race.hasLiveData) || isLiveWindow;
+                // Only use isLiveWindow if the race is actually ongoing (not finished)
+                const isLive = Boolean(race.isLive) || Boolean(race.hasLiveData) || (isLiveWindow && !isFinished);
 
                 let state = 'upcoming';
                 if (isFinished || isPast) {
@@ -743,6 +747,140 @@ class BiathlonProvider extends BaseProvider {
 
     getVideoThumbnail(video) {
         return null;
+    }
+
+    /**
+     * Build the full IBU cup ID for standings
+     * Format: BT{season}SWRLCP__{category}{discipline}
+     * e.g., BT2526SWRLCP__SMTS = Men's World Cup Total Score for 2025-26 season
+     */
+    buildCupId(seasonId, gender, type) {
+        // Map type to discipline code
+        const disciplineMap = {
+            overall: 'TS',     // Total Score
+            sprint: 'SP',      // Sprint
+            pursuit: 'PU',     // Pursuit
+            individual: 'IN',  // Individual
+            'mass-start': 'MS', // Mass Start
+            nations: 'NC'      // Nations Cup
+        };
+
+        const discipline = disciplineMap[type] || 'TS';
+        const category = gender === 'men' ? 'SM' : 'SW';
+
+        return `BT${seasonId}SWRLCP__${category}${discipline}`;
+    }
+
+    /**
+     * Fetch World Cup standings from IBU
+     * @param {Object} options - Optional filters
+     * @param {string} options.gender - 'men' or 'women' (defaults to both)
+     * @param {string} options.type - 'overall', 'sprint', 'pursuit', 'individual', 'mass-start', 'nations' (defaults to 'overall')
+     * @returns {Promise<Object>} Standings payload with season and rankings
+     */
+    async fetchStandings(options = {}) {
+        const { gender = 'all', type = 'overall' } = options;
+        const seasonId = this.getSeasonId();
+
+        console.log(`[${this.name}] Fetching standings for season ${seasonId}, gender: ${gender}, type: ${type}...`);
+
+        try {
+            const standingsResults = [];
+
+            // Fetch men's standings if requested
+            if (gender === 'all' || gender === 'men') {
+                const menCupId = this.buildCupId(seasonId, 'men', type);
+                const menStandings = await this.fetchIbuJson(
+                    `CupResults?CupId=${menCupId}`,
+                    `men ${type} standings`
+                );
+                // IBU API returns 'Rows' array with standings data
+                const menRows = menStandings?.Rows || menStandings?.CupResult;
+                if (menRows && Array.isArray(menRows) && menRows.length > 0) {
+                    standingsResults.push({
+                        gender: 'men',
+                        genderDisplay: 'Men',
+                        type,
+                        cupId: menStandings.CupId || menCupId,
+                        cupName: menStandings.CupName || this.getCupTypeName(type),
+                        raceCount: menStandings.RaceCount || null,
+                        totalRaces: menStandings.TotalRaces || null,
+                        standings: menRows.map((entry, index) => ({
+                            rank: parseInt(entry.Rank, 10) || index + 1,
+                            athleteId: entry.IBUId,
+                            name: entry.Name || entry.Fullname || `${entry.GivenName || ''} ${entry.FamilyName || ''}`.trim(),
+                            nation: entry.Nat,
+                            points: parseInt(entry.Score, 10) || 0,
+                            raceCount: entry.Starts || entry.RaceCount || null
+                        }))
+                    });
+                }
+            }
+
+            // Fetch women's standings if requested
+            if (gender === 'all' || gender === 'women') {
+                const womenCupId = this.buildCupId(seasonId, 'women', type);
+                const womenStandings = await this.fetchIbuJson(
+                    `CupResults?CupId=${womenCupId}`,
+                    `women ${type} standings`
+                );
+                // IBU API returns 'Rows' array with standings data
+                const womenRows = womenStandings?.Rows || womenStandings?.CupResult;
+                if (womenRows && Array.isArray(womenRows) && womenRows.length > 0) {
+                    standingsResults.push({
+                        gender: 'women',
+                        genderDisplay: 'Women',
+                        type,
+                        cupId: womenStandings.CupId || womenCupId,
+                        cupName: womenStandings.CupName || this.getCupTypeName(type),
+                        raceCount: womenStandings.RaceCount || null,
+                        totalRaces: womenStandings.TotalRaces || null,
+                        standings: womenRows.map((entry, index) => ({
+                            rank: parseInt(entry.Rank, 10) || index + 1,
+                            athleteId: entry.IBUId,
+                            name: entry.Name || entry.Fullname || `${entry.GivenName || ''} ${entry.FamilyName || ''}`.trim(),
+                            nation: entry.Nat,
+                            points: parseInt(entry.Score, 10) || 0,
+                            raceCount: entry.Starts || entry.RaceCount || null
+                        }))
+                    });
+                }
+            }
+
+            return {
+                season: this.currentSeason,
+                seasonId,
+                type,
+                typeName: this.getCupTypeName(type),
+                lastUpdated: formatSwedishTimestamp(),
+                categories: standingsResults,
+                availableTypes: ['overall', 'sprint', 'pursuit', 'individual', 'mass-start']
+            };
+        } catch (error) {
+            console.error(`[${this.name}] Error fetching standings:`, error.message);
+            return {
+                season: this.currentSeason,
+                seasonId,
+                type,
+                typeName: this.getCupTypeName(type),
+                lastUpdated: formatSwedishTimestamp(),
+                categories: [],
+                availableTypes: ['overall', 'sprint', 'pursuit', 'individual', 'mass-start'],
+                error: error.message
+            };
+        }
+    }
+
+    getCupTypeName(type) {
+        const names = {
+            overall: 'World Cup Overall',
+            sprint: 'Sprint Cup',
+            pursuit: 'Pursuit Cup',
+            individual: 'Individual Cup',
+            'mass-start': 'Mass Start Cup',
+            nations: 'Nations Cup'
+        };
+        return names[type] || 'World Cup';
     }
 }
 

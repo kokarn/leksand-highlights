@@ -3,7 +3,8 @@ import {
     fetchBiathlonRaces,
     fetchBiathlonEvents,
     fetchBiathlonNations,
-    fetchBiathlonRaceDetails
+    fetchBiathlonRaceDetails,
+    fetchBiathlonStandings
 } from '../api/shl';
 
 /**
@@ -17,12 +18,22 @@ import {
 export function useBiathlonData(activeSport, selectedNations, selectedGenders, options = {}) {
     const { eagerLoad = false } = options;
 
+    // View mode state (schedule or standings)
+    const [viewMode, setViewMode] = useState('schedule');
+    const [standingsType, setStandingsType] = useState('overall');
+    const [standingsGender, setStandingsGender] = useState('men');
+
     // Races state
     const [races, setRaces] = useState([]);
     const [nations, setNations] = useState([]);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const hasLoadedOnce = useRef(false);
+
+    // Standings state
+    const [standings, setStandings] = useState(null);
+    const [loadingStandings, setLoadingStandings] = useState(false);
+    const hasLoadedStandingsOnce = useRef(false);
 
     // Selected race modal state
     const [selectedRace, setSelectedRace] = useState(null);
@@ -71,6 +82,19 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
         }
     }, []);
 
+    // Load standings data
+    const loadStandings = useCallback(async (type = standingsType) => {
+        setLoadingStandings(true);
+        try {
+            const standingsData = await fetchBiathlonStandings({ type });
+            setStandings(standingsData);
+        } catch (e) {
+            console.error("Failed to load biathlon standings", e);
+        } finally {
+            setLoadingStandings(false);
+        }
+    }, [standingsType]);
+
     // Initial data load (eager load on mount if enabled, otherwise wait for active sport)
     useEffect(() => {
         if (!hasLoadedOnce.current && (eagerLoad || activeSport === 'biathlon')) {
@@ -78,6 +102,34 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
             loadData();
         }
     }, [activeSport, loadData, eagerLoad]);
+
+    // Load standings when switching to standings view
+    useEffect(() => {
+        if (activeSport === 'biathlon' && viewMode === 'standings' && !hasLoadedStandingsOnce.current) {
+            hasLoadedStandingsOnce.current = true;
+            loadStandings();
+        }
+    }, [activeSport, viewMode, loadStandings]);
+
+    // Handle view mode change
+    const handleViewChange = useCallback((newMode) => {
+        setViewMode(newMode);
+        if (newMode === 'standings' && !hasLoadedStandingsOnce.current) {
+            hasLoadedStandingsOnce.current = true;
+            loadStandings();
+        }
+    }, [loadStandings]);
+
+    // Handle standings type change (overall, sprint, pursuit, etc.)
+    const handleStandingsTypeChange = useCallback((newType) => {
+        setStandingsType(newType);
+        loadStandings(newType);
+    }, [loadStandings]);
+
+    // Handle standings gender change (men/women)
+    const handleStandingsGenderChange = useCallback((gender) => {
+        setStandingsGender(gender);
+    }, []);
 
     // Reset focused race ref when switching sports
     useEffect(() => {
@@ -192,6 +244,11 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
         loadingDetails,
         targetRaceIndex,
         targetRaceId,
+        viewMode,
+        standings,
+        loadingStandings,
+        standingsType,
+        standingsGender,
 
         // Refs
         listRef,
@@ -201,6 +258,9 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
         loadData,
         onRefresh,
         handleRacePress,
-        closeModal
+        closeModal,
+        handleViewChange,
+        handleStandingsTypeChange,
+        handleStandingsGenderChange
     };
 }
