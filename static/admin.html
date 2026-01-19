@@ -76,12 +76,18 @@
             </div>
         </nav>
     </aside>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
     <!-- Main Content -->
     <main class="main-content">
         <!-- Top Bar -->
         <div class="top-bar">
-            <h1 class="page-title" id="page-title">Dashboard</h1>
+            <div class="top-bar-left">
+                <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Open menu">
+                    <i data-lucide="menu" class="icon-md"></i>
+                </button>
+                <h1 class="page-title" id="page-title">Dashboard</h1>
+            </div>
             <div class="top-bar-actions">
                 <div class="status-indicator">
                     <span class="status-dot" id="server-status-dot"></span>
