@@ -118,7 +118,7 @@ export function usePushNotifications() {
                 // Process any pending tag updates that were queued before initialization
                 if (pendingTagUpdatesRef.current.length > 0) {
                     console.log(`[OneSignal] Processing ${pendingTagUpdatesRef.current.length} pending tag updates`);
-                    
+
                     // Get the latest update for each sport (in case there were multiple)
                     const latestUpdates = {};
                     pendingTagUpdatesRef.current.forEach(update => {
