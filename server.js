@@ -624,13 +624,76 @@ app.post('/api/admin/games', (req, res) => {
     }
 });
 
-app.patch('/api/admin/games/:id', (req, res) => {
+app.patch('/api/admin/games/:id', async (req, res) => {
     try {
-        const record = updateAdminGame(req.params.id, req.body || {}, teamsByCode);
+        const { sendNotification: shouldSendNotification, ...updatePayload } = req.body || {};
+
+        // Get the old record to detect score changes
+        const oldRecord = findAdminGameRecord(req.params.id);
+        if (!oldRecord) {
+            return res.status(404).json({ error: 'Admin game not found' });
+        }
+
+        const record = updateAdminGame(req.params.id, updatePayload, teamsByCode);
         if (!record) {
             return res.status(404).json({ error: 'Admin game not found' });
         }
-        res.json(formatAdminRecord(record, teamsByCode));
+
+        // Check if score changed and notification was requested
+        let notificationResult = null;
+        if (shouldSendNotification) {
+            const oldTotalScore = (oldRecord.homeScore || 0) + (oldRecord.awayScore || 0);
+            const newTotalScore = (record.homeScore || 0) + (record.awayScore || 0);
+            const homeScoreChanged = oldRecord.homeScore !== record.homeScore;
+            const awayScoreChanged = oldRecord.awayScore !== record.awayScore;
+
+            if (homeScoreChanged || awayScoreChanged) {
+                // Determine which team scored (increased their score)
+                const homeTeam = teamsByCode.get(record.homeTeamCode);
+                const awayTeam = teamsByCode.get(record.awayTeamCode);
+
+                // Find which team's score increased
+                let scoringTeamIsHome = true;
+                if (homeScoreChanged && record.homeScore > oldRecord.homeScore) {
+                    scoringTeamIsHome = true;
+                } else if (awayScoreChanged && record.awayScore > oldRecord.awayScore) {
+                    scoringTeamIsHome = false;
+                } else if (homeScoreChanged) {
+                    scoringTeamIsHome = true;
+                } else {
+                    scoringTeamIsHome = false;
+                }
+
+                const scoringTeam = scoringTeamIsHome ? homeTeam : awayTeam;
+                const opposingTeam = scoringTeamIsHome ? awayTeam : homeTeam;
+
+                // Build goal notification payload
+                const goalData = {
+                    sport: 'shl', // Admin games are SHL for now
+                    gameId: record.id,
+                    scorerName: 'Goal',
+                    scoringTeamCode: scoringTeam?.code || (scoringTeamIsHome ? record.homeTeamCode : record.awayTeamCode),
+                    scoringTeamName: scoringTeam?.names?.long || scoringTeam?.names?.short || (scoringTeamIsHome ? record.homeTeamCode : record.awayTeamCode),
+                    opposingTeamCode: opposingTeam?.code || (scoringTeamIsHome ? record.awayTeamCode : record.homeTeamCode),
+                    opposingTeamName: opposingTeam?.names?.long || opposingTeam?.names?.short || (scoringTeamIsHome ? record.awayTeamCode : record.homeTeamCode),
+                    homeTeamCode: record.homeTeamCode,
+                    awayTeamCode: record.awayTeamCode,
+                    homeScore: record.homeScore,
+                    awayScore: record.awayScore,
+                    time: '',
+                    period: '',
+                    isHomeTeam: scoringTeamIsHome
+                };
+
+                notificationResult = await pushNotifications.sendGoalNotification(goalData);
+                console.log(`[Admin Games] Goal notification sent for game ${record.id}: ${record.homeScore}-${record.awayScore}`);
+            }
+        }
+
+        res.json({
+            ...formatAdminRecord(record, teamsByCode),
+            notificationSent: notificationResult?.success || false
+        });
     } catch (error) {
         sendAdminError(res, error);
     }

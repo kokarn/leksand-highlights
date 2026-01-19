@@ -8,7 +8,7 @@ import Constants from 'expo-constants';
 
 export default function RootLayout() {
     useEffect(() => {
-        // Initialize OneSignal
+        // Initialize OneSignal (notification click handling is done in index.js)
         const appId = Constants.expoConfig?.extra?.oneSignalAppId;
 
         if (appId && appId !== 'YOUR_ONESIGNAL_APP_ID') {

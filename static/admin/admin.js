@@ -579,8 +579,13 @@ function renderGames(records) {
                         <input type="number" min="0" class="form-control" data-field="awayScore" value="${record.awayScore}" />
                     </div>
                 </div>
-                <div class="game-actions">
+                <div class="form-check mt-1">
+                    <input type="checkbox" id="notify-${record.id}" data-field="sendNotification" />
+                    <label for="notify-${record.id}">Send goal notification on score change</label>
+                </div>
+                <div class="game-actions mt-1">
                     <button class="btn btn-primary btn-sm" data-action="save"><i data-lucide="save" class="icon-btn"></i> Save</button>
+                    <button class="btn btn-secondary btn-sm" data-action="save-notify"><i data-lucide="bell" class="icon-btn"></i> Save & Notify</button>
                     <button class="btn btn-danger btn-sm" data-action="delete"><i data-lucide="trash-2" class="icon-btn"></i> Delete</button>
                 </div>
                 <p class="text-muted text-sm mt-1">Updated ${escapeHtml(formatTimestamp(record.updatedAt))}</p>
@@ -594,26 +599,47 @@ function renderGames(records) {
     elements.gamesList.querySelectorAll('.game-card').forEach(card => {
         const id = card.dataset.id;
 
-        card.querySelector('[data-action="save"]').addEventListener('click', async () => {
+        // Helper function to save game with optional notification
+        const saveGame = async (sendNotification = false) => {
             const payload = {
                 state: card.querySelector('[data-field="state"]').value,
                 startDateTime: card.querySelector('[data-field="startDateTime"]').value,
                 venue: card.querySelector('[data-field="venue"]').value,
                 homeScore: card.querySelector('[data-field="homeScore"]').value,
-                awayScore: card.querySelector('[data-field="awayScore"]').value
+                awayScore: card.querySelector('[data-field="awayScore"]').value,
+                sendNotification
             };
             try {
-                await apiRequest(`/api/admin/games/${id}`, {
+                const result = await apiRequest(`/api/admin/games/${id}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                 await loadGames();
-                showToast('success', 'Game Updated', 'Changes saved successfully');
+
+                if (sendNotification && result.notificationSent) {
+                    showToast('success', 'Game Updated', 'Changes saved and goal notification sent');
+                    addActivity('notification', `Goal notification sent for game ${id}`);
+                } else if (sendNotification) {
+                    showToast('warning', 'Game Updated', 'Changes saved but notification not sent (no score change detected)');
+                } else {
+                    showToast('success', 'Game Updated', 'Changes saved successfully');
+                }
                 addActivity('game', 'Game updated');
             } catch (error) {
                 showToast('error', 'Error', error.message);
             }
+        };
+
+        // Save without notification
+        card.querySelector('[data-action="save"]').addEventListener('click', () => {
+            const sendNotify = card.querySelector('[data-field="sendNotification"]').checked;
+            saveGame(sendNotify);
+        });
+
+        // Save with notification (button that always sends notification)
+        card.querySelector('[data-action="save-notify"]').addEventListener('click', () => {
+            saveGame(true);
         });
 
         card.querySelector('[data-action="delete"]').addEventListener('click', async () => {

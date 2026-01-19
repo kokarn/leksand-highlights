@@ -1,8 +1,10 @@
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { OneSignal } from 'react-native-onesignal';
+import * as Linking from 'expo-linking';
 
 // Card height constants for consistent scroll behavior
 // Height = padding (32) + header (~36) + content (~90) + marginBottom (16)
@@ -92,6 +94,109 @@ export default function App() {
 
     // SHL game modal tab state
     const [shlActiveTab, setShlActiveTab] = useState('summary');
+
+    // Track if we've processed a pending deep link
+    const processedDeepLinkRef = useRef(null);
+
+    // Handle notification clicks and deep links to open games
+    useEffect(() => {
+        // Parse deep link URL to extract game info
+        const parseGameDeepLink = (url) => {
+            if (!url) {
+                return null;
+            }
+            // Handle gamepulse://game/{sport}/{gameId}
+            const match = url.match(/gamepulse:\/\/game\/(\w+)\/(.+)/);
+            if (match) {
+                return { sport: match[1], gameId: match[2] };
+            }
+            return null;
+        };
+
+        // Open a game by ID
+        const openGameById = (sport, gameId) => {
+            // Prevent processing the same deep link twice
+            const linkKey = `${sport}:${gameId}`;
+            if (processedDeepLinkRef.current === linkKey) {
+                return;
+            }
+            processedDeepLinkRef.current = linkKey;
+
+            // Clear after a short delay to allow re-opening if needed
+            setTimeout(() => {
+                processedDeepLinkRef.current = null;
+            }, 2000);
+
+            console.log('[DeepLink] Opening game:', sport, gameId);
+
+            if (sport === 'shl') {
+                // Find the game in SHL games list
+                const game = shl.games.find(g => g.uuid === gameId);
+                if (game) {
+                    handleSportChange('shl');
+                    setShlActiveTab('summary');
+                    shl.handleGamePress(game);
+                } else {
+                    // Game not in list yet, try to open anyway with minimal data
+                    console.log('[DeepLink] SHL game not found in list, opening with ID');
+                    handleSportChange('shl');
+                    setShlActiveTab('summary');
+                    shl.handleGamePress({ uuid: gameId });
+                }
+            } else if (sport === 'allsvenskan') {
+                const game = football.games.find(g => g.uuid === gameId);
+                if (game) {
+                    handleSportChange('football');
+                    football.handleGamePress(game);
+                } else {
+                    console.log('[DeepLink] Football game not found in list');
+                    handleSportChange('football');
+                    football.handleGamePress({ uuid: gameId });
+                }
+            }
+        };
+
+        // Handle notification click events
+        const handleNotificationClick = (event) => {
+            console.log('[Notification] Clicked:', event);
+            const data = event.notification?.additionalData;
+            if (data?.type === 'goal' && data?.gameId && data?.sport) {
+                openGameById(data.sport, data.gameId);
+            }
+        };
+
+        // Listen for notification clicks
+        OneSignal.Notifications.addEventListener('click', handleNotificationClick);
+
+        // Handle deep link when app is already open
+        const handleDeepLink = (event) => {
+            const gameInfo = parseGameDeepLink(event.url);
+            if (gameInfo) {
+                openGameById(gameInfo.sport, gameInfo.gameId);
+            }
+        };
+
+        // Check if app was opened with a deep link
+        Linking.getInitialURL().then(url => {
+            if (url) {
+                const gameInfo = parseGameDeepLink(url);
+                if (gameInfo) {
+                    // Wait a bit for data to load before opening
+                    setTimeout(() => {
+                        openGameById(gameInfo.sport, gameInfo.gameId);
+                    }, 1000);
+                }
+            }
+        });
+
+        // Listen for deep links while app is open
+        const subscription = Linking.addEventListener('url', handleDeepLink);
+
+        return () => {
+            OneSignal.Notifications.removeEventListener('click', handleNotificationClick);
+            subscription?.remove();
+        };
+    }, [shl.games, football.games, shl.handleGamePress, football.handleGamePress, handleSportChange]);
 
     // Unified refresh handler
     const onRefresh = useCallback(() => {

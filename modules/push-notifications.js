@@ -63,7 +63,7 @@ function isConfigured() {
  * @param {string} options.message - Notification message
  * @param {Array} options.filters - OneSignal filters for targeting
  * @param {Object} options.target - Direct targeting options (subscriptionIds, playerIds, externalUserIds, includeAll)
- * @param {Object} options.data - Additional data to include
+ * @param {Object} options.data - Additional data to include (url field enables deep linking)
  * @returns {Promise<Object>} OneSignal API response
  */
 async function sendNotification({ title, message, filters = [], target = null, data = {} }) {
@@ -78,6 +78,12 @@ async function sendNotification({ title, message, filters = [], target = null, d
         contents: { en: message },
         data
     };
+
+    // Add deep link URL if provided in data
+    // This enables OneSignal to open the app with the specified URL
+    if (data.url) {
+        payload.url = data.url;
+    }
 
     const normalizedTarget = normalizeTarget(target);
 
@@ -182,6 +188,10 @@ async function sendGoalNotification(goal, options = {}) {
         message += ')';
     }
 
+    // Build deep link URL for opening the game in the app
+    // Format: gamepulse://game/{sport}/{gameId}
+    const deepLinkUrl = `gamepulse://game/${sport}/${gameId}`;
+
     // Filter to target users with goal_notifications enabled AND following the scoring team
     // Tag structure: goal_notifications='true', team_{code}='true' (e.g., team_lif, team_aik)
     const simpleFilters = [
@@ -199,7 +209,8 @@ async function sendGoalNotification(goal, options = {}) {
         homeTeam: homeTeamCode,
         awayTeam: awayTeamCode,
         homeScore,
-        awayScore
+        awayScore,
+        url: deepLinkUrl
     };
 
     // Send notification to scoring team followers
@@ -221,12 +232,13 @@ async function sendGoalNotification(goal, options = {}) {
         ];
 
         // Don't await - fire and forget for the second notification
+        // Include the same deep link URL so opposing fans can also open the game
         sendNotification({
             title: `${sportEmoji} Goal Against`,
             message: `${scoringTeamName} scored. ${homeScore}-${awayScore}`,
             filters: opposingFilters,
             target: sendOpposing && target ? target : null,
-            data
+            data // data already includes the url for deep linking
         }).catch(err => console.error('[PushNotifications] Error sending opposing team notification:', err));
     }
 
