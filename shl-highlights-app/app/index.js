@@ -600,29 +600,29 @@ export default function App() {
                 selectedTeams={selectedTeams}
                 onToggleTeam={(teamCode) => {
                     toggleTeamFilter(teamCode);
-                    // Update OneSignal tags when teams change
-                    const newTeams = selectedTeams.includes(teamCode)
+                    // Update OneSignal tags with all teams from both sports
+                    const newShlTeams = selectedTeams.includes(teamCode)
                         ? selectedTeams.filter(t => t !== teamCode)
                         : [...selectedTeams, teamCode];
-                    setTeamTags('shl', newTeams);
+                    setTeamTags([...newShlTeams, ...selectedFootballTeams]);
                 }}
                 onClearTeams={() => {
                     clearTeamFilter();
-                    setTeamTags('shl', []);
+                    setTeamTags([...selectedFootballTeams]);
                 }}
                 footballTeams={football.teams}
                 selectedFootballTeams={selectedFootballTeams}
                 onToggleFootballTeam={(teamKey) => {
                     toggleFootballTeamFilter(teamKey);
-                    // Update OneSignal tags when teams change
-                    const newTeams = selectedFootballTeams.includes(teamKey)
+                    // Update OneSignal tags with all teams from both sports
+                    const newFootballTeams = selectedFootballTeams.includes(teamKey)
                         ? selectedFootballTeams.filter(t => t !== teamKey)
                         : [...selectedFootballTeams, teamKey];
-                    setTeamTags('allsvenskan', newTeams);
+                    setTeamTags([...selectedTeams, ...newFootballTeams]);
                 }}
                 onClearFootballTeams={() => {
                     clearFootballTeamFilter();
-                    setTeamTags('allsvenskan', []);
+                    setTeamTags([...selectedTeams]);
                 }}
                 biathlonNations={biathlon.nations}
                 selectedNations={selectedNations}
@@ -649,34 +649,29 @@ export default function App() {
                 step={onboardingStep}
                 onStepChange={setOnboardingStep}
                 onComplete={() => {
-                    // Sync team tags to OneSignal when onboarding completes
-                    if (selectedTeams.length > 0) {
-                        setTeamTags('shl', selectedTeams);
-                    }
-                    if (selectedFootballTeams.length > 0) {
-                        setTeamTags('allsvenskan', selectedFootballTeams);
-                    }
+                    // Sync all team tags to OneSignal when onboarding completes
+                    setTeamTags([...selectedTeams, ...selectedFootballTeams]);
                     completeOnboarding();
                 }}
                 teams={shl.teams}
                 selectedTeams={selectedTeams}
                 onToggleTeam={(teamCode) => {
                     toggleTeamFilter(teamCode);
-                    // Update OneSignal tags when teams change during onboarding
-                    const newTeams = selectedTeams.includes(teamCode)
+                    // Update OneSignal tags with all teams from both sports
+                    const newShlTeams = selectedTeams.includes(teamCode)
                         ? selectedTeams.filter(t => t !== teamCode)
                         : [...selectedTeams, teamCode];
-                    setTeamTags('shl', newTeams);
+                    setTeamTags([...newShlTeams, ...selectedFootballTeams]);
                 }}
                 footballTeams={football.teams}
                 selectedFootballTeams={selectedFootballTeams}
                 onToggleFootballTeam={(teamKey) => {
                     toggleFootballTeamFilter(teamKey);
-                    // Update OneSignal tags when teams change during onboarding
-                    const newTeams = selectedFootballTeams.includes(teamKey)
+                    // Update OneSignal tags with all teams from both sports
+                    const newFootballTeams = selectedFootballTeams.includes(teamKey)
                         ? selectedFootballTeams.filter(t => t !== teamKey)
                         : [...selectedFootballTeams, teamKey];
-                    setTeamTags('allsvenskan', newTeams);
+                    setTeamTags([...selectedTeams, ...newFootballTeams]);
                 }}
                 biathlonNations={biathlon.nations}
                 selectedNations={selectedNations}

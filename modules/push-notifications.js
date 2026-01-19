@@ -182,25 +182,8 @@ async function sendGoalNotification(goal, options = {}) {
         message += ')';
     }
 
-    // Build filters to target users following either team
-    // Users can have tags like: team_lif=true, shl_teams=LIF,FBK
-    const filters = [
-        // Match users with goal_notifications enabled AND following the scoring team
-        { field: 'tag', key: 'goal_notifications', relation: '=', value: 'true' },
-        { operator: 'AND' },
-        {
-            operator: 'OR',
-            // User follows the scoring team
-            filters: [
-                { field: 'tag', key: `team_${scoringTeamCode.toLowerCase()}`, relation: '=', value: 'true' },
-                { field: 'tag', key: `team_${homeTeamCode?.toLowerCase()}`, relation: '=', value: 'true' },
-                { field: 'tag', key: `team_${awayTeamCode?.toLowerCase()}`, relation: '=', value: 'true' }
-            ]
-        }
-    ];
-
-    // Simplified filter approach: target by individual team tags
-    // OneSignal filter syntax doesn't support nested OR easily, so we use a simpler approach
+    // Filter to target users with goal_notifications enabled AND following the scoring team
+    // Tag structure: goal_notifications='true', team_{code}='true' (e.g., team_lif, team_aik)
     const simpleFilters = [
         { field: 'tag', key: 'goal_notifications', relation: '=', value: 'true' },
         { operator: 'AND' },
