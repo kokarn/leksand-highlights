@@ -648,13 +648,36 @@ export default function App() {
                 visible={showOnboarding}
                 step={onboardingStep}
                 onStepChange={setOnboardingStep}
-                onComplete={completeOnboarding}
+                onComplete={() => {
+                    // Sync team tags to OneSignal when onboarding completes
+                    if (selectedTeams.length > 0) {
+                        setTeamTags('shl', selectedTeams);
+                    }
+                    if (selectedFootballTeams.length > 0) {
+                        setTeamTags('allsvenskan', selectedFootballTeams);
+                    }
+                    completeOnboarding();
+                }}
                 teams={shl.teams}
                 selectedTeams={selectedTeams}
-                onToggleTeam={toggleTeamFilter}
+                onToggleTeam={(teamCode) => {
+                    toggleTeamFilter(teamCode);
+                    // Update OneSignal tags when teams change during onboarding
+                    const newTeams = selectedTeams.includes(teamCode)
+                        ? selectedTeams.filter(t => t !== teamCode)
+                        : [...selectedTeams, teamCode];
+                    setTeamTags('shl', newTeams);
+                }}
                 footballTeams={football.teams}
                 selectedFootballTeams={selectedFootballTeams}
-                onToggleFootballTeam={toggleFootballTeamFilter}
+                onToggleFootballTeam={(teamKey) => {
+                    toggleFootballTeamFilter(teamKey);
+                    // Update OneSignal tags when teams change during onboarding
+                    const newTeams = selectedFootballTeams.includes(teamKey)
+                        ? selectedFootballTeams.filter(t => t !== teamKey)
+                        : [...selectedFootballTeams, teamKey];
+                    setTeamTags('allsvenskan', newTeams);
+                }}
                 biathlonNations={biathlon.nations}
                 selectedNations={selectedNations}
                 onToggleNation={toggleNationFilter}

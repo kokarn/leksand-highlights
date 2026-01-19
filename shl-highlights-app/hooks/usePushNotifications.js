@@ -22,6 +22,9 @@ export function usePushNotifications() {
     const currentShlTeamsRef = useRef([]);
     const currentFootballTeamsRef = useRef([]);
 
+    // Queue for pending tag updates before initialization
+    const pendingTagUpdatesRef = useRef([]);
+
     // Initialize OneSignal on mount
     useEffect(() => {
         const initOneSignal = async () => {
@@ -111,6 +114,45 @@ export function usePushNotifications() {
 
                 setIsInitialized(true);
                 console.log('[OneSignal] Initialized successfully');
+
+                // Process any pending tag updates that were queued before initialization
+                if (pendingTagUpdatesRef.current.length > 0) {
+                    console.log(`[OneSignal] Processing ${pendingTagUpdatesRef.current.length} pending tag updates`);
+                    
+                    // Get the latest update for each sport (in case there were multiple)
+                    const latestUpdates = {};
+                    pendingTagUpdatesRef.current.forEach(update => {
+                        latestUpdates[update.sport] = update.teamCodes;
+                    });
+
+                    // Apply the latest updates for each sport
+                    Object.entries(latestUpdates).forEach(([sport, teamCodes]) => {
+                        const currentTeamsRef = sport === 'shl' ? currentShlTeamsRef : currentFootballTeamsRef;
+                        const previousTeams = currentTeamsRef.current;
+                        const removedTeams = previousTeams.filter(code => !teamCodes.includes(code));
+
+                        removedTeams.forEach(code => {
+                            OneSignal.User.removeTag(`team_${code.toLowerCase()}`);
+                        });
+
+                        const tagKey = `${sport}_teams`;
+                        if (teamCodes.length === 0) {
+                            OneSignal.User.removeTag(tagKey);
+                        } else {
+                            OneSignal.User.addTag(tagKey, teamCodes.join(','));
+                        }
+
+                        teamCodes.forEach(code => {
+                            OneSignal.User.addTag(`team_${code.toLowerCase()}`, 'true');
+                        });
+
+                        currentTeamsRef.current = [...teamCodes];
+                        console.log(`[OneSignal] Applied pending ${sport} team tags:`, teamCodes);
+                    });
+
+                    // Clear the pending queue
+                    pendingTagUpdatesRef.current = [];
+                }
             } catch (error) {
                 console.error('[OneSignal] Initialization error:', error);
             }
@@ -179,13 +221,8 @@ export function usePushNotifications() {
         }
     }, []);
 
-    // Set team tags for targeted notifications
-    const setTeamTags = useCallback((sport, teamCodes) => {
-        if (!isInitialized) {
-            console.warn(`[OneSignal] Not initialized yet, cannot set ${sport} team tags`);
-            return;
-        }
-
+    // Internal function to apply team tags (called when initialized)
+    const applyTeamTags = useCallback((sport, teamCodes) => {
         try {
             // Get the reference to the current teams for this sport
             const currentTeamsRef = sport === 'shl' ? currentShlTeamsRef : currentFootballTeamsRef;
@@ -224,7 +261,20 @@ export function usePushNotifications() {
         } catch (error) {
             console.error('[OneSignal] Tag update error:', error);
         }
-    }, [isInitialized]);
+    }, []);
+
+    // Set team tags for targeted notifications
+    // Queues updates if called before OneSignal is initialized
+    const setTeamTags = useCallback((sport, teamCodes) => {
+        if (!isInitialized) {
+            // Queue the update to be applied after initialization
+            console.log(`[OneSignal] Queuing ${sport} team tags update (not initialized yet):`, teamCodes);
+            pendingTagUpdatesRef.current.push({ sport, teamCodes: [...teamCodes] });
+            return;
+        }
+
+        applyTeamTags(sport, teamCodes);
+    }, [isInitialized, applyTeamTags]);
 
     // Remove a specific team tag
     const removeTeamTag = useCallback((teamCode) => {
@@ -261,6 +311,37 @@ export function usePushNotifications() {
         }
     }, []);
 
+    // Force sync team tags from AsyncStorage to OneSignal
+    const syncTeamTags = useCallback(async () => {
+        if (!isInitialized) {
+            console.warn('[OneSignal] Cannot sync tags - not initialized');
+            return;
+        }
+
+        try {
+            const savedShlTeams = await AsyncStorage.getItem(STORAGE_KEYS.SELECTED_TEAMS);
+            const savedFootballTeams = await AsyncStorage.getItem(STORAGE_KEYS.SELECTED_FOOTBALL_TEAMS);
+
+            if (savedShlTeams) {
+                const teams = JSON.parse(savedShlTeams);
+                if (Array.isArray(teams)) {
+                    applyTeamTags('shl', teams);
+                }
+            }
+
+            if (savedFootballTeams) {
+                const teams = JSON.parse(savedFootballTeams);
+                if (Array.isArray(teams)) {
+                    applyTeamTags('allsvenskan', teams);
+                }
+            }
+
+            console.log('[OneSignal] Force synced team tags from AsyncStorage');
+        } catch (error) {
+            console.error('[OneSignal] Sync team tags error:', error);
+        }
+    }, [isInitialized, applyTeamTags]);
+
     return {
         // State
         isInitialized,
@@ -275,6 +356,7 @@ export function usePushNotifications() {
         toggleGoalNotifications,
         setTeamTags,
         removeTeamTag,
-        getTags
+        getTags,
+        syncTeamTags
     };
 }
