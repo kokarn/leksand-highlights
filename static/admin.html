@@ -334,12 +334,12 @@
                         </select>
                     </div>
                     <div>
-                        <label for="goal-test-scoring-team">Scoring team code</label>
-                        <input id="goal-test-scoring-team" type="text" placeholder="LIF" />
+                        <label for="goal-test-scoring-team">Scoring team</label>
+                        <select id="goal-test-scoring-team"></select>
                     </div>
                     <div>
-                        <label for="goal-test-opposing-team">Opposing team code</label>
-                        <input id="goal-test-opposing-team" type="text" placeholder="FHC" />
+                        <label for="goal-test-opposing-team">Opposing team</label>
+                        <select id="goal-test-opposing-team"></select>
                     </div>
                     <div class="checkbox-field">
                         <label for="goal-test-scoring-home">
@@ -490,6 +490,7 @@
         const sendGoalTestButton = document.getElementById('send-goal-test');
 
         let teams = [];
+        let footballTeams = [];
         let sports = [];
         let venueTouched = false;
 
@@ -887,6 +888,72 @@
             populateTeamSelect(awayTeamSelect);
             awayTeamSelect.selectedIndex = 1;
             updateVenueFromHomeTeam();
+            // Also populate goal test dropdowns with SHL teams by default
+            updateGoalTestTeamDropdowns();
+        }
+
+        async function loadFootballTeams() {
+            try {
+                const games = await apiRequest('/api/football/games?limit=100');
+                const teamMap = new Map();
+
+                (games || []).forEach(game => {
+                    if (game.homeTeamInfo) {
+                        const code = game.homeTeamInfo.code || game.homeTeamInfo.uuid;
+                        if (code && !teamMap.has(code)) {
+                            teamMap.set(code, {
+                                code,
+                                name: game.homeTeamInfo.names?.long || game.homeTeamInfo.names?.short || code
+                            });
+                        }
+                    }
+                    if (game.awayTeamInfo) {
+                        const code = game.awayTeamInfo.code || game.awayTeamInfo.uuid;
+                        if (code && !teamMap.has(code)) {
+                            teamMap.set(code, {
+                                code,
+                                name: game.awayTeamInfo.names?.long || game.awayTeamInfo.names?.short || code
+                            });
+                        }
+                    }
+                });
+
+                footballTeams = Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+                console.log(`[Admin] Loaded ${footballTeams.length} football teams`);
+            } catch (error) {
+                console.error('[Admin] Error loading football teams:', error);
+                footballTeams = [];
+            }
+        }
+
+        function updateGoalTestTeamDropdowns() {
+            const sport = goalTestSport.value;
+            const teamList = sport === 'allsvenskan' ? footballTeams : teams;
+
+            const buildOptions = (list) => {
+                if (sport === 'allsvenskan') {
+                    return list.map(team => {
+                        return `<option value="${escapeHtml(team.code)}">${escapeHtml(team.name)} (${escapeHtml(team.code)})</option>`;
+                    }).join('');
+                } else {
+                    return list.map(team => {
+                        const name = team.names?.long || team.names?.short || team.code;
+                        return `<option value="${escapeHtml(team.code)}">${escapeHtml(name)} (${escapeHtml(team.code)})</option>`;
+                    }).join('');
+                }
+            };
+
+            goalTestScoringTeam.innerHTML = buildOptions(teamList);
+            goalTestOpposingTeam.innerHTML = buildOptions(teamList);
+
+            // Set different default selections
+            if (teamList.length > 1) {
+                goalTestOpposingTeam.selectedIndex = 1;
+            }
+
+            // Update period placeholder based on sport
+            goalTestPeriod.placeholder = sport === 'allsvenskan' ? '1st half' : 'P1';
+            goalTestTime.placeholder = sport === 'allsvenskan' ? '54:21' : '12:34';
         }
 
         async function loadSports(options = {}) {
@@ -1070,11 +1137,15 @@
         sendGoalTestButton.addEventListener('click', async () => {
             try {
                 sendGoalTestButton.disabled = true;
-                const scoringTeamCode = goalTestScoringTeam.value.trim().toUpperCase();
-                const opposingTeamCode = goalTestOpposingTeam.value.trim().toUpperCase();
+                const scoringTeamCode = goalTestScoringTeam.value;
+                const opposingTeamCode = goalTestOpposingTeam.value;
 
                 if (!scoringTeamCode || !opposingTeamCode) {
-                    throw new Error('Scoring and opposing team codes are required.');
+                    throw new Error('Please select both scoring and opposing teams.');
+                }
+
+                if (scoringTeamCode === opposingTeamCode) {
+                    throw new Error('Scoring and opposing teams must be different.');
                 }
 
                 const targetPayload = buildTargetPayload(goalTestTargetType.value, goalTestTargetId.value);
@@ -1164,9 +1235,15 @@
 
         function init() {
             startTimeInput.value = toLocalDateTimeValue(new Date());
-            loadTeams()
-                .then(loadGames)
+
+            // Load both SHL and football teams, then populate dropdowns
+            Promise.all([loadTeams(), loadFootballTeams()])
+                .then(() => {
+                    updateGoalTestTeamDropdowns();
+                    return loadGames();
+                })
                 .catch(error => showFeedback(createFeedback, error.message, 'error'));
+
             loadStatus({ showMessage: true });
             loadSports();
             loadPushStatus();
@@ -1181,6 +1258,10 @@
                     goalTestSendOpposing.checked = true;
                 }
             });
+
+            // Update team dropdowns when sport changes
+            goalTestSport.addEventListener('change', updateGoalTestTeamDropdowns);
+
             setInterval(() => loadStatus(), 15000);
             setInterval(() => loadPushStatus(), 15000);
         }

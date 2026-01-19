@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
 import { OneSignal } from 'react-native-onesignal';
 import Constants from 'expo-constants';
@@ -17,6 +17,10 @@ export function usePushNotifications() {
     // Notification preferences state
     const [notificationsEnabled, setNotificationsEnabled] = useState(false);
     const [goalNotificationsEnabled, setGoalNotificationsEnabled] = useState(true);
+
+    // Track current team tags to properly remove old ones
+    const currentShlTeamsRef = useRef([]);
+    const currentFootballTeamsRef = useRef([]);
 
     // Initialize OneSignal on mount
     useEffect(() => {
@@ -44,11 +48,53 @@ export function usePushNotifications() {
                 const savedEnabled = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATIONS_ENABLED);
                 const savedGoalNotifications = await AsyncStorage.getItem(STORAGE_KEYS.GOAL_NOTIFICATIONS_ENABLED);
 
-                if (savedEnabled !== null) {
-                    setNotificationsEnabled(savedEnabled === 'true');
+                const isEnabled = savedEnabled === 'true';
+                const goalEnabled = savedGoalNotifications !== 'false'; // Default to true
+
+                setNotificationsEnabled(isEnabled);
+                setGoalNotificationsEnabled(goalEnabled);
+
+                // Sync goal_notifications tag on initialization
+                if (goalEnabled) {
+                    OneSignal.User.addTag('goal_notifications', 'true');
+                } else {
+                    OneSignal.User.removeTag('goal_notifications');
                 }
-                if (savedGoalNotifications !== null) {
-                    setGoalNotificationsEnabled(savedGoalNotifications === 'true');
+
+                // Load and sync saved team preferences
+                const savedShlTeams = await AsyncStorage.getItem(STORAGE_KEYS.SELECTED_TEAMS);
+                const savedFootballTeams = await AsyncStorage.getItem(STORAGE_KEYS.SELECTED_FOOTBALL_TEAMS);
+
+                if (savedShlTeams) {
+                    try {
+                        const teams = JSON.parse(savedShlTeams);
+                        if (Array.isArray(teams) && teams.length > 0) {
+                            currentShlTeamsRef.current = teams;
+                            OneSignal.User.addTag('shl_teams', teams.join(','));
+                            teams.forEach(code => {
+                                OneSignal.User.addTag(`team_${code.toLowerCase()}`, 'true');
+                            });
+                            console.log('[OneSignal] Synced SHL team tags on init:', teams);
+                        }
+                    } catch (e) {
+                        console.error('[OneSignal] Error parsing saved SHL teams:', e);
+                    }
+                }
+
+                if (savedFootballTeams) {
+                    try {
+                        const teams = JSON.parse(savedFootballTeams);
+                        if (Array.isArray(teams) && teams.length > 0) {
+                            currentFootballTeamsRef.current = teams;
+                            OneSignal.User.addTag('allsvenskan_teams', teams.join(','));
+                            teams.forEach(code => {
+                                OneSignal.User.addTag(`team_${code.toLowerCase()}`, 'true');
+                            });
+                            console.log('[OneSignal] Synced football team tags on init:', teams);
+                        }
+                    } catch (e) {
+                        console.error('[OneSignal] Error parsing saved football teams:', e);
+                    }
                 }
 
                 // Listen for permission changes
@@ -136,11 +182,24 @@ export function usePushNotifications() {
     // Set team tags for targeted notifications
     const setTeamTags = useCallback((sport, teamCodes) => {
         if (!isInitialized) {
+            console.warn(`[OneSignal] Not initialized yet, cannot set ${sport} team tags`);
             return;
         }
 
         try {
-            // Clear existing team tags for this sport
+            // Get the reference to the current teams for this sport
+            const currentTeamsRef = sport === 'shl' ? currentShlTeamsRef : currentFootballTeamsRef;
+            const previousTeams = currentTeamsRef.current;
+
+            // Find teams that were removed
+            const removedTeams = previousTeams.filter(code => !teamCodes.includes(code));
+
+            // Remove tags for teams that are no longer selected
+            removedTeams.forEach(code => {
+                OneSignal.User.removeTag(`team_${code.toLowerCase()}`);
+            });
+
+            // Update the sport-specific team list tag
             const tagKey = `${sport}_teams`;
 
             if (teamCodes.length === 0) {
@@ -150,12 +209,18 @@ export function usePushNotifications() {
                 OneSignal.User.addTag(tagKey, teamCodes.join(','));
             }
 
-            // Also set individual team tags for precise targeting
+            // Add individual team tags for precise targeting
             teamCodes.forEach(code => {
                 OneSignal.User.addTag(`team_${code.toLowerCase()}`, 'true');
             });
 
+            // Update the ref with current teams
+            currentTeamsRef.current = [...teamCodes];
+
             console.log(`[OneSignal] Updated ${sport} team tags:`, teamCodes);
+            if (removedTeams.length > 0) {
+                console.log(`[OneSignal] Removed ${sport} team tags:`, removedTeams);
+            }
         } catch (error) {
             console.error('[OneSignal] Tag update error:', error);
         }
@@ -168,7 +233,18 @@ export function usePushNotifications() {
         }
 
         try {
-            OneSignal.User.removeTag(`team_${teamCode.toLowerCase()}`);
+            const lowerCode = teamCode.toLowerCase();
+            OneSignal.User.removeTag(`team_${lowerCode}`);
+
+            // Update both refs in case the team was in either
+            currentShlTeamsRef.current = currentShlTeamsRef.current.filter(
+                code => code.toLowerCase() !== lowerCode
+            );
+            currentFootballTeamsRef.current = currentFootballTeamsRef.current.filter(
+                code => code.toLowerCase() !== lowerCode
+            );
+
+            console.log(`[OneSignal] Removed team tag: team_${lowerCode}`);
         } catch (error) {
             console.error('[OneSignal] Tag removal error:', error);
         }
