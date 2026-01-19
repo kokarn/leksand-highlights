@@ -1,6 +1,7 @@
 name: Docker Publish
 
 on:
+  workflow_dispatch:
   push:
     branches: [ "main" ]
     paths:
@@ -11,6 +12,7 @@ on:
       - 'Dockerfile'
       - '.dockerignore'
       - '.github/workflows/docker-publish.yml'
+      - 'static/**'
 
 env:
   REGISTRY: ghcr.io
