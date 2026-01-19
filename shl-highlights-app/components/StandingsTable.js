@@ -1,16 +1,17 @@
-import { View, Text, Image, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 
 /**
  * Format stat value for display
  */
 const formatStatValue = (value) => {
-    if (value === null || value === undefined) return '-';
+    if (value === null || value === undefined) { return '-'; }
     return String(value);
 };
 
 /**
  * Reusable standings table component
  * Supports both SHL (hockey) and Football standings formats
+ * Full width layout that fits without horizontal scrolling
  */
 export const StandingsTable = ({
     standings = [],
@@ -28,168 +29,98 @@ export const StandingsTable = ({
     }
 
     const isHockey = sport === 'shl';
-    const useCompactColumns = isHockey;
 
     return (
         <View style={styles.tableCard}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View>
-                    {/* Header Row */}
+            {/* Header Row */}
+            <View style={[styles.tableRow, styles.tableRowHeader]}>
+                <Text style={[styles.tableHeaderText, styles.colRank]}>#</Text>
+                <View style={styles.colTeam}>
+                    <Text style={[styles.tableHeaderText, styles.textLeft]}>Team</Text>
+                </View>
+                <Text style={[styles.tableHeaderText, styles.colStat]}>GP</Text>
+                <Text style={[styles.tableHeaderText, styles.colStat]}>W</Text>
+                {isHockey ? (
+                    <>
+                        <Text style={[styles.tableHeaderText, styles.colStat]}>OW</Text>
+                        <Text style={[styles.tableHeaderText, styles.colStat]}>OL</Text>
+                    </>
+                ) : (
+                    <Text style={[styles.tableHeaderText, styles.colStat]}>D</Text>
+                )}
+                <Text style={[styles.tableHeaderText, styles.colStat]}>L</Text>
+                <Text style={[styles.tableHeaderText, styles.colPoints]}>P</Text>
+                <Text style={[styles.tableHeaderText, styles.colGoalDiff]}>+/-</Text>
+            </View>
+
+            {/* Data Rows */}
+            {standings.map(team => {
+                const teamKey = getTeamKey?.(team) || team.teamCode || team.teamShortName;
+                const isFavorite = teamKey && selectedTeams.includes(teamKey);
+                const goalDiffValue = Number(team.goalDiff);
+                const logoUrl = getTeamLogo?.(team);
+
+                return (
                     <View
-                        style={[
-                            styles.tableRow,
-                            styles.tableRowHeader,
-                            useCompactColumns && styles.tableRowCompact
-                        ]}
+                        key={team.teamUuid || team.teamCode || team.teamName}
+                        style={[styles.tableRow, isFavorite && styles.tableRowActive]}
                     >
-                        <Text style={[styles.tableHeaderText, styles.colRank, useCompactColumns && styles.colRankCompact]}>
-                            #
+                        <Text style={[styles.tableCell, styles.colRank]}>
+                            {formatStatValue(team.position)}
                         </Text>
-                        <Text
-                            style={[
-                                styles.tableHeaderText,
-                                styles.colTeamHeader,
-                                useCompactColumns && styles.colTeamHeaderCompact
-                            ]}
-                        >
-                            Team
+                        <View style={[styles.colTeam, styles.teamCell]}>
+                            {logoUrl ? (
+                                <Image
+                                    source={{ uri: logoUrl }}
+                                    style={styles.teamLogo}
+                                    resizeMode="contain"
+                                />
+                            ) : (
+                                <View style={styles.teamLogoPlaceholder} />
+                            )}
+                            <Text style={styles.teamName} numberOfLines={1}>
+                                {team.teamShortName || team.teamName || teamKey}
+                            </Text>
+                        </View>
+                        <Text style={[styles.tableCell, styles.colStat]}>
+                            {formatStatValue(team.gamesPlayed)}
                         </Text>
-                        <Text style={[styles.tableHeaderText, styles.colStat, useCompactColumns && styles.colStatCompact]}>
-                            GP
-                        </Text>
-                        <Text style={[styles.tableHeaderText, styles.colStat, useCompactColumns && styles.colStatCompact]}>
-                            W
+                        <Text style={[styles.tableCell, styles.colStat]}>
+                            {formatStatValue(team.wins)}
                         </Text>
                         {isHockey ? (
                             <>
-                                <Text
-                                    style={[
-                                        styles.tableHeaderText,
-                                        styles.colStat,
-                                        useCompactColumns && styles.colStatCompact
-                                    ]}
-                                >
-                                    OTW
+                                <Text style={[styles.tableCell, styles.colStat]}>
+                                    {formatStatValue(team.overtimeWins)}
                                 </Text>
-                                <Text
-                                    style={[
-                                        styles.tableHeaderText,
-                                        styles.colStat,
-                                        useCompactColumns && styles.colStatCompact
-                                    ]}
-                                >
-                                    OTL
+                                <Text style={[styles.tableCell, styles.colStat]}>
+                                    {formatStatValue(team.overtimeLosses)}
                                 </Text>
                             </>
                         ) : (
-                            <Text style={[styles.tableHeaderText, styles.colStat, useCompactColumns && styles.colStatCompact]}>
-                                D
+                            <Text style={[styles.tableCell, styles.colStat]}>
+                                {formatStatValue(team.draws)}
                             </Text>
                         )}
-                        <Text style={[styles.tableHeaderText, styles.colStat, useCompactColumns && styles.colStatCompact]}>
-                            L
+                        <Text style={[styles.tableCell, styles.colStat]}>
+                            {formatStatValue(team.losses)}
                         </Text>
-                        <Text style={[styles.tableHeaderText, styles.colPoints, useCompactColumns && styles.colPointsCompact]}>
-                            PTS
+                        <Text style={[styles.tableCell, styles.colPoints]}>
+                            {formatStatValue(team.points)}
                         </Text>
                         <Text
                             style={[
-                                styles.tableHeaderText,
+                                styles.tableCell,
                                 styles.colGoalDiff,
-                                useCompactColumns && styles.colGoalDiffCompact
+                                Number.isFinite(goalDiffValue) && goalDiffValue > 0 && styles.positiveValue,
+                                Number.isFinite(goalDiffValue) && goalDiffValue < 0 && styles.negativeValue
                             ]}
                         >
-                            GD
+                            {formatStatValue(team.goalDiff)}
                         </Text>
                     </View>
-
-                    {/* Data Rows */}
-                    {standings.map(team => {
-                        const teamKey = getTeamKey?.(team) || team.teamCode || team.teamShortName;
-                        const isFavorite = teamKey && selectedTeams.includes(teamKey);
-                        const goalDiffValue = Number(team.goalDiff);
-                        const logoUrl = getTeamLogo?.(team);
-
-                        return (
-                            <View
-                                key={team.teamUuid || team.teamCode || team.teamName}
-                                style={[
-                                    styles.tableRow,
-                                    useCompactColumns && styles.tableRowCompact,
-                                    isFavorite && styles.tableRowActive
-                                ]}
-                            >
-                                <Text style={[styles.tableCell, styles.colRank, useCompactColumns && styles.colRankCompact]}>
-                                    {formatStatValue(team.position)}
-                                </Text>
-                                <View style={[styles.teamCell, useCompactColumns && styles.teamCellCompact]}>
-                                    {logoUrl ? (
-                                        <Image
-                                            source={{ uri: logoUrl }}
-                                            style={[styles.teamLogo, useCompactColumns && styles.teamLogoCompact]}
-                                            resizeMode="contain"
-                                        />
-                                    ) : (
-                                        <View
-                                            style={[
-                                                styles.teamLogoPlaceholder,
-                                                useCompactColumns && styles.teamLogoPlaceholderCompact
-                                            ]}
-                                        />
-                                    )}
-                                    <View style={styles.teamTextBlock}>
-                                        <Text style={styles.teamName} numberOfLines={1}>
-                                            {team.teamShortName || team.teamName || teamKey}
-                                        </Text>
-                                        {team.note ? (
-                                            <Text style={styles.teamNote} numberOfLines={1}>
-                                                {team.note}
-                                            </Text>
-                                        ) : null}
-                                    </View>
-                                </View>
-                                <Text style={[styles.tableCell, styles.colStat, useCompactColumns && styles.colStatCompact]}>
-                                    {formatStatValue(team.gamesPlayed)}
-                                </Text>
-                                <Text style={[styles.tableCell, styles.colStat, useCompactColumns && styles.colStatCompact]}>
-                                    {formatStatValue(team.wins)}
-                                </Text>
-                                {isHockey ? (
-                                    <>
-                                        <Text style={[styles.tableCell, styles.colStat, useCompactColumns && styles.colStatCompact]}>
-                                            {formatStatValue(team.overtimeWins)}
-                                        </Text>
-                                        <Text style={[styles.tableCell, styles.colStat, useCompactColumns && styles.colStatCompact]}>
-                                            {formatStatValue(team.overtimeLosses)}
-                                        </Text>
-                                    </>
-                                ) : (
-                                    <Text style={[styles.tableCell, styles.colStat, useCompactColumns && styles.colStatCompact]}>
-                                        {formatStatValue(team.draws)}
-                                    </Text>
-                                )}
-                                <Text style={[styles.tableCell, styles.colStat, useCompactColumns && styles.colStatCompact]}>
-                                    {formatStatValue(team.losses)}
-                                </Text>
-                                <Text style={[styles.tableCell, styles.colPoints, useCompactColumns && styles.colPointsCompact]}>
-                                    {formatStatValue(team.points)}
-                                </Text>
-                                <Text
-                                    style={[
-                                        styles.tableCell,
-                                        styles.colGoalDiff,
-                                        useCompactColumns && styles.colGoalDiffCompact,
-                                        Number.isFinite(goalDiffValue) && goalDiffValue > 0 && styles.positiveValue,
-                                        Number.isFinite(goalDiffValue) && goalDiffValue < 0 && styles.negativeValue
-                                    ]}
-                                >
-                                    {formatStatValue(team.goalDiff)}
-                                </Text>
-                            </View>
-                        );
-                    })}
-                </View>
-            </ScrollView>
+                );
+            })}
         </View>
     );
 };
@@ -197,25 +128,24 @@ export const StandingsTable = ({
 const styles = StyleSheet.create({
     tableCard: {
         backgroundColor: '#1c1c1e',
-        borderRadius: 16,
+        borderRadius: 12,
         borderWidth: 1,
         borderColor: '#333',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        width: '100%'
     },
     tableRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 10,
-        paddingHorizontal: 12,
+        paddingVertical: 6,
+        paddingHorizontal: 8,
         borderBottomWidth: 1,
         borderBottomColor: '#2c2c2e'
     },
-    tableRowCompact: {
-        paddingHorizontal: 8
-    },
     tableRowHeader: {
         backgroundColor: '#2c2c2e',
-        borderBottomColor: '#333'
+        borderBottomColor: '#333',
+        paddingVertical: 8
     },
     tableRowActive: {
         backgroundColor: 'rgba(10, 132, 255, 0.08)'
@@ -228,47 +158,56 @@ const styles = StyleSheet.create({
     },
     tableHeaderText: {
         color: '#8e8e93',
-        fontSize: 11,
+        fontSize: 10,
         fontWeight: '700',
         textTransform: 'uppercase',
         textAlign: 'center'
     },
-    colRank: { width: 32 },
-    colRankCompact: { width: 26 },
-    colTeamHeader: { width: 170, textAlign: 'left' },
-    colTeamHeaderCompact: { width: 120, textAlign: 'left' },
-    colStat: { width: 42 },
-    colStatCompact: { width: 30 },
-    colPoints: { width: 50 },
-    colPointsCompact: { width: 38 },
-    colGoalDiff: { width: 50 },
-    colGoalDiffCompact: { width: 38 },
+    textLeft: {
+        textAlign: 'left'
+    },
+    colRank: {
+        width: 22,
+        textAlign: 'center'
+    },
+    colTeam: {
+        flex: 1,
+        minWidth: 0
+    },
+    colStat: {
+        width: 26,
+        textAlign: 'center'
+    },
+    colPoints: {
+        width: 28,
+        textAlign: 'center',
+        fontWeight: '700'
+    },
+    colGoalDiff: {
+        width: 32,
+        textAlign: 'center'
+    },
     teamCell: {
-        width: 170,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8
-    },
-    teamCellCompact: {
-        width: 120,
         gap: 6
     },
-    teamLogo: { width: 24, height: 24 },
-    teamLogoCompact: { width: 20, height: 20 },
+    teamLogo: {
+        width: 18,
+        height: 18
+    },
     teamLogoPlaceholder: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
+        width: 18,
+        height: 18,
+        borderRadius: 9,
         backgroundColor: '#2c2c2e'
     },
-    teamLogoPlaceholderCompact: {
-        width: 20,
-        height: 20,
-        borderRadius: 10
+    teamName: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '600',
+        flex: 1
     },
-    teamTextBlock: { flex: 1 },
-    teamName: { color: '#fff', fontSize: 13, fontWeight: '600' },
-    teamNote: { color: '#666', fontSize: 11, marginTop: 2 },
     positiveValue: { color: '#30D158' },
     negativeValue: { color: '#FF453A' },
     emptyContainer: { alignItems: 'center', marginTop: 40 },
