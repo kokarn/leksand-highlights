@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -39,7 +40,7 @@
 
         body {
             background: var(--bg-color);
-            background-image: 
+            background-image:
                 radial-gradient(ellipse at top, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
                 radial-gradient(ellipse at bottom right, rgba(168, 85, 247, 0.05) 0%, transparent 50%);
             color: var(--text-primary);
@@ -74,12 +75,14 @@
         .sidebar-logo {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, var(--accent), var(--purple));
             border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
+            overflow: hidden;
+        }
+
+        .sidebar-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .sidebar-title {
@@ -249,6 +252,35 @@
 
         .metric-change.positive { color: var(--success); }
         .metric-change.negative { color: var(--danger); }
+
+        .cache-status-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .cache-status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .cache-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .cache-status-dot.active {
+            background: var(--success);
+        }
+
+        .cache-status-dot.inactive {
+            background: var(--text-muted);
+        }
 
         /* Section Panel */
         .section {
@@ -764,13 +796,50 @@
         .mt-2 { margin-top: 1rem; }
         .mb-1 { margin-bottom: 0.5rem; }
         .mb-2 { margin-bottom: 1rem; }
+
+        /* Lucide Icon Styles */
+        .icon-sm {
+            width: 18px;
+            height: 18px;
+            stroke-width: 2;
+        }
+
+        .icon-md {
+            width: 20px;
+            height: 20px;
+            stroke-width: 2;
+        }
+
+        .icon-btn {
+            width: 16px;
+            height: 16px;
+            stroke-width: 2;
+            vertical-align: -3px;
+            margin-right: 2px;
+        }
+
+        .nav-item-icon i {
+            color: inherit;
+        }
+
+        .section-icon i {
+            color: var(--accent);
+        }
+
+        .section-toggle i {
+            transition: transform 0.2s ease;
+        }
+
+        .section.collapsed .section-toggle i {
+            transform: rotate(-90deg);
+        }
     </style>
 </head>
 <body>
     <!-- Sidebar Navigation -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <div class="sidebar-logo">⚡</div>
+            <div class="sidebar-logo"><img src="/static/app-icon.png" alt="GamePulse"></div>
             <div>
                 <div class="sidebar-title">GamePulse</div>
                 <div class="sidebar-subtitle">Admin Console</div>
@@ -781,11 +850,11 @@
             <div class="nav-section">
                 <div class="nav-section-title">Overview</div>
                 <div class="nav-item active" data-section="dashboard">
-                    <span class="nav-item-icon">📊</span>
+                    <span class="nav-item-icon"><i data-lucide="layout-dashboard" class="icon-sm"></i></span>
                     Dashboard
                 </div>
                 <div class="nav-item" data-section="activity">
-                    <span class="nav-item-icon">📜</span>
+                    <span class="nav-item-icon"><i data-lucide="scroll-text" class="icon-sm"></i></span>
                     Activity Log
                 </div>
             </div>
@@ -793,15 +862,15 @@
             <div class="nav-section">
                 <div class="nav-section-title">Operations</div>
                 <div class="nav-item" data-section="status">
-                    <span class="nav-item-icon">🖥️</span>
+                    <span class="nav-item-icon"><i data-lucide="monitor" class="icon-sm"></i></span>
                     System Status
                 </div>
                 <div class="nav-item" data-section="cache">
-                    <span class="nav-item-icon">💾</span>
+                    <span class="nav-item-icon"><i data-lucide="database" class="icon-sm"></i></span>
                     Cache Management
                 </div>
                 <div class="nav-item" data-section="sports">
-                    <span class="nav-item-icon">🏆</span>
+                    <span class="nav-item-icon"><i data-lucide="trophy" class="icon-sm"></i></span>
                     Sports Providers
                 </div>
             </div>
@@ -809,11 +878,11 @@
             <div class="nav-section">
                 <div class="nav-section-title">Notifications</div>
                 <div class="nav-item" data-section="push">
-                    <span class="nav-item-icon">🔔</span>
+                    <span class="nav-item-icon"><i data-lucide="bell" class="icon-sm"></i></span>
                     Push Notifications
                 </div>
                 <div class="nav-item" data-section="goal-test">
-                    <span class="nav-item-icon">⚽</span>
+                    <span class="nav-item-icon"><i data-lucide="circle-dot" class="icon-sm"></i></span>
                     Goal Testing
                 </div>
             </div>
@@ -821,11 +890,11 @@
             <div class="nav-section">
                 <div class="nav-section-title">Games</div>
                 <div class="nav-item" data-section="create-game">
-                    <span class="nav-item-icon">➕</span>
+                    <span class="nav-item-icon"><i data-lucide="plus-circle" class="icon-sm"></i></span>
                     Create Game
                 </div>
                 <div class="nav-item" data-section="games">
-                    <span class="nav-item-icon">🎮</span>
+                    <span class="nav-item-icon"><i data-lucide="gamepad-2" class="icon-sm"></i></span>
                     Manual Games
                 </div>
             </div>
@@ -843,7 +912,7 @@
                     <span id="server-status-text">Online</span>
                 </div>
                 <button class="btn btn-secondary" id="refresh-all">
-                    🔄 Refresh All
+                    <i data-lucide="refresh-cw" class="icon-btn"></i> Refresh All
                 </button>
             </div>
         </div>
@@ -855,7 +924,7 @@
                 <div class="metric-card">
                     <div class="metric-header">
                         <span class="metric-label">Uptime</span>
-                        <div class="metric-icon blue">⏱️</div>
+                        <div class="metric-icon blue"><i data-lucide="clock" class="icon-md"></i></div>
                     </div>
                     <div class="metric-value" id="metric-uptime">-</div>
                     <div class="metric-change" id="metric-uptime-sub">Loading...</div>
@@ -863,7 +932,7 @@
                 <div class="metric-card">
                     <div class="metric-header">
                         <span class="metric-label">Goals Detected</span>
-                        <div class="metric-icon green">⚽</div>
+                        <div class="metric-icon green"><i data-lucide="target" class="icon-md"></i></div>
                     </div>
                     <div class="metric-value" id="metric-goals">0</div>
                     <div class="metric-change" id="metric-goals-sub">Total goals</div>
@@ -871,7 +940,7 @@
                 <div class="metric-card">
                     <div class="metric-header">
                         <span class="metric-label">Notifications Sent</span>
-                        <div class="metric-icon purple">🔔</div>
+                        <div class="metric-icon purple"><i data-lucide="bell-ring" class="icon-md"></i></div>
                     </div>
                     <div class="metric-value" id="metric-notifications">0</div>
                     <div class="metric-change" id="metric-notifications-sub">Push notifications</div>
@@ -879,7 +948,7 @@
                 <div class="metric-card">
                     <div class="metric-header">
                         <span class="metric-label">Live Games</span>
-                        <div class="metric-icon cyan">🎮</div>
+                        <div class="metric-icon cyan"><i data-lucide="radio" class="icon-md"></i></div>
                     </div>
                     <div class="metric-value" id="metric-live-games">0</div>
                     <div class="metric-change" id="metric-live-games-sub">Currently tracking</div>
@@ -887,10 +956,10 @@
                 <div class="metric-card">
                     <div class="metric-header">
                         <span class="metric-label">Cache Status</span>
-                        <div class="metric-icon orange">💾</div>
+                        <div class="metric-icon orange"><i data-lucide="hard-drive" class="icon-md"></i></div>
                     </div>
                     <div class="metric-value" id="metric-cache">-</div>
-                    <div class="metric-change" id="metric-cache-sub">Active caches</div>
+                    <div class="cache-status-list" id="cache-status-list"></div>
                 </div>
             </div>
 
@@ -938,16 +1007,16 @@
             <div class="section">
                 <div class="section-header">
                     <div class="section-title-group">
-                        <span class="section-icon">⚡</span>
+                        <span class="section-icon"><i data-lucide="zap" class="icon-sm"></i></span>
                         <h2 class="section-title">Quick Actions</h2>
                     </div>
                 </div>
                 <div class="section-content">
                     <div class="btn-group">
-                        <button class="btn btn-primary" id="quick-clear-cache">💾 Clear All Caches</button>
-                        <button class="btn btn-secondary" id="quick-run-notifier">🔍 Run Notifier Check</button>
-                        <button class="btn btn-secondary" id="quick-goal-check">⚽ Run Goal Check</button>
-                        <button class="btn btn-secondary" id="quick-biathlon-refresh">🎿 Refresh Biathlon</button>
+                        <button class="btn btn-primary" id="quick-clear-cache"><i data-lucide="trash-2" class="icon-btn"></i> Clear All Caches</button>
+                        <button class="btn btn-secondary" id="quick-run-notifier"><i data-lucide="search" class="icon-btn"></i> Run Notifier Check</button>
+                        <button class="btn btn-secondary" id="quick-goal-check"><i data-lucide="target" class="icon-btn"></i> Run Goal Check</button>
+                        <button class="btn btn-secondary" id="quick-biathlon-refresh"><i data-lucide="snowflake" class="icon-btn"></i> Refresh Biathlon</button>
                     </div>
                     <div id="quick-actions-feedback" class="mt-2 text-sm"></div>
                 </div>
@@ -959,11 +1028,11 @@
             <div class="section">
                 <div class="section-header" onclick="toggleSection(this.parentElement)">
                     <div class="section-title-group">
-                        <span class="section-icon">📜</span>
+                        <span class="section-icon"><i data-lucide="scroll-text" class="icon-sm"></i></span>
                         <h2 class="section-title">Recent Activity</h2>
                         <span class="section-badge" id="activity-count">0 events</span>
                     </div>
-                    <span class="section-toggle">▼</span>
+                    <span class="section-toggle"><i data-lucide="chevron-down" class="icon-sm"></i></span>
                 </div>
                 <div class="section-content">
                     <div class="activity-list" id="activity-list">
@@ -978,15 +1047,15 @@
             <div class="section">
                 <div class="section-header" onclick="toggleSection(this.parentElement)">
                     <div class="section-title-group">
-                        <span class="section-icon">🖥️</span>
+                        <span class="section-icon"><i data-lucide="monitor" class="icon-sm"></i></span>
                         <h2 class="section-title">System Status</h2>
                     </div>
-                    <span class="section-toggle">▼</span>
+                    <span class="section-toggle"><i data-lucide="chevron-down" class="icon-sm"></i></span>
                 </div>
                 <div class="section-content">
                     <div class="status-grid" id="status-grid"></div>
                     <div class="btn-group mt-2">
-                        <button class="btn btn-secondary" id="refresh-status">🔄 Refresh Status</button>
+                        <button class="btn btn-secondary" id="refresh-status"><i data-lucide="refresh-cw" class="icon-btn"></i> Refresh Status</button>
                     </div>
                 </div>
             </div>
@@ -997,16 +1066,16 @@
             <div class="section">
                 <div class="section-header" onclick="toggleSection(this.parentElement)">
                     <div class="section-title-group">
-                        <span class="section-icon">💾</span>
+                        <span class="section-icon"><i data-lucide="database" class="icon-sm"></i></span>
                         <h2 class="section-title">Cache Management</h2>
                     </div>
-                    <span class="section-toggle">▼</span>
+                    <span class="section-toggle"><i data-lucide="chevron-down" class="icon-sm"></i></span>
                 </div>
                 <div class="section-content">
                     <div class="status-grid" id="cache-status-grid"></div>
                     <div class="btn-group mt-2">
-                        <button class="btn btn-danger" id="clear-cache">🗑️ Clear All Caches</button>
-                        <button class="btn btn-secondary" id="refresh-cache-status">🔄 Refresh</button>
+                        <button class="btn btn-danger" id="clear-cache"><i data-lucide="trash-2" class="icon-btn"></i> Clear All Caches</button>
+                        <button class="btn btn-secondary" id="refresh-cache-status"><i data-lucide="refresh-cw" class="icon-btn"></i> Refresh</button>
                     </div>
                     <div id="cache-feedback" class="mt-2 text-sm"></div>
                 </div>
@@ -1018,15 +1087,15 @@
             <div class="section">
                 <div class="section-header" onclick="toggleSection(this.parentElement)">
                     <div class="section-title-group">
-                        <span class="section-icon">🏆</span>
+                        <span class="section-icon"><i data-lucide="trophy" class="icon-sm"></i></span>
                         <h2 class="section-title">Sports Providers</h2>
                     </div>
-                    <span class="section-toggle">▼</span>
+                    <span class="section-toggle"><i data-lucide="chevron-down" class="icon-sm"></i></span>
                 </div>
                 <div class="section-content">
                     <div class="status-grid" id="sports-grid"></div>
                     <div class="btn-group mt-2">
-                        <button class="btn btn-secondary" id="refresh-sports">🔄 Refresh Sports List</button>
+                        <button class="btn btn-secondary" id="refresh-sports"><i data-lucide="refresh-cw" class="icon-btn"></i> Refresh Sports List</button>
                     </div>
                 </div>
             </div>
@@ -1037,16 +1106,16 @@
             <div class="section">
                 <div class="section-header" onclick="toggleSection(this.parentElement)">
                     <div class="section-title-group">
-                        <span class="section-icon">🔔</span>
+                        <span class="section-icon"><i data-lucide="bell" class="icon-sm"></i></span>
                         <h2 class="section-title">Push Notification Status</h2>
                     </div>
-                    <span class="section-toggle">▼</span>
+                    <span class="section-toggle"><i data-lucide="chevron-down" class="icon-sm"></i></span>
                 </div>
                 <div class="section-content">
                     <div class="status-grid" id="push-status-grid"></div>
                     <div class="btn-group mt-2">
-                        <button class="btn btn-secondary" id="refresh-push-status">🔄 Refresh Status</button>
-                        <button class="btn btn-secondary" id="run-goal-watcher">⚽ Run Goal Check</button>
+                        <button class="btn btn-secondary" id="refresh-push-status"><i data-lucide="refresh-cw" class="icon-btn"></i> Refresh Status</button>
+                        <button class="btn btn-secondary" id="run-goal-watcher"><i data-lucide="target" class="icon-btn"></i> Run Goal Check</button>
                     </div>
                 </div>
             </div>
@@ -1054,10 +1123,10 @@
             <div class="section">
                 <div class="section-header" onclick="toggleSection(this.parentElement)">
                     <div class="section-title-group">
-                        <span class="section-icon">📤</span>
+                        <span class="section-icon"><i data-lucide="send" class="icon-sm"></i></span>
                         <h2 class="section-title">Send Test Notification</h2>
                     </div>
-                    <span class="section-toggle">▼</span>
+                    <span class="section-toggle"><i data-lucide="chevron-down" class="icon-sm"></i></span>
                 </div>
                 <div class="section-content">
                     <div class="form-grid">
@@ -1080,7 +1149,7 @@
                         </div>
                     </div>
                     <div class="btn-group mt-2">
-                        <button class="btn btn-primary" id="send-test-push">📤 Send Test Notification</button>
+                        <button class="btn btn-primary" id="send-test-push"><i data-lucide="send" class="icon-btn"></i> Send Test Notification</button>
                     </div>
                     <div id="push-feedback" class="mt-2 text-sm"></div>
                 </div>
@@ -1092,10 +1161,10 @@
             <div class="section">
                 <div class="section-header" onclick="toggleSection(this.parentElement)">
                     <div class="section-title-group">
-                        <span class="section-icon">⚽</span>
+                        <span class="section-icon"><i data-lucide="circle-dot" class="icon-sm"></i></span>
                         <h2 class="section-title">Goal Notification Test</h2>
                     </div>
-                    <span class="section-toggle">▼</span>
+                    <span class="section-toggle"><i data-lucide="chevron-down" class="icon-sm"></i></span>
                 </div>
                 <div class="section-content">
                     <div class="form-grid">
@@ -1159,7 +1228,7 @@
                         </div>
                     </div>
                     <div class="btn-group mt-2">
-                        <button class="btn btn-primary" id="send-goal-test">⚽ Send Goal Test</button>
+                        <button class="btn btn-primary" id="send-goal-test"><i data-lucide="target" class="icon-btn"></i> Send Goal Test</button>
                     </div>
                     <div id="goal-test-feedback" class="mt-2 text-sm"></div>
                 </div>
@@ -1171,10 +1240,10 @@
             <div class="section">
                 <div class="section-header" onclick="toggleSection(this.parentElement)">
                     <div class="section-title-group">
-                        <span class="section-icon">➕</span>
+                        <span class="section-icon"><i data-lucide="plus-circle" class="icon-sm"></i></span>
                         <h2 class="section-title">Create Manual Game</h2>
                     </div>
-                    <span class="section-toggle">▼</span>
+                    <span class="section-toggle"><i data-lucide="chevron-down" class="icon-sm"></i></span>
                 </div>
                 <div class="section-content">
                     <form id="create-game-form">
@@ -1213,7 +1282,7 @@
                             </div>
                         </div>
                         <div class="btn-group mt-2">
-                            <button type="submit" class="btn btn-primary">➕ Create Game</button>
+                            <button type="submit" class="btn btn-primary"><i data-lucide="plus" class="icon-btn"></i> Create Game</button>
                         </div>
                     </form>
                     <div id="create-feedback" class="mt-2 text-sm"></div>
@@ -1226,11 +1295,11 @@
             <div class="section">
                 <div class="section-header" onclick="toggleSection(this.parentElement)">
                     <div class="section-title-group">
-                        <span class="section-icon">🎮</span>
+                        <span class="section-icon"><i data-lucide="gamepad-2" class="icon-sm"></i></span>
                         <h2 class="section-title">Manual Games</h2>
                         <span class="section-badge" id="games-badge">0 games</span>
                     </div>
-                    <span class="section-toggle">▼</span>
+                    <span class="section-toggle"><i data-lucide="chevron-down" class="icon-sm"></i></span>
                 </div>
                 <div class="section-content">
                     <div class="games-list" id="games-list"></div>
@@ -1363,13 +1432,13 @@
         function navigateToSection(sectionId) {
             document.querySelectorAll('.page-section').forEach(s => s.classList.add('hidden'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            
+
             const section = document.getElementById(`section-${sectionId}`);
             const navItem = document.querySelector(`[data-section="${sectionId}"]`);
-            
+
             if (section) { section.classList.remove('hidden'); }
             if (navItem) { navItem.classList.add('active'); }
-            
+
             const titles = {
                 dashboard: 'Dashboard',
                 activity: 'Activity Log',
@@ -1410,7 +1479,7 @@
                 goal: '⚽', cache: '💾', error: '❌', info: 'ℹ️',
                 notification: '🔔', refresh: '🔄', game: '🎮'
             };
-            
+
             if (activityLog.length === 0) {
                 elements.activityList.innerHTML = '<p class="text-muted">No recent activity</p>';
                 return;
@@ -1425,7 +1494,7 @@
                     </div>
                 </div>
             `).join('');
-            
+
             document.getElementById('activity-count').textContent = `${activityLog.length} events`;
         }
 
@@ -1476,8 +1545,8 @@
 
         // ============ Status Cards ============
         function buildStatusCard(title, rows, badge = null) {
-            const badgeHtml = badge 
-                ? `<span class="status-card-badge ${badge.type}">${escapeHtml(badge.text)}</span>` 
+            const badgeHtml = badge
+                ? `<span class="status-card-badge ${badge.type}">${escapeHtml(badge.text)}</span>`
                 : '';
             const dl = rows.map(row => `<dt>${escapeHtml(row.label)}</dt><dd>${escapeHtml(row.value)}</dd>`).join('');
             return `
@@ -1495,20 +1564,31 @@
         async function loadStatus(options = {}) {
             try {
                 const status = await apiRequest('/api/status');
-                
+
                 // Update metrics
                 document.getElementById('metric-uptime').textContent = formatDuration(status.server?.uptime);
                 document.getElementById('metric-uptime-sub').textContent = formatDurationLong(status.server?.uptime);
                 document.getElementById('metric-goals').textContent = status.goalWatcher?.totalGoalsDetected ?? 0;
                 document.getElementById('metric-notifications').textContent = status.goalWatcher?.totalNotificationsSent ?? 0;
                 document.getElementById('metric-live-games').textContent = status.goalWatcher?.trackedGames ?? 0;
-                
-                const activeCaches = [
-                    status.cache?.games?.cached,
-                    status.cache?.standings?.cached,
-                    status.cache?.biathlon?.cached
-                ].filter(Boolean).length;
-                document.getElementById('metric-cache').textContent = `${activeCaches}/3`;
+
+                const cacheItems = [
+                    { name: 'Hockey Games', active: status.cache?.games?.cached },
+                    { name: 'Football Games', active: status.cache?.allsvenskan?.games?.cached },
+                    { name: 'Biathlon Races', active: status.cache?.biathlon?.cached },
+                    { name: 'Hockey Standings', active: status.cache?.standings?.cached },
+                    { name: 'Football Standings', active: status.cache?.allsvenskan?.standings?.cached }
+                ];
+                const activeCaches = cacheItems.filter(c => c.active).length;
+                document.getElementById('metric-cache').textContent = `${activeCaches}/${cacheItems.length}`;
+
+                const cacheStatusList = document.getElementById('cache-status-list');
+                cacheStatusList.innerHTML = cacheItems.map(cache => `
+                    <div class="cache-status-item">
+                        <span class="cache-status-dot ${cache.active ? 'active' : 'inactive'}"></span>
+                        <span>${cache.name}</span>
+                    </div>
+                `).join('');
 
                 // Server status indicator
                 const dot = document.getElementById('server-status-dot');
@@ -1545,26 +1625,42 @@
                     buildStatusCard('Goal Watcher', goalWatcherRows, { type: status.goalWatcher?.running ? 'online' : 'offline', text: status.goalWatcher?.running ? 'Active' : 'Stopped' })
                 ].join('');
 
-                // Cache status
-                const gamesCacheRows = [
+                // Cache status - Games
+                const hockeyGamesRows = [
                     { label: 'Cached', value: status.cache?.games?.cached ? 'Yes' : 'No' },
                     { label: 'Age', value: formatAgeSeconds(status.cache?.games?.ageSeconds) },
-                    { label: 'Fast refresh', value: status.cache?.games?.hasLiveGame ? 'Yes' : 'No' }
+                    { label: 'Live mode', value: status.cache?.games?.hasLiveGame ? 'Yes (15s)' : 'No (60s)' }
+                ];
+                const footballGamesRows = [
+                    { label: 'Cached', value: status.cache?.allsvenskan?.games?.cached ? 'Yes' : 'No' },
+                    { label: 'Age', value: formatAgeSeconds(status.cache?.allsvenskan?.games?.ageSeconds) },
+                    { label: 'Live mode', value: status.cache?.allsvenskan?.games?.hasLiveGame ? 'Yes (15s)' : 'No (60s)' }
+                ];
+                const biathlonRacesRows = [
+                    { label: 'Cached', value: status.cache?.biathlon?.cached ? 'Yes' : 'No' },
+                    { label: 'Age', value: formatAgeSeconds(status.cache?.biathlon?.ageSeconds) },
+                    { label: 'TTL', value: status.cache?.biathlon?.cacheDuration ?? '30m' }
+                ];
+                const standingsRows = [
+                    { label: 'Hockey', value: status.cache?.standings?.cached ? 'Yes' : 'No' },
+                    { label: 'Football', value: status.cache?.allsvenskan?.standings?.cached ? 'Yes' : 'No' },
+                    { label: 'TTL', value: '5 minutes' }
                 ];
                 const mediaCacheRows = [
-                    { label: 'Details entries', value: status.cache?.details?.entriesCount ?? '-' },
-                    { label: 'Videos entries', value: status.cache?.videos?.entriesCount ?? '-' }
-                ];
-                const standingsCacheRows = [
-                    { label: 'SHL cached', value: status.cache?.standings?.cached ? 'Yes' : 'No' },
-                    { label: 'Biathlon cached', value: status.cache?.biathlon?.cached ? 'Yes' : 'No' }
+                    { label: 'Game details', value: status.cache?.details?.entriesCount ?? 0 },
+                    { label: 'Videos', value: status.cache?.videos?.entriesCount ?? 0 },
+                    { label: 'Football details', value: status.cache?.allsvenskan?.details?.entriesCount ?? 0 }
                 ];
 
                 elements.cacheStatusGrid.innerHTML = [
-                    buildStatusCard('Games Cache', gamesCacheRows),
-                    buildStatusCard('Media Cache', mediaCacheRows),
-                    buildStatusCard('Standings', standingsCacheRows)
+                    buildStatusCard('Hockey Games', hockeyGamesRows, { type: status.cache?.games?.cached ? 'online' : 'offline', text: status.cache?.games?.cached ? 'Cached' : 'Empty' }),
+                    buildStatusCard('Football Games', footballGamesRows, { type: status.cache?.allsvenskan?.games?.cached ? 'online' : 'offline', text: status.cache?.allsvenskan?.games?.cached ? 'Cached' : 'Empty' }),
+                    buildStatusCard('Biathlon Races', biathlonRacesRows, { type: status.cache?.biathlon?.cached ? 'online' : 'offline', text: status.cache?.biathlon?.cached ? 'Cached' : 'Empty' }),
+                    buildStatusCard('Standings', standingsRows),
+                    buildStatusCard('Media & Details', mediaCacheRows)
                 ].join('');
+
+                refreshIcons();
 
                 if (options.showMessage) {
                     showToast('success', 'Status Updated', 'All system status refreshed');
@@ -1597,6 +1693,8 @@
                     buildStatusCard('Goal Watcher', goalWatcherRows, { type: status.goalWatcher?.running ? 'online' : 'offline', text: status.goalWatcher?.running ? 'Active' : 'Stopped' })
                 ].join('');
 
+                refreshIcons();
+
                 if (options.showMessage) {
                     showToast('success', 'Status Updated', 'Push notification status refreshed');
                 }
@@ -1610,15 +1708,17 @@
             try {
                 const data = await apiRequest('/api/sports');
                 sports = Array.isArray(data) ? data : [];
-                
-                const sportIcons = { shl: '🏒', allsvenskan: '⚽', biathlon: '🎿' };
+
+                const sportIcons = { shl: 'Disc3', allsvenskan: 'Circle', biathlon: 'Crosshair' };
                 elements.sportsGrid.innerHTML = sports.map(sport => {
                     const rows = [
                         { label: 'ID', value: sport?.id || '-' },
                         { label: 'Icon', value: sport?.icon || '-' }
                     ];
-                    return buildStatusCard(sport?.name || 'Unknown', rows, { type: 'online', text: sportIcons[sport?.id] || '🏆' });
+                    return buildStatusCard(sport?.name || 'Unknown', rows, { type: 'online', text: sport?.id?.toUpperCase() || 'SPORT' });
                 }).join('');
+
+                refreshIcons();
 
                 if (options.showMessage) {
                     showToast('success', 'Sports Updated', `Loaded ${sports.length} sport(s)`);
@@ -1660,7 +1760,7 @@
         }
 
         function populateTeamSelect(select) {
-            select.innerHTML = teams.map(team => 
+            select.innerHTML = teams.map(team =>
                 `<option value="${escapeHtml(team.code)}">${escapeHtml(team.names.long || team.names.short || team.code)}</option>`
             ).join('');
         }
@@ -1707,7 +1807,7 @@
 
         function renderGames(records) {
             document.getElementById('games-badge').textContent = `${records.length} games`;
-            
+
             if (!records.length) {
                 elements.gamesList.innerHTML = '<p class="text-muted">No manual games yet. Create one to get started.</p>';
                 return;
@@ -1750,18 +1850,20 @@
                             </div>
                         </div>
                         <div class="game-actions">
-                            <button class="btn btn-primary btn-sm" data-action="save">💾 Save</button>
-                            <button class="btn btn-danger btn-sm" data-action="delete">🗑️ Delete</button>
+                            <button class="btn btn-primary btn-sm" data-action="save"><i data-lucide="save" class="icon-btn"></i> Save</button>
+                            <button class="btn btn-danger btn-sm" data-action="delete"><i data-lucide="trash-2" class="icon-btn"></i> Delete</button>
                         </div>
                         <p class="text-muted text-sm mt-1">Updated ${escapeHtml(formatTimestamp(record.updatedAt))}</p>
                     </div>
                 `;
             }).join('');
 
+            refreshIcons();
+
             // Attach event listeners
             elements.gamesList.querySelectorAll('.game-card').forEach(card => {
                 const id = card.dataset.id;
-                
+
                 card.querySelector('[data-action="save"]').addEventListener('click', async () => {
                     const payload = {
                         state: card.querySelector('[data-field="state"]').value,
@@ -1851,7 +1953,7 @@
 
             // Status section
             document.getElementById('refresh-status').addEventListener('click', () => loadStatus({ showMessage: true }));
-            
+
             // Cache section
             document.getElementById('clear-cache').addEventListener('click', clearCache);
             document.getElementById('refresh-cache-status').addEventListener('click', () => loadStatus({ showMessage: true }));
@@ -1873,10 +1975,10 @@
             const testPushTargetId = document.getElementById('test-push-target-id');
             const goalTestTargetType = document.getElementById('goal-test-target-type');
             const goalTestTargetId = document.getElementById('goal-test-target-id');
-            
+
             updateTargetInput(testPushTargetType, testPushTargetId);
             updateTargetInput(goalTestTargetType, goalTestTargetId);
-            
+
             testPushTargetType.addEventListener('change', () => updateTargetInput(testPushTargetType, testPushTargetId));
             goalTestTargetType.addEventListener('change', () => {
                 updateTargetInput(goalTestTargetType, goalTestTargetId);
@@ -2036,7 +2138,7 @@
                 });
                 showToast('success', 'Game Created', 'Manual game created successfully');
                 addActivity('game', `Game created: ${payload.homeTeamCode} vs ${payload.awayTeamCode}`);
-                
+
                 // Reset form
                 document.getElementById('home-score').value = 0;
                 document.getElementById('away-score').value = 0;
@@ -2044,7 +2146,7 @@
                 document.getElementById('start-time').value = toLocalDateTimeValue(new Date());
                 venueTouched = false;
                 updateVenueFromHomeTeam();
-                
+
                 await loadGames();
             } catch (error) {
                 showToast('error', 'Error', error.message);
@@ -2054,12 +2156,21 @@
         }
 
         // ============ Initialize ============
+        function refreshIcons() {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
         async function init() {
             document.getElementById('start-time').value = toLocalDateTimeValue(new Date());
-            
+
+            // Initialize Lucide icons
+            refreshIcons();
+
             setupEventListeners();
             initCharts();
-            
+
             await Promise.all([
                 loadTeams(),
                 loadFootballTeams()
@@ -2076,6 +2187,9 @@
 
             addActivity('info', 'Admin console loaded');
             renderActivityLog();
+
+            // Refresh icons after dynamic content is loaded
+            refreshIcons();
 
             // Auto-refresh
             setInterval(() => loadStatus(), 15000);
