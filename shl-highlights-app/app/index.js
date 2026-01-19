@@ -710,7 +710,7 @@ const styles = StyleSheet.create({
     },
     listContent: {
         padding: 16,
-        paddingTop: 8
+        paddingTop: 24
     },
     standingsHeader: {
         backgroundColor: '#1c1c1e',
