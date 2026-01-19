@@ -1,4 +1,4 @@
-import { View, Text, Modal, ScrollView, TouchableOpacity, Image, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Modal, ScrollView, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,11 +6,10 @@ import { getTeamLogoUrl } from '../../api/shl';
 import { APP_NAME, GENDER_OPTIONS } from '../../constants';
 import { LogoMark } from '../LogoMark';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
 const CHIP_GAP = 8;
 const CONTENT_PADDING = 24;
-// Calculate chip width for 3 columns with gaps
-const CHIP_WIDTH = (SCREEN_WIDTH - (CONTENT_PADDING * 2) - (CHIP_GAP * 2)) / 3;
+// Use percentage-based width for 3 columns (accounts for 2 gaps between items)
+const CHIP_WIDTH_PERCENT = '31%';
 
 export const OnboardingModal = ({
     visible,
@@ -365,7 +364,8 @@ const styles = StyleSheet.create({
     },
     // Base team chip style (used for hockey and football)
     teamChip: {
-        width: CHIP_WIDTH,
+        flexBasis: CHIP_WIDTH_PERCENT,
+        flexGrow: 1,
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
@@ -379,7 +379,8 @@ const styles = StyleSheet.create({
     },
     // Nation chip (slightly smaller, horizontal layout)
     nationChip: {
-        width: CHIP_WIDTH,
+        flexBasis: CHIP_WIDTH_PERCENT,
+        flexGrow: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',

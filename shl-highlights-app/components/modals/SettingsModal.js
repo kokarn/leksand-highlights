@@ -1,4 +1,4 @@
-import { View, Text, Modal, ScrollView, TouchableOpacity, Image, StyleSheet, Dimensions, Switch } from 'react-native';
+import { View, Text, Modal, ScrollView, TouchableOpacity, Image, StyleSheet, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
@@ -7,12 +7,11 @@ import { GENDER_OPTIONS } from '../../constants';
 
 const APP_VERSION = Constants.expoConfig?.version || '1.0.0';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
 const CHIP_GAP = 8;
 const CONTENT_PADDING = 16;
-// Calculate chip width for 3 columns with gaps (inside card which has 16px padding)
 const CARD_INNER_PADDING = 16;
-const CHIP_WIDTH = (SCREEN_WIDTH - (CONTENT_PADDING * 2) - (CARD_INNER_PADDING * 2) - (CHIP_GAP * 2)) / 3;
+// Use percentage-based width for 3 columns (accounts for 2 gaps between items)
+const CHIP_WIDTH_PERCENT = '31%';
 
 export const SettingsModal = ({
     visible,
@@ -334,7 +333,8 @@ const styles = StyleSheet.create({
     },
     // Base team chip style
     teamChip: {
-        width: CHIP_WIDTH,
+        flexBasis: CHIP_WIDTH_PERCENT,
+        flexGrow: 1,
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
@@ -348,7 +348,8 @@ const styles = StyleSheet.create({
     },
     // Nation chip
     nationChip: {
-        width: CHIP_WIDTH,
+        flexBasis: CHIP_WIDTH_PERCENT,
+        flexGrow: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
