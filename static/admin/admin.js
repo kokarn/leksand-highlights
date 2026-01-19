@@ -12,7 +12,9 @@ const elements = {
     gamesList: document.getElementById('games-list'),
     activityList: document.getElementById('activity-list'),
     notificationsChart: document.getElementById('notifications-chart'),
-    cacheChart: document.getElementById('cache-chart')
+    cacheChart: document.getElementById('cache-chart'),
+    mobileMenuButton: document.getElementById('mobile-menu-btn'),
+    sidebarOverlay: document.getElementById('sidebar-overlay')
 };
 
 // ============ State ============
@@ -180,6 +182,36 @@ function navigateToSection(sectionId) {
 
 function toggleSection(section) {
     section.classList.toggle('collapsed');
+}
+
+function setSidebarOpen(isOpen) {
+    if (!elements.sidebar) {
+        return;
+    }
+    if (isOpen) {
+        elements.sidebar.classList.add('open');
+        if (elements.sidebarOverlay) {
+            elements.sidebarOverlay.classList.add('visible');
+        }
+        return;
+    }
+    elements.sidebar.classList.remove('open');
+    if (elements.sidebarOverlay) {
+        elements.sidebarOverlay.classList.remove('visible');
+    }
+}
+
+function toggleSidebar() {
+    if (!elements.sidebar) {
+        return;
+    }
+    setSidebarOpen(!elements.sidebar.classList.contains('open'));
+}
+
+function closeSidebarOnMobile() {
+    if (window.matchMedia('(max-width: 1024px)').matches) {
+        setSidebarOpen(false);
+    }
 }
 
 // ============ API Requests ============
@@ -709,7 +741,30 @@ function parseNumericInput(value) {
 function setupEventListeners() {
     // Navigation
     document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', () => navigateToSection(item.dataset.section));
+        item.addEventListener('click', () => {
+            navigateToSection(item.dataset.section);
+            closeSidebarOnMobile();
+        });
+    });
+
+    if (elements.mobileMenuButton) {
+        elements.mobileMenuButton.addEventListener('click', toggleSidebar);
+    }
+
+    if (elements.sidebarOverlay) {
+        elements.sidebarOverlay.addEventListener('click', () => setSidebarOpen(false));
+    }
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 1024) {
+            setSidebarOpen(false);
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            setSidebarOpen(false);
+        }
     });
 
     // Refresh all
