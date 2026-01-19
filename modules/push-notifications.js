@@ -13,6 +13,41 @@ let stats = {
     lastSent: null
 };
 
+function normalizeIdArray(value) {
+    if (!value) {
+        return [];
+    }
+    if (Array.isArray(value)) {
+        return value
+            .map(entry => String(entry || '').trim())
+            .filter(Boolean);
+    }
+    const trimmed = String(value).trim();
+    return trimmed ? [trimmed] : [];
+}
+
+function normalizeTarget(target) {
+    if (!target || typeof target !== 'object') {
+        return null;
+    }
+
+    const subscriptionIds = normalizeIdArray(target.subscriptionIds || target.subscriptionId);
+    const playerIds = normalizeIdArray(target.playerIds || target.playerId);
+    const externalUserIds = normalizeIdArray(target.externalUserIds || target.externalUserId);
+    const includeAll = Boolean(target.includeAll || target.sendToAll);
+
+    if (!subscriptionIds.length && !playerIds.length && !externalUserIds.length && !includeAll) {
+        return null;
+    }
+
+    return {
+        subscriptionIds,
+        playerIds,
+        externalUserIds,
+        includeAll
+    };
+}
+
 /**
  * Check if OneSignal is properly configured
  * @returns {boolean} Whether OneSignal is configured
@@ -27,10 +62,11 @@ function isConfigured() {
  * @param {string} options.title - Notification title
  * @param {string} options.message - Notification message
  * @param {Array} options.filters - OneSignal filters for targeting
+ * @param {Object} options.target - Direct targeting options (subscriptionIds, playerIds, externalUserIds, includeAll)
  * @param {Object} options.data - Additional data to include
  * @returns {Promise<Object>} OneSignal API response
  */
-async function sendNotification({ title, message, filters = [], data = {} }) {
+async function sendNotification({ title, message, filters = [], target = null, data = {} }) {
     if (!isConfigured()) {
         console.warn('[PushNotifications] OneSignal not configured. Set ONESIGNAL_APP_ID and ONESIGNAL_REST_API_KEY environment variables.');
         return { success: false, error: 'Not configured' };
@@ -43,8 +79,31 @@ async function sendNotification({ title, message, filters = [], data = {} }) {
         data
     };
 
-    // Add targeting filters if provided
-    if (filters.length > 0) {
+    const normalizedTarget = normalizeTarget(target);
+
+    if (normalizedTarget?.subscriptionIds?.length) {
+        payload.include_subscription_ids = normalizedTarget.subscriptionIds;
+    }
+
+    if (normalizedTarget?.playerIds?.length) {
+        payload.include_player_ids = normalizedTarget.playerIds;
+    }
+
+    if (normalizedTarget?.externalUserIds?.length) {
+        payload.include_external_user_ids = normalizedTarget.externalUserIds;
+    }
+
+    const hasDirectTarget = Boolean(
+        normalizedTarget?.subscriptionIds?.length
+        || normalizedTarget?.playerIds?.length
+        || normalizedTarget?.externalUserIds?.length
+    );
+
+    if (hasDirectTarget) {
+        // Direct target overrides filters.
+    } else if (normalizedTarget?.includeAll) {
+        payload.included_segments = ['Subscribed Users'];
+    } else if (filters.length > 0) {
         payload.filters = filters;
     } else {
         // Default: send to all subscribed users with goal_notifications tag
@@ -87,7 +146,11 @@ async function sendNotification({ title, message, filters = [], data = {} }) {
  * @param {Object} goal - Goal details from goal-watcher
  * @returns {Promise<Object>} Send result
  */
-async function sendGoalNotification(goal) {
+async function sendGoalNotification(goal, options = {}) {
+    const {
+        target = null,
+        sendOpposing = !target
+    } = options;
     const {
         sport,
         gameId,
@@ -161,11 +224,12 @@ async function sendGoalNotification(goal) {
         title,
         message,
         filters: simpleFilters,
+        target,
         data
     });
 
     // Also send to opposing team followers with slightly different message
-    if (homeTeamCode && awayTeamCode) {
+    if (sendOpposing && homeTeamCode && awayTeamCode) {
         const opposingCode = scoringTeamCode === homeTeamCode ? awayTeamCode : homeTeamCode;
         const opposingFilters = [
             { field: 'tag', key: 'goal_notifications', relation: '=', value: 'true' },
@@ -178,6 +242,7 @@ async function sendGoalNotification(goal) {
             title: `${sportEmoji} Goal Against`,
             message: `${scoringTeamName} scored. ${homeScore}-${awayScore}`,
             filters: opposingFilters,
+            target: sendOpposing && target ? target : null,
             data
         }).catch(err => console.error('[PushNotifications] Error sending opposing team notification:', err));
     }
@@ -190,7 +255,18 @@ async function sendGoalNotification(goal) {
  * @param {string} message - Test message
  * @returns {Promise<Object>} Send result
  */
-async function sendTestNotification(message = 'This is a test notification from GamePulse!') {
+async function sendTestNotification(messageOrOptions = 'This is a test notification from GamePulse!') {
+    const defaultMessage = 'This is a test notification from GamePulse!';
+    let message = defaultMessage;
+    let target = null;
+
+    if (typeof messageOrOptions === 'object' && messageOrOptions !== null) {
+        message = messageOrOptions.message || defaultMessage;
+        target = messageOrOptions.target || null;
+    } else {
+        message = messageOrOptions || defaultMessage;
+    }
+
     return sendNotification({
         title: '🔔 Test Notification',
         message,
@@ -198,6 +274,7 @@ async function sendTestNotification(message = 'This is a test notification from 
             // Send to all users with goal_notifications enabled
             { field: 'tag', key: 'goal_notifications', relation: '=', value: 'true' }
         ],
+        target,
         data: { type: 'test' }
     });
 }

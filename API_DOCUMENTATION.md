@@ -520,6 +520,141 @@ Returns server status including cache info, scheduler status, and notifier stats
 
 ---
 
+### `GET /api/notifications/status`
+
+Returns the push notification and goal watcher status.
+
+**Response:**
+```json
+{
+  "timestamp": "2026-01-17 11:17:27",
+  "pushNotifications": {
+    "configured": true,
+    "notificationsSent": 12,
+    "errors": 0,
+    "lastSent": "2026-01-17 11:15:04"
+  },
+  "goalWatcher": {
+    "running": true,
+    "lastCheck": "2026-01-17 11:17:12",
+    "gamesChecked": 1,
+    "totalGoalsDetected": 2,
+    "totalNotificationsSent": 2,
+    "trackedGames": 1
+  }
+}
+```
+
+---
+
+### `POST /api/notifications/test`
+
+Sends a test push notification.
+
+**Request Body (optional fields):**
+```json
+{
+  "message": "Custom test message",
+  "subscriptionId": "onesignal-subscription-id",
+  "playerId": "legacy-player-id",
+  "externalUserId": "external-user-id",
+  "sendToAll": false
+}
+```
+
+- If a target ID is provided, it will send directly to that device/user.
+- If no target is provided, it defaults to the `goal_notifications=true` tag.
+- `sendToAll` targets the OneSignal "Subscribed Users" segment when no direct target is set.
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Test notification sent",
+  "timestamp": "2026-01-17 11:17:31",
+  "result": {
+    "success": true,
+    "recipients": 1,
+    "id": "notification-id"
+  },
+  "target": {
+    "subscriptionIds": ["onesignal-subscription-id"]
+  }
+}
+```
+
+---
+
+### `POST /api/notifications/goal-test`
+
+Sends a simulated goal notification without waiting for a live game.
+
+**Request Body:**
+```json
+{
+  "sport": "shl",
+  "scoringTeamCode": "LIF",
+  "opposingTeamCode": "FHC",
+  "scoringIsHome": true,
+  "scorerName": "Test Scorer",
+  "homeScore": 1,
+  "awayScore": 0,
+  "period": "P1",
+  "time": "12:34",
+  "sendOpposing": true,
+  "subscriptionId": "onesignal-subscription-id"
+}
+```
+
+- If a target ID is provided, it sends directly to that device/user.
+- If no target is provided, it uses team tags and goal notification tags.
+- `sendOpposing` controls whether an opposing-team notification is also sent.
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Goal notification sent",
+  "timestamp": "2026-01-17 11:17:31",
+  "result": {
+    "success": true,
+    "recipients": 1,
+    "id": "notification-id"
+  },
+  "goal": {
+    "sport": "shl",
+    "scoringTeamCode": "LIF",
+    "opposingTeamCode": "FHC",
+    "homeTeamCode": "LIF",
+    "awayTeamCode": "FHC",
+    "homeScore": 1,
+    "awayScore": 0,
+    "scorerName": "Test Scorer",
+    "time": "12:34",
+    "period": "P1"
+  }
+}
+```
+
+---
+
+### `POST /api/goal-watcher/check`
+
+Manually triggers a goal watcher check and sends notifications for any newly detected goals.
+
+**Response:**
+```json
+{
+  "message": "Goal check completed",
+  "timestamp": "2026-01-17 11:17:31",
+  "gamesChecked": 1,
+  "newGoals": [],
+  "notificationsSent": 0
+}
+```
+
+---
+
 ## Event Types
 
 The `events.all` array contains various event types:

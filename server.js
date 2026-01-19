@@ -112,6 +112,71 @@ function sendAdminError(res, error) {
     res.status(400).json({ error: message });
 }
 
+function normalizeTeamCode(value) {
+    if (!value) {
+        return '';
+    }
+    return String(value).trim().toUpperCase();
+}
+
+function parseOptionalNumber(value) {
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+    const parsed = Number(value);
+    if (Number.isNaN(parsed)) {
+        return null;
+    }
+    return parsed;
+}
+
+function parseOptionalBoolean(value, fallback = false) {
+    if (value === null || value === undefined || value === '') {
+        return fallback;
+    }
+    if (typeof value === 'boolean') {
+        return value;
+    }
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (['true', '1', 'yes', 'y'].includes(normalized)) {
+            return true;
+        }
+        if (['false', '0', 'no', 'n'].includes(normalized)) {
+            return false;
+        }
+    }
+    return Boolean(value);
+}
+
+function buildNotificationTarget(payload) {
+    if (!payload || typeof payload !== 'object') {
+        return null;
+    }
+
+    const target = {};
+    const subscriptionIds = payload.subscriptionIds ?? payload.subscriptionId;
+    const playerIds = payload.playerIds ?? payload.playerId;
+    const externalUserIds = payload.externalUserIds ?? payload.externalUserId;
+
+    if (subscriptionIds) {
+        target.subscriptionIds = subscriptionIds;
+    }
+    if (playerIds) {
+        target.playerIds = playerIds;
+    }
+    if (externalUserIds) {
+        target.externalUserIds = externalUserIds;
+    }
+
+    const hasDirectTarget = Object.keys(target).length > 0;
+    if (!hasDirectTarget && parseOptionalBoolean(payload.sendToAll, false)) {
+        target.sendToAll = true;
+    }
+
+    return Object.keys(target).length ? target : null;
+}
+
 // ============ API ENDPOINTS ============
 
 app.get('/admin', (req, res) => {
@@ -866,12 +931,107 @@ app.post('/api/notifications/test', async (req, res) => {
 
     try {
         const message = req.body?.message || 'Test notification from GamePulse!';
-        const result = await pushNotifications.sendTestNotification(message);
+        const target = buildNotificationTarget(req.body);
+        const result = await pushNotifications.sendTestNotification({ message, target });
         res.json({
             success: result.success,
             message: 'Test notification sent',
             timestamp: formatSwedishTimestamp(),
-            result
+            result,
+            target
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /api/notifications/goal-test
+ * Send a simulated goal notification
+ */
+app.post('/api/notifications/goal-test', async (req, res) => {
+    console.log('[API] Goal notification test triggered');
+
+    if (!pushNotifications.isConfigured()) {
+        return res.status(503).json({
+            error: 'Push notifications not configured. Set ONESIGNAL_APP_ID and ONESIGNAL_REST_API_KEY environment variables.'
+        });
+    }
+
+    try {
+        const payload = req.body || {};
+        const scoringTeamCode = normalizeTeamCode(payload.scoringTeamCode || payload.scoringTeam);
+        const opposingTeamCode = normalizeTeamCode(payload.opposingTeamCode || payload.opponentTeamCode);
+
+        if (!scoringTeamCode || !opposingTeamCode) {
+            return res.status(400).json({
+                error: 'scoringTeamCode and opposingTeamCode are required.'
+            });
+        }
+
+        const sport = payload.sport === 'allsvenskan' ? 'allsvenskan' : 'shl';
+        const scoringIsHome = parseOptionalBoolean(payload.scoringIsHome, true);
+        const homeTeamCode = normalizeTeamCode(payload.homeTeamCode)
+            || (scoringIsHome ? scoringTeamCode : opposingTeamCode);
+        const awayTeamCode = normalizeTeamCode(payload.awayTeamCode)
+            || (scoringIsHome ? opposingTeamCode : scoringTeamCode);
+
+        let homeScore = parseOptionalNumber(payload.homeScore);
+        let awayScore = parseOptionalNumber(payload.awayScore);
+
+        if (homeScore === null || awayScore === null) {
+            if (scoringIsHome) {
+                homeScore = homeScore ?? 1;
+                awayScore = awayScore ?? 0;
+            } else {
+                homeScore = homeScore ?? 0;
+                awayScore = awayScore ?? 1;
+            }
+        }
+
+        const scorerName = payload.scorerName ? String(payload.scorerName).trim() : 'Test Scorer';
+        const time = payload.time ? String(payload.time).trim() : (sport === 'shl' ? '12:34' : '54:21');
+        const period = payload.period ? String(payload.period).trim() : (sport === 'shl' ? 'P1' : '1st half');
+        const target = buildNotificationTarget(payload);
+        const sendOpposing = parseOptionalBoolean(payload.sendOpposing, !target);
+
+        const goalDetails = {
+            sport,
+            gameId: `test-${Date.now()}`,
+            scorerName,
+            scoringTeamCode,
+            scoringTeamName: payload.scoringTeamName ? String(payload.scoringTeamName).trim() : scoringTeamCode,
+            opposingTeamCode,
+            opposingTeamName: payload.opposingTeamName ? String(payload.opposingTeamName).trim() : opposingTeamCode,
+            homeTeamCode,
+            awayTeamCode,
+            homeScore,
+            awayScore,
+            time,
+            period
+        };
+
+        const result = await pushNotifications.sendGoalNotification(goalDetails, { target, sendOpposing });
+
+        res.json({
+            success: result.success,
+            message: 'Goal notification sent',
+            timestamp: formatSwedishTimestamp(),
+            result,
+            target,
+            sendOpposing,
+            goal: {
+                sport,
+                scoringTeamCode,
+                opposingTeamCode,
+                homeTeamCode,
+                awayTeamCode,
+                homeScore,
+                awayScore,
+                scorerName,
+                time,
+                period
+            }
         });
     } catch (error) {
         res.status(500).json({ error: error.message });

@@ -158,6 +158,32 @@
             align-items: end;
         }
 
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .checkbox-field {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+
+        .checkbox-field label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .checkbox-field input {
+            margin: 0;
+        }
+
         label {
             font-size: 0.8rem;
             color: var(--text-secondary);
@@ -271,11 +297,99 @@
             <div class="actions" style="margin-top: 1rem;">
                 <button id="refresh-push-status" class="secondary">Refresh status</button>
                 <button id="run-goal-watcher" class="secondary">Run goal check</button>
-                <button id="send-test-push">Send test notification</button>
             </div>
-            <div style="margin-top: 1rem;">
-                <label for="test-push-message">Test message (optional)</label>
-                <input id="test-push-message" type="text" placeholder="Custom message for test notification" style="max-width: 400px;" />
+            <div style="margin-top: 1.25rem;">
+                <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">Test notification</h3>
+                <div class="form-grid">
+                    <div>
+                        <label for="test-push-message">Message (optional)</label>
+                        <input id="test-push-message" type="text" placeholder="Custom message for test notification" />
+                    </div>
+                    <div>
+                        <label for="test-push-target-type">Target type</label>
+                        <select id="test-push-target-type">
+                            <option value="tags">Goal notifications tag</option>
+                            <option value="subscription">Subscription ID</option>
+                            <option value="player">Player ID (legacy)</option>
+                            <option value="external">External user ID</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="test-push-target-id">Target ID (optional)</label>
+                        <input id="test-push-target-id" type="text" placeholder="OneSignal subscription ID" />
+                    </div>
+                </div>
+                <div class="actions" style="margin-top: 0.75rem;">
+                    <button id="send-test-push">Send test notification</button>
+                </div>
+            </div>
+            <div style="margin-top: 1.5rem;">
+                <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">Goal notification test</h3>
+                <div class="form-grid">
+                    <div>
+                        <label for="goal-test-sport">Sport</label>
+                        <select id="goal-test-sport">
+                            <option value="shl">SHL</option>
+                            <option value="allsvenskan">Allsvenskan</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="goal-test-scoring-team">Scoring team code</label>
+                        <input id="goal-test-scoring-team" type="text" placeholder="LIF" />
+                    </div>
+                    <div>
+                        <label for="goal-test-opposing-team">Opposing team code</label>
+                        <input id="goal-test-opposing-team" type="text" placeholder="FHC" />
+                    </div>
+                    <div class="checkbox-field">
+                        <label for="goal-test-scoring-home">
+                            <input id="goal-test-scoring-home" type="checkbox" checked />
+                            Scoring team is home team
+                        </label>
+                    </div>
+                    <div>
+                        <label for="goal-test-scorer-name">Scorer name</label>
+                        <input id="goal-test-scorer-name" type="text" placeholder="Test Scorer" />
+                    </div>
+                    <div>
+                        <label for="goal-test-home-score">Home score</label>
+                        <input id="goal-test-home-score" type="number" min="0" placeholder="1" />
+                    </div>
+                    <div>
+                        <label for="goal-test-away-score">Away score</label>
+                        <input id="goal-test-away-score" type="number" min="0" placeholder="0" />
+                    </div>
+                    <div>
+                        <label for="goal-test-period">Period/half</label>
+                        <input id="goal-test-period" type="text" placeholder="P1" />
+                    </div>
+                    <div>
+                        <label for="goal-test-time">Time</label>
+                        <input id="goal-test-time" type="text" placeholder="12:34" />
+                    </div>
+                    <div>
+                        <label for="goal-test-target-type">Target type</label>
+                        <select id="goal-test-target-type">
+                            <option value="tags">Team tags</option>
+                            <option value="subscription">Subscription ID</option>
+                            <option value="player">Player ID (legacy)</option>
+                            <option value="external">External user ID</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="goal-test-target-id">Target ID (optional)</label>
+                        <input id="goal-test-target-id" type="text" placeholder="OneSignal subscription ID" />
+                    </div>
+                    <div class="checkbox-field">
+                        <label for="goal-test-send-opposing">
+                            <input id="goal-test-send-opposing" type="checkbox" checked />
+                            Send opposing notification
+                        </label>
+                    </div>
+                </div>
+                <div class="actions" style="margin-top: 0.75rem;">
+                    <button id="send-goal-test" class="secondary">Send goal test</button>
+                </div>
             </div>
             <div class="feedback" id="push-feedback"></div>
         </section>
@@ -340,6 +454,21 @@
         const pushStatusGrid = document.getElementById('push-status-grid');
         const pushFeedback = document.getElementById('push-feedback');
         const testPushMessageInput = document.getElementById('test-push-message');
+        const testPushTargetType = document.getElementById('test-push-target-type');
+        const testPushTargetId = document.getElementById('test-push-target-id');
+
+        const goalTestSport = document.getElementById('goal-test-sport');
+        const goalTestScoringTeam = document.getElementById('goal-test-scoring-team');
+        const goalTestOpposingTeam = document.getElementById('goal-test-opposing-team');
+        const goalTestScoringHome = document.getElementById('goal-test-scoring-home');
+        const goalTestScorerName = document.getElementById('goal-test-scorer-name');
+        const goalTestHomeScore = document.getElementById('goal-test-home-score');
+        const goalTestAwayScore = document.getElementById('goal-test-away-score');
+        const goalTestPeriod = document.getElementById('goal-test-period');
+        const goalTestTime = document.getElementById('goal-test-time');
+        const goalTestTargetType = document.getElementById('goal-test-target-type');
+        const goalTestTargetId = document.getElementById('goal-test-target-id');
+        const goalTestSendOpposing = document.getElementById('goal-test-send-opposing');
 
         const homeTeamSelect = document.getElementById('home-team');
         const awayTeamSelect = document.getElementById('away-team');
@@ -358,6 +487,7 @@
         const refreshPushStatusButton = document.getElementById('refresh-push-status');
         const runGoalWatcherButton = document.getElementById('run-goal-watcher');
         const sendTestPushButton = document.getElementById('send-test-push');
+        const sendGoalTestButton = document.getElementById('send-goal-test');
 
         let teams = [];
         let sports = [];
@@ -490,6 +620,52 @@
                 throw new Error(payload.error || 'Request failed');
             }
             return payload;
+        }
+
+        const TARGET_PLACEHOLDERS = {
+            tags: 'No ID needed (uses tags)',
+            subscription: 'OneSignal subscription ID',
+            player: 'OneSignal player ID',
+            external: 'External user ID'
+        };
+
+        function updateTargetInput(select, input) {
+            const type = select.value;
+            input.placeholder = TARGET_PLACEHOLDERS[type] || 'Target ID';
+            const shouldDisable = type === 'tags';
+            input.disabled = shouldDisable;
+            if (shouldDisable) {
+                input.value = '';
+            }
+        }
+
+        function buildTargetPayload(type, id) {
+            if (type === 'tags') {
+                return {};
+            }
+            const trimmed = id.trim();
+            if (!trimmed) {
+                throw new Error('Target ID is required for the selected target type.');
+            }
+            if (type === 'subscription') {
+                return { subscriptionId: trimmed };
+            }
+            if (type === 'player') {
+                return { playerId: trimmed };
+            }
+            if (type === 'external') {
+                return { externalUserId: trimmed };
+            }
+            return {};
+        }
+
+        function parseNumericInput(value) {
+            const trimmed = String(value || '').trim();
+            if (!trimmed) {
+                return null;
+            }
+            const parsed = Number(trimmed);
+            return Number.isNaN(parsed) ? null : parsed;
         }
 
         async function loadStatus(options = {}) {
@@ -865,16 +1041,21 @@
             try {
                 sendTestPushButton.disabled = true;
                 const message = testPushMessageInput.value.trim() || undefined;
-                const body = message ? JSON.stringify({ message }) : '{}';
+                const targetPayload = buildTargetPayload(testPushTargetType.value, testPushTargetId.value);
+                const body = {
+                    ...(message ? { message } : {}),
+                    ...targetPayload
+                };
                 const result = await apiRequest('/api/notifications/test', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body
+                    body: JSON.stringify(body)
                 });
                 const details = [
                     result.success ? 'Test notification sent!' : 'Failed to send notification',
                     result.timestamp ? `Timestamp: ${formatTimestamp(result.timestamp)}` : null,
                     result.result?.recipients !== undefined ? `Recipients: ${result.result.recipients}` : null,
+                    result.target ? `Target: ${JSON.stringify(result.target)}` : null,
                     result.result?.error ? `Error: ${result.result.error}` : null
                 ].filter(Boolean);
                 showFeedback(pushFeedback, details.join('\n'), result.success ? 'success' : 'error');
@@ -883,6 +1064,60 @@
                 showFeedback(pushFeedback, error.message, 'error');
             } finally {
                 sendTestPushButton.disabled = false;
+            }
+        });
+
+        sendGoalTestButton.addEventListener('click', async () => {
+            try {
+                sendGoalTestButton.disabled = true;
+                const scoringTeamCode = goalTestScoringTeam.value.trim().toUpperCase();
+                const opposingTeamCode = goalTestOpposingTeam.value.trim().toUpperCase();
+
+                if (!scoringTeamCode || !opposingTeamCode) {
+                    throw new Error('Scoring and opposing team codes are required.');
+                }
+
+                const targetPayload = buildTargetPayload(goalTestTargetType.value, goalTestTargetId.value);
+                const homeScoreValue = parseNumericInput(goalTestHomeScore.value);
+                const awayScoreValue = parseNumericInput(goalTestAwayScore.value);
+                const periodValue = goalTestPeriod.value.trim();
+                const timeValue = goalTestTime.value.trim();
+                const scorerNameValue = goalTestScorerName.value.trim();
+
+                const body = {
+                    sport: goalTestSport.value,
+                    scoringTeamCode,
+                    opposingTeamCode,
+                    scoringIsHome: goalTestScoringHome.checked,
+                    ...(homeScoreValue !== null ? { homeScore: homeScoreValue } : {}),
+                    ...(awayScoreValue !== null ? { awayScore: awayScoreValue } : {}),
+                    ...(periodValue ? { period: periodValue } : {}),
+                    ...(timeValue ? { time: timeValue } : {}),
+                    ...(scorerNameValue ? { scorerName: scorerNameValue } : {}),
+                    sendOpposing: goalTestSendOpposing.checked,
+                    ...targetPayload
+                };
+
+                const result = await apiRequest('/api/notifications/goal-test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                const details = [
+                    result.success ? 'Goal notification sent!' : 'Failed to send goal notification',
+                    result.timestamp ? `Timestamp: ${formatTimestamp(result.timestamp)}` : null,
+                    result.goal?.scoringTeamCode ? `Goal: ${result.goal.scoringTeamCode} vs ${result.goal.opposingTeamCode}` : null,
+                    result.result?.recipients !== undefined ? `Recipients: ${result.result.recipients}` : null,
+                    result.target ? `Target: ${JSON.stringify(result.target)}` : null,
+                    result.result?.error ? `Error: ${result.result.error}` : null
+                ].filter(Boolean);
+                showFeedback(pushFeedback, details.join('\n'), result.success ? 'success' : 'error');
+                await loadPushStatus();
+            } catch (error) {
+                showFeedback(pushFeedback, error.message, 'error');
+            } finally {
+                sendGoalTestButton.disabled = false;
             }
         });
 
@@ -935,6 +1170,17 @@
             loadStatus({ showMessage: true });
             loadSports();
             loadPushStatus();
+            updateTargetInput(testPushTargetType, testPushTargetId);
+            updateTargetInput(goalTestTargetType, goalTestTargetId);
+            testPushTargetType.addEventListener('change', () => updateTargetInput(testPushTargetType, testPushTargetId));
+            goalTestTargetType.addEventListener('change', () => {
+                updateTargetInput(goalTestTargetType, goalTestTargetId);
+                if (goalTestTargetType.value !== 'tags') {
+                    goalTestSendOpposing.checked = false;
+                } else {
+                    goalTestSendOpposing.checked = true;
+                }
+            });
             setInterval(() => loadStatus(), 15000);
             setInterval(() => loadPushStatus(), 15000);
         }
