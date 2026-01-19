@@ -17,7 +17,7 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
 
     // Games state
     const [games, setGames] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const hasLoadedOnce = useRef(false);
 

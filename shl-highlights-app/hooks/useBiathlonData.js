@@ -26,7 +26,7 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
     // Races state
     const [races, setRaces] = useState([]);
     const [nations, setNations] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const hasLoadedOnce = useRef(false);
 
@@ -178,28 +178,21 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
     }, [filteredRaces]);
 
     // Target race index for auto-scroll
+    // States from API: 'live', 'starting-soon', 'upcoming', 'completed'
     const targetRaceIndex = useMemo(() => {
         if (!sortedRaces.length) return 0;
 
-        // Priority 1: Find live/ongoing races
-        const liveIndex = sortedRaces.findIndex(race =>
-            race.state === 'live' || race.state === 'ongoing'
-        );
+        // Priority 1: Find live races
+        const liveIndex = sortedRaces.findIndex(race => race.state === 'live');
         if (liveIndex !== -1) return liveIndex;
 
         // Priority 2: Find races that are starting soon
-        const startingSoonIndex = sortedRaces.findIndex(race =>
-            race.state === 'starting-soon'
-        );
+        const startingSoonIndex = sortedRaces.findIndex(race => race.state === 'starting-soon');
         if (startingSoonIndex !== -1) return startingSoonIndex;
 
-        // Priority 3: Find first upcoming race
-        const upcomingIndex = sortedRaces.findIndex(race =>
-            race.state === 'upcoming' || race.state === 'pre-race'
-        );
-        if (upcomingIndex !== -1) {
-            return upcomingIndex > 0 ? upcomingIndex - 1 : upcomingIndex;
-        }
+        // Priority 3: Find first race that isn't completed (upcoming or any other non-completed state)
+        const upcomingIndex = sortedRaces.findIndex(race => race.state !== 'completed');
+        if (upcomingIndex !== -1) return upcomingIndex;
 
         // Priority 4: All races completed - show the most recent one
         return sortedRaces.length - 1;
