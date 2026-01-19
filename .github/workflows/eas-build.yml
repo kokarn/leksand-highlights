@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       app_version: ${{ steps.app_version.outputs.version }}
+      eas_success: ${{ steps.eas_build.outcome == 'success' }}
     steps:
       - uses: actions/checkout@v5
 
@@ -39,6 +40,8 @@ jobs:
         run: echo "version=$(node -p 'require("./shl-highlights-app/app.json").expo.version')" >> "$GITHUB_OUTPUT"
 
       - name: Build on EAS (preview)
+        id: eas_build
+        continue-on-error: true
         run: eas build --platform android --profile preview --non-interactive
         working-directory: shl-highlights-app
 
@@ -46,7 +49,7 @@ jobs:
     name: Build locally (fallback)
     runs-on: ubuntu-latest
     needs: eas-build
-    if: failure()
+    if: needs.eas-build.outputs.eas_success != 'true'
     steps:
       - name: Setup repo
         uses: actions/checkout@v5
