@@ -85,13 +85,8 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
                     </View>
 
                     <View style={styles.disciplineContainer}>
-                        <Ionicons
-                            name={DISCIPLINE_ICONS[race.discipline] || 'ellipse-outline'}
-                            size={28}
-                            color={GENDER_COLORS[race.gender] || '#fff'}
-                        />
-                        <Text style={styles.discipline}>{race.discipline}</Text>
-                        {raceDetails ? <Text style={styles.raceDetails}>{raceDetails}</Text> : null}
+                        <Text style={styles.disciplineText}>{race.discipline}</Text>
+                        <Text style={styles.detailsText}>{raceDetails}</Text>
                     </View>
 
                     <View style={styles.genderContainer}>
@@ -178,7 +173,8 @@ const styles = StyleSheet.create({
     locationContainer: {
         flex: 1,
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        minWidth: 0
     },
     flag: {
         fontSize: 28
@@ -191,25 +187,27 @@ const styles = StyleSheet.create({
         textAlign: 'center'
     },
     disciplineContainer: {
+        flex: 4,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: 10
+        minWidth: 0
     },
-    discipline: {
+    disciplineText: {
         color: '#fff',
-        fontSize: 18,
-        fontWeight: '700',
-        marginTop: 4
+        fontSize: 28,
+        fontWeight: '800'
     },
-    raceDetails: {
+    detailsText: {
         color: '#666',
-        fontSize: 11,
-        marginTop: 2
+        fontSize: 12,
+        marginTop: 4,
+        textTransform: 'uppercase'
     },
     genderContainer: {
         flex: 1,
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        minWidth: 0
     },
     genderBadge: {
         alignItems: 'center',

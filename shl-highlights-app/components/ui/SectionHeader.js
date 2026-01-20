@@ -9,10 +9,10 @@ export const SectionHeader = memo(function SectionHeader({ title, icon, count, i
     return (
         <View style={[styles.container, isLive && styles.containerLive]}>
             <View style={styles.left}>
-                <Ionicons 
-                    name={icon || 'calendar-outline'} 
-                    size={16} 
-                    color={isLive ? '#FF453A' : '#0A84FF'} 
+                <Ionicons
+                    name={icon || 'calendar-outline'}
+                    size={16}
+                    color={isLive ? '#FF453A' : '#0A84FF'}
                 />
                 <Text style={[styles.title, isLive && styles.titleLive]}>{title}</Text>
             </View>

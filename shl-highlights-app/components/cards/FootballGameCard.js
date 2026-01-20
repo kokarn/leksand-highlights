@@ -117,8 +117,10 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between'
     },
     teamContainer: {
+        flex: 1,
         alignItems: 'center',
-        flex: 1
+        justifyContent: 'center',
+        minWidth: 0
     },
     teamLogo: {
         width: 60,
@@ -139,8 +141,10 @@ const styles = StyleSheet.create({
         textAlign: 'center'
     },
     scoreContainer: {
+        flex: 4,
         alignItems: 'center',
-        paddingHorizontal: 10
+        justifyContent: 'center',
+        minWidth: 0
     },
     scoreText: {
         color: '#fff',
