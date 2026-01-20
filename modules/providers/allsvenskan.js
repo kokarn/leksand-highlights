@@ -533,36 +533,127 @@ class AllsvenskanProvider extends BaseProvider {
 
     extractPlayerIn(event) {
         const participants = event?.participants || [];
-        const playerIn = participants.find(p =>
-            p?.type?.text?.toLowerCase().includes('in') ||
-            p?.type?.id === 'substitutionIn'
-        );
+        
+        // Try to find player in by type
+        const playerIn = participants.find(p => {
+            const typeText = (p?.type?.text || p?.type || '').toString().toLowerCase();
+            const typeId = (p?.type?.id || '').toString().toLowerCase();
+            return typeText.includes('in') || 
+                   typeText.includes('on') ||
+                   typeId === 'substitutionin' ||
+                   typeId === 'sub_in' ||
+                   typeId === 'playerin';
+        });
 
         if (playerIn?.athlete) {
             return {
                 id: playerIn.athlete.id || null,
-                name: playerIn.athlete.displayName || null,
+                name: playerIn.athlete.displayName || playerIn.athlete.shortName || playerIn.athlete.name || null,
                 jersey: playerIn.athlete.jersey || null
             };
         }
+
+        // If only 2 participants and no clear type, assume first is player in
+        if (participants.length === 2 && participants[0]?.athlete) {
+            return {
+                id: participants[0].athlete.id || null,
+                name: participants[0].athlete.displayName || participants[0].athlete.shortName || participants[0].athlete.name || null,
+                jersey: participants[0].athlete.jersey || null
+            };
+        }
+
+        // Try to parse from text if available
+        const parsed = this.parseSubstitutionText(event?.text);
+        if (parsed.playerIn) {
+            return { name: parsed.playerIn };
+        }
+
         return null;
     }
 
     extractPlayerOut(event) {
         const participants = event?.participants || [];
-        const playerOut = participants.find(p =>
-            p?.type?.text?.toLowerCase().includes('out') ||
-            p?.type?.id === 'substitutionOut'
-        );
+        
+        // Try to find player out by type
+        const playerOut = participants.find(p => {
+            const typeText = (p?.type?.text || p?.type || '').toString().toLowerCase();
+            const typeId = (p?.type?.id || '').toString().toLowerCase();
+            return typeText.includes('out') || 
+                   typeText.includes('off') ||
+                   typeId === 'substitutionout' ||
+                   typeId === 'sub_out' ||
+                   typeId === 'playerout';
+        });
 
         if (playerOut?.athlete) {
             return {
                 id: playerOut.athlete.id || null,
-                name: playerOut.athlete.displayName || null,
+                name: playerOut.athlete.displayName || playerOut.athlete.shortName || playerOut.athlete.name || null,
                 jersey: playerOut.athlete.jersey || null
             };
         }
+
+        // If only 2 participants and no clear type, assume second is player out
+        if (participants.length === 2 && participants[1]?.athlete) {
+            return {
+                id: participants[1].athlete.id || null,
+                name: participants[1].athlete.displayName || participants[1].athlete.shortName || participants[1].athlete.name || null,
+                jersey: participants[1].athlete.jersey || null
+            };
+        }
+
+        // Try to parse from text if available
+        const parsed = this.parseSubstitutionText(event?.text);
+        if (parsed.playerOut) {
+            return { name: parsed.playerOut };
+        }
+
         return null;
+    }
+
+    parseSubstitutionText(text) {
+        if (!text) {
+            return { playerIn: null, playerOut: null };
+        }
+
+        // Common patterns for substitution text
+        // "Player Out is replaced by Player In"
+        const replacedByMatch = text.match(/(.+?)\s+(?:is replaced by|replaced by|ersätts av)\s+(.+)/i);
+        if (replacedByMatch) {
+            return {
+                playerOut: replacedByMatch[1].trim(),
+                playerIn: replacedByMatch[2].trim()
+            };
+        }
+
+        // "Player In replaces Player Out"
+        const replacesMatch = text.match(/(.+?)\s+(?:replaces|ersätter|comes on for)\s+(.+)/i);
+        if (replacesMatch) {
+            return {
+                playerIn: replacesMatch[1].trim(),
+                playerOut: replacesMatch[2].trim()
+            };
+        }
+
+        // "Substitution: Player Out off, Player In on"
+        const offOnMatch = text.match(/(.+?)\s+(?:off|ut)[,.]?\s+(.+?)\s+(?:on|in)/i);
+        if (offOnMatch) {
+            return {
+                playerOut: offOnMatch[1].trim(),
+                playerIn: offOnMatch[2].trim()
+            };
+        }
+
+        // "Player In for Player Out"
+        const forMatch = text.match(/(.+?)\s+(?:for|för)\s+(.+)/i);
+        if (forMatch) {
+            return {
+                playerIn: forMatch[1].trim(),
+                playerOut: forMatch[2].trim()
+            };
+        }
+
+        return { playerIn: null, playerOut: null };
     }
 
     extractRosters(rostersData) {
