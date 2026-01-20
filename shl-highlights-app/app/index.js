@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { OneSignal } from 'react-native-onesignal';
 import * as Linking from 'expo-linking';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 // Card height constants for consistent scroll behavior
 // Height = padding (32) + header (~36) + content (~90) + marginBottom (16)
@@ -12,6 +13,13 @@ const GAME_CARD_HEIGHT = 174;
 const FOOTBALL_CARD_HEIGHT = 174;
 // Biathlon: padding (32) + cardHeader (~40) + mainRow (~80) + marginBottom (16)
 const BIATHLON_CARD_HEIGHT = 168;
+
+const normalizeRouteParam = (value) => {
+    if (Array.isArray(value)) {
+        return value[0];
+    }
+    return value;
+};
 
 // API
 import { getTeamLogoUrl, getNationFlag } from '../api/shl';
@@ -89,6 +97,19 @@ export default function App() {
         setTeamTags
     } = usePushNotifications();
 
+    const router = useRouter();
+    const { sport: routeSport, gameId: routeGameId } = useLocalSearchParams();
+    const deepLinkParams = useMemo(() => {
+        const sportParam = normalizeRouteParam(routeSport);
+        const gameIdParam = normalizeRouteParam(routeGameId);
+
+        if (!sportParam || !gameIdParam) {
+            return null;
+        }
+
+        return { sport: sportParam, gameId: gameIdParam };
+    }, [routeSport, routeGameId]);
+
     // Settings modal
     const [showSettings, setShowSettings] = useState(false);
 
@@ -143,7 +164,7 @@ export default function App() {
                     setShlActiveTab('summary');
                     shl.handleGamePress({ uuid: gameId });
                 }
-            } else if (sport === 'allsvenskan') {
+            } else if (sport === 'allsvenskan' || sport === 'football') {
                 const game = football.games.find(g => g.uuid === gameId);
                 if (game) {
                     handleSportChange('football');
@@ -155,6 +176,11 @@ export default function App() {
                 }
             }
         };
+
+        if (deepLinkParams) {
+            openGameById(deepLinkParams.sport, deepLinkParams.gameId);
+            router.replace('/');
+        }
 
         // Handle notification click events
         const handleNotificationClick = (event) => {
@@ -196,7 +222,15 @@ export default function App() {
             OneSignal.Notifications.removeEventListener('click', handleNotificationClick);
             subscription?.remove();
         };
-    }, [shl.games, football.games, shl.handleGamePress, football.handleGamePress, handleSportChange]);
+    }, [
+        shl.games,
+        football.games,
+        shl.handleGamePress,
+        football.handleGamePress,
+        handleSportChange,
+        deepLinkParams,
+        router
+    ]);
 
     // Unified refresh handler
     const onRefresh = useCallback(() => {
