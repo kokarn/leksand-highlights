@@ -174,7 +174,8 @@ async function sendGoalNotification(goal, options = {}) {
 
     // Build notification content
     const sportEmoji = sport === 'shl' ? '🏒' : '⚽';
-    const title = `${sportEmoji} GOAL! ${scoringTeamName}`;
+    const sportLabel = sport === 'shl' ? 'SHL' : 'Allsvenskan';
+    const title = `${sportEmoji} ${sportLabel} Goal: ${scoringTeamName}`;
 
     let message = `${scorerName} scores!`;
     if (homeScore !== undefined && awayScore !== undefined) {
@@ -234,7 +235,7 @@ async function sendGoalNotification(goal, options = {}) {
         // Don't await - fire and forget for the second notification
         // Include the same deep link URL so opposing fans can also open the game
         sendNotification({
-            title: `${sportEmoji} Goal Against`,
+            title,
             message: `${scoringTeamName} scored. ${homeScore}-${awayScore}`,
             filters: opposingFilters,
             target: sendOpposing && target ? target : null,
@@ -263,7 +264,7 @@ async function sendTestNotification(messageOrOptions = 'This is a test notificat
     }
 
     return sendNotification({
-        title: '🔔 Test Notification',
+        title: '🔔 GamePulse Test',
         message,
         filters: [
             // Send to all users with goal_notifications enabled
