@@ -218,7 +218,6 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading }
         : info?.state === 'pre-game'
             ? 'Pre-game'
             : info?.state || '-';
-    const statusLabel = info?.statusText || match?.statusText || stateLabel;
     const startDateTime = info?.startDateTime || match?.startDateTime;
     const venueName = info?.venueInfo?.name
         || details?.venue?.fullName
@@ -362,7 +361,7 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading }
                 <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
                     <Ionicons name="pulse-outline" size={18} color="#888" />
                     <Text style={styles.detailLabel}>Status</Text>
-                    <Text style={styles.detailValue}>{statusLabel}</Text>
+                    <Text style={styles.detailValue}>{stateLabel}</Text>
                 </View>
             </View>
         </ScrollView>
@@ -392,7 +391,7 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading }
                         <View style={styles.scoreCenterBlock}>
                             <Text style={styles.scoreLarge}>{homeScore} - {awayScore}</Text>
                             <View style={[styles.statusBadge, isLive && styles.statusBadgeLive]}>
-                                <Text style={styles.statusBadgeText}>{statusLabel}</Text>
+                                <Text style={styles.statusBadgeText}>{stateLabel}</Text>
                             </View>
                             {info?.state === 'pre-game' && startDateTime && (
                                 <Text style={styles.gameDateText}>

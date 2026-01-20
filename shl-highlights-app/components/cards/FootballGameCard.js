@@ -23,7 +23,6 @@ export const FootballGameCard = memo(function FootballGameCard({ game, onPress }
         : game?.state === 'pre-game'
             ? 'Pre-game'
             : game?.state || '-';
-    const statusLabel = game?.statusText || stateLabel;
 
     return (
         <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
@@ -57,7 +56,7 @@ export const FootballGameCard = memo(function FootballGameCard({ game, onPress }
                     <View style={styles.scoreContainer}>
                         <Text style={styles.scoreText}>{homeScore} - {awayScore}</Text>
                         <Text style={styles.statusText} numberOfLines={1}>
-                            {statusLabel}
+                            {stateLabel}
                         </Text>
                     </View>
                     <View style={styles.teamContainer}>

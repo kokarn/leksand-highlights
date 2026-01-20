@@ -214,9 +214,11 @@ export const ShlGameModal = ({
                                     <Text style={styles.scoreLarge}>
                                         {scoreDisplay.home} - {scoreDisplay.away}
                                     </Text>
-                                    <Text style={styles.gameStateText}>
-                                        {game.state === 'post-game' ? 'Final' : game.state}
-                                    </Text>
+                                    <View style={[styles.statusBadge, game.state === 'live' && styles.statusBadgeLive]}>
+                                        <Text style={styles.statusBadgeText}>
+                                            {game.state === 'post-game' ? 'Final' : game.state === 'pre-game' ? 'Pre-game' : game.state}
+                                        </Text>
+                                    </View>
                                     {game.state === 'pre-game' && game.startDateTime && (
                                         <Text style={styles.gameDateText}>
                                             {formatSwedishDate(game.startDateTime, 'd MMMM HH:mm')}
@@ -323,10 +325,20 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         fontVariant: ['tabular-nums']
     },
-    gameStateText: {
-        color: '#888',
-        fontSize: 14,
-        marginTop: 4,
+    statusBadge: {
+        marginTop: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 6,
+        backgroundColor: '#444'
+    },
+    statusBadgeLive: {
+        backgroundColor: '#FF453A'
+    },
+    statusBadgeText: {
+        color: '#fff',
+        fontSize: 11,
+        fontWeight: '700',
         textTransform: 'uppercase'
     },
     gameDateText: {

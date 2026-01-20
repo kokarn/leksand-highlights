@@ -51,7 +51,7 @@ export const GameCard = memo(function GameCard({ game, onPress }) {
                     <View style={styles.scoreContainer}>
                         <Text style={styles.scoreText}>{homeScore} - {awayScore}</Text>
                         <Text style={styles.statusText}>
-                            {gameState === 'post-game' ? 'Final' : gameState}
+                            {gameState === 'post-game' ? 'Final' : gameState === 'pre-game' ? 'Pre-game' : gameState}
                         </Text>
                     </View>
                     <View style={styles.teamContainer}>
