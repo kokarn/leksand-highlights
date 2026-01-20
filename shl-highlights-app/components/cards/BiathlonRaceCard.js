@@ -94,8 +94,10 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
                         {raceDetails ? <Text style={styles.raceDetails}>{raceDetails}</Text> : null}
                     </View>
 
-                    <View style={[styles.genderBadge, { backgroundColor: GENDER_COLORS[race.gender] || '#666' }]}>
-                        <Text style={styles.genderText}>{race.genderDisplay}</Text>
+                    <View style={styles.genderContainer}>
+                        <View style={[styles.genderBadge, { backgroundColor: GENDER_COLORS[race.gender] || '#666' }]}>
+                            <Text style={styles.genderText}>{race.genderDisplay}</Text>
+                        </View>
                     </View>
                 </View>
 
@@ -175,7 +177,8 @@ const styles = StyleSheet.create({
     },
     locationContainer: {
         flex: 1,
-        alignItems: 'center'
+        alignItems: 'center',
+        justifyContent: 'center'
     },
     flag: {
         fontSize: 28
@@ -188,8 +191,9 @@ const styles = StyleSheet.create({
         textAlign: 'center'
     },
     disciplineContainer: {
-        flex: 2,
-        alignItems: 'center'
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 10
     },
     discipline: {
         color: '#fff',
@@ -202,9 +206,14 @@ const styles = StyleSheet.create({
         fontSize: 11,
         marginTop: 2
     },
-    genderBadge: {
+    genderContainer: {
         flex: 1,
         alignItems: 'center',
+        justifyContent: 'center'
+    },
+    genderBadge: {
+        alignItems: 'center',
+        justifyContent: 'center',
         paddingVertical: 8,
         paddingHorizontal: 12,
         borderRadius: 8

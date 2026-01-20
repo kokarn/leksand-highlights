@@ -13,6 +13,10 @@ const GAME_CARD_HEIGHT = 174;
 const FOOTBALL_CARD_HEIGHT = 174;
 // Biathlon: padding (32) + cardHeader (~40) + mainRow (~80) + marginBottom (16)
 const BIATHLON_CARD_HEIGHT = 168;
+// Section header height: paddingVertical (24) + text (~20) + marginBottom (8)
+const SECTION_HEADER_HEIGHT = 52;
+// Average unified card height (for estimation)
+const UNIFIED_CARD_HEIGHT = 174;
 
 const normalizeRouteParam = (value) => {
     if (Array.isArray(value)) {
@@ -35,6 +39,7 @@ import {
     useShlData,
     useFootballData,
     useBiathlonData,
+    useUnifiedData,
     usePushNotifications
 } from '../hooks';
 
@@ -45,10 +50,11 @@ import {
     ViewToggle,
     SeasonPicker,
     ScheduleHeader,
+    SectionHeader,
     EmptyState
 } from '../components';
 
-import { GameCard, FootballGameCard, BiathlonRaceCard } from '../components/cards';
+import { GameCard, FootballGameCard, BiathlonRaceCard, UnifiedEventCard } from '../components/cards';
 import {
     RaceModal,
     FootballMatchModal,
@@ -85,6 +91,9 @@ export default function App() {
     const shl = useShlData(activeSport, selectedTeams, { eagerLoad: true });
     const football = useFootballData(activeSport, selectedFootballTeams, { eagerLoad: true });
     const biathlon = useBiathlonData(activeSport, selectedNations, selectedGenders, { eagerLoad: true });
+
+    // Unified data combining all sports
+    const unified = useUnifiedData(shl, football, biathlon);
 
     // Push notifications
     const {
@@ -234,14 +243,16 @@ export default function App() {
 
     // Unified refresh handler
     const onRefresh = useCallback(() => {
-        if (activeSport === 'shl') {
+        if (activeSport === 'all') {
+            unified.onRefresh();
+        } else if (activeSport === 'shl') {
             shl.onRefresh();
         } else if (activeSport === 'football') {
             football.onRefresh();
         } else if (activeSport === 'biathlon') {
             biathlon.onRefresh();
         }
-    }, [activeSport, shl, football, biathlon]);
+    }, [activeSport, shl, football, biathlon, unified]);
 
     // getItemLayout functions for consistent scroll behavior
     const getShlItemLayout = useCallback((data, index) => ({
@@ -269,6 +280,7 @@ export default function App() {
             if (info.index >= 0 && info.index < (info.highestMeasuredFrameIndex + 1)) {
                 // We have measured frames up to this point, try again
                 const listRef =
+                    activeSport === 'all' ? unified.listRef :
                     activeSport === 'shl' ? shl.listRef :
                     activeSport === 'football' ? football.listRef :
                     biathlon.listRef;
@@ -279,14 +291,16 @@ export default function App() {
                 });
             }
         }, 100);
-    }, [activeSport, shl.listRef, football.listRef, biathlon.listRef]);
+    }, [activeSport, unified.listRef, shl.listRef, football.listRef, biathlon.listRef]);
 
     // Get current refreshing state
-    const refreshing = activeSport === 'shl'
-        ? shl.refreshing
-        : activeSport === 'football'
-            ? football.refreshing
-            : biathlon.refreshing;
+    const refreshing = activeSport === 'all'
+        ? unified.refreshing
+        : activeSport === 'shl'
+            ? shl.refreshing
+            : activeSport === 'football'
+                ? football.refreshing
+                : biathlon.refreshing;
 
 
     // Handle SHL game press - reset tab and open modal
@@ -298,6 +312,7 @@ export default function App() {
     // Render sport tabs
     const renderSportTabs = () => (
         <View style={styles.sportTabsContainer}>
+            <SportTab sport="all" isActive={activeSport === 'all'} onPress={() => handleSportChange('all')} />
             <SportTab sport="shl" isActive={activeSport === 'shl'} onPress={() => handleSportChange('shl')} />
             <SportTab sport="football" isActive={activeSport === 'football'} onPress={() => handleSportChange('football')} />
             <SportTab sport="biathlon" isActive={activeSport === 'biathlon'} onPress={() => handleSportChange('biathlon')} />
@@ -623,6 +638,73 @@ export default function App() {
         );
     };
 
+    // Memoized render function for unified event items
+    const renderUnifiedItem = useCallback(({ item }) => {
+        if (item.type === 'header') {
+            return (
+                <SectionHeader
+                    title={item.title}
+                    icon={item.icon}
+                    count={item.count}
+                    isLive={item.key === 'live'}
+                />
+            );
+        }
+        return (
+            <UnifiedEventCard
+                event={item.event}
+                onPress={unified.handleEventPress}
+                showSportIndicator={false}
+            />
+        );
+    }, [unified.handleEventPress]);
+
+    // Memoized key extractor for unified list
+    const unifiedKeyExtractor = useCallback((item) => {
+        if (item.type === 'header') {
+            return `header-${item.key}`;
+        }
+        return item.key || item.event?.uuid || `event-${item.event?.startTime}`;
+    }, []);
+
+    // Get item layout for unified list (mixed heights)
+    const getUnifiedItemLayout = useCallback((data, index) => {
+        // Estimate: headers are smaller than cards
+        const item = data?.[index];
+        const height = item?.type === 'header' ? SECTION_HEADER_HEIGHT : UNIFIED_CARD_HEIGHT;
+        return {
+            length: height,
+            offset: index * UNIFIED_CARD_HEIGHT, // Rough estimate for offset
+            index
+        };
+    }, []);
+
+    // Render Unified schedule - all sports combined
+    const renderUnifiedSchedule = () => (
+        <FlatList
+            ref={unified.listRef}
+            data={unified.flatListData}
+            renderItem={renderUnifiedItem}
+            keyExtractor={unifiedKeyExtractor}
+            contentContainerStyle={styles.listContent}
+            refreshControl={<RefreshControl refreshing={unified.refreshing} onRefresh={unified.onRefresh} tintColor="#fff" />}
+            onScroll={unified.handleScroll}
+            scrollEventThrottle={100}
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={15}
+            windowSize={15}
+            ListEmptyComponent={<EmptyState message="No events found." />}
+            ListHeaderComponent={
+                <ScheduleHeader
+                    icon="grid-outline"
+                    title="All Events"
+                    count={unified.stats.total}
+                    countLabel="events"
+                />
+            }
+        />
+    );
+
     // Main render
     return (
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -639,7 +721,15 @@ export default function App() {
             </View>
 
             {/* Sport-specific content */}
-            {activeSport === 'shl' ? (
+            {activeSport === 'all' ? (
+                <View style={styles.scheduleContainer}>
+                    {unified.loading ? (
+                        <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
+                    ) : (
+                        renderUnifiedSchedule()
+                    )}
+                </View>
+            ) : activeSport === 'shl' ? (
                 shl.viewMode === 'standings' ? (
                     renderShlStandings()
                 ) : (

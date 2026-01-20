@@ -2,6 +2,7 @@ import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const SPORT_NAMES = {
+    all: 'All',
     shl: 'Hockey',
     biathlon: 'Biathlon',
     football: 'Football'
@@ -14,11 +15,13 @@ export const SportTab = ({ sport, isActive, onPress }) => (
         activeOpacity={0.7}
     >
         <Ionicons
-            name={sport === 'biathlon'
-                ? 'locate-outline'
-                : sport === 'football'
-                    ? 'football-outline'
-                    : 'snow-outline'}
+            name={sport === 'all'
+                ? 'grid-outline'
+                : sport === 'biathlon'
+                    ? 'locate-outline'
+                    : sport === 'football'
+                        ? 'football-outline'
+                        : 'snow-outline'}
             size={14}
             color={isActive ? '#0A84FF' : '#666'}
         />
