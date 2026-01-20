@@ -282,7 +282,7 @@ Returns a list of Allsvenskan matches for the current season.
 
 ### `GET /api/football/game/:id/details`
 
-Returns summary details for a specific Allsvenskan match.
+Returns comprehensive game details for a specific Allsvenskan match, including metadata, events, team statistics, and lineups.
 
 **Parameters:**
 - `id` (path): The match identifier.
@@ -293,19 +293,163 @@ Returns summary details for a specific Allsvenskan match.
   "info": {
     "uuid": "401842658",
     "startDateTime": "2026-04-05T18:00Z",
-    "state": "pre-game",
-    "homeTeamInfo": { "code": "AIK", "names": { "short": "AIK", "long": "AIK" } },
-    "awayTeamInfo": { "code": "HBK", "names": { "short": "Halmstads BK", "long": "Halmstads BK" } },
+    "state": "post-game",
+    "homeTeamInfo": {
+      "code": "AIK",
+      "uuid": "994",
+      "names": { "short": "AIK", "long": "AIK" },
+      "score": 2,
+      "icon": "https://a.espncdn.com/i/teamlogos/soccer/500/994.png"
+    },
+    "awayTeamInfo": {
+      "code": "HBK",
+      "uuid": "3017",
+      "names": { "short": "Halmstads BK", "long": "Halmstads BK" },
+      "score": 1,
+      "icon": "https://a.espncdn.com/i/teamlogos/soccer/500/3017.png"
+    },
     "venueInfo": { "name": "Friends Arena" },
-    "statusText": "18:00",
+    "statusText": "FT",
     "sport": "allsvenskan",
     "source": "espn"
   },
-  "venue": { "fullName": "Friends Arena" },
-  "boxscore": { "teams": [ /* team stats */ ] },
+  "venue": {
+    "fullName": "Friends Arena",
+    "address": { "city": "Solna", "country": "Sweden" },
+    "capacity": 50000
+  },
+  "teamStats": {
+    "homeTeam": {
+      "name": "AIK",
+      "code": "AIK",
+      "statistics": {
+        "possessionPct": "58",
+        "shotsonGoal": "6",
+        "totalShots": "14",
+        "saves": "3",
+        "fouls": "12",
+        "yellowCards": "2",
+        "redCards": "0",
+        "offsides": "3",
+        "corners": "7"
+      }
+    },
+    "awayTeam": {
+      "name": "Halmstads BK",
+      "code": "HBK",
+      "statistics": {
+        "possessionPct": "42",
+        "shotsonGoal": "4",
+        "totalShots": "9",
+        "saves": "4",
+        "fouls": "14",
+        "yellowCards": "3",
+        "redCards": "0",
+        "offsides": "1",
+        "corners": "4"
+      }
+    }
+  },
+  "events": {
+    "goals": [
+      {
+        "id": "12345",
+        "type": "goal",
+        "clock": "23'",
+        "period": 1,
+        "periodDisplay": "1st half",
+        "text": "Goal! AIK 1, Halmstads BK 0. John Guidetti scores.",
+        "teamCode": "AIK",
+        "teamName": "AIK",
+        "isHome": true,
+        "scorer": {
+          "id": "789",
+          "name": "John Guidetti",
+          "firstName": "John",
+          "lastName": "Guidetti",
+          "jersey": "11",
+          "position": "F"
+        },
+        "assist": {
+          "id": "456",
+          "name": "Sebastian Larsson",
+          "jersey": "7"
+        },
+        "goalType": "Goal",
+        "score": { "home": 1, "away": 0 }
+      }
+    ],
+    "cards": [
+      {
+        "id": "23456",
+        "type": "card",
+        "cardType": "yellow",
+        "clock": "34'",
+        "period": 1,
+        "periodDisplay": "1st half",
+        "text": "Yellow Card - Player Name",
+        "teamCode": "HBK",
+        "teamName": "Halmstads BK",
+        "isHome": false,
+        "player": {
+          "id": "321",
+          "name": "Player Name",
+          "jersey": "5"
+        },
+        "reason": "Yellow Card"
+      }
+    ],
+    "substitutions": [
+      {
+        "id": "34567",
+        "type": "substitution",
+        "clock": "65'",
+        "period": 2,
+        "periodDisplay": "2nd half",
+        "teamCode": "AIK",
+        "isHome": true,
+        "playerIn": { "id": "111", "name": "Sub Player", "jersey": "22" },
+        "playerOut": { "id": "222", "name": "Starter Player", "jersey": "10" }
+      }
+    ],
+    "all": [ /* All events sorted by time */ ]
+  },
+  "rosters": [
+    {
+      "teamId": "994",
+      "teamName": "AIK",
+      "teamCode": "AIK",
+      "homeAway": "home",
+      "players": [
+        {
+          "id": "789",
+          "name": "John Guidetti",
+          "firstName": "John",
+          "lastName": "Guidetti",
+          "jersey": "11",
+          "position": "F",
+          "starter": true
+        }
+      ]
+    }
+  ],
+  "commentary": [
+    {
+      "id": "45678",
+      "clock": "90'+3",
+      "period": 2,
+      "text": "Full Time - AIK 2, Halmstads BK 1",
+      "type": "Full Time",
+      "scoringPlay": false,
+      "homeScore": 2,
+      "awayScore": 1
+    }
+  ],
   "format": "soccer"
 }
 ```
+
+**Note:** Fields like `events`, `rosters`, and `commentary` may be `null` for pre-game matches or when data is unavailable from the source.
 
 ---
 

@@ -1,15 +1,22 @@
-# 🏒 SHL Highlights Notifier
+# 🏒 GamePulse API Server
 
-A lightweight, zero-dependency Node.js service that monitors the SHL schedule and sends mobile notifications (via ntfy) as soon as game highlights are published.
+**Version: 2.9.0**
+
+A multi-sport API server that provides real-time game data, notifications, and highlights for Swedish sports leagues.
 
 ## ✨ Features
 
-- **Multi-Team Support**: Dedicated notification topics for all 14 SHL teams.
-- **Zero Dependencies**: Built entirely with native Node.js modules (`http`, `fs`, `fetch`).
-- **Real-time Monitoring**: Polls the SHL Media API every 5 minutes.
-- **Built-in Landing Page**: Serve a beautiful team selection page on port 3080.
-- **Spoiler-Free**: Clean notifications with direct links to `staylive.tv` videos.
-- **Reliable**: Handles the usual delay between game end and highlight publication (up to 24h).
+### Supported Sports
+- **SHL (Hockey)**: Full game schedule, play-by-play events, team stats, video highlights
+- **Allsvenskan (Football)**: Match schedule, detailed game events (goals, cards, substitutions), team statistics, lineups
+- **Biathlon**: World Cup races, results, and standings
+
+### Core Features
+- **Push Notifications**: Goal alerts via OneSignal
+- **Real-time Monitoring**: Live game tracking with adaptive polling
+- **Rich Game Details**: Goals, penalties/cards, team stats, rosters
+- **Video Highlights**: Direct streaming URLs for SHL highlights
+- **Built-in Landing Page**: Team selection and notification subscription
 
 ## 🚀 Quick Start
 

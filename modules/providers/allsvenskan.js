@@ -261,12 +261,356 @@ class AllsvenskanProvider extends BaseProvider {
             source: 'espn'
         };
 
+        // Extract team statistics from boxscore
+        const teamStats = this.extractTeamStats(data?.boxscore, homeCompetitor, awayCompetitor);
+
+        // Extract events from keyEvents and plays
+        const events = this.extractEvents(data, homeCompetitor, awayCompetitor);
+
+        // Extract lineups/rosters if available
+        const rosters = this.extractRosters(data?.rosters);
+
+        // Extract match commentary/plays
+        const commentary = this.extractCommentary(data?.plays);
+
         return {
             info,
             venue: data?.gameInfo?.venue || null,
-            boxscore: data?.boxscore || null,
+            teamStats,
+            events,
+            rosters,
+            commentary,
             format: data?.format || null
         };
+    }
+
+    extractTeamStats(boxscore, homeCompetitor, awayCompetitor) {
+        if (!boxscore?.teams || !Array.isArray(boxscore.teams)) {
+            return null;
+        }
+
+        const homeTeam = boxscore.teams.find(t => t.homeAway === 'home') || boxscore.teams[0];
+        const awayTeam = boxscore.teams.find(t => t.homeAway === 'away') || boxscore.teams[1];
+
+        const extractStats = (team) => {
+            if (!team?.statistics || !Array.isArray(team.statistics)) {
+                return {};
+            }
+
+            const stats = {};
+            for (const stat of team.statistics) {
+                if (stat.name && stat.displayValue !== undefined) {
+                    stats[stat.name] = stat.displayValue;
+                }
+            }
+            return stats;
+        };
+
+        return {
+            homeTeam: {
+                name: homeTeam?.team?.displayName || homeCompetitor?.team?.displayName || 'Home',
+                code: homeTeam?.team?.abbreviation || homeCompetitor?.team?.abbreviation || null,
+                statistics: extractStats(homeTeam)
+            },
+            awayTeam: {
+                name: awayTeam?.team?.displayName || awayCompetitor?.team?.displayName || 'Away',
+                code: awayTeam?.team?.abbreviation || awayCompetitor?.team?.abbreviation || null,
+                statistics: extractStats(awayTeam)
+            }
+        };
+    }
+
+    extractEvents(data, homeCompetitor, awayCompetitor) {
+        const keyEvents = data?.keyEvents || [];
+        const plays = data?.plays || [];
+
+        const goals = [];
+        const cards = [];
+        const substitutions = [];
+        const all = [];
+
+        // Helper to determine team info from event
+        const getTeamInfo = (event) => {
+            const teamId = event?.team?.id;
+            if (!teamId) {
+                return null;
+            }
+
+            const isHome = String(teamId) === String(homeCompetitor?.team?.id || homeCompetitor?.id);
+            const isAway = String(teamId) === String(awayCompetitor?.team?.id || awayCompetitor?.id);
+
+            if (isHome) {
+                return {
+                    teamCode: homeCompetitor?.team?.abbreviation || 'HOME',
+                    teamName: homeCompetitor?.team?.displayName || 'Home',
+                    isHome: true
+                };
+            }
+            if (isAway) {
+                return {
+                    teamCode: awayCompetitor?.team?.abbreviation || 'AWAY',
+                    teamName: awayCompetitor?.team?.displayName || 'Away',
+                    isHome: false
+                };
+            }
+            return null;
+        };
+
+        // Process key events
+        for (const event of keyEvents) {
+            const type = event?.type?.text?.toLowerCase() || event?.type?.id || '';
+            const teamInfo = getTeamInfo(event);
+
+            const periodNumber = event?.period?.number ?? (typeof event?.period === 'number' ? event.period : 1);
+            const periodDisplay = event?.period?.displayValue || (periodNumber === 1 ? '1st half' : '2nd half');
+
+            const baseEvent = {
+                id: event?.id || null,
+                clock: event?.clock?.displayValue || event?.clock || null,
+                period: periodNumber,
+                periodDisplay,
+                text: event?.text || event?.shortText || null,
+                teamCode: teamInfo?.teamCode || null,
+                teamName: teamInfo?.teamName || null,
+                isHome: teamInfo?.isHome ?? null
+            };
+
+            // Categorize by event type
+            if (type.includes('goal') || type === 'goal scored' || event?.scoringPlay) {
+                const goal = {
+                    ...baseEvent,
+                    type: 'goal',
+                    scorer: this.extractPlayerFromEvent(event),
+                    assist: this.extractAssistFromEvent(event),
+                    goalType: event?.type?.text || 'Goal',
+                    score: {
+                        home: event?.homeScore ?? null,
+                        away: event?.awayScore ?? null
+                    }
+                };
+                goals.push(goal);
+                all.push(goal);
+            } else if (type.includes('yellow') || type.includes('red') || type.includes('card')) {
+                const card = {
+                    ...baseEvent,
+                    type: 'card',
+                    cardType: type.includes('red') ? 'red' : 'yellow',
+                    player: this.extractPlayerFromEvent(event),
+                    reason: event?.type?.text || null
+                };
+                cards.push(card);
+                all.push(card);
+            } else if (type.includes('substitution') || type.includes('sub')) {
+                const sub = {
+                    ...baseEvent,
+                    type: 'substitution',
+                    playerIn: this.extractPlayerIn(event),
+                    playerOut: this.extractPlayerOut(event)
+                };
+                substitutions.push(sub);
+                all.push(sub);
+            } else {
+                all.push({
+                    ...baseEvent,
+                    type: type || 'other'
+                });
+            }
+        }
+
+        // Also check plays array for additional goal/card data if keyEvents is sparse
+        if (goals.length === 0 && plays.length > 0) {
+            for (const play of plays) {
+                if (play?.scoringPlay || play?.type?.text?.toLowerCase().includes('goal')) {
+                    const teamInfo = getTeamInfo(play);
+                    const playPeriodNumber = play?.period?.number ?? (typeof play?.period === 'number' ? play.period : 1);
+                    const playPeriodDisplay = play?.period?.displayValue || (playPeriodNumber === 1 ? '1st half' : '2nd half');
+                    const goal = {
+                        id: play?.id || null,
+                        type: 'goal',
+                        clock: play?.clock?.displayValue || play?.clock || null,
+                        period: playPeriodNumber,
+                        periodDisplay: playPeriodDisplay,
+                        text: play?.text || play?.shortText || null,
+                        teamCode: teamInfo?.teamCode || null,
+                        teamName: teamInfo?.teamName || null,
+                        isHome: teamInfo?.isHome ?? null,
+                        scorer: this.extractPlayerFromEvent(play),
+                        assist: this.extractAssistFromEvent(play),
+                        goalType: play?.type?.text || 'Goal',
+                        score: {
+                            home: play?.homeScore ?? null,
+                            away: play?.awayScore ?? null
+                        }
+                    };
+                    goals.push(goal);
+                }
+            }
+        }
+
+        // Sort events by time
+        const sortByTime = (a, b) => {
+            const periodDiff = (a.period || 0) - (b.period || 0);
+            if (periodDiff !== 0) {
+                return periodDiff;
+            }
+            // Parse clock strings like "45'+2" or "23:15"
+            const parseTime = (clock) => {
+                if (!clock) {
+                    return 0;
+                }
+                const match = String(clock).match(/(\d+)/);
+                return match ? parseInt(match[1], 10) : 0;
+            };
+            return parseTime(a.clock) - parseTime(b.clock);
+        };
+
+        goals.sort(sortByTime);
+        cards.sort(sortByTime);
+        substitutions.sort(sortByTime);
+        all.sort(sortByTime);
+
+        return {
+            goals,
+            cards,
+            substitutions,
+            all
+        };
+    }
+
+    extractPlayerFromEvent(event) {
+        // ESPN events can have participants array or direct player references
+        const participants = event?.participants || [];
+        const scorer = participants.find(p =>
+            p?.type?.text?.toLowerCase().includes('goal') ||
+            p?.type?.id === 'scorer' ||
+            p?.type === 'scorer'
+        ) || participants[0];
+
+        if (scorer?.athlete) {
+            return {
+                id: scorer.athlete.id || null,
+                name: scorer.athlete.displayName || scorer.athlete.shortName || null,
+                firstName: scorer.athlete.firstName || null,
+                lastName: scorer.athlete.lastName || null,
+                jersey: scorer.athlete.jersey || null,
+                position: scorer.athlete.position?.abbreviation || null
+            };
+        }
+
+        // Fallback: try to extract from text
+        if (event?.text) {
+            const text = event.text;
+            // Common patterns: "Goal! Player Name scores"
+            const match = text.match(/Goal[!.]?\s*(.+?)\s*(?:scores|mål)/i);
+            if (match) {
+                return { name: match[1].trim() };
+            }
+        }
+
+        return null;
+    }
+
+    extractAssistFromEvent(event) {
+        const participants = event?.participants || [];
+        const assist = participants.find(p =>
+            p?.type?.text?.toLowerCase().includes('assist') ||
+            p?.type?.id === 'assist' ||
+            p?.type === 'assist'
+        );
+
+        if (assist?.athlete) {
+            return {
+                id: assist.athlete.id || null,
+                name: assist.athlete.displayName || assist.athlete.shortName || null,
+                firstName: assist.athlete.firstName || null,
+                lastName: assist.athlete.lastName || null,
+                jersey: assist.athlete.jersey || null
+            };
+        }
+
+        return null;
+    }
+
+    extractPlayerIn(event) {
+        const participants = event?.participants || [];
+        const playerIn = participants.find(p =>
+            p?.type?.text?.toLowerCase().includes('in') ||
+            p?.type?.id === 'substitutionIn'
+        );
+
+        if (playerIn?.athlete) {
+            return {
+                id: playerIn.athlete.id || null,
+                name: playerIn.athlete.displayName || null,
+                jersey: playerIn.athlete.jersey || null
+            };
+        }
+        return null;
+    }
+
+    extractPlayerOut(event) {
+        const participants = event?.participants || [];
+        const playerOut = participants.find(p =>
+            p?.type?.text?.toLowerCase().includes('out') ||
+            p?.type?.id === 'substitutionOut'
+        );
+
+        if (playerOut?.athlete) {
+            return {
+                id: playerOut.athlete.id || null,
+                name: playerOut.athlete.displayName || null,
+                jersey: playerOut.athlete.jersey || null
+            };
+        }
+        return null;
+    }
+
+    extractRosters(rostersData) {
+        if (!Array.isArray(rostersData)) {
+            return null;
+        }
+
+        const rosters = [];
+        for (const roster of rostersData) {
+            const team = roster?.team || {};
+            const athletes = roster?.roster || [];
+
+            rosters.push({
+                teamId: team.id || null,
+                teamName: team.displayName || team.name || null,
+                teamCode: team.abbreviation || null,
+                homeAway: roster.homeAway || null,
+                players: athletes.map(a => ({
+                    id: a.athlete?.id || a.id || null,
+                    name: a.athlete?.displayName || a.displayName || null,
+                    firstName: a.athlete?.firstName || null,
+                    lastName: a.athlete?.lastName || null,
+                    jersey: a.athlete?.jersey || a.jersey || null,
+                    position: a.position?.abbreviation || a.athlete?.position?.abbreviation || null,
+                    starter: a.starter ?? false
+                }))
+            });
+        }
+
+        return rosters.length > 0 ? rosters : null;
+    }
+
+    extractCommentary(playsData) {
+        if (!Array.isArray(playsData) || playsData.length === 0) {
+            return null;
+        }
+
+        // Return recent plays/commentary as a simplified timeline
+        return playsData.slice(0, 50).map(play => ({
+            id: play.id || null,
+            clock: play.clock?.displayValue || play.clock || null,
+            period: play.period?.number || play.period || 1,
+            text: play.text || play.shortText || null,
+            type: play.type?.text || play.type || null,
+            scoringPlay: play.scoringPlay || false,
+            homeScore: play.homeScore ?? null,
+            awayScore: play.awayScore ?? null
+        }));
     }
 
     getStatValue(stats, statName) {
