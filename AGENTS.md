@@ -26,3 +26,4 @@
 
 ## App
 - Always increment the version according to semver
+- When incrementing versions, update the readme
