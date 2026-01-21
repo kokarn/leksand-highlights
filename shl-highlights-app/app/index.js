@@ -45,7 +45,7 @@ import {
 
 // Components
 import {
-    SportTab,
+    SportPicker,
     StandingsTable,
     ViewToggle,
     SeasonPicker,
@@ -309,14 +309,9 @@ export default function App() {
         shl.handleGamePress(game);
     }, [shl]);
 
-    // Render sport tabs
-    const renderSportTabs = () => (
-        <View style={styles.sportTabsContainer}>
-            <SportTab sport="all" isActive={activeSport === 'all'} onPress={() => handleSportChange('all')} />
-            <SportTab sport="shl" isActive={activeSport === 'shl'} onPress={() => handleSportChange('shl')} />
-            <SportTab sport="football" isActive={activeSport === 'football'} onPress={() => handleSportChange('football')} />
-            <SportTab sport="biathlon" isActive={activeSport === 'biathlon'} onPress={() => handleSportChange('biathlon')} />
-        </View>
+    // Render sport picker
+    const renderSportPicker = () => (
+        <SportPicker activeSport={activeSport} onSportChange={handleSportChange} />
     );
 
     // Render SHL schedule - start at the most recent/current game
@@ -713,7 +708,7 @@ export default function App() {
             {/* Header with gradient fade */}
             <View style={styles.headerContainer}>
                 <View style={styles.header}>
-                    {renderSportTabs()}
+                    {renderSportPicker()}
                     <TouchableOpacity style={styles.settingsButton} onPress={() => setShowSettings(true)}>
                         <Ionicons name="settings-outline" size={18} color="#888" />
                     </TouchableOpacity>
@@ -932,18 +927,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#000'
     },
     settingsButton: {
-        padding: 6,
-        borderRadius: 8,
+        padding: 8,
+        borderRadius: 10,
         backgroundColor: '#1c1c1e',
         borderWidth: 1,
         borderColor: '#333'
-    },
-    sportTabsContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        flexWrap: 'wrap',
-        flex: 1
     },
     scheduleContainer: {
         flex: 1

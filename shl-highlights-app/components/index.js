@@ -1,5 +1,6 @@
 // Main component exports
 export { SportTab } from './SportTab';
+export { SportPicker } from './SportPicker';
 export { StatBar } from './StatBar';
 export { TabButton } from './TabButton';
 export { LogoMark } from './LogoMark';
