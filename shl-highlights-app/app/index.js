@@ -375,9 +375,6 @@ export default function App() {
                             {lastUpdatedLabel && (
                                 <Text style={styles.standingsMetaText}>Updated {lastUpdatedLabel}</Text>
                             )}
-                            {Number.isFinite(gamesAnalyzed) && (
-                                <Text style={styles.standingsMetaText}>Analyzed {gamesAnalyzed} games</Text>
-                            )}
                         </View>
                     </View>
 
@@ -456,6 +453,7 @@ export default function App() {
                             seasons={football.seasonOptions}
                             selectedSeason={seasonLabel}
                             onSelect={football.handleSeasonSelect}
+                            variant="dropdown"
                         />
                         <View style={styles.standingsMetaRow}>
                             {lastUpdatedLabel && (

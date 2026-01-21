@@ -151,7 +151,7 @@ export const OnboardingModal = ({
                         <Text style={styles.onboardingStepTitle}>Biathlon preferences</Text>
                         <Text style={styles.onboardingStepSubtitle}>Which race categories interest you?</Text>
                     </View>
-                    <ScrollView style={styles.onboardingScrollContent} showsVerticalScrollIndicator={false}>
+                    <View style={styles.onboardingCenteredContent}>
                         <Text style={styles.sectionLabel}>Gender</Text>
                         <View style={styles.genderRow}>
                             {GENDER_OPTIONS.map(gender => (
@@ -169,23 +169,8 @@ export const OnboardingModal = ({
                                 </TouchableOpacity>
                             ))}
                         </View>
-
-                        <Text style={styles.sectionLabel}>Countries</Text>
-                        <View style={styles.chipGrid}>
-                            {biathlonNations.map(nation => (
-                                <TouchableOpacity
-                                    key={nation.code}
-                                    style={[styles.nationChip, selectedNations.includes(nation.code) && styles.chipActivePink]}
-                                    onPress={() => onToggleNation(nation.code)}
-                                >
-                                    <Text style={styles.nationFlag}>{nation.flag}</Text>
-                                    <Text style={[styles.chipText, selectedNations.includes(nation.code) && styles.chipTextActive]} numberOfLines={1}>
-                                        {nation.code}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </ScrollView>
+                        <Text style={styles.genderHint}>Select one or both to filter biathlon races</Text>
+                    </View>
                     <View style={styles.onboardingNav}>
                         <TouchableOpacity style={styles.onboardingNavButton} onPress={() => onStepChange(2)}>
                             <Ionicons name="arrow-back" size={20} color="#888" />
@@ -233,15 +218,7 @@ export const OnboardingModal = ({
                                 </Text>
                             </View>
                         )}
-                        {selectedNations.length > 0 && (
-                            <View style={styles.onboardingSummaryItem}>
-                                <Ionicons name="flag-outline" size={20} color="#FF9F0A" />
-                                <Text style={styles.onboardingSummaryText}>
-                                    {selectedNations.length} countr{selectedNations.length > 1 ? 'ies' : 'y'} selected
-                                </Text>
-                            </View>
-                        )}
-                        {selectedTeams.length === 0 && selectedFootballTeams.length === 0 && selectedGenders.length === 0 && selectedNations.length === 0 && (
+                        {selectedTeams.length === 0 && selectedFootballTeams.length === 0 && selectedGenders.length === 0 && (
                             <View style={styles.onboardingSummaryItem}>
                                 <Ionicons name="globe-outline" size={20} color="#888" />
                                 <Text style={styles.onboardingSummaryText}>
@@ -454,6 +431,17 @@ const styles = StyleSheet.create({
     },
     genderTextActive: {
         color: '#fff'
+    },
+    genderHint: {
+        color: '#666',
+        fontSize: 13,
+        textAlign: 'center',
+        marginTop: 16
+    },
+    onboardingCenteredContent: {
+        flex: 1,
+        justifyContent: 'center',
+        paddingHorizontal: 12
     },
     sectionLabel: {
         color: '#888',

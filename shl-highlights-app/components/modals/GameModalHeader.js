@@ -4,7 +4,7 @@ import { formatSwedishDate } from '../../utils';
 
 /**
  * Shared header component for game modals (SHL, Football, etc.)
- * 
+ *
  * @param {Object} props
  * @param {Object} props.homeTeam - { name: string, logo: string|null }
  * @param {Object} props.awayTeam - { name: string, logo: string|null }

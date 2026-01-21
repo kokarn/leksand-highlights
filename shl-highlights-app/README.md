@@ -4,6 +4,12 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 1.15.0
+- Add dropdown season picker to football standings view
+- Add swipe gesture navigation between tabs on match detail pages
+- Remove "Analyzed xx games" text from SHL standings
+- Remove biathlon country filter from settings and onboarding
+
 ### 1.14.0
 - Unify football and hockey game modals with shared header component
 - Move Match Details section to Summary tab (removed separate Info tab)

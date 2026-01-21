@@ -213,36 +213,6 @@ export const SettingsModal = ({
                     </View>
                 </View>
 
-                {/* Biathlon Countries */}
-                <View style={styles.settingsCard}>
-                    <View style={styles.settingsCardHeader}>
-                        <Ionicons name="flag-outline" size={22} color="#FF9F0A" />
-                        <Text style={styles.settingsCardTitle}>Biathlon Countries</Text>
-                        <Text style={styles.settingsCardCount}>
-                            {selectedNations.length > 0 ? `${selectedNations.length} selected` : ''}
-                        </Text>
-                    </View>
-                    <View style={styles.chipGrid}>
-                        {biathlonNations.map(nation => (
-                            <TouchableOpacity
-                                key={nation.code}
-                                style={[styles.nationChip, selectedNations.includes(nation.code) && styles.chipActiveOrange]}
-                                onPress={() => onToggleNation(nation.code)}
-                            >
-                                <Text style={styles.nationFlag}>{nation.flag}</Text>
-                                <Text style={[styles.chipText, selectedNations.includes(nation.code) && styles.chipTextActive]} numberOfLines={1}>
-                                    {nation.code}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                    {selectedNations.length > 0 && (
-                        <TouchableOpacity style={styles.clearButton} onPress={onClearNations}>
-                            <Text style={styles.clearButtonText}>Clear selection</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-
                 <TouchableOpacity style={styles.resetOnboardingButton} onPress={onResetOnboarding}>
                     <Ionicons name="refresh-outline" size={20} color="#FF9F0A" />
                     <Text style={styles.resetOnboardingText}>Restart setup wizard</Text>

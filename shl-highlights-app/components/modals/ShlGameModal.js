@@ -1,6 +1,10 @@
-import { View, Text, Modal, FlatList, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
+import { useRef } from 'react';
+import { View, Text, Modal, FlatList, ScrollView, ActivityIndicator, StyleSheet, Animated, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 import { getTeamLogoUrl } from '../../api/shl';
 import { getTeamColor } from '../../constants';
 import { getVideoDisplayTitle, formatSwedishDate } from '../../utils';
@@ -16,6 +20,10 @@ import { GameModalHeader } from './GameModalHeader';
 /**
  * SHL Game Modal with Summary, Events, and Highlights tabs
  */
+const TABS = ['summary', 'events', 'highlights'];
+const SWIPE_THRESHOLD = 50;
+const SWIPE_VELOCITY_THRESHOLD = 500;
+
 export const ShlGameModal = ({
     game,
     gameDetails,
@@ -34,6 +42,58 @@ export const ShlGameModal = ({
         playVideo,
         stopVideo
     } = useVideoPlayer();
+
+    const translateX = useRef(new Animated.Value(0)).current;
+
+    const handleGestureEvent = Animated.event(
+        [{ nativeEvent: { translationX: translateX } }],
+        { useNativeDriver: true }
+    );
+
+    const handleGestureStateChange = ({ nativeEvent }) => {
+        if (nativeEvent.state === State.END) {
+            const { translationX: tx, velocityX } = nativeEvent;
+            const currentIndex = TABS.indexOf(activeTab);
+
+            let shouldSwipe = false;
+            let direction = 0;
+
+            // Determine if swipe should happen
+            if (Math.abs(tx) > SWIPE_THRESHOLD || Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                direction = tx > 0 ? -1 : 1; // Swipe right = go left (previous), swipe left = go right (next)
+                const nextIndex = currentIndex + direction;
+                if (nextIndex >= 0 && nextIndex < TABS.length) {
+                    shouldSwipe = true;
+                }
+            }
+
+            if (shouldSwipe) {
+                // Animate out, then change tab
+                Animated.timing(translateX, {
+                    toValue: -direction * SCREEN_WIDTH,
+                    duration: 150,
+                    useNativeDriver: true
+                }).start(() => {
+                    handleTabChange(TABS[currentIndex + direction]);
+                    translateX.setValue(direction * SCREEN_WIDTH);
+                    Animated.spring(translateX, {
+                        toValue: 0,
+                        useNativeDriver: true,
+                        tension: 100,
+                        friction: 12
+                    }).start();
+                });
+            } else {
+                // Spring back
+                Animated.spring(translateX, {
+                    toValue: 0,
+                    useNativeDriver: true,
+                    tension: 100,
+                    friction: 12
+                }).start();
+            }
+        }
+    };
 
     const handleClose = () => {
         stopVideo();
@@ -266,15 +326,27 @@ export const ShlGameModal = ({
                             />
                         </View>
 
-                        {/* Tab Content */}
+                        {/* Tab Content with gesture support */}
                         {loading ? (
                             <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
                         ) : (
-                            <View style={styles.tabContentContainer}>
-                                {activeTab === 'summary' && renderSummaryTab()}
-                                {activeTab === 'events' && renderEventsTab()}
-                                {activeTab === 'highlights' && renderHighlightsTab()}
-                            </View>
+                            <PanGestureHandler
+                                onGestureEvent={handleGestureEvent}
+                                onHandlerStateChange={handleGestureStateChange}
+                                activeOffsetX={[-20, 20]}
+                                failOffsetY={[-20, 20]}
+                            >
+                                <Animated.View
+                                    style={[
+                                        styles.tabContentContainer,
+                                        { transform: [{ translateX }] }
+                                    ]}
+                                >
+                                    {activeTab === 'summary' && renderSummaryTab()}
+                                    {activeTab === 'events' && renderEventsTab()}
+                                    {activeTab === 'highlights' && renderHighlightsTab()}
+                                </Animated.View>
+                            </PanGestureHandler>
                         )}
                     </>
                 )}
