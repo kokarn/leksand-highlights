@@ -1,4 +1,4 @@
-import { View, Text, Image, Modal, FlatList, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Modal, FlatList, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getTeamLogoUrl } from '../../api/shl';
@@ -11,6 +11,7 @@ import { StatBar } from '../StatBar';
 import { VideoCard } from '../cards';
 import { GoalItem, PenaltyItem, GoalkeeperItem, TimeoutItem, PeriodMarker } from '../events';
 import { VideoPlayer } from '../VideoPlayer';
+import { GameModalHeader } from './GameModalHeader';
 
 /**
  * SHL Game Modal with Summary, Events, and Highlights tabs
@@ -59,15 +60,28 @@ export const ShlGameModal = ({
         }
 
         const { sog, pp, pim } = processedData;
+        const isPreGame = game?.state === 'pre-game';
+        const venueName = gameDetails?.venue?.name
+            || game?.venue?.name
+            || game?.venueInfo?.name
+            || '-';
+        const startDateTime = game?.startDateTime;
+        const stateLabel = game?.state === 'post-game'
+            ? 'Final'
+            : game?.state === 'pre-game'
+                ? 'Pre-game'
+                : game?.state || '-';
 
         return (
             <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-                <View style={styles.sectionCard}>
-                    <Text style={styles.sectionTitle}>Team Stats</Text>
-                    <StatBar label="Shots" homeValue={sog.home} awayValue={sog.away} homeColor={homeColor} awayColor={awayColor} />
-                    <StatBar label="Power Play %" homeValue={pp.home} awayValue={pp.away} homeColor={homeColor} awayColor={awayColor} />
-                    <StatBar label="Penalty Min" homeValue={pim.home} awayValue={pim.away} homeColor={homeColor} awayColor={awayColor} />
-                </View>
+                {!isPreGame && (
+                    <View style={styles.sectionCard}>
+                        <Text style={styles.sectionTitle}>Match Stats</Text>
+                        <StatBar label="Shots" homeValue={sog.home} awayValue={sog.away} homeColor={homeColor} awayColor={awayColor} />
+                        <StatBar label="Power Play %" homeValue={pp.home} awayValue={pp.away} homeColor={homeColor} awayColor={awayColor} />
+                        <StatBar label="Penalty Min" homeValue={pim.home} awayValue={pim.away} homeColor={homeColor} awayColor={awayColor} />
+                    </View>
+                )}
 
                 <View style={styles.sectionCard}>
                     <Text style={styles.sectionTitle}>Goals</Text>
@@ -92,6 +106,30 @@ export const ShlGameModal = ({
                             );
                         })
                     )}
+                </View>
+
+                <View style={styles.sectionCard}>
+                    <Text style={styles.sectionTitle}>Match Details</Text>
+                    <View style={styles.detailRow}>
+                        <Ionicons name="calendar-outline" size={18} color="#888" />
+                        <Text style={styles.detailLabel}>Date</Text>
+                        <Text style={styles.detailValue}>{formatSwedishDate(startDateTime, 'd MMMM yyyy')}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                        <Ionicons name="time-outline" size={18} color="#888" />
+                        <Text style={styles.detailLabel}>Face-off</Text>
+                        <Text style={styles.detailValue}>{formatSwedishDate(startDateTime, 'HH:mm')}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                        <Ionicons name="location-outline" size={18} color="#888" />
+                        <Text style={styles.detailLabel}>Venue</Text>
+                        <Text style={styles.detailValue} numberOfLines={2}>{venueName}</Text>
+                    </View>
+                    <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
+                        <Ionicons name="pulse-outline" size={18} color="#888" />
+                        <Text style={styles.detailLabel}>Status</Text>
+                        <Text style={styles.detailValue}>{stateLabel}</Text>
+                    </View>
                 </View>
             </ScrollView>
         );
@@ -196,45 +234,15 @@ export const ShlGameModal = ({
             <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
                 {game && (
                     <>
-                        {/* Header */}
-                        <View style={styles.modalHeader}>
-                            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-                                <Ionicons name="close" size={24} color="#fff" />
-                            </TouchableOpacity>
-                            <View style={styles.scoreHeader}>
-                                <View style={styles.scoreTeam}>
-                                    <Image
-                                        source={{ uri: getTeamLogoUrl(homeCode) }}
-                                        style={styles.scoreTeamLogo}
-                                        resizeMode="contain"
-                                    />
-                                    <Text style={styles.scoreTeamCode}>{homeCode}</Text>
-                                </View>
-                                <View style={styles.scoreCenterBlock}>
-                                    <Text style={styles.scoreLarge}>
-                                        {scoreDisplay.home} - {scoreDisplay.away}
-                                    </Text>
-                                    <View style={[styles.statusBadge, game.state === 'live' && styles.statusBadgeLive]}>
-                                        <Text style={styles.statusBadgeText}>
-                                            {game.state === 'post-game' ? 'Final' : game.state === 'pre-game' ? 'Pre-game' : game.state}
-                                        </Text>
-                                    </View>
-                                    {game.state === 'pre-game' && game.startDateTime && (
-                                        <Text style={styles.gameDateText}>
-                                            {formatSwedishDate(game.startDateTime, 'd MMMM HH:mm')}
-                                        </Text>
-                                    )}
-                                </View>
-                                <View style={styles.scoreTeam}>
-                                    <Image
-                                        source={{ uri: getTeamLogoUrl(awayCode) }}
-                                        style={styles.scoreTeamLogo}
-                                        resizeMode="contain"
-                                    />
-                                    <Text style={styles.scoreTeamCode}>{awayCode}</Text>
-                                </View>
-                            </View>
-                        </View>
+                        <GameModalHeader
+                            homeTeam={{ name: homeCode, logo: homeCode ? getTeamLogoUrl(homeCode) : null }}
+                            awayTeam={{ name: awayCode, logo: awayCode ? getTeamLogoUrl(awayCode) : null }}
+                            homeScore={scoreDisplay.home}
+                            awayScore={scoreDisplay.away}
+                            state={game.state}
+                            startDateTime={game.startDateTime}
+                            onClose={handleClose}
+                        />
 
                         {/* Tab Bar */}
                         <View style={styles.tabBar}>
@@ -279,72 +287,6 @@ const styles = StyleSheet.create({
     modalContainer: {
         flex: 1,
         backgroundColor: '#0a0a0a'
-    },
-    modalHeader: {
-        paddingTop: 20,
-        paddingBottom: 16,
-        paddingHorizontal: 16,
-        backgroundColor: '#1c1c1e',
-        borderBottomWidth: 1,
-        borderBottomColor: '#333'
-    },
-    closeButton: {
-        position: 'absolute',
-        top: 20,
-        right: 16,
-        zIndex: 10,
-        padding: 8
-    },
-    scoreHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingTop: 20
-    },
-    scoreTeam: {
-        alignItems: 'center',
-        width: 80
-    },
-    scoreTeamLogo: {
-        width: 50,
-        height: 50,
-        marginBottom: 4
-    },
-    scoreTeamCode: {
-        color: '#fff',
-        fontSize: 14,
-        fontWeight: '700'
-    },
-    scoreCenterBlock: {
-        alignItems: 'center',
-        marginHorizontal: 20
-    },
-    scoreLarge: {
-        color: '#fff',
-        fontSize: 42,
-        fontWeight: '800',
-        fontVariant: ['tabular-nums']
-    },
-    statusBadge: {
-        marginTop: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 4,
-        borderRadius: 6,
-        backgroundColor: '#444'
-    },
-    statusBadgeLive: {
-        backgroundColor: '#FF453A'
-    },
-    statusBadgeText: {
-        color: '#fff',
-        fontSize: 11,
-        fontWeight: '700',
-        textTransform: 'uppercase'
-    },
-    gameDateText: {
-        color: '#aaa',
-        fontSize: 13,
-        marginTop: 4
     },
     tabBar: {
         flexDirection: 'row',
@@ -421,5 +363,25 @@ const styles = StyleSheet.create({
         fontSize: 16,
         textAlign: 'center',
         padding: 20
+    },
+    detailRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#2a2a2a'
+    },
+    detailLabel: {
+        color: '#888',
+        fontSize: 14,
+        flex: 1
+    },
+    detailValue: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
+        flex: 1,
+        textAlign: 'right'
     }
 });

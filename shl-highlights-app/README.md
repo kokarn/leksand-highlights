@@ -4,6 +4,13 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 1.14.0
+- Unify football and hockey game modals with shared header component
+- Move Match Details section to Summary tab (removed separate Info tab)
+- Rename "Team Stats" to "Match Stats" in hockey modal for consistency
+- Add logo placeholder fallback to hockey modal
+- Hide Match Stats section in pre-game state for both sports
+
 ### 1.13.0
 - Replace sport tabs with a compact dropdown picker
 - Use English relative date format on all event cards (Today, Tomorrow, weekday names)
