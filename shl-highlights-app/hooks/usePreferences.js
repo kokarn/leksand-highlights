@@ -8,7 +8,7 @@ import { STORAGE_KEYS } from '../constants';
  */
 export function usePreferences() {
     // Sport selection
-    const [activeSport, setActiveSport] = useState('shl');
+    const [activeSport, setActiveSport] = useState('all');
 
     // SHL team filters
     const [selectedTeams, setSelectedTeams] = useState([]);
