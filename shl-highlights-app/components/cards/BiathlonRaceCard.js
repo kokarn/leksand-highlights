@@ -81,7 +81,6 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
                 <View style={styles.mainRow}>
                     <View style={styles.locationContainer}>
                         <Text style={styles.flag}>{getNationFlag(race.country)}</Text>
-                        <Text style={styles.location} numberOfLines={1}>{race.location}</Text>
                     </View>
 
                     <View style={styles.disciplineContainer}>
@@ -178,13 +177,6 @@ const styles = StyleSheet.create({
     },
     flag: {
         fontSize: 28
-    },
-    location: {
-        color: '#888',
-        fontSize: 11,
-        fontWeight: '600',
-        marginTop: 4,
-        textAlign: 'center'
     },
     disciplineContainer: {
         flex: 4,
