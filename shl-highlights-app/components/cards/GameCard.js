@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getTeamLogoUrl } from '../../api/shl';
-import { extractScore, formatSwedishDate } from '../../utils';
+import { extractScore, formatRelativeDateEnglish } from '../../utils';
 
 export const GameCard = memo(function GameCard({ game, onPress }) {
     const homeTeam = game?.homeTeamInfo ?? {};
@@ -13,7 +13,7 @@ export const GameCard = memo(function GameCard({ game, onPress }) {
     const awayName = awayTeam?.names?.short ?? awayCode ?? 'Away';
     const homeLogo = getTeamLogoUrl(homeCode);
     const awayLogo = getTeamLogoUrl(awayCode);
-    const formattedDate = formatSwedishDate(game?.startDateTime);
+    const formattedDate = formatRelativeDateEnglish(game?.startDateTime);
     const isLive = game?.state === 'live';
     const homeScore = extractScore(game?.homeTeamResult, homeTeam);
     const awayScore = extractScore(game?.awayTeamResult, awayTeam);

@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { extractScore, formatSwedishDate } from '../../utils';
+import { extractScore, formatRelativeDateEnglish } from '../../utils';
 
 const getTeamName = (team, fallback) => {
     return team?.names?.short || team?.names?.long || team?.code || fallback;
@@ -15,7 +15,7 @@ export const FootballGameCard = memo(function FootballGameCard({ game, onPress }
     const homeTeam = game?.homeTeamInfo ?? {};
     const awayTeam = game?.awayTeamInfo ?? {};
     const isLive = game?.state === 'live';
-    const formattedDate = formatSwedishDate(game?.startDateTime);
+    const formattedDate = formatRelativeDateEnglish(game?.startDateTime);
     const homeScore = extractScore(null, homeTeam);
     const awayScore = extractScore(null, awayTeam);
     const stateLabel = game?.state === 'post-game'

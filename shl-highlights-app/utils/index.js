@@ -84,6 +84,26 @@ export const formatRelativeDate = (dateStr) => {
 };
 
 /**
+ * Format relative date in English (Today, Tomorrow, weekday, or date)
+ * @param {string} dateStr - ISO date string
+ * @returns {string} Formatted relative date in English
+ */
+export const formatRelativeDateEnglish = (dateStr) => {
+    if (!dateStr) return '-';
+    try {
+        const date = parseISO(dateStr);
+        if (Number.isNaN(date.getTime())) return '-';
+        if (isToday(date)) return 'Today';
+        if (isTomorrow(date)) return 'Tomorrow';
+        const days = differenceInDays(date, new Date());
+        if (days > 0 && days <= 7) return format(date, 'EEEE');
+        return format(date, 'd MMM');
+    } catch (error) {
+        return '-';
+    }
+};
+
+/**
  * Format date in Swedish style
  * @param {string} dateStr - ISO date string
  * @param {string} formatStr - Date format string
