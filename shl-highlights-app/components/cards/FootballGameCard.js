@@ -49,7 +49,7 @@ export const FootballGameCard = memo(function FootballGameCard({ game, onPress }
                         ) : (
                             <View style={styles.teamLogoPlaceholder} />
                         )}
-                        <Text style={styles.teamName} numberOfLines={1}>
+                        <Text style={styles.teamName}>
                             {getTeamName(homeTeam, 'Home')}
                         </Text>
                     </View>
@@ -69,7 +69,7 @@ export const FootballGameCard = memo(function FootballGameCard({ game, onPress }
                         ) : (
                             <View style={styles.teamLogoPlaceholder} />
                         )}
-                        <Text style={styles.teamName} numberOfLines={1}>
+                        <Text style={styles.teamName}>
                             {getTeamName(awayTeam, 'Away')}
                         </Text>
                     </View>
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between'
     },
     teamContainer: {
-        flex: 1,
+        flex: 1.5,
         alignItems: 'center',
         justifyContent: 'center',
         minWidth: 0
@@ -143,6 +143,7 @@ const styles = StyleSheet.create({
         flex: 4,
         alignItems: 'center',
         justifyContent: 'center',
+        paddingHorizontal: 16,
         minWidth: 0
     },
     scoreText: {

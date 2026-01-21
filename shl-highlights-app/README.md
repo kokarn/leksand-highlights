@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 1.15.1
+- Fix biathlon card centering on tablet widths by giving left and right containers equal flex widths
+
 ### 1.15.0
 - Add dropdown season picker to football standings view
 - Add swipe gesture navigation between tabs on match detail pages

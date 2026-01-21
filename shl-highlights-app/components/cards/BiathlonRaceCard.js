@@ -52,21 +52,25 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
     }, [race?.km, race?.shootings]);
 
     // Dynamic font size for discipline text - works on all platforms
-    // Base size 28px for short text, scales down for longer text
+    // Base size 26px for short text, scales down for longer text
     const disciplineFontSize = useMemo(() => {
         const text = race?.discipline || '';
         const length = text.length;
-        const baseSize = 28;
-        const minSize = 18;
 
-        // Scale down for text longer than 10 characters
-        if (length <= 10) {
-            return baseSize;
+        // Shorter text (up to 8 chars): 26px
+        if (length <= 8) {
+            return 26;
         }
-
-        // Linear scale from 28px at 10 chars to 18px at 20 chars
-        const scale = Math.max(0, 1 - (length - 10) / 10);
-        return Math.max(minSize, Math.round(baseSize - (baseSize - minSize) * (1 - scale)));
+        // Medium text (9-12 chars): 22px
+        if (length <= 12) {
+            return 22;
+        }
+        // Longer text (13-18 chars): 18px
+        if (length <= 18) {
+            return 18;
+        }
+        // Very long text (19+ chars): 15px
+        return 15;
     }, [race?.discipline]);
 
     const handlePress = useCallback(() => onPress(race), [onPress, race]);
@@ -104,9 +108,9 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
                     <View style={styles.disciplineContainer}>
                         <Text
                             style={[styles.disciplineText, { fontSize: disciplineFontSize }]}
-                            numberOfLines={1}
+                            numberOfLines={2}
                             adjustsFontSizeToFit
-                            minimumFontScale={0.6}
+                            minimumFontScale={0.7}
                         >
                             {race.discipline}
                         </Text>
@@ -195,7 +199,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between'
     },
     locationContainer: {
-        flex: 1,
+        flex: 1.5,
         alignItems: 'center',
         justifyContent: 'center',
         minWidth: 0
@@ -207,6 +211,7 @@ const styles = StyleSheet.create({
         flex: 4,
         alignItems: 'center',
         justifyContent: 'center',
+        paddingHorizontal: 16,
         minWidth: 0
     },
     disciplineText: {
@@ -222,9 +227,10 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase'
     },
     genderContainer: {
+        flex: 1.5,
         alignItems: 'center',
         justifyContent: 'center',
-        flexShrink: 0
+        minWidth: 0
     },
     genderBadge: {
         alignItems: 'center',
