@@ -1,4 +1,22 @@
-# Welcome to your Expo app 👋
+# SHL Highlights App
+
+A React Native app for following Swedish hockey, football, and biathlon events.
+
+## Changelog
+
+### 1.13.0
+- Replace sport tabs with a compact dropdown picker
+- Use English relative date format on all event cards (Today, Tomorrow, weekday names)
+- Align event card widths with header
+- Fix gender badge text wrapping on narrow screens
+- Center discipline text in biathlon cards when wrapping
+- Remove location name from biathlon cards for cleaner look
+- Default to showing all sports for new users
+
+### 1.12.1
+- Previous release
+
+---
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
