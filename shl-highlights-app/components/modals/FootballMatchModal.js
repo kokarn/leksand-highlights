@@ -111,7 +111,7 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading }
 
         const goalsWithCalcScores = sortedGoals.map(goal => {
             const isHomeGoal = goal.isHome === true || goal.teamCode === homeCode;
-            
+
             if (isHomeGoal) {
                 runningHome++;
             } else {
