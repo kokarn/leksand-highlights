@@ -51,6 +51,24 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
         return parts.join(' • ');
     }, [race?.km, race?.shootings]);
 
+    // Dynamic font size for discipline text - works on all platforms
+    // Base size 28px for short text, scales down for longer text
+    const disciplineFontSize = useMemo(() => {
+        const text = race?.discipline || '';
+        const length = text.length;
+        const baseSize = 28;
+        const minSize = 18;
+
+        // Scale down for text longer than 10 characters
+        if (length <= 10) {
+            return baseSize;
+        }
+
+        // Linear scale from 28px at 10 chars to 18px at 20 chars
+        const scale = Math.max(0, 1 - (length - 10) / 10);
+        return Math.max(minSize, Math.round(baseSize - (baseSize - minSize) * (1 - scale)));
+    }, [race?.discipline]);
+
     const handlePress = useCallback(() => onPress(race), [onPress, race]);
 
     return (
@@ -84,7 +102,14 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
                     </View>
 
                     <View style={styles.disciplineContainer}>
-                        <Text style={styles.disciplineText}>{race.discipline}</Text>
+                        <Text
+                            style={[styles.disciplineText, { fontSize: disciplineFontSize }]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.6}
+                        >
+                            {race.discipline}
+                        </Text>
                         <Text style={styles.detailsText}>{raceDetails}</Text>
                     </View>
 
