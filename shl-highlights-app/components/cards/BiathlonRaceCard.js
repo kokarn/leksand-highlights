@@ -195,7 +195,8 @@ const styles = StyleSheet.create({
     disciplineText: {
         color: '#fff',
         fontSize: 28,
-        fontWeight: '800'
+        fontWeight: '800',
+        textAlign: 'center'
     },
     detailsText: {
         color: '#666',
