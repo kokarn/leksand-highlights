@@ -710,7 +710,7 @@ export default function App() {
                 <View style={styles.header}>
                     {renderSportPicker()}
                     <TouchableOpacity style={styles.settingsButton} onPress={() => setShowSettings(true)}>
-                        <Ionicons name="settings-outline" size={18} color="#888" />
+                        <Ionicons name="settings-outline" size={16} color="#888" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -927,7 +927,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#000'
     },
     settingsButton: {
-        padding: 8,
+        padding: 10,
         borderRadius: 10,
         backgroundColor: '#1c1c1e',
         borderWidth: 1,
@@ -953,7 +953,8 @@ const styles = StyleSheet.create({
         zIndex: 5
     },
     listContent: {
-        padding: 16,
+        paddingHorizontal: 12,
+        paddingVertical: 16,
         paddingTop: 24
     },
     standingsHeader: {
