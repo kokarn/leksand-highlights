@@ -91,7 +91,7 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
 
                     <View style={styles.genderContainer}>
                         <View style={[styles.genderBadge, { backgroundColor: GENDER_COLORS[race.gender] || '#666' }]}>
-                            <Text style={styles.genderText}>{race.genderDisplay}</Text>
+                            <Text style={styles.genderText} numberOfLines={1}>{race.genderDisplay}</Text>
                         </View>
                     </View>
                 </View>
@@ -204,16 +204,15 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase'
     },
     genderContainer: {
-        flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        minWidth: 0
+        flexShrink: 0
     },
     genderBadge: {
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 8,
-        paddingHorizontal: 12,
+        paddingHorizontal: 10,
         borderRadius: 8
     },
     genderText: {
