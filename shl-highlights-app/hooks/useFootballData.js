@@ -287,6 +287,27 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
         setLoadingDetails(false);
     }, []);
 
+    // Auto-refresh game details when viewing a live game
+    useEffect(() => {
+        if (!selectedGame || selectedGame.state !== 'live') {
+            return;
+        }
+
+        const refreshDetails = async () => {
+            console.log('[Football] Auto-refreshing game details for live game...');
+            try {
+                const details = await fetchFootballGameDetails(selectedGame.uuid);
+                setGameDetails(details);
+            } catch (error) {
+                console.error('Failed to refresh football match details', error);
+            }
+        };
+
+        const intervalId = setInterval(refreshDetails, 15000); // Refresh every 15 seconds
+
+        return () => clearInterval(intervalId);
+    }, [selectedGame]);
+
     // Determine effective initial scroll index (skip if user has scrolled before)
     const effectiveInitialScrollIndex = hasUserScrolled.current ? undefined : (targetGameIndex > 0 ? targetGameIndex : undefined);
 

@@ -25,10 +25,10 @@ function getGoalId(goal, gameId) {
         gameId,
         goal.period || '',
         goal.time || '',
-        goal.teamUuid || goal.team?.uuid || '',
-        goal.player?.uuid || goal.scorerPlayer?.uuid || '',
-        goal.homeScore || '',
-        goal.awayScore || ''
+        goal.teamUuid || goal.team?.uuid || goal.eventTeam?.teamId || '',
+        goal.player?.uuid || goal.player?.playerId || goal.scorerPlayer?.uuid || '',
+        goal.homeGoals ?? goal.homeTeam?.score ?? '',
+        goal.awayGoals ?? goal.awayTeam?.score ?? ''
     ];
     return parts.join('-');
 }
@@ -54,8 +54,10 @@ function extractGoalDetails(goal, gameInfo, sport) {
     }
 
     // Get scoring team
-    const teamUuid = goal.teamUuid || goal.team?.uuid;
-    const isHomeTeam = teamUuid === gameInfo.homeTeamInfo?.uuid;
+    const teamUuid = goal.teamUuid || goal.team?.uuid || goal.eventTeam?.teamId;
+    const isHomeTeam = goal.eventTeam?.place === 'home' ||
+        teamUuid === gameInfo.homeTeamInfo?.uuid ||
+        teamUuid === gameInfo.homeTeamInfo?.code;
     const scoringTeam = isHomeTeam ? gameInfo.homeTeamInfo : gameInfo.awayTeamInfo;
     const opposingTeam = isHomeTeam ? gameInfo.awayTeamInfo : gameInfo.homeTeamInfo;
 
@@ -63,9 +65,9 @@ function extractGoalDetails(goal, gameInfo, sport) {
     const scoringTeamCode = scoringTeam?.code || scoringTeam?.names?.short || 'Unknown';
     const opposingTeamCode = opposingTeam?.code || opposingTeam?.names?.short || 'Unknown';
 
-    // Get current score
-    const homeScore = goal.homeScore ?? gameInfo.homeTeamInfo?.score ?? 0;
-    const awayScore = goal.awayScore ?? gameInfo.awayTeamInfo?.score ?? 0;
+    // Get current score (API provides homeGoals/awayGoals or homeTeam.score/awayTeam.score)
+    const homeScore = goal.homeGoals ?? goal.homeTeam?.score ?? gameInfo.homeTeamInfo?.score ?? 0;
+    const awayScore = goal.awayGoals ?? goal.awayTeam?.score ?? gameInfo.awayTeamInfo?.score ?? 0;
 
     // Get period/half info
     let periodText = '';

@@ -712,13 +712,20 @@ app.get('/api/games', async (req, res) => {
     try {
         let baseGames = getCachedGames();
         let usedCache = true;
+        const provider = getProvider('shl');
 
         if (baseGames) {
             console.log('[Cache HIT] /api/games');
+
+            // For live games, always fetch fresh scores even on cache hit
+            const hasLiveGames = baseGames.some(g => g.state === 'live');
+            if (hasLiveGames) {
+                console.log('[Cache] Enriching live games with fresh scores...');
+                baseGames = await provider.enrichGames(baseGames);
+            }
         } else {
             usedCache = false;
             console.log('[Cache MISS] /api/games - fetching fresh data...');
-            const provider = getProvider('shl');
             const games = await provider.fetchAllGames();
 
             baseGames = games.length

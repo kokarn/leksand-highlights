@@ -413,8 +413,11 @@ class SHLProvider extends BaseProvider {
             const homeScore = game.homeTeamInfo?.score ?? 0;
             const awayScore = game.awayTeamInfo?.score ?? 0;
 
-            // Fetch actual score for post-game with 0-0
-            if (game.state === 'post-game' && homeScore === 0 && awayScore === 0) {
+            // Fetch actual score for live games or post-game with 0-0
+            const shouldFetchScore = game.state === 'live' ||
+                (game.state === 'post-game' && homeScore === 0 && awayScore === 0);
+
+            if (shouldFetchScore) {
                 const actualScore = await this._fetchActualScore(game);
                 if (actualScore) {
                     return {
@@ -430,18 +433,50 @@ class SHLProvider extends BaseProvider {
 
     async _fetchActualScore(game) {
         try {
-            const url = `${this.baseUrl}/gameday/post-game-data/team-stats/${game.uuid}?ssgtUuid=${game.ssgtUuid}&homeTeamUuid=${game.homeTeamInfo?.uuid}&awayTeamUuid=${game.awayTeamInfo?.uuid}`;
-            const response = await fetch(url, { headers: this.headers });
-            if (response.ok) {
-                const teamStats = await response.json();
-                const stats = teamStats?.stats || [];
-                for (const stat of stats) {
-                    const key = stat.homeTeam?.sideTranslateKey || stat.awayTeam?.sideTranslateKey;
-                    if (key === 'G') {
+            // For live games, get score from play-by-play events
+            const playByPlayUrl = `${this.baseUrl}/gameday/play-by-play/${game.uuid}`;
+            const playByPlayResponse = await fetch(playByPlayUrl, { headers: this.headers });
+            if (playByPlayResponse.ok) {
+                const events = await playByPlayResponse.json();
+                if (Array.isArray(events) && events.length > 0) {
+                    // Find the most recent event with score info
+                    // Events with homeTeam.score and awayTeam.score are goals
+                    // We want the latest one to get current score
+                    const eventsWithScore = events.filter(e =>
+                        e.homeTeam?.score !== undefined && e.awayTeam?.score !== undefined
+                    );
+                    if (eventsWithScore.length > 0) {
+                        // Sort by period and time descending to get latest
+                        eventsWithScore.sort((a, b) => {
+                            if (b.period !== a.period) {
+                                return b.period - a.period;
+                            }
+                            return (b.time || '').localeCompare(a.time || '');
+                        });
+                        const latest = eventsWithScore[0];
                         return {
-                            home: stat.homeTeam?.left?.value ?? 0,
-                            away: stat.awayTeam?.left?.value ?? 0
+                            home: latest.homeTeam.score,
+                            away: latest.awayTeam.score
                         };
+                    }
+                }
+            }
+
+            // Fallback to team-stats endpoint (for post-game)
+            if (game.ssgtUuid && game.homeTeamInfo?.uuid && game.awayTeamInfo?.uuid) {
+                const url = `${this.baseUrl}/gameday/post-game-data/team-stats/${game.uuid}?ssgtUuid=${game.ssgtUuid}&homeTeamUuid=${game.homeTeamInfo.uuid}&awayTeamUuid=${game.awayTeamInfo.uuid}`;
+                const response = await fetch(url, { headers: this.headers });
+                if (response.ok) {
+                    const teamStats = await response.json();
+                    const stats = teamStats?.stats || [];
+                    for (const stat of stats) {
+                        const key = stat.homeTeam?.sideTranslateKey || stat.awayTeam?.sideTranslateKey;
+                        if (key === 'G') {
+                            return {
+                                home: stat.homeTeam?.left?.value ?? 0,
+                                away: stat.awayTeam?.left?.value ?? 0
+                            };
+                        }
                     }
                 }
             }

@@ -235,6 +235,23 @@ export function useShlData(activeSport, selectedTeams, options = {}) {
         setVideos([]);
     }, []);
 
+    // Auto-refresh game details when viewing a live game
+    useEffect(() => {
+        if (!selectedGame || selectedGame.state !== 'live') {
+            return;
+        }
+
+        const refreshDetails = async () => {
+            console.log('[SHL] Auto-refreshing game details for live game...');
+            const details = await fetchGameDetails(selectedGame.uuid);
+            setGameDetails(details);
+        };
+
+        const intervalId = setInterval(refreshDetails, 15000); // Refresh every 15 seconds
+
+        return () => clearInterval(intervalId);
+    }, [selectedGame]);
+
     // Determine effective initial scroll index (skip if user has scrolled before)
     const effectiveInitialScrollIndex = hasUserScrolled.current ? undefined : (targetGameIndex > 0 ? targetGameIndex : undefined);
 
