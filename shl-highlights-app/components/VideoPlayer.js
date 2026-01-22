@@ -47,6 +47,7 @@ export const VideoPlayer = ({
                         source={{ uri: hlsUrl || embedUrl }}
                         style={{ flex: 1, backgroundColor: 'transparent' }}
                         allowsInlineMediaPlayback
+                        allowsFullscreenVideo={true}
                         mediaPlaybackRequiresUserAction={false}
                         javaScriptEnabled={true}
                         domStorageEnabled={true}
