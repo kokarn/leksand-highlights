@@ -125,14 +125,14 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
         loadStandings();
     }, [activeSport, viewMode, loadStandings]);
 
-    // Auto-refresh for live games
+    // Auto-refresh for live games (also when viewing 'all' sports)
     useEffect(() => {
-        if (activeSport !== 'football') return;
+        if (activeSport !== 'football' && activeSport !== 'all') return;
         const shouldAutoRefresh = shouldAutoRefreshGames(games);
         if (!shouldAutoRefresh) return;
 
         const intervalId = setInterval(() => {
-            console.log('Auto-refreshing live or starting-soon football matches...');
+            console.log('[Football] Auto-refreshing live or starting-soon matches...');
             loadGames(true);
         }, AUTO_REFRESH_INTERVAL_MS);
 

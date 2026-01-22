@@ -100,14 +100,14 @@ export function useShlData(activeSport, selectedTeams, options = {}) {
         loadStandings();
     }, [activeSport, viewMode, loadStandings]);
 
-    // Auto-refresh for live games
+    // Auto-refresh for live games (also when viewing 'all' sports)
     useEffect(() => {
-        if (activeSport !== 'shl') return;
+        if (activeSport !== 'shl' && activeSport !== 'all') return;
         const shouldAutoRefresh = shouldAutoRefreshGames(games);
         if (!shouldAutoRefresh) return;
 
         const intervalId = setInterval(() => {
-            console.log('Auto-refreshing live or starting-soon games...');
+            console.log('[SHL] Auto-refreshing live or starting-soon games...');
             loadGames(true);
         }, AUTO_REFRESH_INTERVAL_MS);
 

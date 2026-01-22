@@ -7,6 +7,10 @@ import {
     fetchBiathlonStandings
 } from '../api/shl';
 
+const AUTO_REFRESH_INTERVAL_MS = 20000;
+const STARTING_SOON_WINDOW_MINUTES = 30;
+const RECENT_START_WINDOW_MINUTES = 90;
+
 /**
  * Hook for managing Biathlon data
  * @param {string} activeSport - Currently active sport tab
@@ -48,6 +52,20 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
     // Scroll position persistence
     const savedScrollOffset = useRef(null);
     const hasUserScrolled = useRef(false);
+
+    // Check if auto-refresh should be enabled
+    const shouldAutoRefreshRaces = useCallback((racesList) => {
+        const now = Date.now();
+        return racesList.some(race => {
+            if (race.state === 'live') return true;
+            if (race.state === 'completed') return false;
+            const startTime = new Date(race.startDateTime).getTime();
+            if (Number.isNaN(startTime)) return false;
+            const minutesFromStart = (startTime - now) / (1000 * 60);
+            return minutesFromStart <= STARTING_SOON_WINDOW_MINUTES
+                && minutesFromStart >= -RECENT_START_WINDOW_MINUTES;
+        });
+    }, []);
 
     // Load biathlon data
     const loadData = useCallback(async (silent = false) => {
@@ -106,6 +124,20 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
             loadData();
         }
     }, [activeSport, loadData, eagerLoad]);
+
+    // Auto-refresh for live races (also when viewing 'all' sports)
+    useEffect(() => {
+        if (activeSport !== 'biathlon' && activeSport !== 'all') return;
+        const shouldAutoRefresh = shouldAutoRefreshRaces(races);
+        if (!shouldAutoRefresh) return;
+
+        const intervalId = setInterval(() => {
+            console.log('[Biathlon] Auto-refreshing live or starting-soon races...');
+            loadData(true);
+        }, AUTO_REFRESH_INTERVAL_MS);
+
+        return () => clearInterval(intervalId);
+    }, [races, activeSport, shouldAutoRefreshRaces, loadData]);
 
     // Load standings when switching to standings view
     useEffect(() => {
