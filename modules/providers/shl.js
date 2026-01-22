@@ -32,7 +32,39 @@ class SHLProvider extends BaseProvider {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        return this.normalizeGames(data?.gameInfo || []);
+        const games = this.normalizeGames(data?.gameInfo || []);
+
+        // Check games that should be live based on time but show pre-game
+        // Use the play-by-play API to verify if they've actually started
+        const gamesToCheck = games.filter(game => this.isGameInLiveWindow(game));
+
+        if (gamesToCheck.length > 0) {
+            console.log(`[${this.name}] Checking ${gamesToCheck.length} games for live status...`);
+
+            const liveCheckResults = await Promise.all(
+                gamesToCheck.map(async (game) => {
+                    const hasStarted = await this.checkGameHasStarted(game.uuid);
+                    return { gameId: game.uuid, hasStarted };
+                })
+            );
+
+            // Update games that have actually started
+            const liveGameIds = new Set(
+                liveCheckResults.filter(r => r.hasStarted).map(r => r.gameId)
+            );
+
+            if (liveGameIds.size > 0) {
+                console.log(`[${this.name}] Found ${liveGameIds.size} games that are actually live`);
+                return games.map(game => {
+                    if (liveGameIds.has(game.uuid)) {
+                        return { ...game, state: 'live' };
+                    }
+                    return game;
+                });
+            }
+        }
+
+        return games;
     }
 
     normalizeScoreValue(value) {
@@ -90,6 +122,7 @@ class SHLProvider extends BaseProvider {
         if (!game) {
             return game;
         }
+
         return {
             ...game,
             homeTeamInfo: this.normalizeTeamInfo(game.homeTeamInfo),
@@ -97,6 +130,48 @@ class SHLProvider extends BaseProvider {
             homeTeamResult: this.normalizeTeamResult(game.homeTeamResult),
             awayTeamResult: this.normalizeTeamResult(game.awayTeamResult)
         };
+    }
+
+    /**
+     * Check if a game that shows pre-game is actually live by checking for events
+     * @param {string} gameId - Game UUID
+     * @returns {Promise<boolean>} True if game has started (has events)
+     */
+    async checkGameHasStarted(gameId) {
+        try {
+            const playByPlayUrl = `${this.baseUrl}/gameday/play-by-play/${gameId}`;
+            const response = await fetch(playByPlayUrl, { headers: this.headers });
+
+            if (!response.ok) {
+                return false;
+            }
+
+            const events = await response.json();
+            // If there are any events, the game has started
+            return Array.isArray(events) && events.length > 0;
+        } catch (e) {
+            console.warn(`[${this.name}] Could not check game events for ${gameId}:`, e.message);
+            return false;
+        }
+    }
+
+    /**
+     * Check if a game should potentially be live based on time
+     * @param {Object} game - Game object
+     * @returns {boolean}
+     */
+    isGameInLiveWindow(game) {
+        if (!game || game.state !== 'pre-game' || !game.startDateTime) {
+            return false;
+        }
+
+        const startTime = new Date(game.startDateTime).getTime();
+        const now = Date.now();
+        const minutesSinceStart = (now - startTime) / (1000 * 60);
+
+        // Game started more than 1 minute ago but less than 3 hours ago
+        // Hockey games typically last ~2.5 hours including overtime
+        return minutesSinceStart > 1 && minutesSinceStart < 180;
     }
 
     normalizeGames(games) {
