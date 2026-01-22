@@ -103,7 +103,14 @@ export default function App() {
         toggleNotifications,
         toggleGoalNotifications,
         requestPermission: requestNotificationPermission,
-        setTeamTags
+        setTeamTags,
+        // Pre-game notification state and toggles
+        preGameShlEnabled,
+        preGameFootballEnabled,
+        preGameBiathlonEnabled,
+        togglePreGameShl,
+        togglePreGameFootball,
+        togglePreGameBiathlon
     } = usePushNotifications();
 
     const router = useRouter();
@@ -863,6 +870,14 @@ export default function App() {
                 onToggleNotifications={toggleNotifications}
                 onToggleGoalNotifications={toggleGoalNotifications}
                 onRequestNotificationPermission={requestNotificationPermission}
+                // Pre-game notification props
+                preGameShlEnabled={preGameShlEnabled}
+                preGameFootballEnabled={preGameFootballEnabled}
+                preGameBiathlonEnabled={preGameBiathlonEnabled}
+                onTogglePreGameShl={togglePreGameShl}
+                onTogglePreGameFootball={togglePreGameFootball}
+                onTogglePreGameBiathlon={togglePreGameBiathlon}
+                selectedNations={selectedNations}
             />
 
             {/* Onboarding Modal */}

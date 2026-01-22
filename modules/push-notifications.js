@@ -247,6 +247,111 @@ async function sendGoalNotification(goal, options = {}) {
 }
 
 /**
+ * Send a pre-game reminder notification
+ * @param {Object} gameInfo - Game information
+ * @param {string} gameInfo.sport - Sport type ('shl', 'allsvenskan', 'biathlon')
+ * @param {string} gameInfo.gameId - Game UUID
+ * @param {string} gameInfo.homeTeamName - Home team name
+ * @param {string} gameInfo.awayTeamName - Away team name (for team sports)
+ * @param {string} gameInfo.homeTeamCode - Home team code (for targeting)
+ * @param {string} gameInfo.awayTeamCode - Away team code (for targeting)
+ * @param {string} gameInfo.eventName - Event name (for biathlon)
+ * @param {string} gameInfo.startTime - Game start time
+ * @param {string} gameInfo.venue - Venue name
+ * @param {number} gameInfo.minutesUntilStart - Minutes until game starts
+ * @returns {Promise<Object>} Send result
+ */
+async function sendPreGameNotification(gameInfo) {
+    const {
+        sport,
+        gameId,
+        homeTeamName,
+        awayTeamName,
+        homeTeamCode,
+        awayTeamCode,
+        eventName,
+        startTime,
+        venue,
+        minutesUntilStart = 5
+    } = gameInfo;
+
+    // Build sport-specific notification content
+    let title, message, sportEmoji, preGameTag;
+
+    if (sport === 'shl') {
+        sportEmoji = '🏒';
+        preGameTag = 'pre_game_shl';
+        title = `${sportEmoji} SHL Starting Soon`;
+        message = `${homeTeamName} vs ${awayTeamName}`;
+        if (venue) {
+            message += ` at ${venue}`;
+        }
+        message += ` - starts in ${minutesUntilStart} minutes!`;
+    } else if (sport === 'allsvenskan') {
+        sportEmoji = '⚽';
+        preGameTag = 'pre_game_football';
+        title = `${sportEmoji} Allsvenskan Starting Soon`;
+        message = `${homeTeamName} vs ${awayTeamName}`;
+        if (venue) {
+            message += ` at ${venue}`;
+        }
+        message += ` - kicks off in ${minutesUntilStart} minutes!`;
+    } else if (sport === 'biathlon') {
+        sportEmoji = '🎯';
+        preGameTag = 'pre_game_biathlon';
+        title = `${sportEmoji} Biathlon Starting Soon`;
+        message = eventName || 'Race';
+        if (venue) {
+            message += ` in ${venue}`;
+        }
+        message += ` - starts in ${minutesUntilStart} minutes!`;
+    } else {
+        console.warn(`[PushNotifications] Unknown sport for pre-game notification: ${sport}`);
+        return { success: false, error: 'Unknown sport' };
+    }
+
+    // Build deep link URL for opening the game in the app
+    const deepLinkUrl = `gamepulse://game/${sport}/${gameId}`;
+
+    // Build filters: users must have pre-game tag enabled for this sport
+    // AND (for team sports) be following one of the teams
+    let filters = [
+        { field: 'tag', key: preGameTag, relation: '=', value: 'true' }
+    ];
+
+    // For team sports, also filter by followed teams
+    if ((sport === 'shl' || sport === 'allsvenskan') && homeTeamCode && awayTeamCode) {
+        // Users following either team
+        filters.push({ operator: 'AND' });
+        filters.push({
+            operator: 'OR',
+            filters: [
+                { field: 'tag', key: `team_${homeTeamCode.toLowerCase()}`, relation: '=', value: 'true' },
+                { field: 'tag', key: `team_${awayTeamCode.toLowerCase()}`, relation: '=', value: 'true' }
+            ]
+        });
+    }
+
+    const data = {
+        type: 'pre_game',
+        sport,
+        gameId,
+        homeTeam: homeTeamCode,
+        awayTeam: awayTeamCode,
+        url: deepLinkUrl
+    };
+
+    console.log(`[PushNotifications] Sending pre-game notification for ${sport}: ${message}`);
+
+    return sendNotification({
+        title,
+        message,
+        filters,
+        data
+    });
+}
+
+/**
  * Send a test notification
  * @param {string} message - Test message
  * @returns {Promise<Object>} Send result
@@ -292,6 +397,7 @@ module.exports = {
     isConfigured,
     sendNotification,
     sendGoalNotification,
+    sendPreGameNotification,
     sendTestNotification,
     getStats
 };

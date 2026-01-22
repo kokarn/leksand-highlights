@@ -4,6 +4,11 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 1.16.0
+- Add pre-game reminder notifications (5 minutes before event start)
+- Add per-sport notification settings for game reminders (SHL, Allsvenskan, Biathlon)
+- New "Game Reminders" section in Settings modal
+
 ### 1.15.1
 - Fix biathlon card centering on tablet widths by giving left and right containers equal flex widths
 

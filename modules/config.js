@@ -27,6 +27,12 @@ const MAX_HOURS_SINCE_GAME = 36;
 const NOTIFIER_INTERVAL_NORMAL = 5 * 60 * 1000;  // 5 minutes
 const NOTIFIER_INTERVAL_LIVE = 30 * 1000;        // 30 seconds
 
+// ============ PRE-GAME NOTIFICATION CONFIGURATION ============
+const PRE_GAME_REMINDER_MINUTES = 5;             // Minutes before game start to send notification
+const PRE_GAME_CHECK_INTERVAL = 60 * 1000;       // Check every 1 minute
+const PRE_GAME_WINDOW_MINUTES = 10;              // Look ahead window for upcoming games
+const SEEN_PRE_GAME_FILE = path.join(__dirname, '..', 'seen_pre_game.json');
+
 module.exports = {
     // Server
     PORT,
@@ -51,5 +57,11 @@ module.exports = {
     GLOBAL_ALL_TOPIC,
     MAX_HOURS_SINCE_GAME,
     NOTIFIER_INTERVAL_NORMAL,
-    NOTIFIER_INTERVAL_LIVE
+    NOTIFIER_INTERVAL_LIVE,
+
+    // Pre-game notifications
+    PRE_GAME_REMINDER_MINUTES,
+    PRE_GAME_CHECK_INTERVAL,
+    PRE_GAME_WINDOW_MINUTES,
+    SEEN_PRE_GAME_FILE
 };

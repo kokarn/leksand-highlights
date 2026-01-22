@@ -30,7 +30,19 @@ export const STORAGE_KEYS = {
     ONBOARDING_COMPLETE: 'onboardingComplete',
     ENABLED_SPORTS: 'enabledSports',
     NOTIFICATIONS_ENABLED: 'notificationsEnabled',
-    GOAL_NOTIFICATIONS_ENABLED: 'goalNotificationsEnabled'
+    GOAL_NOTIFICATIONS_ENABLED: 'goalNotificationsEnabled',
+    // Pre-game notification settings per sport
+    PRE_GAME_SHL_ENABLED: 'preGameShlEnabled',
+    PRE_GAME_FOOTBALL_ENABLED: 'preGameFootballEnabled',
+    PRE_GAME_BIATHLON_ENABLED: 'preGameBiathlonEnabled'
+};
+
+// Sport-specific notification tag keys for OneSignal
+export const NOTIFICATION_TAGS = {
+    GOAL_NOTIFICATIONS: 'goal_notifications',
+    PRE_GAME_SHL: 'pre_game_shl',
+    PRE_GAME_FOOTBALL: 'pre_game_football',
+    PRE_GAME_BIATHLON: 'pre_game_biathlon'
 };
 
 // Gender options for biathlon

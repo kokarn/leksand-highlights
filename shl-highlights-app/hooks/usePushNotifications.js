@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { OneSignal } from 'react-native-onesignal';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { STORAGE_KEYS } from '../constants';
+import { STORAGE_KEYS, NOTIFICATION_TAGS } from '../constants';
 
 /**
  * Hook for managing OneSignal push notifications
@@ -11,6 +11,9 @@ import { STORAGE_KEYS } from '../constants';
  * Tag structure:
  * - goal_notifications: 'true' | removed - enables goal notification targeting
  * - team_{code}: 'true' | removed - individual team subscription (e.g., team_lif, team_aik)
+ * - pre_game_shl: 'true' | removed - enables pre-game notifications for SHL
+ * - pre_game_football: 'true' | removed - enables pre-game notifications for Allsvenskan
+ * - pre_game_biathlon: 'true' | removed - enables pre-game notifications for Biathlon
  */
 export function usePushNotifications() {
     const [isInitialized, setIsInitialized] = useState(false);
@@ -20,6 +23,11 @@ export function usePushNotifications() {
     // Notification preferences state
     const [notificationsEnabled, setNotificationsEnabled] = useState(false);
     const [goalNotificationsEnabled, setGoalNotificationsEnabled] = useState(true);
+
+    // Pre-game notification preferences per sport
+    const [preGameShlEnabled, setPreGameShlEnabled] = useState(false);
+    const [preGameFootballEnabled, setPreGameFootballEnabled] = useState(false);
+    const [preGameBiathlonEnabled, setPreGameBiathlonEnabled] = useState(false);
 
     // Track all current team tags to properly remove old ones
     const currentTeamsRef = useRef(new Set());
@@ -56,6 +64,15 @@ export function usePushNotifications() {
         }
     }, []);
 
+    // Helper to sync a single tag based on enabled state
+    const syncTag = useCallback((tagKey, enabled) => {
+        if (enabled) {
+            OneSignal.User.addTag(tagKey, 'true');
+        } else {
+            OneSignal.User.removeTag(tagKey);
+        }
+    }, []);
+
     // Initialize OneSignal on mount
     useEffect(() => {
         const initOneSignal = async () => {
@@ -82,18 +99,30 @@ export function usePushNotifications() {
                 const savedEnabled = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATIONS_ENABLED);
                 const savedGoalNotifications = await AsyncStorage.getItem(STORAGE_KEYS.GOAL_NOTIFICATIONS_ENABLED);
 
+                // Load pre-game notification preferences
+                const savedPreGameShl = await AsyncStorage.getItem(STORAGE_KEYS.PRE_GAME_SHL_ENABLED);
+                const savedPreGameFootball = await AsyncStorage.getItem(STORAGE_KEYS.PRE_GAME_FOOTBALL_ENABLED);
+                const savedPreGameBiathlon = await AsyncStorage.getItem(STORAGE_KEYS.PRE_GAME_BIATHLON_ENABLED);
+
                 const isEnabled = savedEnabled === 'true';
                 const goalEnabled = savedGoalNotifications !== 'false'; // Default to true
+                const preGameShl = savedPreGameShl === 'true';
+                const preGameFootball = savedPreGameFootball === 'true';
+                const preGameBiathlon = savedPreGameBiathlon === 'true';
 
                 setNotificationsEnabled(isEnabled);
                 setGoalNotificationsEnabled(goalEnabled);
+                setPreGameShlEnabled(preGameShl);
+                setPreGameFootballEnabled(preGameFootball);
+                setPreGameBiathlonEnabled(preGameBiathlon);
 
                 // Sync goal_notifications tag on initialization
-                if (goalEnabled) {
-                    OneSignal.User.addTag('goal_notifications', 'true');
-                } else {
-                    OneSignal.User.removeTag('goal_notifications');
-                }
+                syncTag(NOTIFICATION_TAGS.GOAL_NOTIFICATIONS, goalEnabled);
+
+                // Sync pre-game notification tags
+                syncTag(NOTIFICATION_TAGS.PRE_GAME_SHL, preGameShl);
+                syncTag(NOTIFICATION_TAGS.PRE_GAME_FOOTBALL, preGameFootball);
+                syncTag(NOTIFICATION_TAGS.PRE_GAME_BIATHLON, preGameBiathlon);
 
                 // Load and sync saved team preferences from both sports
                 const savedShlTeams = await AsyncStorage.getItem(STORAGE_KEYS.SELECTED_TEAMS);
@@ -156,7 +185,7 @@ export function usePushNotifications() {
         };
 
         initOneSignal();
-    }, [applyTeamTags]);
+    }, [applyTeamTags, syncTag]);
 
     // Request notification permission
     const requestPermission = useCallback(async () => {
@@ -209,14 +238,32 @@ export function usePushNotifications() {
     const toggleGoalNotifications = useCallback(async (enabled) => {
         setGoalNotificationsEnabled(enabled);
         await AsyncStorage.setItem(STORAGE_KEYS.GOAL_NOTIFICATIONS_ENABLED, enabled ? 'true' : 'false');
+        syncTag(NOTIFICATION_TAGS.GOAL_NOTIFICATIONS, enabled);
+    }, [syncTag]);
 
-        // Update tag to indicate goal notification preference
-        if (enabled) {
-            OneSignal.User.addTag('goal_notifications', 'true');
-        } else {
-            OneSignal.User.removeTag('goal_notifications');
-        }
-    }, []);
+    // Toggle pre-game notifications for SHL
+    const togglePreGameShl = useCallback(async (enabled) => {
+        setPreGameShlEnabled(enabled);
+        await AsyncStorage.setItem(STORAGE_KEYS.PRE_GAME_SHL_ENABLED, enabled ? 'true' : 'false');
+        syncTag(NOTIFICATION_TAGS.PRE_GAME_SHL, enabled);
+        console.log('[OneSignal] Pre-game SHL notifications:', enabled ? 'enabled' : 'disabled');
+    }, [syncTag]);
+
+    // Toggle pre-game notifications for Allsvenskan/Football
+    const togglePreGameFootball = useCallback(async (enabled) => {
+        setPreGameFootballEnabled(enabled);
+        await AsyncStorage.setItem(STORAGE_KEYS.PRE_GAME_FOOTBALL_ENABLED, enabled ? 'true' : 'false');
+        syncTag(NOTIFICATION_TAGS.PRE_GAME_FOOTBALL, enabled);
+        console.log('[OneSignal] Pre-game Football notifications:', enabled ? 'enabled' : 'disabled');
+    }, [syncTag]);
+
+    // Toggle pre-game notifications for Biathlon
+    const togglePreGameBiathlon = useCallback(async (enabled) => {
+        setPreGameBiathlonEnabled(enabled);
+        await AsyncStorage.setItem(STORAGE_KEYS.PRE_GAME_BIATHLON_ENABLED, enabled ? 'true' : 'false');
+        syncTag(NOTIFICATION_TAGS.PRE_GAME_BIATHLON, enabled);
+        console.log('[OneSignal] Pre-game Biathlon notifications:', enabled ? 'enabled' : 'disabled');
+    }, [syncTag]);
 
     /**
      * Update team tags in OneSignal
@@ -286,11 +333,19 @@ export function usePushNotifications() {
         subscriptionId,
         notificationsEnabled,
         goalNotificationsEnabled,
+        // Pre-game notification state per sport
+        preGameShlEnabled,
+        preGameFootballEnabled,
+        preGameBiathlonEnabled,
 
         // Actions
         requestPermission,
         toggleNotifications,
         toggleGoalNotifications,
+        // Pre-game notification toggles
+        togglePreGameShl,
+        togglePreGameFootball,
+        togglePreGameBiathlon,
         setTeamTags,
         getTags,
         syncTeamTags

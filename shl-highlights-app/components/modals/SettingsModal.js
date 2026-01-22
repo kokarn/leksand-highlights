@@ -37,7 +37,14 @@ export const SettingsModal = ({
     hasNotificationPermission = false,
     onToggleNotifications,
     onToggleGoalNotifications,
-    onRequestNotificationPermission
+    onRequestNotificationPermission,
+    // Pre-game notification props
+    preGameShlEnabled = false,
+    preGameFootballEnabled = false,
+    preGameBiathlonEnabled = false,
+    onTogglePreGameShl,
+    onTogglePreGameFootball,
+    onTogglePreGameBiathlon
 }) => (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
         <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
@@ -117,6 +124,83 @@ export const SettingsModal = ({
                         </View>
                     )}
                 </View>
+
+                {/* Pre-game Reminders Section */}
+                {notificationsEnabled && (
+                    <View style={styles.settingsCard}>
+                        <View style={styles.settingsCardHeader}>
+                            <Ionicons name="time-outline" size={22} color="#5856D6" />
+                            <Text style={styles.settingsCardTitle}>Game Reminders</Text>
+                        </View>
+                        <Text style={styles.preGameDescription}>
+                            Get notified 5 minutes before games start
+                        </Text>
+
+                        <View style={styles.notificationRow}>
+                            <View style={styles.notificationTextContainer}>
+                                <View style={styles.sportLabelRow}>
+                                    <Ionicons name="snow-outline" size={16} color="#0A84FF" />
+                                    <Text style={styles.notificationLabel}>Hockey (SHL)</Text>
+                                </View>
+                                <Text style={styles.notificationDescription}>
+                                    Remind me before hockey games
+                                </Text>
+                            </View>
+                            <Switch
+                                value={preGameShlEnabled}
+                                onValueChange={onTogglePreGameShl}
+                                trackColor={{ false: '#3a3a3c', true: '#5856D6' }}
+                                thumbColor="#fff"
+                            />
+                        </View>
+
+                        <View style={styles.notificationRow}>
+                            <View style={styles.notificationTextContainer}>
+                                <View style={styles.sportLabelRow}>
+                                    <Ionicons name="football-outline" size={16} color="#30D158" />
+                                    <Text style={styles.notificationLabel}>Football (Allsvenskan)</Text>
+                                </View>
+                                <Text style={styles.notificationDescription}>
+                                    Remind me before football matches
+                                </Text>
+                            </View>
+                            <Switch
+                                value={preGameFootballEnabled}
+                                onValueChange={onTogglePreGameFootball}
+                                trackColor={{ false: '#3a3a3c', true: '#5856D6' }}
+                                thumbColor="#fff"
+                            />
+                        </View>
+
+                        <View style={[styles.notificationRow, styles.notificationRowLast]}>
+                            <View style={styles.notificationTextContainer}>
+                                <View style={styles.sportLabelRow}>
+                                    <Ionicons name="locate-outline" size={16} color="#D94A8C" />
+                                    <Text style={styles.notificationLabel}>Biathlon</Text>
+                                </View>
+                                <Text style={styles.notificationDescription}>
+                                    Remind me before biathlon races
+                                </Text>
+                            </View>
+                            <Switch
+                                value={preGameBiathlonEnabled}
+                                onValueChange={onTogglePreGameBiathlon}
+                                trackColor={{ false: '#3a3a3c', true: '#5856D6' }}
+                                thumbColor="#fff"
+                            />
+                        </View>
+
+                        {(preGameShlEnabled || preGameFootballEnabled || preGameBiathlonEnabled) && 
+                         (selectedTeams.length > 0 || selectedFootballTeams.length > 0 || selectedNations.length > 0) && (
+                            <View style={styles.notificationInfo}>
+                                <Ionicons name="information-circle-outline" size={16} color="#8E8E93" />
+                                <Text style={styles.notificationInfoText}>
+                                    Reminders are sent for your favorite teams
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                )}
 
                 <Text style={styles.settingsSection}>Favorites</Text>
                 <Text style={styles.settingsSectionSubtitle}>Customize which sports and teams you follow</Text>
@@ -469,6 +553,21 @@ const styles = StyleSheet.create({
         color: '#FF9F0A',
         fontSize: 12,
         flex: 1
+    },
+    notificationRowLast: {
+        borderBottomWidth: 0
+    },
+    preGameDescription: {
+        color: '#8E8E93',
+        fontSize: 13,
+        marginBottom: 12,
+        marginTop: -8
+    },
+    sportLabelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: 2
     },
     // Version styles
     versionContainer: {

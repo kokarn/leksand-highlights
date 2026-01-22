@@ -32,6 +32,7 @@ const { formatSwedishTimestamp } = require('./modules/utils');
 const notifier = require('./modules/notifier');
 const scheduler = require('./modules/scheduler');
 const goalWatcher = require('./modules/goal-watcher');
+const preGameWatcher = require('./modules/pre-game-watcher');
 const pushNotifications = require('./modules/push-notifications');
 const {
     listAdminGames,
@@ -889,6 +890,7 @@ app.get('/api/status', (req, res) => {
         notifier: notifier.getStats(),
         scheduler: scheduler.getStats(),
         goalWatcher: goalWatcher.getStats(),
+        preGameWatcher: preGameWatcher.getStats(),
         pushNotifications: pushNotifications.getStats(),
         cache: getCacheStatus(),
         refreshRates: {
@@ -904,7 +906,8 @@ app.get('/api/status', (req, res) => {
             notifierNormal: '5 minutes',
             notifierLive: '30 seconds',
             biathlonScheduler: '1 hour',
-            goalWatcher: '15 seconds (live games)'
+            goalWatcher: '15 seconds (live games)',
+            preGameWatcher: '60 seconds'
         }
     });
 });
@@ -975,7 +978,8 @@ app.get('/api/notifications/status', (req, res) => {
     res.json({
         timestamp: formatSwedishTimestamp(),
         pushNotifications: pushNotifications.getStats(),
-        goalWatcher: goalWatcher.getStats()
+        goalWatcher: goalWatcher.getStats(),
+        preGameWatcher: preGameWatcher.getStats()
     });
 });
 
@@ -1120,6 +1124,25 @@ app.post('/api/goal-watcher/check', async (req, res) => {
     }
 });
 
+/**
+ * POST /api/pre-game-watcher/check
+ * Manually trigger a pre-game notification check
+ */
+app.post('/api/pre-game-watcher/check', async (req, res) => {
+    console.log('[API] Manual pre-game watcher check triggered');
+
+    try {
+        const results = await preGameWatcher.runCheck();
+        res.json({
+            message: 'Pre-game check completed',
+            timestamp: formatSwedishTimestamp(),
+            ...results
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ============ START SERVER ============
 app.listen(PORT, () => {
     const providerNames = getAvailableSports().map(sport => getProvider(sport).getName());
@@ -1145,6 +1168,9 @@ app.listen(PORT, () => {
     console.log(`\nGoal Watcher:`);
     console.log(`  - Check interval: 15 seconds (live games)`);
     console.log(`  - Push notifications: ${pushNotifications.isConfigured() ? 'Configured' : 'Not configured (set ONESIGNAL_APP_ID and ONESIGNAL_REST_API_KEY)'}`);
+    console.log(`\nPre-Game Watcher:`);
+    console.log(`  - Check interval: 60 seconds`);
+    console.log(`  - Reminder window: 5 minutes before start`);
     console.log(`========================================\n`);
 
     // Start the notifier loop after server is ready
@@ -1155,6 +1181,9 @@ app.listen(PORT, () => {
 
     // Start the goal watcher for push notifications
     goalWatcher.startLoop();
+
+    // Start the pre-game watcher for upcoming game reminders
+    preGameWatcher.startLoop();
 });
 
 // Export for testing
