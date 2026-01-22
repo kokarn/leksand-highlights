@@ -104,6 +104,22 @@ export const formatRelativeDateEnglish = (dateStr) => {
 };
 
 /**
+ * Format time from ISO date string (HH:mm)
+ * @param {string} dateStr - ISO date string
+ * @returns {string} Formatted time
+ */
+export const formatTime = (dateStr) => {
+    if (!dateStr) return '-';
+    try {
+        const date = parseISO(dateStr);
+        if (Number.isNaN(date.getTime())) return '-';
+        return format(date, 'HH:mm');
+    } catch (error) {
+        return '-';
+    }
+};
+
+/**
  * Format date in Swedish style
  * @param {string} dateStr - ISO date string
  * @param {string} formatStr - Date format string

@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { getNationFlag } from '../../api/shl';
-import { formatRelativeDateEnglish, formatSwedishDate } from '../../utils';
+import { formatRelativeDateEnglish, formatTime } from '../../utils';
 import { DISCIPLINE_ICONS, GENDER_COLORS } from '../../constants';
 
 // Static color arrays to avoid re-creating on every render
@@ -15,7 +15,7 @@ const GRADIENT_END = { x: 1, y: 1 };
 
 export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }) {
     const relativeDate = formatRelativeDateEnglish(race?.startDateTime);
-    const time = formatSwedishDate(race?.startDateTime, 'HH:mm');
+    const time = formatTime(race?.startDateTime);
     const isLive = race?.state === 'live';
     const isStartingSoon = race?.state === 'starting-soon';
 

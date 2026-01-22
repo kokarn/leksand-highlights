@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { extractScore, formatRelativeDateEnglish } from '../../utils';
+import { extractScore, formatRelativeDateEnglish, formatTime } from '../../utils';
 
 const getTeamName = (team, fallback) => {
     return team?.names?.short || team?.names?.long || team?.code || fallback;
@@ -16,6 +16,7 @@ export const FootballGameCard = memo(function FootballGameCard({ game, onPress }
     const awayTeam = game?.awayTeamInfo ?? {};
     const isLive = game?.state === 'live';
     const formattedDate = formatRelativeDateEnglish(game?.startDateTime);
+    const formattedTime = formatTime(game?.startDateTime);
     const homeScore = extractScore(null, homeTeam);
     const awayScore = extractScore(null, awayTeam);
     const stateLabel = game?.state === 'post-game'
@@ -34,9 +35,12 @@ export const FootballGameCard = memo(function FootballGameCard({ game, onPress }
             >
                 <View style={styles.cardHeader}>
                     <Text style={styles.leagueText}>Allsvenskan</Text>
-                    <Text style={[styles.gameDate, isLive && styles.liveTextAccented]}>
-                        {isLive ? 'LIVE' : formattedDate}
-                    </Text>
+                    <View style={styles.headerRight}>
+                        <Text style={[styles.gameDate, isLive && styles.liveTextAccented]}>
+                            {isLive ? 'LIVE' : formattedDate}
+                        </Text>
+                        {!isLive && <Text style={styles.gameTime}>{formattedTime}</Text>}
+                    </View>
                 </View>
                 <View style={styles.matchupContainer}>
                     <View style={styles.teamContainer}>
@@ -93,6 +97,7 @@ const styles = StyleSheet.create({
     cardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        alignItems: 'flex-start',
         marginBottom: 16
     },
     leagueText: {
@@ -101,10 +106,18 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         textTransform: 'uppercase'
     },
+    headerRight: {
+        alignItems: 'flex-end'
+    },
     gameDate: {
         color: '#8e8e93',
         fontSize: 12,
         fontWeight: '600'
+    },
+    gameTime: {
+        color: '#666',
+        fontSize: 11,
+        marginTop: 2
     },
     liveTextAccented: {
         color: '#FF453A',

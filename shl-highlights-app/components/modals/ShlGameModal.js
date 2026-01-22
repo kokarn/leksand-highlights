@@ -110,6 +110,8 @@ export const ShlGameModal = ({
     const currentlyPlayingVideo = videos.find(v => v.id === playingVideoId);
     const homeCode = game?.homeTeamInfo?.code;
     const awayCode = game?.awayTeamInfo?.code;
+    const homeName = game?.homeTeamInfo?.names?.short ?? homeCode ?? 'Home';
+    const awayName = game?.awayTeamInfo?.names?.short ?? awayCode ?? 'Away';
     const homeColor = getTeamColor(homeCode);
     const awayColor = getTeamColor(awayCode);
 
@@ -295,8 +297,8 @@ export const ShlGameModal = ({
                 {game && (
                     <>
                         <GameModalHeader
-                            homeTeam={{ name: homeCode, logo: homeCode ? getTeamLogoUrl(homeCode) : null }}
-                            awayTeam={{ name: awayCode, logo: awayCode ? getTeamLogoUrl(awayCode) : null }}
+                            homeTeam={{ name: homeName, logo: homeCode ? getTeamLogoUrl(homeCode) : null }}
+                            awayTeam={{ name: awayName, logo: awayCode ? getTeamLogoUrl(awayCode) : null }}
                             homeScore={scoreDisplay.home}
                             awayScore={scoreDisplay.away}
                             state={game.state}
