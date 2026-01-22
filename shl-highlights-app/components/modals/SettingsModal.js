@@ -190,7 +190,7 @@ export const SettingsModal = ({
                             />
                         </View>
 
-                        {(preGameShlEnabled || preGameFootballEnabled || preGameBiathlonEnabled) && 
+                        {(preGameShlEnabled || preGameFootballEnabled || preGameBiathlonEnabled) &&
                          (selectedTeams.length > 0 || selectedFootballTeams.length > 0 || selectedNations.length > 0) && (
                             <View style={styles.notificationInfo}>
                                 <Ionicons name="information-circle-outline" size={16} color="#8E8E93" />
