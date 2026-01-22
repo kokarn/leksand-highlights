@@ -315,21 +315,28 @@ async function sendPreGameNotification(gameInfo) {
 
     // Build filters: users must have pre-game tag enabled for this sport
     // AND (for team sports) be following one of the teams
-    let filters = [
-        { field: 'tag', key: preGameTag, relation: '=', value: 'true' }
-    ];
+    // OneSignal filter format: flat array with operators between conditions
+    // For OR logic with AND: (pre_game_tag AND team_home) OR (pre_game_tag AND team_away)
+    let filters = [];
 
     // For team sports, also filter by followed teams
     if ((sport === 'shl' || sport === 'allsvenskan') && homeTeamCode && awayTeamCode) {
-        // Users following either team
-        filters.push({ operator: 'AND' });
-        filters.push({
-            operator: 'OR',
-            filters: [
-                { field: 'tag', key: `team_${homeTeamCode.toLowerCase()}`, relation: '=', value: 'true' },
-                { field: 'tag', key: `team_${awayTeamCode.toLowerCase()}`, relation: '=', value: 'true' }
-            ]
-        });
+        // Users following either the home OR away team (with pre-game enabled)
+        // Format: (pre_game AND team_home) OR (pre_game AND team_away)
+        filters = [
+            { field: 'tag', key: preGameTag, relation: '=', value: 'true' },
+            { operator: 'AND' },
+            { field: 'tag', key: `team_${homeTeamCode.toLowerCase()}`, relation: '=', value: 'true' },
+            { operator: 'OR' },
+            { field: 'tag', key: preGameTag, relation: '=', value: 'true' },
+            { operator: 'AND' },
+            { field: 'tag', key: `team_${awayTeamCode.toLowerCase()}`, relation: '=', value: 'true' }
+        ];
+    } else {
+        // For biathlon or when team codes are missing, just use the pre-game tag
+        filters = [
+            { field: 'tag', key: preGameTag, relation: '=', value: 'true' }
+        ];
     }
 
     const data = {
