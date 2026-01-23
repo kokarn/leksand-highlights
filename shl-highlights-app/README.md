@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 1.18.0
+- Add country filter dropdown on biathlon race results to show only athletes from a specific nation
+
 ### 1.17.2
 - Remove scroll animation when navigating to today's date on match lists
 

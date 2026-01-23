@@ -134,6 +134,90 @@ const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceComple
     );
 };
 
+/**
+ * Country filter dropdown component
+ */
+const CountryFilterDropdown = ({ countries, selectedCountry, onSelectCountry }) => {
+    const [isOpen, setIsOpen] = React.useState(false);
+
+    if (!countries || countries.length <= 1) {
+        return null;
+    }
+
+    const handleSelect = (country) => {
+        onSelectCountry(country);
+        setIsOpen(false);
+    };
+
+    const displayText = selectedCountry
+        ? `${getNationFlag(selectedCountry)} ${selectedCountry}`
+        : 'All countries';
+
+    return (
+        <View style={styles.countryDropdownContainer}>
+            <TouchableOpacity
+                style={styles.countryDropdownButton}
+                onPress={() => setIsOpen(!isOpen)}
+                activeOpacity={0.7}
+            >
+                <View style={styles.countryDropdownButtonContent}>
+                    <Ionicons name="flag-outline" size={16} color="#888" />
+                    <Text style={styles.countryDropdownButtonText}>{displayText}</Text>
+                </View>
+                <Ionicons
+                    name={isOpen ? 'chevron-up' : 'chevron-down'}
+                    size={16}
+                    color="#888"
+                />
+            </TouchableOpacity>
+
+            {isOpen && (
+                <View style={styles.countryDropdownList}>
+                    <ScrollView style={styles.countryDropdownScroll} nestedScrollEnabled>
+                        <TouchableOpacity
+                            style={[
+                                styles.countryDropdownItem,
+                                !selectedCountry && styles.countryDropdownItemActive
+                            ]}
+                            onPress={() => handleSelect(null)}
+                        >
+                            <Text style={[
+                                styles.countryDropdownItemText,
+                                !selectedCountry && styles.countryDropdownItemTextActive
+                            ]}>
+                                All countries
+                            </Text>
+                            {!selectedCountry && (
+                                <Ionicons name="checkmark" size={16} color="#0A84FF" />
+                            )}
+                        </TouchableOpacity>
+                        {countries.map((country) => (
+                            <TouchableOpacity
+                                key={country}
+                                style={[
+                                    styles.countryDropdownItem,
+                                    selectedCountry === country && styles.countryDropdownItemActive
+                                ]}
+                                onPress={() => handleSelect(country)}
+                            >
+                                <Text style={[
+                                    styles.countryDropdownItemText,
+                                    selectedCountry === country && styles.countryDropdownItemTextActive
+                                ]}>
+                                    {getNationFlag(country)} {country}
+                                </Text>
+                                {selectedCountry === country && (
+                                    <Ionicons name="checkmark" size={16} color="#0A84FF" />
+                                )}
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
+        </View>
+    );
+};
+
 export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh, refreshing = false }) => {
     if (!race) return null;
 
@@ -143,13 +227,44 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
     const startList = Array.isArray(details?.startList) ? details.startList : null;
     const hasResults = Boolean(results?.length);
     const hasStartList = Boolean(startList?.length);
-    const resultRows = hasResults ? results : (hasStartList ? startList : []);
+    const allResultRows = hasResults ? results : (hasStartList ? startList : []);
     const isLiveRace = raceInfo?.state === 'live' || raceInfo?.state === 'ongoing';
     const isStartingSoon = raceInfo?.state === 'starting-soon';
     const isUpcomingRace = raceInfo?.state === 'upcoming' || raceInfo?.state === 'pre-race';
 
     // State for expanded rows
     const [expandedRows, setExpandedRows] = React.useState(new Set());
+
+    // State for country filter
+    const [selectedCountry, setSelectedCountry] = React.useState(null);
+
+    // Extract unique countries from results
+    const availableCountries = React.useMemo(() => {
+        const countries = new Set();
+        allResultRows.forEach(item => {
+            const nation = item?.Nat || item?.Nation || item?.Country;
+            if (nation) {
+                countries.add(nation);
+            }
+        });
+        return Array.from(countries).sort();
+    }, [allResultRows]);
+
+    // Filter results by selected country
+    const resultRows = React.useMemo(() => {
+        if (!selectedCountry) {
+            return allResultRows;
+        }
+        return allResultRows.filter(item => {
+            const nation = item?.Nat || item?.Nation || item?.Country;
+            return nation === selectedCountry;
+        });
+    }, [allResultRows, selectedCountry]);
+
+    // Reset country filter when race changes
+    React.useEffect(() => {
+        setSelectedCountry(null);
+    }, [race?.raceId]);
 
     const toggleRow = React.useCallback((index) => {
         setExpandedRows(prev => {
@@ -302,6 +417,16 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
                                     <Text style={styles.resultsUpdated}>Updated {details.lastUpdated}</Text>
                                 )}
                             </View>
+
+                            {/* Country filter dropdown */}
+                            {!loading && availableCountries.length > 1 && (
+                                <CountryFilterDropdown
+                                    countries={availableCountries}
+                                    selectedCountry={selectedCountry}
+                                    onSelectCountry={setSelectedCountry}
+                                />
+                            )}
+
                             {loading ? (
                                 <View style={styles.resultsLoading}>
                                     <ActivityIndicator size="small" color="#0A84FF" />
@@ -310,19 +435,23 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
                             ) : resultRows.length > 0 ? (
                                 resultRows.map((item, index) => {
                                     const rowKey = item?.IBUId || item?.Name || item?.Bib || item?.StartOrder || index;
+                                    // Use original index for expansion state to maintain consistency
+                                    const originalIndex = allResultRows.indexOf(item);
                                     return (
                                         <ResultRow
                                             key={String(rowKey)}
                                             item={item}
                                             index={index}
                                             hasResults={hasResults}
-                                            isExpanded={expandedRows.has(index)}
-                                            onToggle={() => toggleRow(index)}
+                                            isExpanded={expandedRows.has(originalIndex)}
+                                            onToggle={() => toggleRow(originalIndex)}
                                             isRaceCompleted={!isLiveRace && !isStartingSoon && !isUpcomingRace}
                                             discipline={raceInfo.discipline}
                                         />
                                     );
                                 })
+                            ) : selectedCountry ? (
+                                <Text style={styles.emptyText}>No athletes from {getNationFlag(selectedCountry)} {selectedCountry} in this race.</Text>
                             ) : (
                                 <Text style={styles.emptyText}>Results are not available yet.</Text>
                             )}
@@ -548,6 +677,63 @@ const styles = StyleSheet.create({
         color: '#666',
         fontSize: 12,
         marginTop: 4
+    },
+    // Country filter dropdown styles
+    countryDropdownContainer: {
+        marginBottom: 12,
+        zIndex: 10
+    },
+    countryDropdownButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        backgroundColor: '#2a2a2a',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#3a3a3a'
+    },
+    countryDropdownButtonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8
+    },
+    countryDropdownButtonText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '500'
+    },
+    countryDropdownList: {
+        marginTop: 4,
+        backgroundColor: '#2a2a2a',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#3a3a3a',
+        overflow: 'hidden'
+    },
+    countryDropdownScroll: {
+        maxHeight: 200
+    },
+    countryDropdownItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#3a3a3a'
+    },
+    countryDropdownItemActive: {
+        backgroundColor: 'rgba(10, 132, 255, 0.1)'
+    },
+    countryDropdownItemText: {
+        color: '#ccc',
+        fontSize: 14
+    },
+    countryDropdownItemTextActive: {
+        color: '#fff',
+        fontWeight: '600'
     },
     resultsLoading: {
         flexDirection: 'row',
