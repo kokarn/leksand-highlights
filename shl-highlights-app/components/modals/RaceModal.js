@@ -32,7 +32,9 @@ function getMedalEmoji(rank) {
  */
 const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceCompleted, discipline }) => {
     const rank = (() => {
-        const resultOrder = item?.ResultOrder !== 10000 ? item?.ResultOrder : null;
+        // IBU uses ResultOrder >= 10000 for non-finishers (DNS, DNF, etc.)
+        const rawResultOrder = item?.ResultOrder;
+        const resultOrder = (typeof rawResultOrder === 'number' && rawResultOrder < 10000) ? rawResultOrder : null;
         const r = item?.Rank ?? resultOrder ?? item?.StartOrder;
         return r ? String(r) : String(index + 1);
     })();

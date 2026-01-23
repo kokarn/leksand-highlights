@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 1.18.1
+- Fix 5-digit starting numbers showing for DNS/DNF athletes in biathlon results (filter ResultOrder >= 10000)
+
 ### 1.18.0
 - Add country filter dropdown on biathlon race results to show only athletes from a specific nation
 
