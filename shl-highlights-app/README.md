@@ -4,6 +4,11 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 1.17.1
+- Fix OneSignal tags not updating when toggling sport notification preferences
+- Add queuing mechanism for tag updates before OneSignal initialization completes
+- Improve logging for OneSignal tag operations
+
 ### 1.17.0
 - Add pull-to-refresh on game/race detail modals for SHL, Football, and Biathlon
 

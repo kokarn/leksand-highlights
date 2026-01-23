@@ -41,6 +41,12 @@ export function usePushNotifications() {
     // Queue for pending tag updates before initialization
     const pendingTeamUpdatesRef = useRef(null);
 
+    // Queue for pending single tag updates before initialization
+    const pendingTagUpdatesRef = useRef({});
+
+    // Track initialization to prevent re-running init effect
+    const initCompletedRef = useRef(false);
+
     // Apply team tags to OneSignal (internal helper)
     const applyTeamTags = useCallback((teamCodes) => {
         if (!OneSignal) {
@@ -75,21 +81,41 @@ export function usePushNotifications() {
     }, []);
 
     // Helper to sync a single tag based on enabled state
-    const syncTag = useCallback((tagKey, enabled) => {
+    // Now checks initialization state and queues updates if needed
+    const syncTag = useCallback((tagKey, enabled, forceApply = false) => {
         if (!OneSignal) {
+            console.log('[OneSignal] syncTag skipped - OneSignal not available (web)');
             return;
         }
 
-        if (enabled) {
-            OneSignal.User.addTag(tagKey, 'true');
-        } else {
-            OneSignal.User.removeTag(tagKey);
+        // If not initialized yet and not forcing, queue the update
+        if (!isInitialized && !forceApply) {
+            console.log(`[OneSignal] Queuing tag update (not initialized): ${tagKey} = ${enabled}`);
+            pendingTagUpdatesRef.current[tagKey] = enabled;
+            return;
         }
-    }, []);
+
+        try {
+            if (enabled) {
+                OneSignal.User.addTag(tagKey, 'true');
+                console.log(`[OneSignal] Tag added: ${tagKey} = true`);
+            } else {
+                OneSignal.User.removeTag(tagKey);
+                console.log(`[OneSignal] Tag removed: ${tagKey}`);
+            }
+        } catch (error) {
+            console.error(`[OneSignal] Error syncing tag ${tagKey}:`, error);
+        }
+    }, [isInitialized]);
 
     // Initialize OneSignal on mount
     useEffect(() => {
         const initOneSignal = async () => {
+            // Prevent multiple initialization runs
+            if (initCompletedRef.current) {
+                return;
+            }
+
             // Skip on web - native module not available
             if (!OneSignal) {
                 console.log('[OneSignal] Skipped - not supported on web');
@@ -136,13 +162,13 @@ export function usePushNotifications() {
                 setPreGameFootballEnabled(preGameFootball);
                 setPreGameBiathlonEnabled(preGameBiathlon);
 
-                // Sync goal_notifications tag on initialization
-                syncTag(NOTIFICATION_TAGS.GOAL_NOTIFICATIONS, goalEnabled);
+                // Sync goal_notifications tag on initialization (forceApply since we just initialized)
+                syncTag(NOTIFICATION_TAGS.GOAL_NOTIFICATIONS, goalEnabled, true);
 
                 // Sync pre-game notification tags
-                syncTag(NOTIFICATION_TAGS.PRE_GAME_SHL, preGameShl);
-                syncTag(NOTIFICATION_TAGS.PRE_GAME_FOOTBALL, preGameFootball);
-                syncTag(NOTIFICATION_TAGS.PRE_GAME_BIATHLON, preGameBiathlon);
+                syncTag(NOTIFICATION_TAGS.PRE_GAME_SHL, preGameShl, true);
+                syncTag(NOTIFICATION_TAGS.PRE_GAME_FOOTBALL, preGameFootball, true);
+                syncTag(NOTIFICATION_TAGS.PRE_GAME_BIATHLON, preGameBiathlon, true);
 
                 // Load and sync saved team preferences from both sports
                 const savedShlTeams = await AsyncStorage.getItem(STORAGE_KEYS.SELECTED_TEAMS);
@@ -191,6 +217,7 @@ export function usePushNotifications() {
                 });
 
                 setIsInitialized(true);
+                initCompletedRef.current = true;
                 console.log('[OneSignal] Initialized successfully');
 
                 // Process any pending team update that was queued before initialization
@@ -199,13 +226,34 @@ export function usePushNotifications() {
                     applyTeamTags(pendingTeamUpdatesRef.current);
                     pendingTeamUpdatesRef.current = null;
                 }
+
+                // Process any pending single tag updates that were queued before initialization
+                const pendingTags = pendingTagUpdatesRef.current;
+                if (Object.keys(pendingTags).length > 0) {
+                    console.log('[OneSignal] Processing pending tag updates:', pendingTags);
+                    for (const [tagKey, enabled] of Object.entries(pendingTags)) {
+                        try {
+                            if (enabled) {
+                                OneSignal.User.addTag(tagKey, 'true');
+                                console.log(`[OneSignal] Pending tag applied: ${tagKey} = true`);
+                            } else {
+                                OneSignal.User.removeTag(tagKey);
+                                console.log(`[OneSignal] Pending tag removed: ${tagKey}`);
+                            }
+                        } catch (error) {
+                            console.error(`[OneSignal] Error applying pending tag ${tagKey}:`, error);
+                        }
+                    }
+                    pendingTagUpdatesRef.current = {};
+                }
             } catch (error) {
                 console.error('[OneSignal] Initialization error:', error);
             }
         };
 
         initOneSignal();
-    }, [applyTeamTags, syncTag]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [applyTeamTags]);
 
     // Request notification permission
     const requestPermission = useCallback(async () => {
