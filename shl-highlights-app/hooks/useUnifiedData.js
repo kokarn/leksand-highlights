@@ -62,12 +62,16 @@ const groupEventsIntoSections = (events) => {
             return;
         }
 
-        // Completed events (recent results - last 7 days)
+        // Completed events (keep today's games in Today until day ends)
         if (event.isCompleted) {
             if (eventDate) {
-                const daysAgo = differenceInDays(todayStart, startOfDay(eventDate));
-                if (daysAgo >= 0 && daysAgo <= 7) {
-                    sections.recentResults.push(event);
+                if (isToday(eventDate)) {
+                    sections.today.push(event);
+                } else {
+                    const daysAgo = differenceInDays(todayStart, startOfDay(eventDate));
+                    if (daysAgo >= 0 && daysAgo <= 7) {
+                        sections.recentResults.push(event);
+                    }
                 }
             }
             return;

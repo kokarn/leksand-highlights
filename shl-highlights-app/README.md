@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 1.16.2
+- Keep today's games in the All Events list until day end
+
 ### 1.16.1
 - Enable fullscreen video playback for hockey highlights on native platforms
 
