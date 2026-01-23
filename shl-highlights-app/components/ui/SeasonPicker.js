@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 /**
@@ -15,7 +15,7 @@ export const SeasonPicker = ({ seasons, selectedSeason, onSelect, variant = 'chi
             Animated.timing(fadeAnim, {
                 toValue: 1,
                 duration: 200,
-                useNativeDriver: true
+                useNativeDriver: Platform.OS !== 'web'
             }).start();
         }
     }, [dropdownOpen, fadeAnim]);
@@ -39,7 +39,7 @@ export const SeasonPicker = ({ seasons, selectedSeason, onSelect, variant = 'chi
             Animated.timing(fadeAnim, {
                 toValue: 0,
                 duration: 150,
-                useNativeDriver: true
+                useNativeDriver: Platform.OS !== 'web'
             }).start(() => setDropdownOpen(false));
         };
 

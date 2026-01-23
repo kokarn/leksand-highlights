@@ -1,11 +1,16 @@
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl, Platform } from 'react-native';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { OneSignal } from 'react-native-onesignal';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+
+// Only import OneSignal on native platforms
+let OneSignal = null;
+if (Platform.OS !== 'web') {
+    OneSignal = require('react-native-onesignal').OneSignal;
+}
 
 // Card height constants for consistent scroll behavior
 // Height = padding (32) + header (~36) + content (~90) + marginBottom (16)
@@ -198,7 +203,7 @@ export default function App() {
             router.replace('/');
         }
 
-        // Handle notification click events
+        // Handle notification click events (native only)
         const handleNotificationClick = (event) => {
             console.log('[Notification] Clicked:', event);
             const data = event.notification?.additionalData;
@@ -207,8 +212,10 @@ export default function App() {
             }
         };
 
-        // Listen for notification clicks
-        OneSignal.Notifications.addEventListener('click', handleNotificationClick);
+        // Listen for notification clicks (native only)
+        if (OneSignal) {
+            OneSignal.Notifications.addEventListener('click', handleNotificationClick);
+        }
 
         // Handle deep link when app is already open
         const handleDeepLink = (event) => {
@@ -235,7 +242,9 @@ export default function App() {
         const subscription = Linking.addEventListener('url', handleDeepLink);
 
         return () => {
-            OneSignal.Notifications.removeEventListener('click', handleNotificationClick);
+            if (OneSignal) {
+                OneSignal.Notifications.removeEventListener('click', handleNotificationClick);
+            }
             subscription?.remove();
         };
     }, [

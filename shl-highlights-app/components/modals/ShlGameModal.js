@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { View, Text, Modal, FlatList, ScrollView, ActivityIndicator, StyleSheet, Animated, Dimensions } from 'react-native';
+import { View, Text, Modal, FlatList, ScrollView, ActivityIndicator, StyleSheet, Animated, Dimensions, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
@@ -47,7 +47,7 @@ export const ShlGameModal = ({
 
     const handleGestureEvent = Animated.event(
         [{ nativeEvent: { translationX: translateX } }],
-        { useNativeDriver: true }
+        { useNativeDriver: Platform.OS !== 'web' }
     );
 
     const handleGestureStateChange = ({ nativeEvent }) => {
@@ -72,13 +72,13 @@ export const ShlGameModal = ({
                 Animated.timing(translateX, {
                     toValue: -direction * SCREEN_WIDTH,
                     duration: 150,
-                    useNativeDriver: true
+                    useNativeDriver: Platform.OS !== 'web'
                 }).start(() => {
                     handleTabChange(TABS[currentIndex + direction]);
                     translateX.setValue(direction * SCREEN_WIDTH);
                     Animated.spring(translateX, {
                         toValue: 0,
-                        useNativeDriver: true,
+                        useNativeDriver: Platform.OS !== 'web',
                         tension: 100,
                         friction: 12
                     }).start();
@@ -87,7 +87,7 @@ export const ShlGameModal = ({
                 // Spring back
                 Animated.spring(translateX, {
                     toValue: 0,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                     tension: 100,
                     friction: 12
                 }).start();

@@ -1,8 +1,14 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { OneSignal } from 'react-native-onesignal';
+import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS, NOTIFICATION_TAGS } from '../constants';
+
+// Only import OneSignal on native platforms
+let OneSignal = null;
+if (Platform.OS !== 'web') {
+    OneSignal = require('react-native-onesignal').OneSignal;
+}
 
 /**
  * Hook for managing OneSignal push notifications
@@ -37,6 +43,10 @@ export function usePushNotifications() {
 
     // Apply team tags to OneSignal (internal helper)
     const applyTeamTags = useCallback((teamCodes) => {
+        if (!OneSignal) {
+            return;
+        }
+
         const newTeams = new Set(teamCodes.map(code => code.toLowerCase()));
         const currentTeams = currentTeamsRef.current;
 
@@ -66,6 +76,10 @@ export function usePushNotifications() {
 
     // Helper to sync a single tag based on enabled state
     const syncTag = useCallback((tagKey, enabled) => {
+        if (!OneSignal) {
+            return;
+        }
+
         if (enabled) {
             OneSignal.User.addTag(tagKey, 'true');
         } else {
@@ -76,6 +90,12 @@ export function usePushNotifications() {
     // Initialize OneSignal on mount
     useEffect(() => {
         const initOneSignal = async () => {
+            // Skip on web - native module not available
+            if (!OneSignal) {
+                console.log('[OneSignal] Skipped - not supported on web');
+                return;
+            }
+
             try {
                 const appId = Constants.expoConfig?.extra?.oneSignalAppId;
 
@@ -189,6 +209,10 @@ export function usePushNotifications() {
 
     // Request notification permission
     const requestPermission = useCallback(async () => {
+        if (!OneSignal) {
+            return false;
+        }
+
         try {
             const canRequest = await OneSignal.Notifications.canRequestPermission();
 
@@ -216,6 +240,10 @@ export function usePushNotifications() {
 
     // Toggle notifications on/off
     const toggleNotifications = useCallback(async (enabled) => {
+        if (!OneSignal) {
+            return;
+        }
+
         try {
             if (enabled) {
                 const granted = await requestPermission();
@@ -283,6 +311,10 @@ export function usePushNotifications() {
 
     // Get all current tags (for debugging)
     const getTags = useCallback(async () => {
+        if (!OneSignal) {
+            return {};
+        }
+
         try {
             const tags = await OneSignal.User.getTags();
             return tags;
