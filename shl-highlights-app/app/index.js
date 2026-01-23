@@ -339,7 +339,6 @@ export default function App() {
             keyExtractor={item => item.uuid}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
-            initialScrollIndex={shl.effectiveInitialScrollIndex}
             getItemLayout={getShlItemLayout}
             onScrollToIndexFailed={handleScrollToIndexFailed}
             onScroll={shl.handleScroll}
@@ -422,7 +421,6 @@ export default function App() {
             keyExtractor={item => item.uuid}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
-            initialScrollIndex={football.effectiveInitialScrollIndex}
             getItemLayout={getFootballItemLayout}
             onScrollToIndexFailed={handleScrollToIndexFailed}
             onScroll={football.handleScroll}
@@ -511,7 +509,6 @@ export default function App() {
             keyExtractor={biathlonKeyExtractor}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
-            initialScrollIndex={biathlon.effectiveInitialScrollIndex}
             getItemLayout={getBiathlonItemLayout}
             onScrollToIndexFailed={handleScrollToIndexFailed}
             onScroll={biathlon.handleScroll}

@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 1.17.2
+- Remove scroll animation when navigating to today's date on match lists
+
 ### 1.17.1
 - Fix OneSignal tags not updating when toggling sport notification preferences
 - Add queuing mechanism for tag updates before OneSignal initialization completes

@@ -287,6 +287,36 @@ export function useShlData(activeSport, selectedTeams, options = {}) {
     // Determine effective initial scroll index (skip if user has scrolled before)
     const effectiveInitialScrollIndex = hasUserScrolled.current ? undefined : (targetGameIndex > 0 ? targetGameIndex : undefined);
 
+    // Card height constant for content offset calculation
+    const GAME_CARD_HEIGHT = 174;
+
+    // Track if initial scroll has been performed
+    const hasInitialScrolled = useRef(false);
+
+    // Scroll to target position after data loads (without animation)
+    // Only scroll when this sport is active to avoid scrolling before the list is visible
+    useEffect(() => {
+        if (
+            activeSport === 'shl' &&
+            !hasInitialScrolled.current &&
+            !hasUserScrolled.current &&
+            targetGameIndex > 0 &&
+            sortedGames.length > 0
+        ) {
+            // Use setTimeout to ensure the FlatList is mounted after sport switch
+            const timeoutId = setTimeout(() => {
+                if (listRef.current && !hasInitialScrolled.current) {
+                    hasInitialScrolled.current = true;
+                    listRef.current.scrollToOffset({
+                        offset: targetGameIndex * GAME_CARD_HEIGHT,
+                        animated: false
+                    });
+                }
+            }, 50);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [activeSport, targetGameIndex, sortedGames.length]);
+
     return {
         // State
         games: sortedGames,

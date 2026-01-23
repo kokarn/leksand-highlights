@@ -306,6 +306,36 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
     // Determine effective initial scroll index (skip if user has scrolled before)
     const effectiveInitialScrollIndex = hasUserScrolled.current ? undefined : (targetRaceIndex > 0 ? targetRaceIndex : undefined);
 
+    // Card height constant for content offset calculation
+    const BIATHLON_CARD_HEIGHT = 168;
+
+    // Track if initial scroll has been performed
+    const hasInitialScrolled = useRef(false);
+
+    // Scroll to target position after data loads (without animation)
+    // Only scroll when this sport is active to avoid scrolling before the list is visible
+    useEffect(() => {
+        if (
+            activeSport === 'biathlon' &&
+            !hasInitialScrolled.current &&
+            !hasUserScrolled.current &&
+            targetRaceIndex > 0 &&
+            sortedRaces.length > 0
+        ) {
+            // Use setTimeout to ensure the FlatList is mounted after sport switch
+            const timeoutId = setTimeout(() => {
+                if (listRef.current && !hasInitialScrolled.current) {
+                    hasInitialScrolled.current = true;
+                    listRef.current.scrollToOffset({
+                        offset: targetRaceIndex * BIATHLON_CARD_HEIGHT,
+                        animated: false
+                    });
+                }
+            }, 50);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [activeSport, targetRaceIndex, sortedRaces.length]);
+
     return {
         // State
         races: sortedRaces,
