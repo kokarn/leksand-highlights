@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 
 /**
@@ -6,6 +7,17 @@ import { View, Text, Image, StyleSheet } from 'react-native';
 const formatStatValue = (value) => {
     if (value === null || value === undefined) { return '-'; }
     return String(value);
+};
+
+/**
+ * Position thresholds for dividers between groups
+ * Divider appears AFTER the specified position
+ */
+const LEAGUE_DIVIDERS = {
+    // SHL: 1-6 direct playoffs, 7-10 playoff qualification, 11-12 safe, 13-14 relegation
+    shl: [6, 10, 12],
+    // Allsvenskan: 1-3 European spots, 4-13 safe, 14 relegation playoff, 15-16 direct relegation
+    football: [3, 13, 14]
 };
 
 /**
@@ -29,6 +41,7 @@ export const StandingsTable = ({
     }
 
     const isHockey = sport === 'shl';
+    const dividerPositions = LEAGUE_DIVIDERS[sport] || [];
 
     return (
         <View style={styles.tableCard}>
@@ -49,22 +62,21 @@ export const StandingsTable = ({
                     <Text style={[styles.tableHeaderText, styles.colStat]}>D</Text>
                 )}
                 <Text style={[styles.tableHeaderText, styles.colStat]}>L</Text>
-                <Text style={[styles.tableHeaderText, styles.colPoints]}>P</Text>
                 <Text style={[styles.tableHeaderText, styles.colGoalDiff]}>+/-</Text>
+                <Text style={[styles.tableHeaderText, styles.colPoints]}>P</Text>
             </View>
 
             {/* Data Rows */}
             {standings.map(team => {
                 const teamKey = getTeamKey?.(team) || team.teamCode || team.teamShortName;
                 const isFavorite = teamKey && selectedTeams.includes(teamKey);
-                const goalDiffValue = Number(team.goalDiff);
                 const logoUrl = getTeamLogo?.(team);
+                const position = Number(team.position);
+                const showDivider = dividerPositions.includes(position);
 
                 return (
-                    <View
-                        key={team.teamUuid || team.teamCode || team.teamName}
-                        style={[styles.tableRow, isFavorite && styles.tableRowActive]}
-                    >
+                    <Fragment key={team.teamUuid || team.teamCode || team.teamName}>
+                        <View style={[styles.tableRow, isFavorite && styles.tableRowActive]}>
                         <Text style={[styles.tableCell, styles.colRank]}>
                             {formatStatValue(team.position)}
                         </Text>
@@ -85,40 +97,35 @@ export const StandingsTable = ({
                         <Text style={[styles.tableCell, styles.colStat]}>
                             {formatStatValue(team.gamesPlayed)}
                         </Text>
-                        <Text style={[styles.tableCell, styles.colStat]}>
+                        <Text style={[styles.tableCell, styles.colStat, styles.mutedCell]}>
                             {formatStatValue(team.wins)}
                         </Text>
                         {isHockey ? (
                             <>
-                                <Text style={[styles.tableCell, styles.colStat]}>
+                                <Text style={[styles.tableCell, styles.colStat, styles.mutedCell]}>
                                     {formatStatValue(team.overtimeWins)}
                                 </Text>
-                                <Text style={[styles.tableCell, styles.colStat]}>
+                                <Text style={[styles.tableCell, styles.colStat, styles.mutedCell]}>
                                     {formatStatValue(team.overtimeLosses)}
                                 </Text>
                             </>
                         ) : (
-                            <Text style={[styles.tableCell, styles.colStat]}>
+                            <Text style={[styles.tableCell, styles.colStat, styles.mutedCell]}>
                                 {formatStatValue(team.draws)}
                             </Text>
                         )}
-                        <Text style={[styles.tableCell, styles.colStat]}>
+                        <Text style={[styles.tableCell, styles.colStat, styles.mutedCell]}>
                             {formatStatValue(team.losses)}
+                        </Text>
+                        <Text style={[styles.tableCell, styles.colGoalDiff, styles.mutedCell]}>
+                            {formatStatValue(team.goalDiff)}
                         </Text>
                         <Text style={[styles.tableCell, styles.colPoints]}>
                             {formatStatValue(team.points)}
                         </Text>
-                        <Text
-                            style={[
-                                styles.tableCell,
-                                styles.colGoalDiff,
-                                Number.isFinite(goalDiffValue) && goalDiffValue > 0 && styles.positiveValue,
-                                Number.isFinite(goalDiffValue) && goalDiffValue < 0 && styles.negativeValue
-                            ]}
-                        >
-                            {formatStatValue(team.goalDiff)}
-                        </Text>
-                    </View>
+                        </View>
+                        {showDivider && <View style={styles.groupDivider} />}
+                    </Fragment>
                 );
             })}
         </View>
@@ -149,6 +156,10 @@ const styles = StyleSheet.create({
     },
     tableRowActive: {
         backgroundColor: 'rgba(10, 132, 255, 0.08)'
+    },
+    groupDivider: {
+        height: 2,
+        backgroundColor: '#444'
     },
     tableCell: {
         color: '#d1d1d6',
@@ -187,6 +198,9 @@ const styles = StyleSheet.create({
         width: 32,
         textAlign: 'center'
     },
+    mutedCell: {
+        color: '#8e8e93'
+    },
     teamCell: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -208,8 +222,6 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         flex: 1
     },
-    positiveValue: { color: '#30D158' },
-    negativeValue: { color: '#FF453A' },
     emptyContainer: { alignItems: 'center', marginTop: 40 },
     emptyText: { color: '#666', fontSize: 16, textAlign: 'center', padding: 20 }
 });
