@@ -47,6 +47,9 @@ export function usePushNotifications() {
     // Track initialization to prevent re-running init effect
     const initCompletedRef = useRef(false);
 
+    // Ref for synchronous initialization check (avoids closure issues with state)
+    const isInitializedRef = useRef(false);
+
     // Apply team tags to OneSignal (internal helper)
     const applyTeamTags = useCallback((teamCodes) => {
         if (!OneSignal) {
@@ -81,7 +84,7 @@ export function usePushNotifications() {
     }, []);
 
     // Helper to sync a single tag based on enabled state
-    // Now checks initialization state and queues updates if needed
+    // Uses ref for initialization check to avoid closure issues with async state updates
     const syncTag = useCallback((tagKey, enabled, forceApply = false) => {
         if (!OneSignal) {
             console.log('[OneSignal] syncTag skipped - OneSignal not available (web)');
@@ -89,7 +92,8 @@ export function usePushNotifications() {
         }
 
         // If not initialized yet and not forcing, queue the update
-        if (!isInitialized && !forceApply) {
+        // Use ref instead of state to avoid stale closure issues
+        if (!isInitializedRef.current && !forceApply) {
             console.log(`[OneSignal] Queuing tag update (not initialized): ${tagKey} = ${enabled}`);
             pendingTagUpdatesRef.current[tagKey] = enabled;
             return;
@@ -106,7 +110,7 @@ export function usePushNotifications() {
         } catch (error) {
             console.error(`[OneSignal] Error syncing tag ${tagKey}:`, error);
         }
-    }, [isInitialized]);
+    }, []);
 
     // Initialize OneSignal on mount
     useEffect(() => {
@@ -216,6 +220,8 @@ export function usePushNotifications() {
                     }
                 });
 
+                // Set ref first for synchronous access in syncTag
+                isInitializedRef.current = true;
                 setIsInitialized(true);
                 initCompletedRef.current = true;
                 console.log('[OneSignal] Initialized successfully');
@@ -347,7 +353,8 @@ export function usePushNotifications() {
      * @param {string[]} allTeamCodes - Array of all selected team codes (from all sports)
      */
     const setTeamTags = useCallback((allTeamCodes) => {
-        if (!isInitialized) {
+        // Use ref instead of state to avoid stale closure issues
+        if (!isInitializedRef.current) {
             // Queue the update to be applied after initialization
             console.log('[OneSignal] Queuing team tags update (not initialized yet):', allTeamCodes);
             pendingTeamUpdatesRef.current = [...allTeamCodes];
@@ -355,7 +362,7 @@ export function usePushNotifications() {
         }
 
         applyTeamTags(allTeamCodes);
-    }, [isInitialized, applyTeamTags]);
+    }, [applyTeamTags]);
 
     // Get all current tags (for debugging)
     const getTags = useCallback(async () => {
@@ -374,7 +381,8 @@ export function usePushNotifications() {
 
     // Force sync team tags from AsyncStorage to OneSignal
     const syncTeamTags = useCallback(async () => {
-        if (!isInitialized) {
+        // Use ref instead of state to avoid stale closure issues
+        if (!isInitializedRef.current) {
             console.warn('[OneSignal] Cannot sync tags - not initialized');
             return;
         }
@@ -404,7 +412,7 @@ export function usePushNotifications() {
         } catch (error) {
             console.error('[OneSignal] Sync team tags error:', error);
         }
-    }, [isInitialized, applyTeamTags]);
+    }, [applyTeamTags]);
 
     return {
         // State

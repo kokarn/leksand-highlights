@@ -4,6 +4,10 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 1.18.2
+- Fix OneSignal tags not being updated when changing push notification settings after app initialization
+- Use ref instead of state for initialization check to avoid stale closure issues
+
 ### 1.18.1
 - Fix 5-digit starting numbers showing for DNS/DNF athletes in biathlon results (filter ResultOrder >= 10000)
 
