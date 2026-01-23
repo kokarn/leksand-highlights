@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 1.17.0
+- Add pull-to-refresh on game/race detail modals for SHL, Football, and Biathlon
+
 ### 1.16.2
 - Keep today's games in the All Events list until day end
 

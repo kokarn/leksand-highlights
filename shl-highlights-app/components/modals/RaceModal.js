@@ -1,4 +1,4 @@
-import { View, Text, Modal, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Modal, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getNationFlag } from '../../api/shl';
@@ -134,7 +134,7 @@ const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceComple
     );
 };
 
-export const RaceModal = ({ race, details, visible, onClose, loading }) => {
+export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh, refreshing = false }) => {
     if (!race) return null;
 
     const raceInfo = details?.info || race;
@@ -225,7 +225,14 @@ export const RaceModal = ({ race, details, visible, onClose, loading }) => {
                         </View>
                     </View>
 
-                    <ScrollView style={styles.raceModalContent}>
+                    <ScrollView
+                        style={styles.raceModalContent}
+                        refreshControl={
+                            onRefresh ? (
+                                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+                            ) : undefined
+                        }
+                    >
                         <View style={styles.raceDetailCard}>
                             <View style={styles.raceDetailHeader}>
                                 <View style={styles.disciplineContainer}>

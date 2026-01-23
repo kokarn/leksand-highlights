@@ -810,6 +810,8 @@ export default function App() {
                 onClose={shl.closeModal}
                 activeTab={shlActiveTab}
                 onTabChange={setShlActiveTab}
+                onRefresh={shl.refreshModalDetails}
+                refreshing={shl.refreshingModal}
             />
 
             {/* Football Match Modal */}
@@ -819,6 +821,8 @@ export default function App() {
                 visible={!!football.selectedGame}
                 loading={football.loadingDetails}
                 onClose={football.closeModal}
+                onRefresh={football.refreshModalDetails}
+                refreshing={football.refreshingModal}
             />
 
             {/* Biathlon Race Modal */}
@@ -828,6 +832,8 @@ export default function App() {
                 loading={biathlon.loadingDetails}
                 visible={!!biathlon.selectedRace}
                 onClose={biathlon.closeModal}
+                onRefresh={biathlon.refreshModalDetails}
+                refreshing={biathlon.refreshingModal}
             />
 
             {/* Settings Modal */}

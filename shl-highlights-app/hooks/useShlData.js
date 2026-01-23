@@ -33,6 +33,7 @@ export function useShlData(activeSport, selectedTeams, options = {}) {
     const [gameDetails, setGameDetails] = useState(null);
     const [videos, setVideos] = useState([]);
     const [loadingModal, setLoadingModal] = useState(false);
+    const [refreshingModal, setRefreshingModal] = useState(false);
 
     // List scroll ref
     const listRef = useRef(null);
@@ -235,6 +236,37 @@ export function useShlData(activeSport, selectedTeams, options = {}) {
         setVideos([]);
     }, []);
 
+    // Refresh modal details handler (for pull-to-refresh in modal)
+    const refreshModalDetails = useCallback(async () => {
+        if (!selectedGame) {
+            return;
+        }
+        setRefreshingModal(true);
+        try {
+            const [details, vids] = await Promise.all([
+                fetchGameDetails(selectedGame.uuid),
+                fetchVideosForGame(selectedGame.uuid)
+            ]);
+            setGameDetails(details);
+            const sortedVids = vids.sort((a, b) => {
+                const aHigh = a.tags && a.tags.includes('custom.highlights');
+                const bHigh = b.tags && b.tags.includes('custom.highlights');
+                if (aHigh && !bHigh) {
+                    return -1;
+                }
+                if (!aHigh && bHigh) {
+                    return 1;
+                }
+                return 0;
+            });
+            setVideos(sortedVids);
+        } catch (error) {
+            console.error('Failed to refresh SHL game details', error);
+        } finally {
+            setRefreshingModal(false);
+        }
+    }, [selectedGame]);
+
     // Auto-refresh game details when viewing a live game
     useEffect(() => {
         if (!selectedGame || selectedGame.state !== 'live') {
@@ -267,6 +299,7 @@ export function useShlData(activeSport, selectedTeams, options = {}) {
         gameDetails,
         videos,
         loadingModal,
+        refreshingModal,
         teams,
         targetGameIndex,
         targetGameId,
@@ -283,6 +316,7 @@ export function useShlData(activeSport, selectedTeams, options = {}) {
         onRefresh,
         handleGamePress,
         handleScroll,
-        closeModal
+        closeModal,
+        refreshModalDetails
     };
 }

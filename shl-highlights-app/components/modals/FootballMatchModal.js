@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react';
-import { View, Text, Modal, ScrollView, FlatList, ActivityIndicator, StyleSheet, Animated, Dimensions, Platform } from 'react-native';
+import { View, Text, Modal, ScrollView, FlatList, ActivityIndicator, StyleSheet, Animated, Dimensions, Platform, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
@@ -26,7 +26,7 @@ const getTeamLogo = (team) => {
 const HOME_COLOR = '#4CAF50';
 const AWAY_COLOR = '#2196F3';
 
-export const FootballMatchModal = ({ match, details, visible, onClose, loading }) => {
+export const FootballMatchModal = ({ match, details, visible, onClose, loading, onRefresh, refreshing = false }) => {
     const [activeTab, setActiveTab] = useState('summary');
     const translateX = useRef(new Animated.Value(0)).current;
 
@@ -287,7 +287,15 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading }
                 : info?.state || '-';
 
         return (
-            <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                style={styles.tabContent}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    onRefresh ? (
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+                    ) : undefined
+                }
+            >
                 {hasStats && !isPreGame && (
                     <View style={styles.sectionCard}>
                         <Text style={styles.sectionTitle}>Match Stats</Text>
@@ -401,6 +409,11 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading }
                 data={processedEvents}
                 keyExtractor={(item, idx) => `${item.type}-${item.id || idx}`}
                 contentContainerStyle={styles.tabContent}
+                refreshControl={
+                    onRefresh ? (
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+                    ) : undefined
+                }
                 renderItem={({ item }) => {
                     if (item.type === 'half_marker') {
                         return <HalfMarker half={item.half} />;

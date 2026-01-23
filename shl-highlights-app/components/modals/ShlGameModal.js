@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { View, Text, Modal, FlatList, ScrollView, ActivityIndicator, StyleSheet, Animated, Dimensions, Platform } from 'react-native';
+import { View, Text, Modal, FlatList, ScrollView, ActivityIndicator, StyleSheet, Animated, Dimensions, Platform, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
@@ -32,7 +32,9 @@ export const ShlGameModal = ({
     loading,
     onClose,
     activeTab,
-    onTabChange
+    onTabChange,
+    onRefresh,
+    refreshing = false
 }) => {
     const { processedData, scoreDisplay, events, goals, getGoalVideoId } = useGameDetails(gameDetails, game, videos);
     const {
@@ -135,7 +137,15 @@ export const ShlGameModal = ({
                 : game?.state || '-';
 
         return (
-            <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                style={styles.tabContent}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    onRefresh ? (
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+                    ) : undefined
+                }
+            >
                 {!isPreGame && (
                     <View style={styles.sectionCard}>
                         <Text style={styles.sectionTitle}>Match Stats</Text>
@@ -208,6 +218,11 @@ export const ShlGameModal = ({
                 data={events}
                 keyExtractor={(item, idx) => `${item.type}-${idx}`}
                 contentContainerStyle={styles.tabContent}
+                refreshControl={
+                    onRefresh ? (
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+                    ) : undefined
+                }
                 renderItem={({ item }) => {
                     if (item.type === 'period_marker') {
                         return <PeriodMarker period={item.period} />;
@@ -279,6 +294,11 @@ export const ShlGameModal = ({
                 numColumns={2}
                 columnWrapperStyle={styles.videoGridRow}
                 contentContainerStyle={styles.videoList}
+                refreshControl={
+                    onRefresh ? (
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+                    ) : undefined
+                }
                 renderItem={({ item }) => (
                     <VideoCard
                         video={item}

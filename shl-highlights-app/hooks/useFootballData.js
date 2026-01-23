@@ -33,6 +33,7 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
     const [selectedGame, setSelectedGame] = useState(null);
     const [gameDetails, setGameDetails] = useState(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
+    const [refreshingModal, setRefreshingModal] = useState(false);
 
     // List scroll ref
     const listRef = useRef(null);
@@ -287,6 +288,22 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
         setLoadingDetails(false);
     }, []);
 
+    // Refresh modal details handler (for pull-to-refresh in modal)
+    const refreshModalDetails = useCallback(async () => {
+        if (!selectedGame) {
+            return;
+        }
+        setRefreshingModal(true);
+        try {
+            const details = await fetchFootballGameDetails(selectedGame.uuid);
+            setGameDetails(details);
+        } catch (error) {
+            console.error('Failed to refresh football match details', error);
+        } finally {
+            setRefreshingModal(false);
+        }
+    }, [selectedGame]);
+
     // Auto-refresh game details when viewing a live game
     useEffect(() => {
         if (!selectedGame || selectedGame.state !== 'live') {
@@ -322,6 +339,7 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
         selectedGame,
         gameDetails,
         loadingDetails,
+        refreshingModal,
         teams,
         seasonOptions,
         activeSeason,
@@ -345,6 +363,7 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
         onRefresh,
         handleGamePress,
         handleScroll,
-        closeModal
+        closeModal,
+        refreshModalDetails
     };
 }

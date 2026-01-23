@@ -43,6 +43,7 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
     const [selectedRace, setSelectedRace] = useState(null);
     const [raceDetails, setRaceDetails] = useState(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
+    const [refreshingModal, setRefreshingModal] = useState(false);
     const detailsRequestIdRef = useRef(0);
 
     // List scroll ref
@@ -282,6 +283,26 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
         setLoadingDetails(false);
     }, []);
 
+    // Refresh modal details handler (for pull-to-refresh in modal)
+    const refreshModalDetails = useCallback(async () => {
+        if (!selectedRace) {
+            return;
+        }
+        const raceId = selectedRace.ibuRaceId || selectedRace.uuid;
+        if (!raceId) {
+            return;
+        }
+        setRefreshingModal(true);
+        try {
+            const details = await fetchBiathlonRaceDetails(raceId);
+            setRaceDetails(details);
+        } catch (error) {
+            console.error('Failed to refresh biathlon race details', error);
+        } finally {
+            setRefreshingModal(false);
+        }
+    }, [selectedRace]);
+
     // Determine effective initial scroll index (skip if user has scrolled before)
     const effectiveInitialScrollIndex = hasUserScrolled.current ? undefined : (targetRaceIndex > 0 ? targetRaceIndex : undefined);
 
@@ -294,6 +315,7 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
         selectedRace,
         raceDetails,
         loadingDetails,
+        refreshingModal,
         targetRaceIndex,
         targetRaceId,
         effectiveInitialScrollIndex,
@@ -313,6 +335,7 @@ export function useBiathlonData(activeSport, selectedNations, selectedGenders, o
         handleRacePress,
         handleScroll,
         closeModal,
+        refreshModalDetails,
         handleViewChange,
         handleStandingsTypeChange,
         handleStandingsGenderChange
