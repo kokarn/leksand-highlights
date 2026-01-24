@@ -16,7 +16,8 @@
       },
       "entitlements": {
         "aps-environment": "development"
-      }
+      },
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
@@ -27,7 +28,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.kokarn.sportsapp"
+      "package": "com.kokarn.sportsapp",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "static",
