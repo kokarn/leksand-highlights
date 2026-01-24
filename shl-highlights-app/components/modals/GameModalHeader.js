@@ -1,6 +1,7 @@
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatSwedishDate } from '../../utils';
+import { useTheme } from '../../contexts/ThemeContext';
 
 /**
  * Shared header component for game modals (SHL, Football, etc.)
@@ -23,6 +24,7 @@ export const GameModalHeader = ({
     startDateTime,
     onClose
 }) => {
+    const { colors } = useTheme();
     const isLive = state === 'live';
     const stateLabel = state === 'post-game'
         ? 'Final'
@@ -30,60 +32,62 @@ export const GameModalHeader = ({
             ? 'Pre-game'
             : state || '-';
 
+    const themedStyles = createStyles(colors);
+
     return (
-        <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <Ionicons name="close" size={24} color="#fff" />
+        <View style={themedStyles.modalHeader}>
+            <TouchableOpacity onPress={onClose} style={themedStyles.closeButton}>
+                <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
-            <View style={styles.scoreHeader}>
-                <View style={styles.scoreTeam}>
+            <View style={themedStyles.scoreHeader}>
+                <View style={themedStyles.scoreTeam}>
                     {homeTeam.logo ? (
                         <Image
                             source={{ uri: homeTeam.logo }}
-                            style={styles.scoreTeamLogo}
+                            style={themedStyles.scoreTeamLogo}
                             resizeMode="contain"
                         />
                     ) : (
-                        <View style={styles.teamLogoPlaceholder} />
+                        <View style={themedStyles.teamLogoPlaceholder} />
                     )}
-                    <Text style={styles.scoreTeamName}>{homeTeam.name}</Text>
+                    <Text style={themedStyles.scoreTeamName}>{homeTeam.name}</Text>
                 </View>
-                <View style={styles.scoreCenterBlock}>
-                    <Text style={styles.scoreLarge}>{homeScore} - {awayScore}</Text>
-                    <View style={[styles.statusBadge, isLive && styles.statusBadgeLive]}>
-                        <Text style={styles.statusBadgeText}>{stateLabel}</Text>
+                <View style={themedStyles.scoreCenterBlock}>
+                    <Text style={themedStyles.scoreLarge}>{homeScore} - {awayScore}</Text>
+                    <View style={[themedStyles.statusBadge, isLive && themedStyles.statusBadgeLive]}>
+                        <Text style={themedStyles.statusBadgeText}>{stateLabel}</Text>
                     </View>
                     {state === 'pre-game' && startDateTime && (
-                        <Text style={styles.gameDateText}>
+                        <Text style={themedStyles.gameDateText}>
                             {formatSwedishDate(startDateTime, 'd MMMM HH:mm')}
                         </Text>
                     )}
                 </View>
-                <View style={styles.scoreTeam}>
+                <View style={themedStyles.scoreTeam}>
                     {awayTeam.logo ? (
                         <Image
                             source={{ uri: awayTeam.logo }}
-                            style={styles.scoreTeamLogo}
+                            style={themedStyles.scoreTeamLogo}
                             resizeMode="contain"
                         />
                     ) : (
-                        <View style={styles.teamLogoPlaceholder} />
+                        <View style={themedStyles.teamLogoPlaceholder} />
                     )}
-                    <Text style={styles.scoreTeamName}>{awayTeam.name}</Text>
+                    <Text style={themedStyles.scoreTeamName}>{awayTeam.name}</Text>
                 </View>
             </View>
         </View>
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     modalHeader: {
         paddingTop: 20,
         paddingBottom: 16,
         paddingHorizontal: 16,
-        backgroundColor: '#1c1c1e',
+        backgroundColor: colors.card,
         borderBottomWidth: 1,
-        borderBottomColor: '#333'
+        borderBottomColor: colors.cardBorder
     },
     closeButton: {
         position: 'absolute',
@@ -112,10 +116,10 @@ const styles = StyleSheet.create({
         height: 50,
         marginBottom: 4,
         borderRadius: 25,
-        backgroundColor: '#2c2c2e'
+        backgroundColor: colors.separator
     },
     scoreTeamName: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 12,
         fontWeight: '700',
         textAlign: 'center'
@@ -125,7 +129,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 20
     },
     scoreLarge: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 42,
         fontWeight: '800',
         fontVariant: ['tabular-nums']
@@ -135,19 +139,19 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 4,
         borderRadius: 6,
-        backgroundColor: '#444'
+        backgroundColor: colors.chip
     },
     statusBadgeLive: {
-        backgroundColor: '#FF453A'
+        backgroundColor: colors.accentRed
     },
     statusBadgeText: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 11,
         fontWeight: '700',
         textTransform: 'uppercase'
     },
     gameDateText: {
-        color: '#aaa',
+        color: colors.textSecondary,
         fontSize: 13,
         marginTop: 8
     }

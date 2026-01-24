@@ -1,45 +1,49 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getPlayerName, getAssistName, getGoalType } from '../../utils';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export const GoalItem = ({ goal, homeTeamCode, hasVideo, onVideoPress }) => {
+    const { colors } = useTheme();
+    const themedStyles = createStyles(colors);
+    
     const isHomeGoal = goal.eventTeam?.place === 'home' || goal.eventTeam?.teamCode === homeTeamCode;
     const playerName = getPlayerName(goal.player);
     const assists = [];
     const a1 = getAssistName(goal.assist1);
     const a2 = getAssistName(goal.assist2);
-    if (a1) assists.push(a1);
-    if (a2) assists.push(a2);
+    if (a1) { assists.push(a1); }
+    if (a2) { assists.push(a2); }
     const homeGoals = goal.homeGoals ?? goal.homeScore ?? 0;
     const awayGoals = goal.awayGoals ?? goal.awayScore ?? 0;
     const goalType = getGoalType(goal);
 
     return (
-        <View style={[styles.goalItem, isHomeGoal ? styles.goalItemHome : styles.goalItemAway]}>
-            <View style={styles.goalTime}>
-                <Text style={styles.goalPeriod}>P{goal.period}</Text>
-                <Text style={styles.goalTimeText}>{goal.time}</Text>
+        <View style={[themedStyles.goalItem, isHomeGoal ? themedStyles.goalItemHome : themedStyles.goalItemAway]}>
+            <View style={themedStyles.goalTime}>
+                <Text style={themedStyles.goalPeriod}>P{goal.period}</Text>
+                <Text style={themedStyles.goalTimeText}>{goal.time}</Text>
             </View>
-            <View style={styles.goalContent}>
-                <View style={styles.goalScorer}>
-                    <Ionicons name="radio-button-on" size={14} color="#4CAF50" style={{ marginRight: 6 }} />
-                    <Text style={styles.goalScorerText}>{playerName}</Text>
-                    {goalType && <Text style={styles.goalTypeTag}>{goalType}</Text>}
+            <View style={themedStyles.goalContent}>
+                <View style={themedStyles.goalScorer}>
+                    <Ionicons name="radio-button-on" size={14} color={colors.accentGreen} style={{ marginRight: 6 }} />
+                    <Text style={themedStyles.goalScorerText}>{playerName}</Text>
+                    {goalType && <Text style={themedStyles.goalTypeTag}>{goalType}</Text>}
                 </View>
                 {assists.length > 0 && (
-                    <Text style={styles.goalAssists}>Assists: {assists.join(', ')}</Text>
+                    <Text style={themedStyles.goalAssists}>Assists: {assists.join(', ')}</Text>
                 )}
-                <Text style={styles.eventTypeLabel}>Goal</Text>
+                <Text style={themedStyles.eventTypeLabel}>Goal</Text>
             </View>
-            <View style={styles.goalRightSection}>
-                <View style={styles.goalScoreContainer}>
-                    <Text style={[styles.goalScoreNum, isHomeGoal && styles.goalScoreHighlight]}>{homeGoals}</Text>
-                    <Text style={styles.goalScoreDash}>-</Text>
-                    <Text style={[styles.goalScoreNum, !isHomeGoal && styles.goalScoreHighlight]}>{awayGoals}</Text>
+            <View style={themedStyles.goalRightSection}>
+                <View style={themedStyles.goalScoreContainer}>
+                    <Text style={[themedStyles.goalScoreNum, isHomeGoal && themedStyles.goalScoreHighlight]}>{homeGoals}</Text>
+                    <Text style={themedStyles.goalScoreDash}>-</Text>
+                    <Text style={[themedStyles.goalScoreNum, !isHomeGoal && themedStyles.goalScoreHighlight]}>{awayGoals}</Text>
                 </View>
                 {hasVideo && (
-                    <TouchableOpacity onPress={onVideoPress} style={styles.videoIconButton}>
-                        <Ionicons name="videocam" size={16} color="#6C5CE7" />
+                    <TouchableOpacity onPress={onVideoPress} style={themedStyles.videoIconButton}>
+                        <Ionicons name="videocam" size={16} color={colors.accent} />
                     </TouchableOpacity>
                 )}
             </View>
@@ -47,33 +51,33 @@ export const GoalItem = ({ goal, homeTeamCode, hasVideo, onVideoPress }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     goalItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#252525',
+        backgroundColor: colors.chip,
         borderRadius: 8,
         padding: 12,
         marginBottom: 8
     },
     goalItemHome: {
         borderLeftWidth: 3,
-        borderLeftColor: '#4CAF50'
+        borderLeftColor: colors.accentGreen
     },
     goalItemAway: {
         borderRightWidth: 3,
-        borderRightColor: '#4CAF50'
+        borderRightColor: colors.accentGreen
     },
     goalTime: {
         width: 45,
         marginRight: 12
     },
     goalPeriod: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 11
     },
     goalTimeText: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 14,
         fontWeight: '600'
     },
@@ -85,18 +89,18 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     goalScorerText: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 15,
         fontWeight: '600'
     },
     goalAssists: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 12,
         marginTop: 2
     },
     goalTypeTag: {
-        backgroundColor: '#333',
-        color: '#4CAF50',
+        backgroundColor: colors.cardBorder,
+        color: colors.accentGreen,
         fontSize: 10,
         fontWeight: '700',
         paddingHorizontal: 6,
@@ -106,7 +110,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden'
     },
     eventTypeLabel: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 10,
         fontWeight: '600',
         textTransform: 'uppercase',
@@ -121,18 +125,18 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     goalScoreNum: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 16,
         fontWeight: '700'
     },
     goalScoreDash: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 16,
         fontWeight: '700',
         marginHorizontal: 2
     },
     goalScoreHighlight: {
-        color: '#fff'
+        color: colors.text
     },
     videoIconButton: {
         marginTop: 6,

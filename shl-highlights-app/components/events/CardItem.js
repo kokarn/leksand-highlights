@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // Try to extract player name from card text
 const extractPlayerFromText = (text) => {
@@ -33,6 +34,9 @@ const formatTime = (time) => {
 };
 
 export const CardItem = ({ card }) => {
+    const { colors } = useTheme();
+    const themedStyles = createStyles(colors);
+    
     // Try multiple sources for player name
     const playerName = card.player?.name 
         || card.player?.displayName 
@@ -41,40 +45,40 @@ export const CardItem = ({ card }) => {
         || 'Card';
     
     const isRed = card.cardType === 'red';
-    const cardColor = isRed ? '#F44336' : '#FFC107';
+    const cardColor = isRed ? colors.accentRed : '#FFC107';
     const clock = card.clock || '';
     const reason = card.reason || '';
     const periodLabel = card.period === 1 ? '1st' : card.period === 2 ? '2nd' : card.periodDisplay || '';
     const teamLabel = card.teamCode || card.teamName || '';
 
     return (
-        <View style={[styles.cardItem, { borderLeftColor: cardColor }]}>
-            <View style={styles.eventTime}>
-                <Text style={styles.eventPeriod}>{periodLabel}</Text>
-                <Text style={styles.eventTimeText}>{formatTime(clock)}</Text>
+        <View style={[themedStyles.cardItem, { borderLeftColor: cardColor }]}>
+            <View style={themedStyles.eventTime}>
+                <Text style={themedStyles.eventPeriod}>{periodLabel}</Text>
+                <Text style={themedStyles.eventTimeText}>{formatTime(clock)}</Text>
             </View>
-            <View style={styles.eventContent}>
-                <View style={styles.eventHeader}>
-                    <View style={[styles.cardIcon, { backgroundColor: cardColor }]} />
-                    <Text style={styles.playerName} numberOfLines={2}>{playerName}</Text>
+            <View style={themedStyles.eventContent}>
+                <View style={themedStyles.eventHeader}>
+                    <View style={[themedStyles.cardIcon, { backgroundColor: cardColor }]} />
+                    <Text style={themedStyles.playerName} numberOfLines={2}>{playerName}</Text>
                 </View>
                 {reason && reason.toLowerCase() !== 'yellow card' && reason.toLowerCase() !== 'red card' && (
-                    <Text style={styles.eventDetail}>{reason}</Text>
+                    <Text style={themedStyles.eventDetail}>{reason}</Text>
                 )}
-                <View style={styles.footerRow}>
-                    <Text style={styles.eventTypeLabel}>{isRed ? 'Red Card' : 'Yellow Card'}</Text>
-                    {teamLabel && <Text style={styles.teamCode}>{teamLabel}</Text>}
+                <View style={themedStyles.footerRow}>
+                    <Text style={themedStyles.eventTypeLabel}>{isRed ? 'Red Card' : 'Yellow Card'}</Text>
+                    {teamLabel && <Text style={themedStyles.teamCode}>{teamLabel}</Text>}
                 </View>
             </View>
         </View>
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     cardItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#252525',
+        backgroundColor: colors.chip,
         borderRadius: 8,
         padding: 12,
         marginBottom: 8,
@@ -85,11 +89,11 @@ const styles = StyleSheet.create({
         marginRight: 12
     },
     eventPeriod: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 11
     },
     eventTimeText: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 14,
         fontWeight: '600'
     },
@@ -108,13 +112,13 @@ const styles = StyleSheet.create({
         marginTop: 2
     },
     playerName: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 15,
         fontWeight: '600',
         flex: 1
     },
     eventDetail: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 12,
         marginTop: 4
     },
@@ -125,13 +129,13 @@ const styles = StyleSheet.create({
         marginTop: 4
     },
     eventTypeLabel: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 10,
         fontWeight: '600',
         textTransform: 'uppercase'
     },
     teamCode: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 10,
         fontWeight: '600',
         textTransform: 'uppercase'

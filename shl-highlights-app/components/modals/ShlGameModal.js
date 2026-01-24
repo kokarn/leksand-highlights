@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { View, Text, Modal, FlatList, ScrollView, ActivityIndicator, StyleSheet, Animated, Dimensions, Platform, RefreshControl } from 'react-native';
+import { View, Text, Modal, ScrollView, ActivityIndicator, StyleSheet, Animated, Dimensions, Platform, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
@@ -10,6 +10,7 @@ import { getTeamColor } from '../../constants';
 import { getVideoDisplayTitle, formatSwedishDate } from '../../utils';
 import { useGameDetails } from '../../hooks/useGameDetails';
 import { useVideoPlayer } from '../../hooks/useVideoPlayer';
+import { useTheme } from '../../contexts/ThemeContext';
 import { TabButton } from '../TabButton';
 import { StatBar } from '../StatBar';
 import { VideoCard } from '../cards';
@@ -36,6 +37,7 @@ export const ShlGameModal = ({
     onRefresh,
     refreshing = false
 }) => {
+    const { colors } = useTheme();
     const { processedData, scoreDisplay, events, goals, getGoalVideoId } = useGameDetails(gameDetails, game, videos);
     const {
         playingVideoId,
@@ -46,6 +48,7 @@ export const ShlGameModal = ({
     } = useVideoPlayer();
 
     const translateX = useRef(new Animated.Value(0)).current;
+    const themedStyles = createStyles(colors);
 
     const handleGestureEvent = Animated.event(
         [{ nativeEvent: { translationX: translateX } }],
@@ -120,7 +123,7 @@ export const ShlGameModal = ({
     // Summary Tab Content
     const renderSummaryTab = () => {
         if (!gameDetails || !processedData) {
-            return <Text style={styles.emptyText}>No data available</Text>;
+            return <Text style={themedStyles.emptyText}>No data available</Text>;
         }
 
         const { sog, pp, pim } = processedData;
@@ -138,27 +141,28 @@ export const ShlGameModal = ({
 
         return (
             <ScrollView
-                style={styles.tabContent}
+                style={{ flex: 1 }}
+                contentContainerStyle={themedStyles.tabContent}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     onRefresh ? (
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />
                     ) : undefined
                 }
             >
                 {!isPreGame && (
-                    <View style={styles.sectionCard}>
-                        <Text style={styles.sectionTitle}>Match Stats</Text>
+                    <View style={themedStyles.sectionCard}>
+                        <Text style={themedStyles.sectionTitle}>Match Stats</Text>
                         <StatBar label="Shots" homeValue={sog.home} awayValue={sog.away} homeColor={homeColor} awayColor={awayColor} />
                         <StatBar label="Power Play %" homeValue={pp.home} awayValue={pp.away} homeColor={homeColor} awayColor={awayColor} />
                         <StatBar label="Penalty Min" homeValue={pim.home} awayValue={pim.away} homeColor={homeColor} awayColor={awayColor} />
                     </View>
                 )}
 
-                <View style={styles.sectionCard}>
-                    <Text style={styles.sectionTitle}>Goals</Text>
+                <View style={themedStyles.sectionCard}>
+                    <Text style={themedStyles.sectionTitle}>Goals</Text>
                     {goals.length === 0 ? (
-                        <Text style={styles.emptyText}>No goals scored</Text>
+                        <Text style={themedStyles.emptyText}>No goals scored</Text>
                     ) : (
                         goals.map((goal, idx) => {
                             const videoId = getGoalVideoId(goal);
@@ -180,27 +184,27 @@ export const ShlGameModal = ({
                     )}
                 </View>
 
-                <View style={styles.sectionCard}>
-                    <Text style={styles.sectionTitle}>Match Details</Text>
-                    <View style={styles.detailRow}>
-                        <Ionicons name="calendar-outline" size={18} color="#888" />
-                        <Text style={styles.detailLabel}>Date</Text>
-                        <Text style={styles.detailValue}>{formatSwedishDate(startDateTime, 'd MMMM yyyy')}</Text>
+                <View style={themedStyles.sectionCard}>
+                    <Text style={themedStyles.sectionTitle}>Match Details</Text>
+                    <View style={themedStyles.detailRow}>
+                        <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
+                        <Text style={themedStyles.detailLabel}>Date</Text>
+                        <Text style={themedStyles.detailValue}>{formatSwedishDate(startDateTime, 'd MMMM yyyy')}</Text>
                     </View>
-                    <View style={styles.detailRow}>
-                        <Ionicons name="time-outline" size={18} color="#888" />
-                        <Text style={styles.detailLabel}>Face-off</Text>
-                        <Text style={styles.detailValue}>{formatSwedishDate(startDateTime, 'HH:mm')}</Text>
+                    <View style={themedStyles.detailRow}>
+                        <Ionicons name="time-outline" size={18} color={colors.textSecondary} />
+                        <Text style={themedStyles.detailLabel}>Face-off</Text>
+                        <Text style={themedStyles.detailValue}>{formatSwedishDate(startDateTime, 'HH:mm')}</Text>
                     </View>
-                    <View style={styles.detailRow}>
-                        <Ionicons name="location-outline" size={18} color="#888" />
-                        <Text style={styles.detailLabel}>Venue</Text>
-                        <Text style={styles.detailValue} numberOfLines={2}>{venueName}</Text>
+                    <View style={themedStyles.detailRow}>
+                        <Ionicons name="location-outline" size={18} color={colors.textSecondary} />
+                        <Text style={themedStyles.detailLabel}>Venue</Text>
+                        <Text style={themedStyles.detailValue} numberOfLines={2}>{venueName}</Text>
                     </View>
-                    <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
-                        <Ionicons name="pulse-outline" size={18} color="#888" />
-                        <Text style={styles.detailLabel}>Status</Text>
-                        <Text style={styles.detailValue}>{stateLabel}</Text>
+                    <View style={[themedStyles.detailRow, { borderBottomWidth: 0 }]}>
+                        <Ionicons name="pulse-outline" size={18} color={colors.textSecondary} />
+                        <Text style={themedStyles.detailLabel}>Status</Text>
+                        <Text style={themedStyles.detailValue}>{stateLabel}</Text>
                     </View>
                 </View>
             </ScrollView>
@@ -210,110 +214,120 @@ export const ShlGameModal = ({
     // Events Tab Content
     const renderEventsTab = () => {
         if (!gameDetails || !processedData) {
-            return <Text style={styles.emptyText}>No data available</Text>;
+            return <Text style={themedStyles.emptyText}>No data available</Text>;
         }
 
         return (
-            <FlatList
-                data={events}
-                keyExtractor={(item, idx) => `${item.type}-${idx}`}
-                contentContainerStyle={styles.tabContent}
+            <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={themedStyles.tabContent}
+                showsVerticalScrollIndicator={false}
                 refreshControl={
                     onRefresh ? (
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />
                     ) : undefined
                 }
-                renderItem={({ item }) => {
-                    if (item.type === 'period_marker') {
-                        return <PeriodMarker period={item.period} />;
-                    }
-                    if (item.type === 'goal') {
-                        const videoId = getGoalVideoId(item);
-                        return (
-                            <GoalItem
-                                goal={item}
-                                homeTeamCode={homeCode}
-                                hasVideo={!!videoId}
-                                onVideoPress={() => {
-                                    onTabChange('highlights');
-                                    playVideo(videos.find(v => v.id === videoId));
-                                }}
-                            />
-                        );
-                    }
-                    if (item.type === 'penalty') {
-                        return <PenaltyItem penalty={item} />;
-                    }
-                    if (item.type === 'goalkeeper') {
-                        return <GoalkeeperItem event={item} />;
-                    }
-                    if (item.type === 'timeout') {
-                        return <TimeoutItem event={item} />;
-                    }
-                    return null;
-                }}
-                ListEmptyComponent={<Text style={styles.emptyText}>No events available</Text>}
-            />
+            >
+                <View style={themedStyles.sectionCard}>
+                    <Text style={themedStyles.sectionTitle}>Match Events</Text>
+                    {events.length === 0 ? (
+                        <Text style={themedStyles.emptyText}>No events available</Text>
+                    ) : (
+                        events.map((item, idx) => {
+                            if (item.type === 'period_marker') {
+                                return <PeriodMarker key={`period-${idx}`} period={item.period} />;
+                            }
+                            if (item.type === 'goal') {
+                                const videoId = getGoalVideoId(item);
+                                return (
+                                    <GoalItem
+                                        key={`goal-${idx}`}
+                                        goal={item}
+                                        homeTeamCode={homeCode}
+                                        hasVideo={!!videoId}
+                                        onVideoPress={() => {
+                                            onTabChange('highlights');
+                                            playVideo(videos.find(v => v.id === videoId));
+                                        }}
+                                    />
+                                );
+                            }
+                            if (item.type === 'penalty') {
+                                return <PenaltyItem key={`penalty-${idx}`} penalty={item} />;
+                            }
+                            if (item.type === 'goalkeeper') {
+                                return <GoalkeeperItem key={`gk-${idx}`} event={item} />;
+                            }
+                            if (item.type === 'timeout') {
+                                return <TimeoutItem key={`timeout-${idx}`} event={item} />;
+                            }
+                            return null;
+                        })
+                    )}
+                </View>
+            </ScrollView>
         );
     };
 
     // Highlights Tab Content
     const renderHighlightsTab = () => (
-        <View style={{ flex: 1 }}>
-            <View style={styles.highlightsTitleBox}>
-                <View style={styles.highlightsTitleHeader}>
-                    <Ionicons name="videocam" size={20} color="#6C5CE7" />
-                    <Text style={styles.highlightsTitleLabel}>Match Highlights</Text>
-                </View>
-                {currentlyPlayingVideo ? (
-                    <View style={styles.nowPlayingBox}>
-                        <Text style={styles.nowPlayingLabel}>Now Playing</Text>
-                        <Text style={styles.nowPlayingTitle} numberOfLines={2}>
-                            {getVideoDisplayTitle(currentlyPlayingVideo)}
-                        </Text>
-                    </View>
-                ) : (
-                    <Text style={styles.highlightsSubtitle}>
-                        {videos.length} {videos.length === 1 ? 'clip' : 'clips'} available
-                    </Text>
-                )}
-            </View>
-
+        <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={themedStyles.tabContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+                onRefresh ? (
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />
+                ) : undefined
+            }
+        >
             {currentlyPlayingVideo && (
-                <VideoPlayer
-                    video={currentlyPlayingVideo}
-                    videoDetails={playingVideoDetails}
-                    loading={loadingVideoDetails}
-                    onClose={stopVideo}
-                />
+                <View style={themedStyles.nowPlayingCard}>
+                    <View style={themedStyles.nowPlayingHeader}>
+                        <Ionicons name="play-circle" size={18} color={colors.accent} />
+                        <Text style={themedStyles.nowPlayingLabel}>Now Playing</Text>
+                    </View>
+                    <Text style={themedStyles.nowPlayingTitle} numberOfLines={2}>
+                        {getVideoDisplayTitle(currentlyPlayingVideo)}
+                    </Text>
+                    <VideoPlayer
+                        video={currentlyPlayingVideo}
+                        videoDetails={playingVideoDetails}
+                        loading={loadingVideoDetails}
+                        onClose={stopVideo}
+                    />
+                </View>
             )}
 
-            <FlatList
-                data={videos}
-                keyExtractor={item => item.id}
-                numColumns={2}
-                columnWrapperStyle={styles.videoGridRow}
-                contentContainerStyle={styles.videoList}
-                refreshControl={
-                    onRefresh ? (
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
-                    ) : undefined
-                }
-                renderItem={({ item }) => (
-                    <VideoCard
-                        video={item}
-                        isPlaying={playingVideoId === item.id}
-                        onPress={() => playVideo(item)}
-                    />
+            <View style={themedStyles.sectionCard}>
+                <View style={themedStyles.highlightsTitleHeader}>
+                    <Ionicons name="videocam" size={20} color={colors.accent} />
+                    <Text style={themedStyles.highlightsSectionTitle}>Match Highlights</Text>
+                </View>
+                <Text style={themedStyles.highlightsSubtitle}>
+                    {videos.length} {videos.length === 1 ? 'clip' : 'clips'} available
+                </Text>
+                {videos.length === 0 ? (
+                    <Text style={themedStyles.emptyText}>No videos available yet.</Text>
+                ) : (
+                    <View style={themedStyles.videoGrid}>
+                        {videos.map((item) => (
+                            <VideoCard
+                                key={item.id}
+                                video={item}
+                                isPlaying={playingVideoId === item.id}
+                                onPress={() => playVideo(item)}
+                            />
+                        ))}
+                    </View>
                 )}
-                ListEmptyComponent={<Text style={styles.emptyText}>No videos available yet.</Text>}
-            />
-        </View>
+            </View>
+        </ScrollView>
     );
 
     return (
         <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
-            <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
+            <SafeAreaView style={themedStyles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
                 {game && (
                     <>
                         <GameModalHeader
@@ -327,7 +341,7 @@ export const ShlGameModal = ({
                         />
 
                         {/* Tab Bar */}
-                        <View style={styles.tabBar}>
+                        <View style={themedStyles.tabBar}>
                             <TabButton
                                 title="Summary"
                                 icon="stats-chart"
@@ -350,7 +364,7 @@ export const ShlGameModal = ({
 
                         {/* Tab Content with gesture support */}
                         {loading ? (
-                            <ActivityIndicator size="large" color="#6C5CE7" style={{ marginTop: 50 }} />
+                            <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
                         ) : (
                             <PanGestureHandler
                                 onGestureEvent={handleGestureEvent}
@@ -360,7 +374,7 @@ export const ShlGameModal = ({
                             >
                                 <Animated.View
                                     style={[
-                                        styles.tabContentContainer,
+                                        themedStyles.tabContentContainer,
                                         { transform: [{ translateX }] }
                                     ]}
                                 >
@@ -377,16 +391,16 @@ export const ShlGameModal = ({
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     modalContainer: {
         flex: 1,
-        backgroundColor: '#0a0a0a'
+        backgroundColor: colors.background
     },
     tabBar: {
         flexDirection: 'row',
-        backgroundColor: '#1c1c1e',
+        backgroundColor: colors.card,
         borderBottomWidth: 1,
-        borderBottomColor: '#333'
+        borderBottomColor: colors.cardBorder
     },
     tabContentContainer: {
         flex: 1
@@ -395,65 +409,69 @@ const styles = StyleSheet.create({
         padding: 16
     },
     sectionCard: {
-        backgroundColor: '#1c1c1e',
+        backgroundColor: colors.card,
         borderRadius: 12,
         padding: 16,
         marginBottom: 16
     },
     sectionTitle: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 18,
         fontWeight: '700',
         marginBottom: 16
-    },
-    highlightsTitleBox: {
-        padding: 16,
-        paddingBottom: 8
     },
     highlightsTitleHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        marginBottom: 8
-    },
-    highlightsTitleLabel: {
-        color: '#fff',
-        fontSize: 20,
-        fontWeight: '700'
-    },
-    highlightsSubtitle: {
-        color: '#888',
-        fontSize: 14
-    },
-    nowPlayingBox: {
-        backgroundColor: '#1c1c1e',
-        borderRadius: 8,
-        padding: 12,
-        borderLeftWidth: 3,
-        borderLeftColor: '#6C5CE7'
-    },
-    nowPlayingLabel: {
-        color: '#6C5CE7',
-        fontSize: 11,
-        fontWeight: '700',
-        textTransform: 'uppercase',
         marginBottom: 4
     },
+    highlightsSectionTitle: {
+        color: colors.text,
+        fontSize: 18,
+        fontWeight: '700',
+        marginBottom: 0
+    },
+    highlightsSubtitle: {
+        color: colors.textSecondary,
+        fontSize: 14,
+        marginBottom: 16
+    },
+    nowPlayingCard: {
+        backgroundColor: colors.card,
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 16,
+        borderLeftWidth: 3,
+        borderLeftColor: colors.accent
+    },
+    nowPlayingHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: 4
+    },
+    nowPlayingLabel: {
+        color: colors.accent,
+        fontSize: 12,
+        fontWeight: '700',
+        textTransform: 'uppercase'
+    },
     nowPlayingTitle: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 15,
         fontWeight: '600',
-        lineHeight: 20
+        lineHeight: 20,
+        marginBottom: 12
     },
-    videoList: {
-        padding: 8
-    },
-    videoGridRow: {
+    videoGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
         justifyContent: 'space-between',
-        paddingHorizontal: 8
+        gap: 12
     },
     emptyText: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 16,
         textAlign: 'center',
         padding: 20
@@ -464,15 +482,15 @@ const styles = StyleSheet.create({
         gap: 12,
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#2a2a2a'
+        borderBottomColor: colors.separator
     },
     detailLabel: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 14,
         flex: 1
     },
     detailValue: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 14,
         fontWeight: '600',
         flex: 1,

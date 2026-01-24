@@ -1,32 +1,36 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 
 export const StatBar = ({ label, homeValue, awayValue, homeColor, awayColor }) => {
+    const { colors } = useTheme();
+    const themedStyles = createStyles(colors);
+    
     const total = (homeValue || 0) + (awayValue || 0);
     const homePerc = total > 0 ? ((homeValue || 0) / total) * 100 : 50;
 
     return (
-        <View style={styles.statBarContainer}>
-            <Text style={styles.statValue}>{homeValue ?? '-'}</Text>
-            <View style={styles.statBarMiddle}>
-                <Text style={styles.statLabel}>{label}</Text>
-                <View style={styles.statBarTrack}>
-                    <View style={[styles.statBarFill, { width: `${homePerc}%`, backgroundColor: homeColor }]} />
-                    <View style={[styles.statBarFill, { width: `${100 - homePerc}%`, backgroundColor: awayColor }]} />
+        <View style={themedStyles.statBarContainer}>
+            <Text style={themedStyles.statValue}>{homeValue ?? '-'}</Text>
+            <View style={themedStyles.statBarMiddle}>
+                <Text style={themedStyles.statLabel}>{label}</Text>
+                <View style={themedStyles.statBarTrack}>
+                    <View style={[themedStyles.statBarFill, { width: `${homePerc}%`, backgroundColor: homeColor }]} />
+                    <View style={[themedStyles.statBarFill, { width: `${100 - homePerc}%`, backgroundColor: awayColor }]} />
                 </View>
             </View>
-            <Text style={styles.statValue}>{awayValue ?? '-'}</Text>
+            <Text style={themedStyles.statValue}>{awayValue ?? '-'}</Text>
         </View>
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     statBarContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 16
     },
     statValue: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 16,
         fontWeight: '700',
         width: 40,
@@ -37,7 +41,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 12
     },
     statLabel: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 12,
         textAlign: 'center',
         marginBottom: 6
@@ -47,7 +51,7 @@ const styles = StyleSheet.create({
         height: 8,
         borderRadius: 4,
         overflow: 'hidden',
-        backgroundColor: '#333'
+        backgroundColor: colors.cardBorder
     },
     statBarFill: {
         height: '100%'

@@ -1,14 +1,20 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 
-export const PeriodMarker = ({ period }) => (
-    <View style={styles.periodMarker}>
-        <View style={styles.periodLine} />
-        <Text style={styles.periodText}>Period {period}</Text>
-        <View style={styles.periodLine} />
-    </View>
-);
+export const PeriodMarker = ({ period }) => {
+    const { colors } = useTheme();
+    const themedStyles = createStyles(colors);
+    
+    return (
+        <View style={themedStyles.periodMarker}>
+            <View style={themedStyles.periodLine} />
+            <Text style={themedStyles.periodText}>Period {period}</Text>
+            <View style={themedStyles.periodLine} />
+        </View>
+    );
+};
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     periodMarker: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -17,10 +23,10 @@ const styles = StyleSheet.create({
     periodLine: {
         flex: 1,
         height: 1,
-        backgroundColor: '#333'
+        backgroundColor: colors.cardBorder
     },
     periodText: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 12,
         fontWeight: '600',
         marginHorizontal: 12

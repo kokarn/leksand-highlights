@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator, Platform, StyleSheet }
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import { getVideoDisplayTitle } from '../utils';
+import { useTheme } from '../contexts/ThemeContext';
 
 /**
  * Video player component with HLS/embed support
@@ -13,19 +14,22 @@ export const VideoPlayer = ({
     loading,
     onClose
 }) => {
-    if (!video) return null;
+    const { colors } = useTheme();
+    const themedStyles = createStyles(colors);
+    
+    if (!video) { return null; }
 
     const displayTitle = getVideoDisplayTitle(video);
     const hlsUrl = videoDetails?.streams?.hls;
     const embedUrl = videoDetails?.streams?.embed || video.renderedMedia?.videourl;
 
     return (
-        <View style={styles.activePlayerContainer}>
-            <View style={styles.activePlayer}>
+        <View style={themedStyles.activePlayerContainer}>
+            <View style={themedStyles.activePlayer}>
                 {loading ? (
-                    <View style={styles.videoLoadingContainer}>
-                        <ActivityIndicator size="large" color="#6C5CE7" />
-                        <Text style={styles.videoLoadingText}>Loading stream...</Text>
+                    <View style={themedStyles.videoLoadingContainer}>
+                        <ActivityIndicator size="large" color={colors.accent} />
+                        <Text style={themedStyles.videoLoadingText}>Loading stream...</Text>
                     </View>
                 ) : hlsUrl && Platform.OS === 'web' ? (
                     <video
@@ -53,22 +57,22 @@ export const VideoPlayer = ({
                         domStorageEnabled={true}
                     />
                 ) : (
-                    <View style={styles.videoLoadingContainer}>
-                        <Text style={styles.videoLoadingText}>Video unavailable</Text>
+                    <View style={themedStyles.videoLoadingContainer}>
+                        <Text style={themedStyles.videoLoadingText}>Video unavailable</Text>
                     </View>
                 )}
             </View>
-            <View style={styles.activePlayerInfo}>
-                <Text style={styles.activePlayerTitle}>{displayTitle}</Text>
-                <TouchableOpacity onPress={onClose} style={styles.closePlayerButton}>
-                    <Ionicons name="close-circle" size={28} color="#ff453a" />
+            <View style={themedStyles.activePlayerInfo}>
+                <Text style={themedStyles.activePlayerTitle}>{displayTitle}</Text>
+                <TouchableOpacity onPress={onClose} style={themedStyles.closePlayerButton}>
+                    <Ionicons name="close-circle" size={28} color={colors.accentRed} />
                 </TouchableOpacity>
             </View>
         </View>
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     activePlayerContainer: {
         marginBottom: 20,
         paddingHorizontal: 16
@@ -88,7 +92,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 4
     },
     activePlayerTitle: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 16,
         fontWeight: '600',
         flex: 1,
@@ -105,7 +109,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#000'
     },
     videoLoadingText: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 12,
         marginTop: 8
     }

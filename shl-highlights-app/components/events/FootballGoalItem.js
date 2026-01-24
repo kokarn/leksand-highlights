@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // Helper to extract player name from event text
 const extractNameFromText = (text) => {
@@ -36,6 +37,9 @@ const formatTime = (time) => {
 };
 
 export const FootballGoalItem = ({ goal, homeTeamCode }) => {
+    const { colors } = useTheme();
+    const themedStyles = createStyles(colors);
+    
     const isHomeGoal = goal.isHome === true || goal.teamCode === homeTeamCode;
     
     // Try multiple sources for scorer name
@@ -63,64 +67,64 @@ export const FootballGoalItem = ({ goal, homeTeamCode }) => {
     const teamLabel = goal.teamCode || goal.teamName || '';
 
     return (
-        <View style={[styles.goalItem, isHomeGoal ? styles.goalItemHome : styles.goalItemAway]}>
-            <View style={styles.goalTime}>
-                <Text style={styles.goalPeriod}>{periodLabel}</Text>
-                <Text style={styles.goalTimeText}>{formatTime(clock)}</Text>
+        <View style={[themedStyles.goalItem, isHomeGoal ? themedStyles.goalItemHome : themedStyles.goalItemAway]}>
+            <View style={themedStyles.goalTime}>
+                <Text style={themedStyles.goalPeriod}>{periodLabel}</Text>
+                <Text style={themedStyles.goalTimeText}>{formatTime(clock)}</Text>
             </View>
-            <View style={styles.goalContent}>
-                <View style={styles.goalScorer}>
-                    <Ionicons name="football" size={14} color="#4CAF50" style={{ marginRight: 6 }} />
-                    <Text style={styles.goalScorerText} numberOfLines={2}>{scorerName}</Text>
+            <View style={themedStyles.goalContent}>
+                <View style={themedStyles.goalScorer}>
+                    <Ionicons name="football" size={14} color={colors.accentGreen} style={{ marginRight: 6 }} />
+                    <Text style={themedStyles.goalScorerText} numberOfLines={2}>{scorerName}</Text>
                 </View>
                 {goalType && goalType !== 'Goal' && goalType !== 'Goal Scored' && goalType.toLowerCase() !== 'goal' && (
-                    <Text style={styles.goalTypeTag}>{goalType}</Text>
+                    <Text style={themedStyles.goalTypeTag}>{goalType}</Text>
                 )}
                 {assistName && (
-                    <Text style={styles.goalAssists}>Assist: {assistName}</Text>
+                    <Text style={themedStyles.goalAssists}>Assist: {assistName}</Text>
                 )}
                 {teamLabel && (
-                    <Text style={styles.teamLabel}>{teamLabel}</Text>
+                    <Text style={themedStyles.teamLabel}>{teamLabel}</Text>
                 )}
             </View>
             {hasScore && (
-                <View style={styles.goalScoreContainer}>
-                    <Text style={[styles.goalScoreNum, isHomeGoal && styles.goalScoreHighlight]}>{homeGoals}</Text>
-                    <Text style={styles.goalScoreDash}>-</Text>
-                    <Text style={[styles.goalScoreNum, !isHomeGoal && styles.goalScoreHighlight]}>{awayGoals}</Text>
+                <View style={themedStyles.goalScoreContainer}>
+                    <Text style={[themedStyles.goalScoreNum, isHomeGoal && themedStyles.goalScoreHighlight]}>{homeGoals}</Text>
+                    <Text style={themedStyles.goalScoreDash}>-</Text>
+                    <Text style={[themedStyles.goalScoreNum, !isHomeGoal && themedStyles.goalScoreHighlight]}>{awayGoals}</Text>
                 </View>
             )}
         </View>
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     goalItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#252525',
+        backgroundColor: colors.chip,
         borderRadius: 8,
         padding: 12,
         marginBottom: 8
     },
     goalItemHome: {
         borderLeftWidth: 3,
-        borderLeftColor: '#4CAF50'
+        borderLeftColor: colors.accentGreen
     },
     goalItemAway: {
         borderRightWidth: 3,
-        borderRightColor: '#4CAF50'
+        borderRightColor: colors.accentGreen
     },
     goalTime: {
         width: 45,
         marginRight: 12
     },
     goalPeriod: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 11
     },
     goalTimeText: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 14,
         fontWeight: '600'
     },
@@ -132,24 +136,24 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start'
     },
     goalScorerText: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 15,
         fontWeight: '600',
         flex: 1
     },
     goalAssists: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 12,
         marginTop: 4
     },
     goalTypeTag: {
-        color: '#4CAF50',
+        color: colors.accentGreen,
         fontSize: 11,
         fontWeight: '600',
         marginTop: 4
     },
     teamLabel: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 10,
         fontWeight: '600',
         textTransform: 'uppercase',
@@ -161,17 +165,17 @@ const styles = StyleSheet.create({
         marginLeft: 12
     },
     goalScoreNum: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 16,
         fontWeight: '700'
     },
     goalScoreDash: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 16,
         fontWeight: '700',
         marginHorizontal: 2
     },
     goalScoreHighlight: {
-        color: '#fff'
+        color: colors.text
     }
 });

@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react';
-import { View, Text, Modal, ScrollView, FlatList, ActivityIndicator, StyleSheet, Animated, Dimensions, Platform, RefreshControl } from 'react-native';
+import { View, Text, Modal, ScrollView, ActivityIndicator, StyleSheet, Animated, Dimensions, Platform, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
@@ -9,6 +9,7 @@ const TABS = ['summary', 'events'];
 const SWIPE_THRESHOLD = 50;
 const SWIPE_VELOCITY_THRESHOLD = 500;
 import { extractScore, formatSwedishDate } from '../../utils';
+import { useTheme } from '../../contexts/ThemeContext';
 import { TabButton } from '../TabButton';
 import { StatBar } from '../StatBar';
 import { FootballGoalItem, CardItem, SubstitutionItem, HalfMarker } from '../events';
@@ -27,8 +28,10 @@ const HOME_COLOR = '#4CAF50';
 const AWAY_COLOR = '#2196F3';
 
 export const FootballMatchModal = ({ match, details, visible, onClose, loading, onRefresh, refreshing = false }) => {
+    const { colors } = useTheme();
     const [activeTab, setActiveTab] = useState('summary');
     const translateX = useRef(new Animated.Value(0)).current;
+    const themedStyles = createStyles(colors);
 
     const handleGestureEvent = Animated.event(
         [{ nativeEvent: { translationX: translateX } }],
@@ -288,17 +291,18 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
 
         return (
             <ScrollView
-                style={styles.tabContent}
+                style={{ flex: 1 }}
+                contentContainerStyle={themedStyles.tabContent}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     onRefresh ? (
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />
                     ) : undefined
                 }
             >
                 {hasStats && !isPreGame && (
-                    <View style={styles.sectionCard}>
-                        <Text style={styles.sectionTitle}>Match Stats</Text>
+                    <View style={themedStyles.sectionCard}>
+                        <Text style={themedStyles.sectionTitle}>Match Stats</Text>
                         {possession.home !== null && possession.away !== null && (
                             <StatBar
                                 label="Possession"
@@ -347,10 +351,10 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
                     </View>
                 )}
 
-                <View style={styles.sectionCard}>
-                    <Text style={styles.sectionTitle}>Goals</Text>
+                <View style={themedStyles.sectionCard}>
+                    <Text style={themedStyles.sectionTitle}>Goals</Text>
                     {goals.length === 0 ? (
-                        <Text style={styles.emptyText}>No goals scored</Text>
+                        <Text style={themedStyles.emptyText}>No goals scored</Text>
                     ) : (
                         goals.map((goal, idx) => (
                             <FootballGoalItem
@@ -363,35 +367,35 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
                 </View>
 
                 {cards.length > 0 && (
-                    <View style={styles.sectionCard}>
-                        <Text style={styles.sectionTitle}>Cards</Text>
+                    <View style={themedStyles.sectionCard}>
+                        <Text style={themedStyles.sectionTitle}>Cards</Text>
                         {cards.map((card, idx) => (
                             <CardItem key={card.id || idx} card={card} />
                         ))}
                     </View>
                 )}
 
-                <View style={styles.sectionCard}>
-                    <Text style={styles.sectionTitle}>Match Details</Text>
-                    <View style={styles.detailRow}>
-                        <Ionicons name="calendar-outline" size={18} color="#888" />
-                        <Text style={styles.detailLabel}>Date</Text>
-                        <Text style={styles.detailValue}>{formatSwedishDate(startDateTime, 'd MMMM yyyy')}</Text>
+                <View style={themedStyles.sectionCard}>
+                    <Text style={themedStyles.sectionTitle}>Match Details</Text>
+                    <View style={themedStyles.detailRow}>
+                        <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
+                        <Text style={themedStyles.detailLabel}>Date</Text>
+                        <Text style={themedStyles.detailValue}>{formatSwedishDate(startDateTime, 'd MMMM yyyy')}</Text>
                     </View>
-                    <View style={styles.detailRow}>
-                        <Ionicons name="time-outline" size={18} color="#888" />
-                        <Text style={styles.detailLabel}>Kickoff</Text>
-                        <Text style={styles.detailValue}>{formatSwedishDate(startDateTime, 'HH:mm')}</Text>
+                    <View style={themedStyles.detailRow}>
+                        <Ionicons name="time-outline" size={18} color={colors.textSecondary} />
+                        <Text style={themedStyles.detailLabel}>Kickoff</Text>
+                        <Text style={themedStyles.detailValue}>{formatSwedishDate(startDateTime, 'HH:mm')}</Text>
                     </View>
-                    <View style={styles.detailRow}>
-                        <Ionicons name="location-outline" size={18} color="#888" />
-                        <Text style={styles.detailLabel}>Venue</Text>
-                        <Text style={styles.detailValue} numberOfLines={2}>{venueName}</Text>
+                    <View style={themedStyles.detailRow}>
+                        <Ionicons name="location-outline" size={18} color={colors.textSecondary} />
+                        <Text style={themedStyles.detailLabel}>Venue</Text>
+                        <Text style={themedStyles.detailValue} numberOfLines={2}>{venueName}</Text>
                     </View>
-                    <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
-                        <Ionicons name="pulse-outline" size={18} color="#888" />
-                        <Text style={styles.detailLabel}>Status</Text>
-                        <Text style={styles.detailValue}>{stateLabel}</Text>
+                    <View style={[themedStyles.detailRow, { borderBottomWidth: 0 }]}>
+                        <Ionicons name="pulse-outline" size={18} color={colors.textSecondary} />
+                        <Text style={themedStyles.detailLabel}>Status</Text>
+                        <Text style={themedStyles.detailValue}>{stateLabel}</Text>
                     </View>
                 </View>
             </ScrollView>
@@ -400,43 +404,46 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
 
     // Events Tab Content
     const renderEventsTab = () => {
-        if (processedEvents.length === 0) {
-            return <Text style={styles.emptyText}>No events available</Text>;
-        }
-
         return (
-            <FlatList
-                data={processedEvents}
-                keyExtractor={(item, idx) => `${item.type}-${item.id || idx}`}
-                contentContainerStyle={styles.tabContent}
+            <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={themedStyles.tabContent}
+                showsVerticalScrollIndicator={false}
                 refreshControl={
                     onRefresh ? (
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />
                     ) : undefined
                 }
-                renderItem={({ item }) => {
-                    if (item.type === 'half_marker') {
-                        return <HalfMarker half={item.half} />;
-                    }
-                    if (item.type === 'goal') {
-                        return <FootballGoalItem goal={item} homeTeamCode={homeCode} />;
-                    }
-                    if (item.type === 'card') {
-                        return <CardItem card={item} />;
-                    }
-                    if (item.type === 'substitution') {
-                        return <SubstitutionItem substitution={item} />;
-                    }
-                    return null;
-                }}
-                ListEmptyComponent={<Text style={styles.emptyText}>No events available</Text>}
-            />
+            >
+                <View style={themedStyles.sectionCard}>
+                    <Text style={themedStyles.sectionTitle}>Match Events</Text>
+                    {processedEvents.length === 0 ? (
+                        <Text style={themedStyles.emptyText}>No events available</Text>
+                    ) : (
+                        processedEvents.map((item, idx) => {
+                            if (item.type === 'half_marker') {
+                                return <HalfMarker key={`half-${idx}`} half={item.half} />;
+                            }
+                            if (item.type === 'goal') {
+                                return <FootballGoalItem key={`goal-${item.id || idx}`} goal={item} homeTeamCode={homeCode} />;
+                            }
+                            if (item.type === 'card') {
+                                return <CardItem key={`card-${item.id || idx}`} card={item} />;
+                            }
+                            if (item.type === 'substitution') {
+                                return <SubstitutionItem key={`sub-${item.id || idx}`} substitution={item} />;
+                            }
+                            return null;
+                        })
+                    )}
+                </View>
+            </ScrollView>
         );
     };
 
     return (
         <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-            <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
+            <SafeAreaView style={themedStyles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
                 <GameModalHeader
                     homeTeam={{ name: getTeamName(homeTeam, 'Home'), logo: getTeamLogo(homeTeam) }}
                     awayTeam={{ name: getTeamName(awayTeam, 'Away'), logo: getTeamLogo(awayTeam) }}
@@ -448,7 +455,7 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
                 />
 
                 {/* Tab Bar */}
-                <View style={styles.tabBar}>
+                <View style={themedStyles.tabBar}>
                     <TabButton
                         title="Summary"
                         icon="stats-chart"
@@ -465,7 +472,7 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
 
                 {/* Tab Content with gesture support */}
                 {loading ? (
-                    <ActivityIndicator size="large" color="#6C5CE7" style={{ marginTop: 50 }} />
+                    <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
                 ) : (
                     <PanGestureHandler
                         onGestureEvent={handleGestureEvent}
@@ -475,7 +482,7 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
                     >
                         <Animated.View
                             style={[
-                                styles.tabContentContainer,
+                                themedStyles.tabContentContainer,
                                 { transform: [{ translateX }] }
                             ]}
                         >
@@ -489,16 +496,16 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     modalContainer: {
         flex: 1,
-        backgroundColor: '#0a0a0a'
+        backgroundColor: colors.background
     },
     tabBar: {
         flexDirection: 'row',
-        backgroundColor: '#1c1c1e',
+        backgroundColor: colors.card,
         borderBottomWidth: 1,
-        borderBottomColor: '#333'
+        borderBottomColor: colors.cardBorder
     },
     tabContentContainer: {
         flex: 1
@@ -507,13 +514,13 @@ const styles = StyleSheet.create({
         padding: 16
     },
     sectionCard: {
-        backgroundColor: '#1c1c1e',
+        backgroundColor: colors.card,
         borderRadius: 12,
         padding: 16,
         marginBottom: 16
     },
     sectionTitle: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 18,
         fontWeight: '700',
         marginBottom: 16
@@ -524,22 +531,22 @@ const styles = StyleSheet.create({
         gap: 12,
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#2a2a2a'
+        borderBottomColor: colors.separator
     },
     detailLabel: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 14,
         flex: 1
     },
     detailValue: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 14,
         fontWeight: '600',
         flex: 1,
         textAlign: 'right'
     },
     emptyText: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 16,
         textAlign: 'center',
         padding: 20

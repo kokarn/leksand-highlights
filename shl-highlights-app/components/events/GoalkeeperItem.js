@@ -1,67 +1,71 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getPlayerName } from '../../utils';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export const GoalkeeperItem = ({ event }) => {
+    const { colors } = useTheme();
+    const themedStyles = createStyles(colors);
+    
     const playerName = getPlayerName(event.player);
     const jersey = event.player?.jerseyToday;
     const isEntering = event.isEntering;
     const teamCode = event.eventTeam?.teamCode || '';
 
     return (
-        <View style={[styles.goalkeeperItem, isEntering ? styles.goalkeeperItemIn : styles.goalkeeperItemOut]}>
-            <View style={styles.goalTime}>
-                <Text style={styles.goalPeriod}>P{event.period}</Text>
-                <Text style={styles.goalTimeText}>{event.time}</Text>
+        <View style={[themedStyles.goalkeeperItem, isEntering ? themedStyles.goalkeeperItemIn : themedStyles.goalkeeperItemOut]}>
+            <View style={themedStyles.goalTime}>
+                <Text style={themedStyles.goalPeriod}>P{event.period}</Text>
+                <Text style={themedStyles.goalTimeText}>{event.time}</Text>
             </View>
-            <View style={styles.goalContent}>
-                <View style={styles.goalScorer}>
+            <View style={themedStyles.goalContent}>
+                <View style={themedStyles.goalScorer}>
                     <Ionicons
                         name={isEntering ? "enter-outline" : "exit-outline"}
                         size={14}
-                        color={isEntering ? "#4CAF50" : "#9E9E9E"}
+                        color={isEntering ? colors.accentGreen : colors.textSecondary}
                         style={{ marginRight: 6 }}
                     />
-                    <Text style={styles.goalkeeperPlayer}>{playerName}</Text>
-                    {jersey && <Text style={styles.goalkeeperJersey}>#{jersey}</Text>}
-                    <Text style={[styles.goalkeeperTag, isEntering ? styles.goalkeeperTagIn : styles.goalkeeperTagOut]}>
+                    <Text style={themedStyles.goalkeeperPlayer}>{playerName}</Text>
+                    {jersey && <Text style={themedStyles.goalkeeperJersey}>#{jersey}</Text>}
+                    <Text style={[themedStyles.goalkeeperTag, isEntering ? themedStyles.goalkeeperTagIn : themedStyles.goalkeeperTagOut]}>
                         {isEntering ? 'IN' : 'OUT'}
                     </Text>
                 </View>
-                <Text style={styles.goalkeeperTeam}>{teamCode}</Text>
-                <Text style={styles.eventTypeLabel}>Goalkeeper</Text>
+                <Text style={themedStyles.goalkeeperTeam}>{teamCode}</Text>
+                <Text style={themedStyles.eventTypeLabel}>Goalkeeper</Text>
             </View>
         </View>
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     goalkeeperItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#252525',
+        backgroundColor: colors.chip,
         borderRadius: 8,
         padding: 12,
         marginBottom: 8
     },
     goalkeeperItemIn: {
         borderLeftWidth: 3,
-        borderLeftColor: '#4CAF50'
+        borderLeftColor: colors.accentGreen
     },
     goalkeeperItemOut: {
         borderLeftWidth: 3,
-        borderLeftColor: '#9E9E9E'
+        borderLeftColor: colors.textSecondary
     },
     goalTime: {
         width: 45,
         marginRight: 12
     },
     goalPeriod: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 11
     },
     goalTimeText: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 14,
         fontWeight: '600'
     },
@@ -73,12 +77,12 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     goalkeeperPlayer: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 15,
         fontWeight: '600'
     },
     goalkeeperJersey: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 13,
         marginLeft: 6
     },
@@ -92,20 +96,20 @@ const styles = StyleSheet.create({
         overflow: 'hidden'
     },
     goalkeeperTagIn: {
-        backgroundColor: '#1B3D1B',
-        color: '#4CAF50'
+        backgroundColor: 'rgba(48, 209, 88, 0.15)',
+        color: colors.accentGreen
     },
     goalkeeperTagOut: {
-        backgroundColor: '#333',
-        color: '#9E9E9E'
+        backgroundColor: colors.cardBorder,
+        color: colors.textSecondary
     },
     goalkeeperTeam: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 12,
         marginTop: 2
     },
     eventTypeLabel: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 10,
         fontWeight: '600',
         textTransform: 'uppercase',

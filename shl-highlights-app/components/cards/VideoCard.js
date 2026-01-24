@@ -2,38 +2,42 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions } from 'rea
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { getVideoDisplayTitle } from '../../utils';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
 export const VideoCard = ({ video, isPlaying, onPress }) => {
+    const { colors } = useTheme();
+    const themedStyles = createStyles(colors);
+    
     const title = getVideoDisplayTitle(video);
 
     return (
         <TouchableOpacity
-            style={[styles.videoGridCard, isPlaying && styles.videoGridCardPlaying]}
+            style={[themedStyles.videoGridCard, isPlaying && themedStyles.videoGridCardPlaying]}
             onPress={onPress}
             activeOpacity={0.9}
         >
-            <View style={styles.videoGridThumbnailContainer}>
+            <View style={themedStyles.videoGridThumbnailContainer}>
                 <Image
                     source={{ uri: video.renderedMedia?.url || video.thumbnail }}
-                    style={styles.thumbnail}
+                    style={themedStyles.thumbnail}
                     resizeMode="cover"
                 />
                 {isPlaying ? (
-                    <View style={styles.nowPlayingBadge}>
+                    <View style={themedStyles.nowPlayingBadge}>
                         <Ionicons name="volume-high" size={14} color="#fff" />
-                        <Text style={styles.nowPlayingBadgeText}>Playing</Text>
+                        <Text style={themedStyles.nowPlayingBadgeText}>Playing</Text>
                     </View>
                 ) : (
-                    <View style={styles.miniPlayIconContainer}>
+                    <View style={themedStyles.miniPlayIconContainer}>
                         <Ionicons name="play" size={24} color="#fff" />
                     </View>
                 )}
-                <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.thumbnailGradient} />
+                <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={themedStyles.thumbnailGradient} />
             </View>
-            <View style={styles.videoGridInfo}>
-                <Text style={[styles.videoGridTitle, isPlaying && styles.videoGridTitlePlaying]} numberOfLines={2}>
+            <View style={themedStyles.videoGridInfo}>
+                <Text style={[themedStyles.videoGridTitle, isPlaying && themedStyles.videoGridTitlePlaying]} numberOfLines={2}>
                     {title}
                 </Text>
             </View>
@@ -41,11 +45,11 @@ export const VideoCard = ({ video, isPlaying, onPress }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     videoGridCard: {
         flex: 1,
         marginBottom: 16,
-        backgroundColor: '#1c1c1e',
+        backgroundColor: colors.card,
         borderRadius: 8,
         overflow: 'hidden',
         marginHorizontal: 4,
@@ -53,7 +57,7 @@ const styles = StyleSheet.create({
     },
     videoGridCardPlaying: {
         borderWidth: 2,
-        borderColor: '#6C5CE7'
+        borderColor: colors.accent
     },
     videoGridThumbnailContainer: {
         width: '100%',
@@ -92,7 +96,7 @@ const styles = StyleSheet.create({
         left: 8,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#6C5CE7',
+        backgroundColor: colors.accent,
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 4,
@@ -107,12 +111,12 @@ const styles = StyleSheet.create({
         padding: 10
     },
     videoGridTitle: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 13,
         fontWeight: '600',
         lineHeight: 18
     },
     videoGridTitlePlaying: {
-        color: '#6C5CE7'
+        color: colors.accent
     },
 });

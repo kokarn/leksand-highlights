@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getNationFlag } from '../../api/shl';
 import { GENDER_COLORS } from '../../constants';
 import { formatSwedishDate } from '../../utils';
+import { useTheme } from '../../contexts/ThemeContext';
 import { ShootingDisplay, ShootingInline } from '../biathlon';
 
 /**
@@ -111,7 +112,7 @@ function groupByNation(participants) {
 /**
  * Result row component with enhanced shooting display
  */
-const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceCompleted, discipline }) => {
+const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceCompleted, discipline, colors, themedStyles }) => {
     const rank = (() => {
         // IBU uses ResultOrder >= 10000 for non-finishers (DNS, DNF, etc.)
         const rawResultOrder = item?.ResultOrder;
@@ -152,28 +153,28 @@ const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceComple
 
     return (
         <TouchableOpacity
-            style={[styles.resultRow, isTopThree && styles.resultRowHighlight]}
+            style={[themedStyles.resultRow, isTopThree && themedStyles.resultRowHighlight]}
             onPress={hasShootingData ? onToggle : undefined}
             activeOpacity={hasShootingData ? 0.7 : 1}
         >
-            <View style={styles.resultRankContainer}>
+            <View style={themedStyles.resultRankContainer}>
                 {medal ? (
-                    <Text style={styles.medalEmoji}>{medal}</Text>
+                    <Text style={themedStyles.medalEmoji}>{medal}</Text>
                 ) : (
-                    <Text style={styles.resultRank}>{rank}</Text>
+                    <Text style={themedStyles.resultRank}>{rank}</Text>
                 )}
             </View>
 
-            <View style={styles.resultMain}>
-                <View style={styles.resultNameRow}>
-                    <Text style={[styles.resultName, isTopThree && styles.resultNameHighlight]} numberOfLines={1}>
+            <View style={themedStyles.resultMain}>
+                <View style={themedStyles.resultNameRow}>
+                    <Text style={[themedStyles.resultName, isTopThree && themedStyles.resultNameHighlight]} numberOfLines={1}>
                         {name}
                     </Text>
                 </View>
 
-                <View style={styles.resultMetaRow}>
+                <View style={themedStyles.resultMetaRow}>
                     {nation && (
-                        <Text style={styles.resultNation}>
+                        <Text style={themedStyles.resultNation}>
                             {getNationFlag(nation)} {nation}
                         </Text>
                     )}
@@ -181,13 +182,13 @@ const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceComple
                         <ShootingInline shootings={shootings} shootingTotal={shootingTotal} />
                     )}
                     {startInfo && !hasResults && (
-                        <Text style={styles.startInfoText}>Start: {startInfo}</Text>
+                        <Text style={themedStyles.startInfoText}>Start: {startInfo}</Text>
                     )}
                 </View>
 
                 {/* Expanded shooting view */}
                 {isExpanded && hasShootingData && (
-                    <View style={styles.expandedShooting}>
+                    <View style={themedStyles.expandedShooting}>
                         <ShootingDisplay
                             shootings={shootings}
                             shootingTotal={shootingTotal}
@@ -200,16 +201,16 @@ const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceComple
                 )}
             </View>
 
-            <View style={styles.resultValueContainer}>
-                <Text style={[styles.resultValue, isTopThree && styles.resultValueHighlight]}>
+            <View style={themedStyles.resultValueContainer}>
+                <Text style={[themedStyles.resultValue, isTopThree && themedStyles.resultValueHighlight]}>
                     {resultValue}
                 </Text>
                 {hasShootingData && (
                     <Ionicons
                         name={isExpanded ? 'chevron-up' : 'chevron-down'}
                         size={14}
-                        color="#555"
-                        style={styles.expandIcon}
+                        color={colors.textMuted}
+                        style={themedStyles.expandIcon}
                     />
                 )}
             </View>
@@ -220,7 +221,7 @@ const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceComple
 /**
  * Relay team row component - shows team header with nested athletes
  */
-const RelayTeamRow = ({ team, teamIndex, hasResults, expandedRows, onToggle, isRaceCompleted, discipline }) => {
+const RelayTeamRow = ({ team, teamIndex, hasResults, expandedRows, onToggle, isRaceCompleted, discipline, colors, themedStyles }) => {
     // For start lists, use bib number as display rank (cleaner than startOrder)
     // For results, use rank. Filter out high values (10000+ means no result)
     const getDisplayRank = () => {
@@ -243,39 +244,39 @@ const RelayTeamRow = ({ team, teamIndex, hasResults, expandedRows, onToggle, isR
     const isTopThree = isRaceCompleted && hasResults && parseInt(rank, 10) <= 3;
 
     return (
-        <View style={[styles.relayTeamContainer, isTopThree && styles.relayTeamHighlight]}>
+        <View style={[themedStyles.relayTeamContainer, isTopThree && themedStyles.relayTeamHighlight]}>
             {/* Team header */}
-            <View style={styles.relayTeamHeader}>
-                <View style={styles.resultRankContainer}>
+            <View style={themedStyles.relayTeamHeader}>
+                <View style={themedStyles.resultRankContainer}>
                     {medal ? (
-                        <Text style={styles.medalEmoji}>{medal}</Text>
+                        <Text style={themedStyles.medalEmoji}>{medal}</Text>
                     ) : (
-                        <Text style={styles.resultRank}>{rank}</Text>
+                        <Text style={themedStyles.resultRank}>{rank}</Text>
                     )}
                 </View>
-                <View style={styles.relayTeamInfo}>
-                    <View style={styles.relayTeamNameRow}>
-                        <Text style={[styles.relayTeamName, isTopThree && styles.resultNameHighlight]}>
+                <View style={themedStyles.relayTeamInfo}>
+                    <View style={themedStyles.relayTeamNameRow}>
+                        <Text style={[themedStyles.relayTeamName, isTopThree && themedStyles.resultNameHighlight]}>
                             {getNationFlag(team.nation)} {team.nation}
                         </Text>
                         {team.bib && (
-                            <Text style={styles.relayTeamBib}>#{team.bib}</Text>
+                            <Text style={themedStyles.relayTeamBib}>#{team.bib}</Text>
                         )}
                     </View>
                     {!hasResults && team.startInfo && (
-                        <Text style={styles.relayTeamStartInfo}>{team.startInfo}</Text>
+                        <Text style={themedStyles.relayTeamStartInfo}>{team.startInfo}</Text>
                     )}
                     {hasResults && team.result && (
-                        <Text style={styles.relayTeamResult}>{team.result}</Text>
+                        <Text style={themedStyles.relayTeamResult}>{team.result}</Text>
                     )}
                     {hasResults && team.behind && team.behind !== '+0.0' && (
-                        <Text style={styles.relayTeamBehind}>{team.behind}</Text>
+                        <Text style={themedStyles.relayTeamBehind}>{team.behind}</Text>
                     )}
                 </View>
             </View>
 
             {/* Team athletes */}
-            <View style={styles.relayAthletesList}>
+            <View style={themedStyles.relayAthletesList}>
                 {team.athletes.map((item, athleteIndex) => {
                     const name = (() => {
                         if (!item) {
@@ -300,22 +301,22 @@ const RelayTeamRow = ({ team, teamIndex, hasResults, expandedRows, onToggle, isR
                     return (
                         <TouchableOpacity
                             key={item?.IBUId || item?.Name || athleteIndex}
-                            style={styles.relayAthleteRow}
+                            style={themedStyles.relayAthleteRow}
                             onPress={hasShootingData ? () => onToggle(item.originalIndex) : undefined}
                             activeOpacity={hasShootingData ? 0.7 : 1}
                         >
-                            <View style={styles.relayLegBadge}>
-                                <Text style={styles.relayLegText}>{legNumber}</Text>
+                            <View style={themedStyles.relayLegBadge}>
+                                <Text style={themedStyles.relayLegText}>{legNumber}</Text>
                             </View>
-                            <View style={styles.relayAthleteMain}>
-                                <Text style={styles.relayAthleteName} numberOfLines={1}>{name}</Text>
+                            <View style={themedStyles.relayAthleteMain}>
+                                <Text style={themedStyles.relayAthleteName} numberOfLines={1}>{name}</Text>
                                 {hasShootingData && !isExpanded && (
-                                    <View style={styles.resultMetaRow}>
+                                    <View style={themedStyles.resultMetaRow}>
                                         <ShootingInline shootings={shootings} shootingTotal={shootingTotal} />
                                     </View>
                                 )}
                                 {isExpanded && hasShootingData && (
-                                    <View style={styles.expandedShooting}>
+                                    <View style={themedStyles.expandedShooting}>
                                         <ShootingDisplay
                                             shootings={shootings}
                                             shootingTotal={shootingTotal}
@@ -327,15 +328,15 @@ const RelayTeamRow = ({ team, teamIndex, hasResults, expandedRows, onToggle, isR
                                     </View>
                                 )}
                             </View>
-                            <View style={styles.relayAthleteRight}>
+                            <View style={themedStyles.relayAthleteRight}>
                                 {hasResults && athleteResult && (
-                                    <Text style={styles.relayAthleteTime}>{athleteResult}</Text>
+                                    <Text style={themedStyles.relayAthleteTime}>{athleteResult}</Text>
                                 )}
                                 {hasShootingData && (
                                     <Ionicons
                                         name={isExpanded ? 'chevron-up' : 'chevron-down'}
                                         size={14}
-                                        color="#555"
+                                        color={colors.textMuted}
                                     />
                                 )}
                             </View>
@@ -350,7 +351,7 @@ const RelayTeamRow = ({ team, teamIndex, hasResults, expandedRows, onToggle, isR
 /**
  * Country filter dropdown component
  */
-const CountryFilterDropdown = ({ countries, selectedCountry, onSelectCountry }) => {
+const CountryFilterDropdown = ({ countries, selectedCountry, onSelectCountry, colors, themedStyles }) => {
     const [isOpen, setIsOpen] = React.useState(false);
 
     if (!countries || countries.length <= 1) {
@@ -367,60 +368,60 @@ const CountryFilterDropdown = ({ countries, selectedCountry, onSelectCountry }) 
         : 'All countries';
 
     return (
-        <View style={styles.countryDropdownContainer}>
+        <View style={themedStyles.countryDropdownContainer}>
             <TouchableOpacity
-                style={styles.countryDropdownButton}
+                style={themedStyles.countryDropdownButton}
                 onPress={() => setIsOpen(!isOpen)}
                 activeOpacity={0.7}
             >
-                <View style={styles.countryDropdownButtonContent}>
-                    <Ionicons name="flag-outline" size={16} color="#888" />
-                    <Text style={styles.countryDropdownButtonText}>{displayText}</Text>
+                <View style={themedStyles.countryDropdownButtonContent}>
+                    <Ionicons name="flag-outline" size={16} color={colors.textSecondary} />
+                    <Text style={themedStyles.countryDropdownButtonText}>{displayText}</Text>
                 </View>
                 <Ionicons
                     name={isOpen ? 'chevron-up' : 'chevron-down'}
                     size={16}
-                    color="#888"
+                    color={colors.textSecondary}
                 />
             </TouchableOpacity>
 
             {isOpen && (
-                <View style={styles.countryDropdownList}>
-                    <ScrollView style={styles.countryDropdownScroll} nestedScrollEnabled>
+                <View style={themedStyles.countryDropdownList}>
+                    <ScrollView style={themedStyles.countryDropdownScroll} nestedScrollEnabled>
                         <TouchableOpacity
                             style={[
-                                styles.countryDropdownItem,
-                                !selectedCountry && styles.countryDropdownItemActive
+                                themedStyles.countryDropdownItem,
+                                !selectedCountry && themedStyles.countryDropdownItemActive
                             ]}
                             onPress={() => handleSelect(null)}
                         >
                             <Text style={[
-                                styles.countryDropdownItemText,
-                                !selectedCountry && styles.countryDropdownItemTextActive
+                                themedStyles.countryDropdownItemText,
+                                !selectedCountry && themedStyles.countryDropdownItemTextActive
                             ]}>
                                 All countries
                             </Text>
                             {!selectedCountry && (
-                                <Ionicons name="checkmark" size={16} color="#6C5CE7" />
+                                <Ionicons name="checkmark" size={16} color={colors.accent} />
                             )}
                         </TouchableOpacity>
                         {countries.map((country) => (
                             <TouchableOpacity
                                 key={country}
                                 style={[
-                                    styles.countryDropdownItem,
-                                    selectedCountry === country && styles.countryDropdownItemActive
+                                    themedStyles.countryDropdownItem,
+                                    selectedCountry === country && themedStyles.countryDropdownItemActive
                                 ]}
                                 onPress={() => handleSelect(country)}
                             >
                                 <Text style={[
-                                    styles.countryDropdownItemText,
-                                    selectedCountry === country && styles.countryDropdownItemTextActive
+                                    themedStyles.countryDropdownItemText,
+                                    selectedCountry === country && themedStyles.countryDropdownItemTextActive
                                 ]}>
                                     {getNationFlag(country)} {country}
                                 </Text>
                                 {selectedCountry === country && (
-                                    <Ionicons name="checkmark" size={16} color="#6C5CE7" />
+                                    <Ionicons name="checkmark" size={16} color={colors.accent} />
                                 )}
                             </TouchableOpacity>
                         ))}
@@ -432,6 +433,9 @@ const CountryFilterDropdown = ({ countries, selectedCountry, onSelectCountry }) 
 };
 
 export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh, refreshing = false }) => {
+    const { colors } = useTheme();
+    const themedStyles = createStyles(colors);
+
     if (!race) return null;
 
     const raceInfo = details?.info || race;
@@ -549,95 +553,95 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
 
     return (
         <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-            <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
+            <SafeAreaView style={themedStyles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
                 <>
-                    <View style={styles.raceModalHeader}>
-                        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                            <Ionicons name="close" size={24} color="#fff" />
+                    <View style={themedStyles.raceModalHeader}>
+                        <TouchableOpacity onPress={onClose} style={themedStyles.closeButton}>
+                            <Ionicons name="close" size={24} color={colors.text} />
                         </TouchableOpacity>
-                        <View style={styles.raceModalTitleContainer}>
-                            <Text style={styles.raceModalEventName}>{raceInfo.eventName}</Text>
-                            <Text style={styles.raceModalLocation}>
+                        <View style={themedStyles.raceModalTitleContainer}>
+                            <Text style={themedStyles.raceModalEventName}>{raceInfo.eventName}</Text>
+                            <Text style={themedStyles.raceModalLocation}>
                                 {getNationFlag(raceInfo.country)} {raceInfo.location}, {raceInfo.countryName}
                             </Text>
                         </View>
                     </View>
 
                     <ScrollView
-                        style={styles.raceModalContent}
+                        style={themedStyles.raceModalContent}
                         refreshControl={
                             onRefresh ? (
-                                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+                                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />
                             ) : undefined
                         }
                     >
-                        <View style={styles.raceDetailCard}>
-                            <View style={styles.raceDetailHeader}>
-                                <View style={styles.disciplineContainer}>
-                                    <Text style={styles.raceDetailDiscipline}>{raceInfo.discipline}</Text>
+                        <View style={themedStyles.raceDetailCard}>
+                            <View style={themedStyles.raceDetailHeader}>
+                                <View style={themedStyles.disciplineContainer}>
+                                    <Text style={themedStyles.raceDetailDiscipline}>{raceInfo.discipline}</Text>
                                     {km && (
-                                        <Text style={styles.distanceText}>{km} km</Text>
+                                        <Text style={themedStyles.distanceText}>{km} km</Text>
                                     )}
                                 </View>
-                                <View style={[styles.genderBadgeLarge, {
-                                    backgroundColor: GENDER_COLORS[raceInfo.gender] || '#666'
+                                <View style={[themedStyles.genderBadgeLarge, {
+                                    backgroundColor: GENDER_COLORS[raceInfo.gender] || colors.textMuted
                                 }]}>
-                                    <Text style={styles.genderBadgeTextLarge}>{raceInfo.genderDisplay}</Text>
+                                    <Text style={themedStyles.genderBadgeTextLarge}>{raceInfo.genderDisplay}</Text>
                                 </View>
                             </View>
 
-                            <View style={styles.raceDetailRow}>
-                                <Ionicons name="calendar-outline" size={20} color="#888" />
-                                <Text style={styles.raceDetailLabel}>Date</Text>
-                                <Text style={styles.raceDetailValue}>
+                            <View style={themedStyles.raceDetailRow}>
+                                <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
+                                <Text style={themedStyles.raceDetailLabel}>Date</Text>
+                                <Text style={themedStyles.raceDetailValue}>
                                     {formatSwedishDate(raceInfo?.startDateTime, 'd MMMM yyyy')}
                                 </Text>
                             </View>
 
-                            <View style={styles.raceDetailRow}>
-                                <Ionicons name="time-outline" size={20} color="#888" />
-                                <Text style={styles.raceDetailLabel}>Start Time</Text>
-                                <Text style={styles.raceDetailValue}>
+                            <View style={themedStyles.raceDetailRow}>
+                                <Ionicons name="time-outline" size={20} color={colors.textSecondary} />
+                                <Text style={themedStyles.raceDetailLabel}>Start Time</Text>
+                                <Text style={themedStyles.raceDetailValue}>
                                     {formatSwedishDate(raceInfo?.startDateTime, 'HH:mm')} CET
                                 </Text>
                             </View>
 
                             {shootingsCount && (
-                                <View style={styles.raceDetailRow}>
-                                    <Ionicons name="ellipse" size={20} color="#888" />
-                                    <Text style={styles.raceDetailLabel}>Shooting Stages</Text>
-                                    <Text style={styles.raceDetailValue}>
+                                <View style={themedStyles.raceDetailRow}>
+                                    <Ionicons name="ellipse" size={20} color={colors.textSecondary} />
+                                    <Text style={themedStyles.raceDetailLabel}>Shooting Stages</Text>
+                                    <Text style={themedStyles.raceDetailValue}>
                                         {shootingsCount} × 5 targets
                                     </Text>
                                 </View>
                             )}
 
-                            <View style={styles.raceDetailRow}>
-                                <Ionicons name="trophy-outline" size={20} color="#888" />
-                                <Text style={styles.raceDetailLabel}>Competition</Text>
-                                <Text style={styles.raceDetailValue}>
+                            <View style={themedStyles.raceDetailRow}>
+                                <Ionicons name="trophy-outline" size={20} color={colors.textSecondary} />
+                                <Text style={themedStyles.raceDetailLabel}>Competition</Text>
+                                <Text style={themedStyles.raceDetailValue}>
                                     {raceInfo.eventType === 'olympics' ? 'Winter Olympics 2026' : 'IBU World Cup 2025/26'}
                                 </Text>
                             </View>
 
-                            <View style={[styles.raceDetailRow, styles.raceDetailRowLast]}>
-                                <Ionicons name="pulse-outline" size={20} color="#888" />
-                                <Text style={styles.raceDetailLabel}>Status</Text>
-                                <View style={[styles.statusBadge, {
-                                    backgroundColor: isLiveRace ? '#FF453A' : isStartingSoon ? '#FF9500' : isUpcomingRace ? '#30D158' : '#666'
+                            <View style={[themedStyles.raceDetailRow, themedStyles.raceDetailRowLast]}>
+                                <Ionicons name="pulse-outline" size={20} color={colors.textSecondary} />
+                                <Text style={themedStyles.raceDetailLabel}>Status</Text>
+                                <View style={[themedStyles.statusBadge, {
+                                    backgroundColor: isLiveRace ? colors.accentRed : isStartingSoon ? colors.accentOrange : isUpcomingRace ? colors.accentGreen : colors.textMuted
                                 }]}>
-                                    <Text style={styles.statusBadgeText}>
+                                    <Text style={themedStyles.statusBadgeText}>
                                         {statusLabel}
                                     </Text>
                                 </View>
                             </View>
                         </View>
 
-                        <View style={styles.resultsCard}>
-                            <View style={styles.resultsHeaderRow}>
-                                <Text style={styles.resultsTitle}>{resultTitle}</Text>
+                        <View style={themedStyles.resultsCard}>
+                            <View style={themedStyles.resultsHeaderRow}>
+                                <Text style={themedStyles.resultsTitle}>{resultTitle}</Text>
                                 {details?.lastUpdated && (
-                                    <Text style={styles.resultsUpdated}>Updated {details.lastUpdated}</Text>
+                                    <Text style={themedStyles.resultsUpdated}>Updated {details.lastUpdated}</Text>
                                 )}
                             </View>
 
@@ -647,13 +651,15 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
                                     countries={availableCountries}
                                     selectedCountry={selectedCountry}
                                     onSelectCountry={setSelectedCountry}
+                                    colors={colors}
+                                    themedStyles={themedStyles}
                                 />
                             )}
 
                             {loading ? (
-                                <View style={styles.resultsLoading}>
-                                    <ActivityIndicator size="small" color="#6C5CE7" />
-                                    <Text style={styles.resultsLoadingText}>Loading results...</Text>
+                                <View style={themedStyles.resultsLoading}>
+                                    <ActivityIndicator size="small" color={colors.accent} />
+                                    <Text style={themedStyles.resultsLoadingText}>Loading results...</Text>
                                 </View>
                             ) : isRelay && relayTeams && relayTeams.length > 0 ? (
                                 relayTeams.map((team, teamIndex) => (
@@ -666,6 +672,8 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
                                         onToggle={toggleRow}
                                         isRaceCompleted={!isLiveRace && !isStartingSoon && !isUpcomingRace}
                                         discipline={raceInfo.discipline}
+                                        colors={colors}
+                                        themedStyles={themedStyles}
                                     />
                                 ))
                             ) : resultRows.length > 0 ? (
@@ -683,39 +691,41 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
                                             onToggle={() => toggleRow(originalIndex)}
                                             isRaceCompleted={!isLiveRace && !isStartingSoon && !isUpcomingRace}
                                             discipline={raceInfo.discipline}
+                                            colors={colors}
+                                            themedStyles={themedStyles}
                                         />
                                     );
                                 })
                             ) : selectedCountry ? (
-                                <Text style={styles.emptyText}>No athletes from {getNationFlag(selectedCountry)} {selectedCountry} in this race.</Text>
+                                <Text style={themedStyles.emptyText}>No athletes from {getNationFlag(selectedCountry)} {selectedCountry} in this race.</Text>
                             ) : (
-                                <Text style={styles.emptyText}>Results are not available yet.</Text>
+                                <Text style={themedStyles.emptyText}>Results are not available yet.</Text>
                             )}
                         </View>
 
                         {/* Shooting legend for races with results */}
                         {hasResults && shootingsCount && (
-                            <View style={styles.shootingLegend}>
-                                <Text style={styles.legendTitle}>🎯 Shooting Legend</Text>
-                                <View style={styles.legendRow}>
-                                    <View style={styles.legendItem}>
-                                        <View style={[styles.legendDot, styles.legendDotHit]} />
-                                        <Text style={styles.legendText}>Hit</Text>
+                            <View style={themedStyles.shootingLegend}>
+                                <Text style={themedStyles.legendTitle}>🎯 Shooting Legend</Text>
+                                <View style={themedStyles.legendRow}>
+                                    <View style={themedStyles.legendItem}>
+                                        <View style={[themedStyles.legendDot, themedStyles.legendDotHit]} />
+                                        <Text style={themedStyles.legendText}>Hit</Text>
                                     </View>
-                                    <View style={styles.legendItem}>
-                                        <View style={[styles.legendDot, styles.legendDotMiss]} />
-                                        <Text style={styles.legendText}>Miss (+penalty)</Text>
+                                    <View style={themedStyles.legendItem}>
+                                        <View style={[themedStyles.legendDot, themedStyles.legendDotMiss]} />
+                                        <Text style={themedStyles.legendText}>Miss (+penalty)</Text>
                                     </View>
                                 </View>
-                                <Text style={styles.legendNote}>
+                                <Text style={themedStyles.legendNote}>
                                     P = Prone • S = Standing • Tap row to see details
                                 </Text>
                             </View>
                         )}
 
-                        <View style={styles.raceInfoNote}>
-                            <Ionicons name="information-circle-outline" size={18} color="#666" />
-                            <Text style={styles.raceInfoNoteText}>
+                        <View style={themedStyles.raceInfoNote}>
+                            <Ionicons name="information-circle-outline" size={18} color={colors.textMuted} />
+                            <Text style={themedStyles.raceInfoNoteText}>
                                 {infoNoteText}
                             </Text>
                         </View>
@@ -729,10 +739,10 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
 // Need React for useState and useEffect
 import React from 'react';
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     modalContainer: {
         flex: 1,
-        backgroundColor: '#0a0a0a'
+        backgroundColor: colors.background
     },
     closeButton: {
         position: 'absolute',
@@ -745,21 +755,21 @@ const styles = StyleSheet.create({
         paddingTop: 20,
         paddingBottom: 20,
         paddingHorizontal: 16,
-        backgroundColor: '#1c1c1e',
+        backgroundColor: colors.card,
         borderBottomWidth: 1,
-        borderBottomColor: '#333'
+        borderBottomColor: colors.cardBorder
     },
     raceModalTitleContainer: {
         paddingTop: 10
     },
     raceModalEventName: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 22,
         fontWeight: '800',
         marginBottom: 6
     },
     raceModalLocation: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 15
     },
     raceModalContent: {
@@ -767,7 +777,7 @@ const styles = StyleSheet.create({
         padding: 16
     },
     raceDetailCard: {
-        backgroundColor: '#1c1c1e',
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 20
     },
@@ -782,12 +792,12 @@ const styles = StyleSheet.create({
         gap: 4
     },
     raceDetailDiscipline: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 26,
         fontWeight: '800'
     },
     distanceText: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 14,
         fontWeight: '600'
     },
@@ -807,18 +817,18 @@ const styles = StyleSheet.create({
         gap: 12,
         paddingVertical: 14,
         borderBottomWidth: 1,
-        borderBottomColor: '#2a2a2a'
+        borderBottomColor: colors.separator
     },
     raceDetailRowLast: {
         borderBottomWidth: 0
     },
     raceDetailLabel: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 14,
         flex: 1
     },
     raceDetailValue: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 15,
         fontWeight: '600'
     },
@@ -836,13 +846,13 @@ const styles = StyleSheet.create({
     shootingLegend: {
         marginTop: 20,
         padding: 16,
-        backgroundColor: '#1a1a1a',
+        backgroundColor: colors.backgroundSecondary,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#2a2a2a'
+        borderColor: colors.separator
     },
     legendTitle: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 14,
         fontWeight: '700',
         marginBottom: 10
@@ -864,19 +874,19 @@ const styles = StyleSheet.create({
         borderWidth: 1.5
     },
     legendDotHit: {
-        backgroundColor: '#30D158',
-        borderColor: '#30D158'
+        backgroundColor: colors.accentGreen,
+        borderColor: colors.accentGreen
     },
     legendDotMiss: {
         backgroundColor: 'transparent',
-        borderColor: '#FF453A'
+        borderColor: colors.accentRed
     },
     legendText: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 12
     },
     legendNote: {
-        color: '#555',
+        color: colors.textMuted,
         fontSize: 11,
         marginTop: 4
     },
@@ -887,17 +897,17 @@ const styles = StyleSheet.create({
         marginTop: 20,
         marginBottom: 40,
         padding: 16,
-        backgroundColor: '#1a1a1a',
+        backgroundColor: colors.backgroundSecondary,
         borderRadius: 12
     },
     raceInfoNoteText: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 13,
         flex: 1
     },
     resultsCard: {
         marginTop: 20,
-        backgroundColor: '#1c1c1e',
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 16
     },
@@ -905,12 +915,12 @@ const styles = StyleSheet.create({
         marginBottom: 12
     },
     resultsTitle: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 18,
         fontWeight: '700'
     },
     resultsUpdated: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 12,
         marginTop: 4
     },
@@ -925,10 +935,10 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 12,
         paddingVertical: 10,
-        backgroundColor: '#2a2a2a',
+        backgroundColor: colors.chip,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#3a3a3a'
+        borderColor: colors.chipBorder
     },
     countryDropdownButtonContent: {
         flexDirection: 'row',
@@ -936,16 +946,16 @@ const styles = StyleSheet.create({
         gap: 8
     },
     countryDropdownButtonText: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 14,
         fontWeight: '500'
     },
     countryDropdownList: {
         marginTop: 4,
-        backgroundColor: '#2a2a2a',
+        backgroundColor: colors.chip,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#3a3a3a',
+        borderColor: colors.chipBorder,
         overflow: 'hidden'
     },
     countryDropdownScroll: {
@@ -958,17 +968,17 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: '#3a3a3a'
+        borderBottomColor: colors.chipBorder
     },
     countryDropdownItemActive: {
-        backgroundColor: 'rgba(10, 132, 255, 0.1)'
+        backgroundColor: colors.chipActive
     },
     countryDropdownItemText: {
-        color: '#ccc',
+        color: colors.textSecondary,
         fontSize: 14
     },
     countryDropdownItemTextActive: {
-        color: '#fff',
+        color: colors.text,
         fontWeight: '600'
     },
     resultsLoading: {
@@ -978,7 +988,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12
     },
     resultsLoadingText: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 13
     },
     // Result rows
@@ -988,7 +998,7 @@ const styles = StyleSheet.create({
         gap: 12,
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#2a2a2a'
+        borderBottomColor: colors.separator
     },
     resultRowHighlight: {
         backgroundColor: 'rgba(255, 215, 0, 0.05)',
@@ -1002,7 +1012,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center'
     },
     resultRank: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 14,
         fontWeight: '700'
     },
@@ -1018,7 +1028,7 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     resultName: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 14,
         fontWeight: '600',
         flex: 1
@@ -1033,25 +1043,25 @@ const styles = StyleSheet.create({
         gap: 10
     },
     resultNation: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 12
     },
     startInfoText: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 12
     },
     expandedShooting: {
         marginTop: 12,
         paddingTop: 12,
         borderTopWidth: 1,
-        borderTopColor: '#2a2a2a'
+        borderTopColor: colors.separator
     },
     resultValueContainer: {
         alignItems: 'flex-end',
         gap: 2
     },
     resultValue: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 13,
         fontWeight: '600'
     },
@@ -1063,14 +1073,14 @@ const styles = StyleSheet.create({
         marginTop: 2
     },
     emptyText: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 13,
         paddingVertical: 8
     },
     // Relay team styles
     relayTeamContainer: {
         borderBottomWidth: 1,
-        borderBottomColor: '#2a2a2a',
+        borderBottomColor: colors.separator,
         paddingVertical: 12
     },
     relayTeamHighlight: {
@@ -1095,32 +1105,32 @@ const styles = StyleSheet.create({
         gap: 8
     },
     relayTeamName: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 16,
         fontWeight: '700'
     },
     relayTeamBib: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 12,
         fontWeight: '600'
     },
     relayTeamStartInfo: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 12
     },
     relayTeamResult: {
-        color: '#6C5CE7',
+        color: colors.accent,
         fontSize: 14,
         fontWeight: '600'
     },
     relayTeamBehind: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 13
     },
     relayAthletesList: {
         marginLeft: 44,
         borderLeftWidth: 2,
-        borderLeftColor: '#333',
+        borderLeftColor: colors.cardBorder,
         paddingLeft: 12
     },
     relayAthleteRow: {
@@ -1133,12 +1143,12 @@ const styles = StyleSheet.create({
         width: 22,
         height: 22,
         borderRadius: 11,
-        backgroundColor: '#333',
+        backgroundColor: colors.chip,
         alignItems: 'center',
         justifyContent: 'center'
     },
     relayLegText: {
-        color: '#aaa',
+        color: colors.textSecondary,
         fontSize: 11,
         fontWeight: '700'
     },
@@ -1147,7 +1157,7 @@ const styles = StyleSheet.create({
         gap: 4
     },
     relayAthleteName: {
-        color: '#ccc',
+        color: colors.textSecondary,
         fontSize: 14,
         fontWeight: '500'
     },
@@ -1156,7 +1166,7 @@ const styles = StyleSheet.create({
         gap: 2
     },
     relayAthleteTime: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 12,
         fontWeight: '500'
     }

@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // Try to extract substitution info from text
 const extractSubstitutionFromText = (text) => {
@@ -78,6 +79,9 @@ const formatTime = (time) => {
 };
 
 export const SubstitutionItem = ({ substitution }) => {
+    const { colors } = useTheme();
+    const themedStyles = createStyles(colors);
+    
     // Try to get player names from structured data first, then from text
     const textParsed = extractSubstitutionFromText(substitution.text);
 
@@ -101,63 +105,63 @@ export const SubstitutionItem = ({ substitution }) => {
     const showRawText = !playerIn && !playerOut && substitution.text;
 
     return (
-        <View style={styles.subItem}>
-            <View style={styles.eventTime}>
-                <Text style={styles.eventPeriod}>{periodLabel}</Text>
-                <Text style={styles.eventTimeText}>{formatTime(clock)}</Text>
+        <View style={themedStyles.subItem}>
+            <View style={themedStyles.eventTime}>
+                <Text style={themedStyles.eventPeriod}>{periodLabel}</Text>
+                <Text style={themedStyles.eventTimeText}>{formatTime(clock)}</Text>
             </View>
-            <View style={styles.eventContent}>
+            <View style={themedStyles.eventContent}>
                 {showRawText ? (
-                    <Text style={styles.rawText} numberOfLines={2}>{substitution.text}</Text>
+                    <Text style={themedStyles.rawText} numberOfLines={2}>{substitution.text}</Text>
                 ) : hasBothPlayers ? (
                     <>
-                        <View style={styles.playerRow}>
-                            <View style={styles.iconContainer}>
-                                <Ionicons name="arrow-down" size={12} color="#F44336" />
+                        <View style={themedStyles.playerRow}>
+                            <View style={themedStyles.iconContainer}>
+                                <Ionicons name="arrow-down" size={12} color={colors.accentRed} />
                             </View>
-                            <Text style={styles.playerOut} numberOfLines={1}>{playerOut}</Text>
+                            <Text style={themedStyles.playerOut} numberOfLines={1}>{playerOut}</Text>
                         </View>
-                        <View style={styles.playerRow}>
-                            <View style={styles.iconContainer}>
-                                <Ionicons name="arrow-up" size={12} color="#4CAF50" />
+                        <View style={themedStyles.playerRow}>
+                            <View style={themedStyles.iconContainer}>
+                                <Ionicons name="arrow-up" size={12} color={colors.accentGreen} />
                             </View>
-                            <Text style={styles.playerIn} numberOfLines={1}>{playerIn}</Text>
+                            <Text style={themedStyles.playerIn} numberOfLines={1}>{playerIn}</Text>
                         </View>
                     </>
                 ) : (
                     <>
                         {playerOut && (
-                            <View style={styles.playerRow}>
-                                <View style={styles.iconContainer}>
-                                    <Ionicons name="arrow-down" size={12} color="#F44336" />
+                            <View style={themedStyles.playerRow}>
+                                <View style={themedStyles.iconContainer}>
+                                    <Ionicons name="arrow-down" size={12} color={colors.accentRed} />
                                 </View>
-                                <Text style={styles.playerOut} numberOfLines={1}>{playerOut}</Text>
+                                <Text style={themedStyles.playerOut} numberOfLines={1}>{playerOut}</Text>
                             </View>
                         )}
                         {playerIn && (
-                            <View style={styles.playerRow}>
-                                <View style={styles.iconContainer}>
-                                    <Ionicons name="arrow-up" size={12} color="#4CAF50" />
+                            <View style={themedStyles.playerRow}>
+                                <View style={themedStyles.iconContainer}>
+                                    <Ionicons name="arrow-up" size={12} color={colors.accentGreen} />
                                 </View>
-                                <Text style={styles.playerIn} numberOfLines={1}>{playerIn}</Text>
+                                <Text style={themedStyles.playerIn} numberOfLines={1}>{playerIn}</Text>
                             </View>
                         )}
                     </>
                 )}
-                <View style={styles.footerRow}>
-                    <Text style={styles.eventTypeLabel}>Substitution</Text>
-                    {teamLabel && <Text style={styles.teamCode}>{teamLabel}</Text>}
+                <View style={themedStyles.footerRow}>
+                    <Text style={themedStyles.eventTypeLabel}>Substitution</Text>
+                    {teamLabel && <Text style={themedStyles.teamCode}>{teamLabel}</Text>}
                 </View>
             </View>
         </View>
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     subItem: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        backgroundColor: '#252525',
+        backgroundColor: colors.chip,
         borderRadius: 8,
         padding: 12,
         marginBottom: 8,
@@ -169,11 +173,11 @@ const styles = StyleSheet.create({
         marginRight: 12
     },
     eventPeriod: {
-        color: '#888',
+        color: colors.textSecondary,
         fontSize: 11
     },
     eventTimeText: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 14,
         fontWeight: '600'
     },
@@ -191,18 +195,18 @@ const styles = StyleSheet.create({
         marginRight: 6
     },
     playerIn: {
-        color: '#4CAF50',
+        color: colors.accentGreen,
         fontSize: 14,
         fontWeight: '600',
         flex: 1
     },
     playerOut: {
-        color: '#aaa',
+        color: colors.textSecondary,
         fontSize: 14,
         flex: 1
     },
     rawText: {
-        color: '#fff',
+        color: colors.text,
         fontSize: 14,
         marginBottom: 4
     },
@@ -213,13 +217,13 @@ const styles = StyleSheet.create({
         marginTop: 4
     },
     eventTypeLabel: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 10,
         fontWeight: '600',
         textTransform: 'uppercase'
     },
     teamCode: {
-        color: '#666',
+        color: colors.textMuted,
         fontSize: 10,
         fontWeight: '600',
         textTransform: 'uppercase'
