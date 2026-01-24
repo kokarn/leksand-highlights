@@ -25,5 +25,5 @@
 - Always increment the version according to semver
 
 ## App
-- Always increment the version according to semver
+- Always increment the version according to semver. Both in package.json and in app.json
 - When incrementing versions, update the readme
