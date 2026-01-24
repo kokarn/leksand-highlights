@@ -89,11 +89,30 @@ jobs:
         run: echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 --decode > google-services.json
         working-directory: shl-highlights-app
 
+      - name: Verify google-services.json
+        run: |
+          echo "=== Checking google-services.json ==="
+          if [ -f google-services.json ]; then
+            echo "File exists!"
+            echo "Size: $(stat -c%s google-services.json 2>/dev/null || stat -f%z google-services.json) bytes"
+            echo "First 50 chars: $(head -c 50 google-services.json)"
+            echo "..."
+          else
+            echo "ERROR: google-services.json was NOT created!"
+            exit 1
+          fi
+          echo ""
+          echo "=== Directory contents ==="
+          ls -la
+        working-directory: shl-highlights-app
+
       - name: Read app version
         id: app_version
         run: echo "version=$(node -p 'require("./shl-highlights-app/app.json").expo.version')" >> "$GITHUB_OUTPUT"
 
       - name: Build Android app
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: eas build --platform android --profile preview --local --output ${{ github.workspace }}/GamePulse-${{ steps.app_version.outputs.version }}.apk
         working-directory: shl-highlights-app
 
