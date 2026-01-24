@@ -3,7 +3,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { getTeamLogoUrl } from '../../api/shl';
-import { GENDER_OPTIONS } from '../../constants';
+import { GENDER_OPTIONS, THEME_OPTIONS } from '../../constants';
+import { useTheme } from '../../contexts';
 
 const APP_VERSION = Constants.expoConfig?.version || '1.0.0';
 
@@ -45,27 +46,32 @@ export const SettingsModal = ({
     onTogglePreGameShl,
     onTogglePreGameFootball,
     onTogglePreGameBiathlon
-}) => (
+}) => {
+    const { colors, themeMode, setThemeMode, isDark } = useTheme();
+    
+    const themedStyles = getThemedStyles(colors, isDark);
+    
+    return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-        <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
-            <View style={styles.settingsHeader}>
+        <SafeAreaView style={themedStyles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
+            <View style={themedStyles.settingsHeader}>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                    <Ionicons name="close" size={24} color="#fff" />
+                    <Ionicons name="close" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.settingsTitle}>Settings</Text>
+                <Text style={themedStyles.settingsTitle}>Settings</Text>
             </View>
             <ScrollView
                 style={styles.settingsContent}
                 contentContainerStyle={styles.settingsContentContainer}
             >
                 {/* Notifications Section */}
-                <Text style={styles.settingsSection}>Notifications</Text>
-                <Text style={styles.settingsSectionSubtitle}>Get notified when goals are scored</Text>
+                <Text style={themedStyles.settingsSection}>Notifications</Text>
+                <Text style={themedStyles.settingsSectionSubtitle}>Get notified when goals are scored</Text>
 
-                <View style={styles.settingsCard}>
+                <View style={themedStyles.settingsCard}>
                     <View style={styles.settingsCardHeader}>
-                        <Ionicons name="notifications-outline" size={22} color="#FF453A" />
-                        <Text style={styles.settingsCardTitle}>Push Notifications</Text>
+                        <Ionicons name="notifications-outline" size={22} color={colors.accentRed} />
+                        <Text style={themedStyles.settingsCardTitle}>Push Notifications</Text>
                     </View>
 
                     <View style={styles.notificationRow}>
@@ -84,7 +90,7 @@ export const SettingsModal = ({
                                     onToggleNotifications?.(value);
                                 }
                             }}
-                            trackColor={{ false: '#3a3a3c', true: '#34C759' }}
+                            trackColor={{ false: colors.switchTrackOff, true: colors.switchTrackOn }}
                             thumbColor="#fff"
                         />
                     </View>
@@ -100,7 +106,7 @@ export const SettingsModal = ({
                             <Switch
                                 value={goalNotificationsEnabled}
                                 onValueChange={onToggleGoalNotifications}
-                                trackColor={{ false: '#3a3a3c', true: '#34C759' }}
+                                trackColor={{ false: colors.switchTrackOff, true: colors.switchTrackOn }}
                                 thumbColor="#fff"
                             />
                         </View>
@@ -127,10 +133,10 @@ export const SettingsModal = ({
 
                 {/* Pre-game Reminders Section */}
                 {notificationsEnabled && (
-                    <View style={styles.settingsCard}>
+                    <View style={themedStyles.settingsCard}>
                         <View style={styles.settingsCardHeader}>
-                            <Ionicons name="time-outline" size={22} color="#5856D6" />
-                            <Text style={styles.settingsCardTitle}>Game Reminders</Text>
+                            <Ionicons name="time-outline" size={22} color={colors.accentPurple} />
+                            <Text style={themedStyles.settingsCardTitle}>Game Reminders</Text>
                         </View>
                         <Text style={styles.preGameDescription}>
                             Get notified 5 minutes before games start
@@ -139,7 +145,7 @@ export const SettingsModal = ({
                         <View style={styles.notificationRow}>
                             <View style={styles.notificationTextContainer}>
                                 <View style={styles.sportLabelRow}>
-                                    <Ionicons name="snow-outline" size={16} color="#0A84FF" />
+                                    <Ionicons name="snow-outline" size={16} color={colors.accent} />
                                     <Text style={styles.notificationLabel}>Hockey (SHL)</Text>
                                 </View>
                                 <Text style={styles.notificationDescription}>
@@ -149,7 +155,7 @@ export const SettingsModal = ({
                             <Switch
                                 value={preGameShlEnabled}
                                 onValueChange={onTogglePreGameShl}
-                                trackColor={{ false: '#3a3a3c', true: '#5856D6' }}
+                                trackColor={{ false: colors.switchTrackOff, true: colors.accentPurple }}
                                 thumbColor="#fff"
                             />
                         </View>
@@ -157,7 +163,7 @@ export const SettingsModal = ({
                         <View style={styles.notificationRow}>
                             <View style={styles.notificationTextContainer}>
                                 <View style={styles.sportLabelRow}>
-                                    <Ionicons name="football-outline" size={16} color="#30D158" />
+                                    <Ionicons name="football-outline" size={16} color={colors.accentGreen} />
                                     <Text style={styles.notificationLabel}>Football (Allsvenskan)</Text>
                                 </View>
                                 <Text style={styles.notificationDescription}>
@@ -167,7 +173,7 @@ export const SettingsModal = ({
                             <Switch
                                 value={preGameFootballEnabled}
                                 onValueChange={onTogglePreGameFootball}
-                                trackColor={{ false: '#3a3a3c', true: '#5856D6' }}
+                                trackColor={{ false: colors.switchTrackOff, true: colors.accentPurple }}
                                 thumbColor="#fff"
                             />
                         </View>
@@ -175,7 +181,7 @@ export const SettingsModal = ({
                         <View style={[styles.notificationRow, styles.notificationRowLast]}>
                             <View style={styles.notificationTextContainer}>
                                 <View style={styles.sportLabelRow}>
-                                    <Ionicons name="locate-outline" size={16} color="#D94A8C" />
+                                    <Ionicons name="locate-outline" size={16} color={colors.accentPink} />
                                     <Text style={styles.notificationLabel}>Biathlon</Text>
                                 </View>
                                 <Text style={styles.notificationDescription}>
@@ -185,7 +191,7 @@ export const SettingsModal = ({
                             <Switch
                                 value={preGameBiathlonEnabled}
                                 onValueChange={onTogglePreGameBiathlon}
-                                trackColor={{ false: '#3a3a3c', true: '#5856D6' }}
+                                trackColor={{ false: colors.switchTrackOff, true: colors.accentPurple }}
                                 thumbColor="#fff"
                             />
                         </View>
@@ -193,7 +199,7 @@ export const SettingsModal = ({
                         {(preGameShlEnabled || preGameFootballEnabled || preGameBiathlonEnabled) &&
                          (selectedTeams.length > 0 || selectedFootballTeams.length > 0 || selectedNations.length > 0) && (
                             <View style={styles.notificationInfo}>
-                                <Ionicons name="information-circle-outline" size={16} color="#8E8E93" />
+                                <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
                                 <Text style={styles.notificationInfoText}>
                                     Reminders are sent for your favorite teams
                                 </Text>
@@ -202,15 +208,15 @@ export const SettingsModal = ({
                     </View>
                 )}
 
-                <Text style={styles.settingsSection}>Favorites</Text>
-                <Text style={styles.settingsSectionSubtitle}>Customize which sports and teams you follow</Text>
+                <Text style={themedStyles.settingsSection}>Favorites</Text>
+                <Text style={themedStyles.settingsSectionSubtitle}>Customize which sports and teams you follow</Text>
 
                 {/* Hockey Teams */}
-                <View style={styles.settingsCard}>
+                <View style={themedStyles.settingsCard}>
                     <View style={styles.settingsCardHeader}>
-                        <Ionicons name="snow-outline" size={22} color="#0A84FF" />
-                        <Text style={styles.settingsCardTitle}>Hockey Teams</Text>
-                        <Text style={styles.settingsCardCount}>
+                        <Ionicons name="snow-outline" size={22} color={colors.accent} />
+                        <Text style={themedStyles.settingsCardTitle}>Hockey Teams</Text>
+                        <Text style={[styles.settingsCardCount, { color: colors.textMuted }]}>
                             {selectedTeams.length > 0 ? `${selectedTeams.length} selected` : ''}
                         </Text>
                     </View>
@@ -218,11 +224,11 @@ export const SettingsModal = ({
                         {teams.map(team => (
                             <TouchableOpacity
                                 key={team.code}
-                                style={[styles.teamChip, selectedTeams.includes(team.code) && styles.chipActive]}
+                                style={[themedStyles.teamChip, selectedTeams.includes(team.code) && themedStyles.chipActive]}
                                 onPress={() => onToggleTeam(team.code)}
                             >
                                 <Image source={{ uri: getTeamLogoUrl(team.code) }} style={styles.chipLogo} resizeMode="contain" />
-                                <Text style={[styles.chipText, selectedTeams.includes(team.code) && styles.chipTextActive]} numberOfLines={1}>
+                                <Text style={[themedStyles.chipText, selectedTeams.includes(team.code) && themedStyles.chipTextActive]} numberOfLines={1}>
                                     {team.code}
                                 </Text>
                             </TouchableOpacity>
@@ -236,11 +242,11 @@ export const SettingsModal = ({
                 </View>
 
                 {/* Football Teams */}
-                <View style={styles.settingsCard}>
+                <View style={themedStyles.settingsCard}>
                     <View style={styles.settingsCardHeader}>
-                        <Ionicons name="football-outline" size={22} color="#30D158" />
-                        <Text style={styles.settingsCardTitle}>Football Teams</Text>
-                        <Text style={styles.settingsCardCount}>
+                        <Ionicons name="football-outline" size={22} color={colors.accentGreen} />
+                        <Text style={themedStyles.settingsCardTitle}>Football Teams</Text>
+                        <Text style={[styles.settingsCardCount, { color: colors.textMuted }]}>
                             {selectedFootballTeams.length > 0 ? `${selectedFootballTeams.length} selected` : ''}
                         </Text>
                     </View>
@@ -249,22 +255,22 @@ export const SettingsModal = ({
                             {footballTeams.map(team => (
                                 <TouchableOpacity
                                     key={team.key}
-                                    style={[styles.teamChip, selectedFootballTeams.includes(team.key) && styles.chipActiveGreen]}
+                                    style={[themedStyles.teamChip, selectedFootballTeams.includes(team.key) && themedStyles.chipActiveGreen]}
                                     onPress={() => onToggleFootballTeam(team.key)}
                                 >
                                     {team.icon ? (
                                         <Image source={{ uri: team.icon }} style={styles.chipLogo} resizeMode="contain" />
                                     ) : (
-                                        <View style={styles.chipLogoPlaceholder} />
+                                        <View style={[styles.chipLogoPlaceholder, { backgroundColor: colors.separator }]} />
                                     )}
-                                    <Text style={[styles.chipText, selectedFootballTeams.includes(team.key) && styles.chipTextActive]} numberOfLines={1}>
+                                    <Text style={[themedStyles.chipText, selectedFootballTeams.includes(team.key) && themedStyles.chipTextActive]} numberOfLines={1}>
                                         {team.shortName || team.name}
                                     </Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
                     ) : (
-                        <Text style={styles.settingsEmptyText}>No football teams available yet.</Text>
+                        <Text style={[styles.settingsEmptyText, { color: colors.textMuted }]}>No football teams available yet.</Text>
                     )}
                     {selectedFootballTeams.length > 0 && (
                         <TouchableOpacity style={styles.clearButton} onPress={onClearFootballTeams}>
@@ -274,22 +280,22 @@ export const SettingsModal = ({
                 </View>
 
                 {/* Biathlon Gender */}
-                <View style={styles.settingsCard}>
+                <View style={themedStyles.settingsCard}>
                     <View style={styles.settingsCardHeader}>
-                        <Ionicons name="locate-outline" size={22} color="#D94A8C" />
-                        <Text style={styles.settingsCardTitle}>Biathlon Gender</Text>
+                        <Ionicons name="locate-outline" size={22} color={colors.accentPink} />
+                        <Text style={themedStyles.settingsCardTitle}>Biathlon Gender</Text>
                     </View>
                     <View style={styles.genderRow}>
                         {GENDER_OPTIONS.map(gender => (
                             <TouchableOpacity
                                 key={gender.id}
                                 style={[
-                                    styles.genderChip,
+                                    themedStyles.genderChip,
                                     selectedGenders.includes(gender.id) && { backgroundColor: gender.color, borderColor: gender.color }
                                 ]}
                                 onPress={() => onToggleGender(gender.id)}
                             >
-                                <Text style={[styles.genderText, selectedGenders.includes(gender.id) && styles.genderTextActive]}>
+                                <Text style={[themedStyles.genderText, selectedGenders.includes(gender.id) && styles.genderTextActive]}>
                                     {gender.label}
                                 </Text>
                             </TouchableOpacity>
@@ -297,19 +303,56 @@ export const SettingsModal = ({
                     </View>
                 </View>
 
-                <TouchableOpacity style={styles.resetOnboardingButton} onPress={onResetOnboarding}>
-                    <Ionicons name="refresh-outline" size={20} color="#FF9F0A" />
-                    <Text style={styles.resetOnboardingText}>Restart setup wizard</Text>
+                {/* Appearance Section */}
+                <Text style={themedStyles.settingsSection}>Appearance</Text>
+                <Text style={themedStyles.settingsSectionSubtitle}>Customize the look of the app</Text>
+
+                <View style={themedStyles.settingsCard}>
+                    <View style={styles.settingsCardHeader}>
+                        <Ionicons name="color-palette-outline" size={22} color={colors.accentPurple} />
+                        <Text style={themedStyles.settingsCardTitle}>Theme</Text>
+                    </View>
+                    <View style={styles.themeRow}>
+                        {THEME_OPTIONS.map((option) => (
+                            <TouchableOpacity
+                                key={option.id}
+                                style={[
+                                    themedStyles.themeChip,
+                                    themeMode === option.id && themedStyles.themeChipActive
+                                ]}
+                                onPress={() => setThemeMode(option.id)}
+                            >
+                                <Ionicons 
+                                    name={option.icon} 
+                                    size={20} 
+                                    color={themeMode === option.id ? colors.accent : colors.textSecondary} 
+                                />
+                                <Text style={[
+                                    themedStyles.themeText,
+                                    themeMode === option.id && themedStyles.themeTextActive
+                                ]}>
+                                    {option.label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </View>
+
+                {/* Reset Onboarding */}
+                <TouchableOpacity style={themedStyles.resetOnboardingButton} onPress={onResetOnboarding}>
+                    <Ionicons name="refresh-outline" size={20} color={colors.accentOrange} />
+                    <Text style={themedStyles.resetOnboardingText}>Restart setup wizard</Text>
                 </TouchableOpacity>
 
                 {/* Version */}
                 <View style={styles.versionContainer}>
-                    <Text style={styles.versionText}>GamePulse v{APP_VERSION}</Text>
+                    <Text style={themedStyles.versionText}>GamePulse v{APP_VERSION}</Text>
                 </View>
             </ScrollView>
         </SafeAreaView>
     </Modal>
-);
+    );
+};
 
 const styles = StyleSheet.create({
     modalContainer: {
@@ -579,5 +622,151 @@ const styles = StyleSheet.create({
         color: '#4a4a4a',
         fontSize: 12,
         fontWeight: '500'
+    },
+    // Theme picker styles
+    themeRow: {
+        flexDirection: 'row',
+        gap: 10
+    }
+});
+
+// Dynamic themed styles based on current theme
+const getThemedStyles = (colors, isDark) => ({
+    modalContainer: {
+        flex: 1,
+        backgroundColor: colors.background
+    },
+    settingsHeader: {
+        paddingTop: 20,
+        paddingBottom: 16,
+        paddingHorizontal: 16,
+        backgroundColor: colors.card,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.cardBorder
+    },
+    settingsTitle: {
+        color: colors.text,
+        fontSize: 22,
+        fontWeight: '800',
+        textAlign: 'center',
+        paddingTop: 10
+    },
+    settingsSection: {
+        color: colors.text,
+        fontSize: 20,
+        fontWeight: '700',
+        marginBottom: 4
+    },
+    settingsSectionSubtitle: {
+        color: colors.textMuted,
+        fontSize: 14,
+        marginBottom: 20
+    },
+    settingsCard: {
+        backgroundColor: colors.card,
+        borderRadius: 16,
+        padding: CARD_INNER_PADDING,
+        marginBottom: 16,
+        borderWidth: isDark ? 0 : 1,
+        borderColor: colors.cardBorder
+    },
+    settingsCardTitle: {
+        color: colors.text,
+        fontSize: 16,
+        fontWeight: '700',
+        flex: 1
+    },
+    resetOnboardingButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        marginTop: 20,
+        paddingVertical: 16,
+        backgroundColor: isDark ? 'rgba(255, 159, 10, 0.1)' : 'rgba(255, 159, 10, 0.08)',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 159, 10, 0.3)'
+    },
+    resetOnboardingText: {
+        color: colors.accentOrange,
+        fontSize: 15,
+        fontWeight: '600'
+    },
+    versionText: {
+        color: colors.textMuted,
+        fontSize: 12,
+        fontWeight: '500'
+    },
+    // Team/selection chip styles
+    teamChip: {
+        flexBasis: CHIP_WIDTH_PERCENT,
+        flexGrow: 1,
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 12,
+        paddingHorizontal: 6,
+        borderRadius: 12,
+        backgroundColor: colors.chip,
+        borderWidth: 2,
+        borderColor: colors.chipBorder
+    },
+    chipActive: {
+        backgroundColor: colors.chipActive,
+        borderColor: colors.accent
+    },
+    chipActiveGreen: {
+        backgroundColor: isDark ? 'rgba(48, 209, 88, 0.2)' : 'rgba(48, 209, 88, 0.15)',
+        borderColor: colors.accentGreen
+    },
+    chipText: {
+        color: colors.textSecondary,
+        fontSize: 11,
+        fontWeight: '600',
+        textAlign: 'center'
+    },
+    chipTextActive: {
+        color: colors.text
+    },
+    // Gender chip styles
+    genderChip: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 14,
+        borderRadius: 12,
+        backgroundColor: colors.chip,
+        borderWidth: 2,
+        borderColor: colors.chipBorder
+    },
+    genderText: {
+        color: colors.textSecondary,
+        fontSize: 15,
+        fontWeight: '700'
+    },
+    // Theme picker chip styles
+    themeChip: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 14,
+        borderRadius: 12,
+        backgroundColor: colors.chip,
+        borderWidth: 2,
+        borderColor: colors.chipBorder
+    },
+    themeChipActive: {
+        backgroundColor: colors.chipActive,
+        borderColor: colors.accent
+    },
+    themeText: {
+        color: colors.chipText,
+        fontSize: 13,
+        fontWeight: '600'
+    },
+    themeTextActive: {
+        color: colors.accent
     }
 });

@@ -4,6 +4,12 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.3.0
+- Add light mode support with theme toggle in Settings
+- Theme options: System (default), Light, and Dark
+- System option follows device color scheme preference
+- Theme-aware styling throughout the app
+
 ### 2.2.0
 - Remove legacy OneSignal integration code
 - Clean up unused OneSignal utility files and imports

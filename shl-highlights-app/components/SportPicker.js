@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../contexts';
 
 const SPORTS = [
     { key: 'all', name: 'All', icon: 'grid-outline' },
@@ -10,6 +11,7 @@ const SPORTS = [
 ];
 
 export const SportPicker = ({ activeSport, onSportChange }) => {
+    const { colors, isDark } = useTheme();
     const [isOpen, setIsOpen] = useState(false);
     const currentSport = SPORTS.find(s => s.key === activeSport) || SPORTS[0];
 
@@ -21,13 +23,13 @@ export const SportPicker = ({ activeSport, onSportChange }) => {
     return (
         <View style={styles.container}>
             <TouchableOpacity
-                style={styles.picker}
+                style={[styles.picker, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
                 onPress={() => setIsOpen(true)}
                 activeOpacity={0.7}
             >
-                <Ionicons name={currentSport.icon} size={16} color="#0A84FF" />
-                <Text style={styles.pickerText}>{currentSport.name}</Text>
-                <Ionicons name="chevron-down" size={14} color="#666" />
+                <Ionicons name={currentSport.icon} size={16} color={colors.accent} />
+                <Text style={[styles.pickerText, { color: colors.text }]}>{currentSport.name}</Text>
+                <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
             </TouchableOpacity>
 
             <Modal
@@ -36,15 +38,15 @@ export const SportPicker = ({ activeSport, onSportChange }) => {
                 animationType="fade"
                 onRequestClose={() => setIsOpen(false)}
             >
-                <Pressable style={styles.overlay} onPress={() => setIsOpen(false)}>
-                    <View style={styles.dropdown}>
-                        <Text style={styles.dropdownTitle}>Select Sport</Text>
+                <Pressable style={[styles.overlay, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.5)' }]} onPress={() => setIsOpen(false)}>
+                    <View style={[styles.dropdown, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                        <Text style={[styles.dropdownTitle, { color: colors.textMuted }]}>Select Sport</Text>
                         {SPORTS.map((sport) => (
                             <TouchableOpacity
                                 key={sport.key}
                                 style={[
                                     styles.option,
-                                    activeSport === sport.key && styles.optionActive
+                                    activeSport === sport.key && { backgroundColor: colors.chipActive }
                                 ]}
                                 onPress={() => handleSelect(sport.key)}
                                 activeOpacity={0.7}
@@ -52,16 +54,17 @@ export const SportPicker = ({ activeSport, onSportChange }) => {
                                 <Ionicons
                                     name={sport.icon}
                                     size={18}
-                                    color={activeSport === sport.key ? '#0A84FF' : '#888'}
+                                    color={activeSport === sport.key ? colors.accent : colors.textSecondary}
                                 />
                                 <Text style={[
                                     styles.optionText,
-                                    activeSport === sport.key && styles.optionTextActive
+                                    { color: colors.text },
+                                    activeSport === sport.key && { color: colors.accent }
                                 ]}>
                                     {sport.name}
                                 </Text>
                                 {activeSport === sport.key && (
-                                    <Ionicons name="checkmark" size={18} color="#0A84FF" />
+                                    <Ionicons name="checkmark" size={18} color={colors.accent} />
                                 )}
                             </TouchableOpacity>
                         ))}

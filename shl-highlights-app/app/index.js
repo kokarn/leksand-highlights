@@ -6,6 +6,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
+// Theme
+import { useTheme } from '../contexts';
+
 // Card height constants for consistent scroll behavior
 // Height = padding (32) + header (~36) + content (~90) + marginBottom (16)
 const GAME_CARD_HEIGHT = 174;
@@ -111,6 +114,9 @@ export default function App() {
         togglePreGameFootball,
         togglePreGameBiathlon
     } = usePushNotifications();
+
+    // Theme
+    const { colors, isDark } = useTheme();
 
     const router = useRouter();
     const { sport: routeSport, gameId: routeGameId } = useLocalSearchParams();
@@ -315,7 +321,7 @@ export default function App() {
             renderItem={({ item }) => <GameCard game={item} onPress={() => handleShlGamePress(item)} />}
             keyExtractor={item => item.uuid}
             contentContainerStyle={styles.listContent}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
             getItemLayout={getShlItemLayout}
             onScrollToIndexFailed={handleScrollToIndexFailed}
             onScroll={shl.handleScroll}
@@ -344,34 +350,34 @@ export default function App() {
 
         return (
             <View style={styles.scheduleContainer}>
-                <View style={styles.stickyToggle}>
+                <View style={[styles.stickyToggle, { backgroundColor: colors.background }]}>
                     <ViewToggle mode={shl.viewMode} onChange={shl.handleViewChange} />
                     <LinearGradient
-                        colors={['#000000', 'transparent']}
+                        colors={[colors.background, 'transparent']}
                         style={styles.toggleGradient}
                         pointerEvents="none"
                     />
                 </View>
                 <ScrollView
                     contentContainerStyle={styles.listContent}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
                 >
-                    <View style={styles.standingsHeader}>
+                    <View style={[styles.standingsHeader, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
                         <View style={styles.standingsHeaderRow}>
-                            <Ionicons name="stats-chart" size={20} color="#0A84FF" />
-                            <Text style={styles.standingsTitle}>SHL Table</Text>
-                            <Text style={styles.standingsCount}>{standingsRows.length} teams</Text>
+                            <Ionicons name="stats-chart" size={20} color={colors.accent} />
+                            <Text style={[styles.standingsTitle, { color: colors.text }]}>SHL Table</Text>
+                            <Text style={[styles.standingsCount, { color: colors.textMuted }]}>{standingsRows.length} teams</Text>
                         </View>
                         <SeasonPicker seasons={seasonOptions} selectedSeason={seasonLabel} onSelect={null} />
                         <View style={styles.standingsMetaRow}>
                             {lastUpdatedLabel && (
-                                <Text style={styles.standingsMetaText}>Updated {lastUpdatedLabel}</Text>
+                                <Text style={[styles.standingsMetaText, { color: colors.textSecondary }]}>Updated {lastUpdatedLabel}</Text>
                             )}
                         </View>
                     </View>
 
                     {shl.loadingStandings ? (
-                        <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 24 }} />
+                        <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 24 }} />
                     ) : (
                         <StandingsTable
                             standings={standingsRows}
@@ -397,7 +403,7 @@ export default function App() {
             renderItem={({ item }) => <FootballGameCard game={item} onPress={() => football.handleGamePress(item)} />}
             keyExtractor={item => item.uuid}
             contentContainerStyle={styles.listContent}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
             getItemLayout={getFootballItemLayout}
             onScrollToIndexFailed={handleScrollToIndexFailed}
             onScroll={football.handleScroll}
@@ -422,23 +428,23 @@ export default function App() {
 
         return (
             <View style={styles.scheduleContainer}>
-                <View style={styles.stickyToggle}>
+                <View style={[styles.stickyToggle, { backgroundColor: colors.background }]}>
                     <ViewToggle mode={football.viewMode} onChange={football.handleViewChange} />
                     <LinearGradient
-                        colors={['#000000', 'transparent']}
+                        colors={[colors.background, 'transparent']}
                         style={styles.toggleGradient}
                         pointerEvents="none"
                     />
                 </View>
                 <ScrollView
                     contentContainerStyle={styles.listContent}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
                 >
-                    <View style={styles.standingsHeader}>
+                    <View style={[styles.standingsHeader, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
                         <View style={styles.standingsHeaderRow}>
-                            <Ionicons name="football-outline" size={20} color="#0A84FF" />
-                            <Text style={styles.standingsTitle}>Allsvenskan Table</Text>
-                            <Text style={styles.standingsCount}>{standingsRows.length} teams</Text>
+                            <Ionicons name="football-outline" size={20} color={colors.accent} />
+                            <Text style={[styles.standingsTitle, { color: colors.text }]}>Allsvenskan Table</Text>
+                            <Text style={[styles.standingsCount, { color: colors.textMuted }]}>{standingsRows.length} teams</Text>
                         </View>
                         <SeasonPicker
                             seasons={football.seasonOptions}
@@ -448,13 +454,13 @@ export default function App() {
                         />
                         <View style={styles.standingsMetaRow}>
                             {lastUpdatedLabel && (
-                                <Text style={styles.standingsMetaText}>Updated {lastUpdatedLabel}</Text>
+                                <Text style={[styles.standingsMetaText, { color: colors.textSecondary }]}>Updated {lastUpdatedLabel}</Text>
                             )}
                         </View>
                     </View>
 
                     {football.loadingStandings ? (
-                        <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 24 }} />
+                        <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 24 }} />
                     ) : (
                         <StandingsTable
                             standings={standingsRows}
@@ -485,7 +491,7 @@ export default function App() {
             renderItem={renderBiathlonRaceItem}
             keyExtractor={biathlonKeyExtractor}
             contentContainerStyle={styles.listContent}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
             getItemLayout={getBiathlonItemLayout}
             onScrollToIndexFailed={handleScrollToIndexFailed}
             onScroll={biathlon.handleScroll}
@@ -515,23 +521,23 @@ export default function App() {
 
         return (
             <View style={styles.scheduleContainer}>
-                <View style={styles.stickyToggle}>
+                <View style={[styles.stickyToggle, { backgroundColor: colors.background }]}>
                     <ViewToggle mode={biathlon.viewMode} onChange={biathlon.handleViewChange} />
                     <LinearGradient
-                        colors={['#000000', 'transparent']}
+                        colors={[colors.background, 'transparent']}
                         style={styles.toggleGradient}
                         pointerEvents="none"
                     />
                 </View>
                 <ScrollView
                     contentContainerStyle={styles.listContent}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
                 >
-                    <View style={styles.standingsHeader}>
+                    <View style={[styles.standingsHeader, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
                         <View style={styles.standingsHeaderRow}>
-                            <Ionicons name="trophy-outline" size={20} color="#0A84FF" />
-                            <Text style={styles.standingsTitle}>{typeName}</Text>
-                            {seasonLabel && <Text style={styles.standingsCount}>{seasonLabel}</Text>}
+                            <Ionicons name="trophy-outline" size={20} color={colors.accent} />
+                            <Text style={[styles.standingsTitle, { color: colors.text }]}>{typeName}</Text>
+                            {seasonLabel && <Text style={[styles.standingsCount, { color: colors.textMuted }]}>{seasonLabel}</Text>}
                         </View>
                         {/* Gender toggle */}
                         <View style={styles.biathlonGenderPicker}>
@@ -586,32 +592,33 @@ export default function App() {
                         </View>
                         <View style={styles.standingsMetaRow}>
                             {lastUpdatedLabel && (
-                                <Text style={styles.standingsMetaText}>Updated {lastUpdatedLabel}</Text>
+                                <Text style={[styles.standingsMetaText, { color: colors.textSecondary }]}>Updated {lastUpdatedLabel}</Text>
                             )}
                         </View>
                     </View>
 
                     {biathlon.loadingStandings ? (
-                        <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 24 }} />
+                        <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 24 }} />
                     ) : selectedCategory ? (
-                        <View style={styles.biathlonStandingsCategory}>
-                            <View style={styles.biathlonCategoryHeader}>
-                                <Text style={styles.biathlonCategoryTitle}>{selectedCategory.genderDisplay}</Text>
-                                <Text style={styles.biathlonCategoryCount}>
+                        <View style={[styles.biathlonStandingsCategory, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                            <View style={[styles.biathlonCategoryHeader, { borderBottomColor: colors.cardBorder }]}>
+                                <Text style={[styles.biathlonCategoryTitle, { color: colors.text }]}>{selectedCategory.genderDisplay}</Text>
+                                <Text style={[styles.biathlonCategoryCount, { color: colors.textMuted }]}>
                                     {selectedCategory.standings?.length || 0} athletes
                                 </Text>
                             </View>
                             {selectedCategory.standings?.slice(0, 30).map((athlete, index) => (
-                                <View key={athlete.athleteId || index} style={styles.biathlonAthleteRow}>
+                                <View key={athlete.athleteId || index} style={[styles.biathlonAthleteRow, { borderBottomColor: colors.separator }]}>
                                     <Text style={[
                                         styles.biathlonRank,
+                                        { color: colors.textSecondary },
                                         athlete.rank <= 3 && styles.biathlonRankTop
                                     ]}>
                                         {athlete.rank}
                                     </Text>
                                     <Text style={styles.biathlonNationFlag}>{getNationFlag(athlete.nation)}</Text>
-                                    <Text style={styles.biathlonName} numberOfLines={1}>{athlete.name}</Text>
-                                    <Text style={styles.biathlonPoints}>{athlete.points} pts</Text>
+                                    <Text style={[styles.biathlonName, { color: colors.text }]} numberOfLines={1}>{athlete.name}</Text>
+                                    <Text style={[styles.biathlonPoints, { color: colors.accent }]}>{athlete.points} pts</Text>
                                 </View>
                             ))}
                         </View>
@@ -670,7 +677,7 @@ export default function App() {
             renderItem={renderUnifiedItem}
             keyExtractor={unifiedKeyExtractor}
             contentContainerStyle={styles.listContent}
-            refreshControl={<RefreshControl refreshing={unified.refreshing} onRefresh={unified.onRefresh} tintColor="#fff" />}
+            refreshControl={<RefreshControl refreshing={unified.refreshing} onRefresh={unified.onRefresh} tintColor={colors.text} />}
             onScroll={unified.handleScroll}
             scrollEventThrottle={100}
             removeClippedSubviews={true}
@@ -690,15 +697,15 @@ export default function App() {
 
     // Main render
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-            <LinearGradient colors={['#000000', '#121212']} style={StyleSheet.absoluteFill} />
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+            <LinearGradient colors={[colors.gradientStart, colors.gradientEnd]} style={StyleSheet.absoluteFill} />
 
             {/* Header with gradient fade */}
             <View style={styles.headerContainer}>
-                <View style={styles.header}>
+                <View style={[styles.header, { backgroundColor: colors.background }]}>
                     {renderSportPicker()}
-                    <TouchableOpacity style={styles.settingsButton} onPress={() => setShowSettings(true)}>
-                        <Ionicons name="settings-outline" size={16} color="#888" />
+                    <TouchableOpacity style={[styles.settingsButton, { backgroundColor: colors.card, borderColor: colors.cardBorder }]} onPress={() => setShowSettings(true)}>
+                        <Ionicons name="settings-outline" size={16} color={colors.textSecondary} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -707,7 +714,7 @@ export default function App() {
             {activeSport === 'all' ? (
                 <View style={styles.scheduleContainer}>
                     {unified.loading ? (
-                        <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
+                        <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
                     ) : (
                         renderUnifiedSchedule()
                     )}
@@ -717,16 +724,16 @@ export default function App() {
                     renderShlStandings()
                 ) : (
                     <View style={styles.scheduleContainer}>
-                        <View style={styles.stickyToggle}>
+                        <View style={[styles.stickyToggle, { backgroundColor: colors.background }]}>
                             <ViewToggle mode={shl.viewMode} onChange={shl.handleViewChange} />
                             <LinearGradient
-                                colors={['#000000', 'transparent']}
+                                colors={[colors.background, 'transparent']}
                                 style={styles.toggleGradient}
                                 pointerEvents="none"
                             />
                         </View>
                         {shl.loading ? (
-                            <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
+                            <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
                         ) : (
                             renderShlSchedule()
                         )}
@@ -737,16 +744,16 @@ export default function App() {
                     renderFootballStandings()
                 ) : (
                     <View style={styles.scheduleContainer}>
-                        <View style={styles.stickyToggle}>
+                        <View style={[styles.stickyToggle, { backgroundColor: colors.background }]}>
                             <ViewToggle mode={football.viewMode} onChange={football.handleViewChange} />
                             <LinearGradient
-                                colors={['#000000', 'transparent']}
+                                colors={[colors.background, 'transparent']}
                                 style={styles.toggleGradient}
                                 pointerEvents="none"
                             />
                         </View>
                         {football.loading ? (
-                            <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
+                            <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
                         ) : (
                             renderFootballSchedule()
                         )}
@@ -757,16 +764,16 @@ export default function App() {
                     renderBiathlonStandings()
                 ) : (
                     <View style={styles.scheduleContainer}>
-                        <View style={styles.stickyToggle}>
+                        <View style={[styles.stickyToggle, { backgroundColor: colors.background }]}>
                             <ViewToggle mode={biathlon.viewMode} onChange={biathlon.handleViewChange} />
                             <LinearGradient
-                                colors={['#000000', 'transparent']}
+                                colors={[colors.background, 'transparent']}
                                 style={styles.toggleGradient}
                                 pointerEvents="none"
                             />
                         </View>
                         {biathlon.loading ? (
-                            <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
+                            <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
                         ) : (
                             renderBiathlonSchedule()
                         )}

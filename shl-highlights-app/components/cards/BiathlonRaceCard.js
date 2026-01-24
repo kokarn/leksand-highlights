@@ -5,15 +5,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { getNationFlag } from '../../api/shl';
 import { formatRelativeDateEnglish, formatTime } from '../../utils';
 import { DISCIPLINE_ICONS, GENDER_COLORS } from '../../constants';
+import { useTheme } from '../../contexts';
 
-// Static color arrays to avoid re-creating on every render
-const CARD_COLORS_LIVE = ['#2a1c1c', '#1c1c1e'];
-const CARD_COLORS_STARTING = ['#2a2a1c', '#1c1c1e'];
-const CARD_COLORS_DEFAULT = ['#1c1c1e', '#2c2c2e'];
 const GRADIENT_START = { x: 0, y: 0 };
 const GRADIENT_END = { x: 1, y: 1 };
 
 export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }) {
+    const { colors, isDark } = useTheme();
+    
     const relativeDate = formatRelativeDateEnglish(race?.startDateTime);
     const time = formatTime(race?.startDateTime);
     const isLive = race?.state === 'live';
@@ -30,14 +29,17 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
     }, [isLive, isStartingSoon, relativeDate]);
 
     const cardColors = useMemo(() => {
-        if (isLive) {
-            return CARD_COLORS_LIVE;
+        if (isDark) {
+            if (isLive) {
+                return ['#2a1c1c', '#1c1c1e'];
+            }
+            if (isStartingSoon) {
+                return ['#2a2a1c', '#1c1c1e'];
+            }
+            return ['#1c1c1e', '#2c2c2e'];
         }
-        if (isStartingSoon) {
-            return CARD_COLORS_STARTING;
-        }
-        return CARD_COLORS_DEFAULT;
-    }, [isLive, isStartingSoon]);
+        return [colors.card, colors.backgroundSecondary];
+    }, [isLive, isStartingSoon, isDark, colors]);
 
     // Compact race info string: "10 km • 4×5 shots"
     const raceDetails = useMemo(() => {
@@ -81,21 +83,21 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
                 colors={cardColors}
                 start={GRADIENT_START}
                 end={GRADIENT_END}
-                style={[styles.raceCard, isLive && styles.raceCardLive, isStartingSoon && styles.raceCardStartingSoon]}
+                style={[styles.raceCard, { borderColor: colors.cardBorder }, isLive && styles.raceCardLive, isStartingSoon && styles.raceCardStartingSoon]}
             >
                 {/* Header row */}
                 <View style={styles.cardHeader}>
                     <View style={styles.headerLeft}>
-                        <Text style={styles.eventType}>
+                        <Text style={[styles.eventType, { color: colors.textMuted }]}>
                             {race.eventType === 'olympics' ? '🏅 Olympics' : 'World Cup'}
                         </Text>
-                        <Text style={styles.eventStage}>{race.eventName}</Text>
+                        <Text style={[styles.eventStage, { color: colors.textMuted }]}>{race.eventName}</Text>
                     </View>
                     <View style={styles.headerRight}>
-                        <Text style={[styles.dateText, isLive && styles.liveText, isStartingSoon && styles.startingSoonText]}>
+                        <Text style={[styles.dateText, { color: colors.textSecondary }, isLive && styles.liveText, isStartingSoon && styles.startingSoonText]}>
                             {statusText}
                         </Text>
-                        <Text style={styles.timeText}>{time}</Text>
+                        <Text style={[styles.timeText, { color: colors.textMuted }]}>{time}</Text>
                     </View>
                 </View>
 
@@ -107,14 +109,14 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
 
                     <View style={styles.disciplineContainer}>
                         <Text
-                            style={[styles.disciplineText, { fontSize: disciplineFontSize }]}
+                            style={[styles.disciplineText, { fontSize: disciplineFontSize, color: colors.text }]}
                             numberOfLines={2}
                             adjustsFontSizeToFit
                             minimumFontScale={0.7}
                         >
                             {race.discipline}
                         </Text>
-                        <Text style={styles.detailsText}>{raceDetails}</Text>
+                        <Text style={[styles.detailsText, { color: colors.textMuted }]}>{raceDetails}</Text>
                     </View>
 
                     <View style={styles.genderContainer}>

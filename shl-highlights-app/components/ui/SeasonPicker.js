@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../contexts';
 
 /**
  * Season picker for standings views
  * Shows single season label, or dropdown for multiple seasons
  */
 export const SeasonPicker = ({ seasons, selectedSeason, onSelect, variant = 'chips' }) => {
+    const { colors, isDark } = useTheme();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -27,8 +29,8 @@ export const SeasonPicker = ({ seasons, selectedSeason, onSelect, variant = 'chi
     if (seasons.length === 1) {
         return (
             <View style={styles.seasonSingle}>
-                <Ionicons name="calendar-outline" size={14} color="#888" />
-                <Text style={styles.seasonSingleText}>Season {seasons[0]}</Text>
+                <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
+                <Text style={[styles.seasonSingleText, { color: colors.textSecondary }]}>Season {seasons[0]}</Text>
             </View>
         );
     }
@@ -51,15 +53,15 @@ export const SeasonPicker = ({ seasons, selectedSeason, onSelect, variant = 'chi
         return (
             <View style={styles.dropdownContainer}>
                 <TouchableOpacity
-                    style={styles.dropdownButton}
+                    style={[styles.dropdownButton, { backgroundColor: colors.chip, borderColor: colors.chipBorder }]}
                     onPress={() => setDropdownOpen(true)}
                     activeOpacity={0.7}
                 >
-                    <Ionicons name="calendar-outline" size={16} color="#0A84FF" />
-                    <Text style={styles.dropdownButtonText}>
+                    <Ionicons name="calendar-outline" size={16} color={colors.accent} />
+                    <Text style={[styles.dropdownButtonText, { color: colors.text }]}>
                         {selectedSeason || 'Select season'}
                     </Text>
-                    <Ionicons name="chevron-down" size={16} color="#888" />
+                    <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
                 </TouchableOpacity>
 
                 <Modal
@@ -69,15 +71,15 @@ export const SeasonPicker = ({ seasons, selectedSeason, onSelect, variant = 'chi
                     onRequestClose={handleClose}
                 >
                     <TouchableOpacity
-                        style={styles.dropdownOverlay}
+                        style={[styles.dropdownOverlay, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.5)' }]}
                         activeOpacity={1}
                         onPress={handleClose}
                     >
-                        <Animated.View style={[styles.dropdownModal, { opacity: fadeAnim }]}>
-                            <View style={styles.dropdownHeader}>
-                                <Text style={styles.dropdownTitle}>Select Season</Text>
+                        <Animated.View style={[styles.dropdownModal, { backgroundColor: colors.card, opacity: fadeAnim }]}>
+                            <View style={[styles.dropdownHeader, { borderBottomColor: colors.cardBorder }]}>
+                                <Text style={[styles.dropdownTitle, { color: colors.text }]}>Select Season</Text>
                                 <TouchableOpacity onPress={handleClose} style={styles.dropdownCloseBtn}>
-                                    <Ionicons name="close" size={22} color="#888" />
+                                    <Ionicons name="close" size={22} color={colors.textSecondary} />
                                 </TouchableOpacity>
                             </View>
                             <FlatList
@@ -87,15 +89,15 @@ export const SeasonPicker = ({ seasons, selectedSeason, onSelect, variant = 'chi
                                     const isActive = item === selectedSeason;
                                     return (
                                         <TouchableOpacity
-                                            style={[styles.dropdownItem, isActive && styles.dropdownItemActive]}
+                                            style={[styles.dropdownItem, { borderBottomColor: colors.separator }, isActive && { backgroundColor: colors.chipActive }]}
                                             onPress={() => handleSelect(item)}
                                             activeOpacity={0.7}
                                         >
-                                            <Text style={[styles.dropdownItemText, isActive && styles.dropdownItemTextActive]}>
+                                            <Text style={[styles.dropdownItemText, { color: colors.text }, isActive && { color: colors.accent }]}>
                                                 {item}
                                             </Text>
                                             {isActive && (
-                                                <Ionicons name="checkmark" size={20} color="#0A84FF" />
+                                                <Ionicons name="checkmark" size={20} color={colors.accent} />
                                             )}
                                         </TouchableOpacity>
                                     );
@@ -112,18 +114,18 @@ export const SeasonPicker = ({ seasons, selectedSeason, onSelect, variant = 'chi
     // Chips variant (default, for SHL)
     return (
         <View style={styles.seasonPicker}>
-            <Text style={styles.seasonLabel}>Season</Text>
+            <Text style={[styles.seasonLabel, { color: colors.textSecondary }]}>Season</Text>
             <View style={styles.seasonChipRow}>
                 {seasons.map(season => {
                     const isActive = season === selectedSeason;
                     return (
                         <TouchableOpacity
                             key={season}
-                            style={[styles.seasonChip, isActive && styles.seasonChipActive]}
+                            style={[styles.seasonChip, { backgroundColor: colors.chip, borderColor: colors.chipBorder }, isActive && { backgroundColor: colors.accent, borderColor: colors.accent }]}
                             onPress={() => onSelect?.(season)}
                             activeOpacity={0.7}
                         >
-                            <Text style={[styles.seasonChipText, isActive && styles.seasonChipTextActive]}>
+                            <Text style={[styles.seasonChipText, { color: colors.textSecondary }, isActive && styles.seasonChipTextActive]}>
                                 {season}
                             </Text>
                         </TouchableOpacity>

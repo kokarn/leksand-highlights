@@ -34,8 +34,24 @@ export const STORAGE_KEYS = {
     // Pre-game notification settings per sport
     PRE_GAME_SHL_ENABLED: 'preGameShlEnabled',
     PRE_GAME_FOOTBALL_ENABLED: 'preGameFootballEnabled',
-    PRE_GAME_BIATHLON_ENABLED: 'preGameBiathlonEnabled'
+    PRE_GAME_BIATHLON_ENABLED: 'preGameBiathlonEnabled',
+    // Theme preference
+    THEME_MODE: 'themeMode'
 };
+
+// Theme mode options
+export const THEME_MODES = {
+    SYSTEM: 'system',
+    LIGHT: 'light',
+    DARK: 'dark'
+};
+
+// Theme mode display options for settings
+export const THEME_OPTIONS = [
+    { id: 'system', label: 'System', icon: 'phone-portrait-outline' },
+    { id: 'light', label: 'Light', icon: 'sunny-outline' },
+    { id: 'dark', label: 'Dark', icon: 'moon-outline' }
+];
 
 // FCM Topic names for push notifications
 export const FCM_TOPICS = {

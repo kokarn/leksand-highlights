@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
+import { useTheme } from '../contexts';
 
 /**
  * Format stat value for display
@@ -32,10 +33,12 @@ export const StandingsTable = ({
     getTeamKey,
     getTeamLogo
 }) => {
+    const { colors, isDark } = useTheme();
+    
     if (standings.length === 0) {
         return (
             <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No standings available.</Text>
+                <Text style={[styles.emptyText, { color: colors.textMuted }]}>No standings available.</Text>
             </View>
         );
     }
@@ -44,26 +47,26 @@ export const StandingsTable = ({
     const dividerPositions = LEAGUE_DIVIDERS[sport] || [];
 
     return (
-        <View style={styles.tableCard}>
+        <View style={[styles.tableCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
             {/* Header Row */}
-            <View style={[styles.tableRow, styles.tableRowHeader]}>
-                <Text style={[styles.tableHeaderText, styles.colRank]}>#</Text>
+            <View style={[styles.tableRow, styles.tableRowHeader, { backgroundColor: isDark ? '#2c2c2e' : colors.cardHeader, borderBottomColor: colors.cardBorder }]}>
+                <Text style={[styles.tableHeaderText, styles.colRank, { color: colors.textSecondary }]}>#</Text>
                 <View style={styles.colTeam}>
-                    <Text style={[styles.tableHeaderText, styles.textLeft]}>Team</Text>
+                    <Text style={[styles.tableHeaderText, styles.textLeft, { color: colors.textSecondary }]}>Team</Text>
                 </View>
-                <Text style={[styles.tableHeaderText, styles.colStat]}>GP</Text>
-                <Text style={[styles.tableHeaderText, styles.colStat]}>W</Text>
+                <Text style={[styles.tableHeaderText, styles.colStat, { color: colors.textSecondary }]}>GP</Text>
+                <Text style={[styles.tableHeaderText, styles.colStat, { color: colors.textSecondary }]}>W</Text>
                 {isHockey ? (
                     <>
-                        <Text style={[styles.tableHeaderText, styles.colStat]}>OW</Text>
-                        <Text style={[styles.tableHeaderText, styles.colStat]}>OL</Text>
+                        <Text style={[styles.tableHeaderText, styles.colStat, { color: colors.textSecondary }]}>OW</Text>
+                        <Text style={[styles.tableHeaderText, styles.colStat, { color: colors.textSecondary }]}>OL</Text>
                     </>
                 ) : (
-                    <Text style={[styles.tableHeaderText, styles.colStat]}>D</Text>
+                    <Text style={[styles.tableHeaderText, styles.colStat, { color: colors.textSecondary }]}>D</Text>
                 )}
-                <Text style={[styles.tableHeaderText, styles.colStat]}>L</Text>
-                <Text style={[styles.tableHeaderText, styles.colGoalDiff]}>+/-</Text>
-                <Text style={[styles.tableHeaderText, styles.colPoints]}>P</Text>
+                <Text style={[styles.tableHeaderText, styles.colStat, { color: colors.textSecondary }]}>L</Text>
+                <Text style={[styles.tableHeaderText, styles.colGoalDiff, { color: colors.textSecondary }]}>+/-</Text>
+                <Text style={[styles.tableHeaderText, styles.colPoints, { color: colors.textSecondary }]}>P</Text>
             </View>
 
             {/* Data Rows */}
@@ -76,8 +79,8 @@ export const StandingsTable = ({
 
                 return (
                     <Fragment key={team.teamUuid || team.teamCode || team.teamName}>
-                        <View style={[styles.tableRow, isFavorite && styles.tableRowActive]}>
-                        <Text style={[styles.tableCell, styles.colRank]}>
+                        <View style={[styles.tableRow, { borderBottomColor: colors.separator }, isFavorite && { backgroundColor: colors.chipActive }]}>
+                        <Text style={[styles.tableCell, styles.colRank, { color: colors.text }]}>
                             {formatStatValue(team.position)}
                         </Text>
                         <View style={[styles.colTeam, styles.teamCell]}>
@@ -88,43 +91,43 @@ export const StandingsTable = ({
                                     resizeMode="contain"
                                 />
                             ) : (
-                                <View style={styles.teamLogoPlaceholder} />
+                                <View style={[styles.teamLogoPlaceholder, { backgroundColor: colors.separator }]} />
                             )}
-                            <Text style={styles.teamName} numberOfLines={1}>
+                            <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1}>
                                 {team.teamShortName || team.teamName || teamKey}
                             </Text>
                         </View>
-                        <Text style={[styles.tableCell, styles.colStat]}>
+                        <Text style={[styles.tableCell, styles.colStat, { color: colors.text }]}>
                             {formatStatValue(team.gamesPlayed)}
                         </Text>
-                        <Text style={[styles.tableCell, styles.colStat, styles.mutedCell]}>
+                        <Text style={[styles.tableCell, styles.colStat, { color: colors.textSecondary }]}>
                             {formatStatValue(team.wins)}
                         </Text>
                         {isHockey ? (
                             <>
-                                <Text style={[styles.tableCell, styles.colStat, styles.mutedCell]}>
+                                <Text style={[styles.tableCell, styles.colStat, { color: colors.textSecondary }]}>
                                     {formatStatValue(team.overtimeWins)}
                                 </Text>
-                                <Text style={[styles.tableCell, styles.colStat, styles.mutedCell]}>
+                                <Text style={[styles.tableCell, styles.colStat, { color: colors.textSecondary }]}>
                                     {formatStatValue(team.overtimeLosses)}
                                 </Text>
                             </>
                         ) : (
-                            <Text style={[styles.tableCell, styles.colStat, styles.mutedCell]}>
+                            <Text style={[styles.tableCell, styles.colStat, { color: colors.textSecondary }]}>
                                 {formatStatValue(team.draws)}
                             </Text>
                         )}
-                        <Text style={[styles.tableCell, styles.colStat, styles.mutedCell]}>
+                        <Text style={[styles.tableCell, styles.colStat, { color: colors.textSecondary }]}>
                             {formatStatValue(team.losses)}
                         </Text>
-                        <Text style={[styles.tableCell, styles.colGoalDiff, styles.mutedCell]}>
+                        <Text style={[styles.tableCell, styles.colGoalDiff, { color: colors.textSecondary }]}>
                             {formatStatValue(team.goalDiff)}
                         </Text>
-                        <Text style={[styles.tableCell, styles.colPoints]}>
+                        <Text style={[styles.tableCell, styles.colPoints, { color: colors.text }]}>
                             {formatStatValue(team.points)}
                         </Text>
                         </View>
-                        {showDivider && <View style={styles.groupDivider} />}
+                        {showDivider && <View style={[styles.groupDivider, { backgroundColor: colors.cardBorder }]} />}
                     </Fragment>
                 );
             })}

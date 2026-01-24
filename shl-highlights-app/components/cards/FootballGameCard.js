@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { extractScore, formatRelativeDateEnglish, formatTime } from '../../utils';
+import { useTheme } from '../../contexts';
 
 const getTeamName = (team, fallback) => {
     return team?.names?.short || team?.names?.long || team?.code || fallback;
@@ -12,6 +13,8 @@ const getTeamLogo = (team) => {
 };
 
 export const FootballGameCard = memo(function FootballGameCard({ game, onPress }) {
+    const { colors, isDark } = useTheme();
+    
     const homeTeam = game?.homeTeamInfo ?? {};
     const awayTeam = game?.awayTeamInfo ?? {};
     const isLive = game?.state === 'live';
@@ -24,22 +27,26 @@ export const FootballGameCard = memo(function FootballGameCard({ game, onPress }
         : game?.state === 'pre-game'
             ? 'Pre-game'
             : game?.state || '-';
+    
+    const cardColors = isDark 
+        ? (isLive ? ['#2a1c1c', '#1c1c1e'] : ['#1c1c1e', '#2c2c2e'])
+        : [colors.card, colors.backgroundSecondary];
 
     return (
         <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
             <LinearGradient
-                colors={isLive ? ['#2a1c1c', '#1c1c1e'] : ['#1c1c1e', '#2c2c2e']}
+                colors={cardColors}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={[styles.gameCard, isLive && styles.gameCardLive]}
+                style={[styles.gameCard, { borderColor: colors.cardBorder }, isLive && styles.gameCardLive]}
             >
                 <View style={styles.cardHeader}>
-                    <Text style={styles.leagueText}>Allsvenskan</Text>
+                    <Text style={[styles.leagueText, { color: colors.textMuted }]}>Allsvenskan</Text>
                     <View style={styles.headerRight}>
-                        <Text style={[styles.gameDate, isLive && styles.liveTextAccented]}>
+                        <Text style={[styles.gameDate, { color: colors.textSecondary }, isLive && styles.liveTextAccented]}>
                             {isLive ? 'LIVE' : formattedDate}
                         </Text>
-                        {!isLive && <Text style={styles.gameTime}>{formattedTime}</Text>}
+                        {!isLive && <Text style={[styles.gameTime, { color: colors.textMuted }]}>{formattedTime}</Text>}
                     </View>
                 </View>
                 <View style={styles.matchupContainer}>
@@ -51,15 +58,15 @@ export const FootballGameCard = memo(function FootballGameCard({ game, onPress }
                                 resizeMode="contain"
                             />
                         ) : (
-                            <View style={styles.teamLogoPlaceholder} />
+                            <View style={[styles.teamLogoPlaceholder, { backgroundColor: colors.separator }]} />
                         )}
-                        <Text style={styles.teamName}>
+                        <Text style={[styles.teamName, { color: colors.text }]}>
                             {getTeamName(homeTeam, 'Home')}
                         </Text>
                     </View>
                     <View style={styles.scoreContainer}>
-                        <Text style={styles.scoreText}>{homeScore} - {awayScore}</Text>
-                        <Text style={styles.statusText} numberOfLines={1}>
+                        <Text style={[styles.scoreText, { color: colors.text }]}>{homeScore} - {awayScore}</Text>
+                        <Text style={[styles.statusText, { color: colors.textMuted }]} numberOfLines={1}>
                             {stateLabel}
                         </Text>
                     </View>
@@ -71,9 +78,9 @@ export const FootballGameCard = memo(function FootballGameCard({ game, onPress }
                                 resizeMode="contain"
                             />
                         ) : (
-                            <View style={styles.teamLogoPlaceholder} />
+                            <View style={[styles.teamLogoPlaceholder, { backgroundColor: colors.separator }]} />
                         )}
-                        <Text style={styles.teamName}>
+                        <Text style={[styles.teamName, { color: colors.text }]}>
                             {getTeamName(awayTeam, 'Away')}
                         </Text>
                     </View>

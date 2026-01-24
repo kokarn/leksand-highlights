@@ -3,8 +3,11 @@ import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getTeamLogoUrl } from '../../api/shl';
 import { extractScore, formatRelativeDateEnglish, formatTime } from '../../utils';
+import { useTheme } from '../../contexts';
 
 export const GameCard = memo(function GameCard({ game, onPress }) {
+    const { colors, isDark } = useTheme();
+    
     const homeTeam = game?.homeTeamInfo ?? {};
     const awayTeam = game?.awayTeamInfo ?? {};
     const homeCode = homeTeam.code;
@@ -19,22 +22,26 @@ export const GameCard = memo(function GameCard({ game, onPress }) {
     const homeScore = extractScore(game?.homeTeamResult, homeTeam);
     const awayScore = extractScore(game?.awayTeamResult, awayTeam);
     const gameState = game?.state ?? '-';
+    
+    const cardColors = isDark 
+        ? ['#1c1c1e', '#2c2c2e'] 
+        : [colors.card, colors.backgroundSecondary];
 
     return (
         <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
             <LinearGradient
-                colors={['#1c1c1e', '#2c2c2e']}
+                colors={cardColors}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.gameCard}
+                style={[styles.gameCard, { borderColor: colors.cardBorder }]}
             >
                 <View style={styles.cardHeader}>
-                    <Text style={styles.leagueText}>SHL</Text>
+                    <Text style={[styles.leagueText, { color: colors.textMuted }]}>SHL</Text>
                     <View style={styles.headerRight}>
-                        <Text style={[styles.gameDate, isLive && styles.liveTextAccented]}>
+                        <Text style={[styles.gameDate, { color: colors.textSecondary }, isLive && styles.liveTextAccented]}>
                             {isLive ? 'LIVE' : formattedDate}
                         </Text>
-                        {!isLive && <Text style={styles.gameTime}>{formattedTime}</Text>}
+                        {!isLive && <Text style={[styles.gameTime, { color: colors.textMuted }]}>{formattedTime}</Text>}
                     </View>
                 </View>
                 <View style={styles.matchupContainer}>
@@ -46,15 +53,15 @@ export const GameCard = memo(function GameCard({ game, onPress }) {
                                 resizeMode="contain"
                             />
                         ) : (
-                            <View style={styles.teamLogoPlaceholder} />
+                            <View style={[styles.teamLogoPlaceholder, { backgroundColor: colors.separator }]} />
                         )}
-                        <Text style={styles.teamName}>
+                        <Text style={[styles.teamName, { color: colors.text }]}>
                             {homeName}
                         </Text>
                     </View>
                     <View style={styles.scoreContainer}>
-                        <Text style={styles.scoreText}>{homeScore} - {awayScore}</Text>
-                        <Text style={styles.statusText}>
+                        <Text style={[styles.scoreText, { color: colors.text }]}>{homeScore} - {awayScore}</Text>
+                        <Text style={[styles.statusText, { color: colors.textMuted }]}>
                             {gameState === 'post-game' ? 'Final' : gameState === 'pre-game' ? 'Pre-game' : gameState}
                         </Text>
                     </View>
@@ -66,9 +73,9 @@ export const GameCard = memo(function GameCard({ game, onPress }) {
                                 resizeMode="contain"
                             />
                         ) : (
-                            <View style={styles.teamLogoPlaceholder} />
+                            <View style={[styles.teamLogoPlaceholder, { backgroundColor: colors.separator }]} />
                         )}
-                        <Text style={styles.teamName}>
+                        <Text style={[styles.teamName, { color: colors.text }]}>
                             {awayName}
                         </Text>
                     </View>
