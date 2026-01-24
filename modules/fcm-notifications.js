@@ -1,0 +1,763 @@
+const admin = require('firebase-admin');
+const fs = require('fs');
+const path = require('path');
+const { formatSwedishTimestamp } = require('./utils');
+
+// ============ FIREBASE CONFIGURATION ============
+// Set GOOGLE_APPLICATION_CREDENTIALS env var to path of service account JSON
+// Or set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY individually
+let firebaseApp = null;
+
+// ============ SUBSCRIBER TRACKING ============
+const SUBSCRIBERS_FILE = path.join(__dirname, '..', 'fcm_subscribers.json');
+
+// In-memory store for subscribers and their topics
+let subscribersData = {
+    subscribers: {},  // token -> { topics: [], registeredAt, lastSeen, platform }
+    topicStats: {},   // topic -> { subscriberCount, lastUpdated }
+    stats: {
+        totalSubscribers: 0,
+        totalTopicSubscriptions: 0,
+        lastUpdated: null
+    }
+};
+
+// ============ STATS ============
+let stats = {
+    notificationsSent: 0,
+    errors: 0,
+    lastSent: null
+};
+
+// ============ INITIALIZATION ============
+
+/**
+ * Initialize Firebase Admin SDK
+ */
+function initializeFirebase() {
+    if (firebaseApp) {
+        return true;
+    }
+
+    try {
+        // Check for service account file path
+        const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+        
+        if (serviceAccountPath && fs.existsSync(serviceAccountPath)) {
+            const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+            firebaseApp = admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+            });
+            console.log('[FCM] Initialized with service account file');
+            return true;
+        }
+
+        // Check for individual environment variables
+        const projectId = process.env.FIREBASE_PROJECT_ID;
+        const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+        const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+        if (projectId && clientEmail && privateKey) {
+            firebaseApp = admin.initializeApp({
+                credential: admin.credential.cert({
+                    projectId,
+                    clientEmail,
+                    privateKey
+                })
+            });
+            console.log('[FCM] Initialized with environment variables');
+            return true;
+        }
+
+        console.warn('[FCM] Not configured. Set GOOGLE_APPLICATION_CREDENTIALS or FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY');
+        return false;
+    } catch (error) {
+        console.error('[FCM] Initialization error:', error.message);
+        return false;
+    }
+}
+
+/**
+ * Load subscribers data from file
+ */
+function loadSubscribersData() {
+    try {
+        if (fs.existsSync(SUBSCRIBERS_FILE)) {
+            const data = JSON.parse(fs.readFileSync(SUBSCRIBERS_FILE, 'utf8'));
+            subscribersData = {
+                subscribers: data.subscribers || {},
+                topicStats: data.topicStats || {},
+                stats: data.stats || {
+                    totalSubscribers: 0,
+                    totalTopicSubscriptions: 0,
+                    lastUpdated: null
+                }
+            };
+            console.log(`[FCM] Loaded ${Object.keys(subscribersData.subscribers).length} subscribers from file`);
+        }
+    } catch (error) {
+        console.error('[FCM] Error loading subscribers file:', error.message);
+    }
+}
+
+/**
+ * Save subscribers data to file
+ */
+function saveSubscribersData() {
+    try {
+        subscribersData.stats.lastUpdated = formatSwedishTimestamp();
+        subscribersData.stats.totalSubscribers = Object.keys(subscribersData.subscribers).length;
+        subscribersData.stats.totalTopicSubscriptions = Object.values(subscribersData.subscribers)
+            .reduce((sum, sub) => sum + (sub.topics?.length || 0), 0);
+
+        fs.writeFileSync(SUBSCRIBERS_FILE, JSON.stringify(subscribersData, null, 2));
+    } catch (error) {
+        console.error('[FCM] Error saving subscribers file:', error.message);
+    }
+}
+
+/**
+ * Update topic stats
+ */
+function updateTopicStats() {
+    const topicCounts = {};
+    
+    for (const subscriber of Object.values(subscribersData.subscribers)) {
+        for (const topic of (subscriber.topics || [])) {
+            topicCounts[topic] = (topicCounts[topic] || 0) + 1;
+        }
+    }
+
+    for (const [topic, count] of Object.entries(topicCounts)) {
+        subscribersData.topicStats[topic] = {
+            subscriberCount: count,
+            lastUpdated: formatSwedishTimestamp()
+        };
+    }
+
+    // Remove topics with no subscribers
+    for (const topic of Object.keys(subscribersData.topicStats)) {
+        if (!topicCounts[topic]) {
+            delete subscribersData.topicStats[topic];
+        }
+    }
+}
+
+// Initialize on module load
+loadSubscribersData();
+
+// ============ PUBLIC API ============
+
+/**
+ * Check if FCM is properly configured
+ */
+function isConfigured() {
+    if (!firebaseApp) {
+        initializeFirebase();
+    }
+    return Boolean(firebaseApp);
+}
+
+/**
+ * Register a device token and subscribe to topics
+ * @param {string} token - FCM device token
+ * @param {string[]} topics - Topics to subscribe to
+ * @param {Object} metadata - Optional metadata (platform, etc.)
+ */
+async function registerDevice(token, topics = [], metadata = {}) {
+    if (!isConfigured()) {
+        return { success: false, error: 'FCM not configured' };
+    }
+
+    try {
+        const now = formatSwedishTimestamp();
+        const existingSubscriber = subscribersData.subscribers[token];
+        const oldTopics = existingSubscriber?.topics || [];
+
+        // Calculate topics to add and remove
+        const topicsToAdd = topics.filter(t => !oldTopics.includes(t));
+        const topicsToRemove = oldTopics.filter(t => !topics.includes(t));
+
+        // Subscribe to new topics
+        for (const topic of topicsToAdd) {
+            try {
+                await admin.messaging().subscribeToTopic([token], topic);
+                console.log(`[FCM] Subscribed ${token.slice(-8)} to topic: ${topic}`);
+            } catch (error) {
+                console.error(`[FCM] Error subscribing to topic ${topic}:`, error.message);
+            }
+        }
+
+        // Unsubscribe from removed topics
+        for (const topic of topicsToRemove) {
+            try {
+                await admin.messaging().unsubscribeFromTopic([token], topic);
+                console.log(`[FCM] Unsubscribed ${token.slice(-8)} from topic: ${topic}`);
+            } catch (error) {
+                console.error(`[FCM] Error unsubscribing from topic ${topic}:`, error.message);
+            }
+        }
+
+        // Update subscriber data
+        subscribersData.subscribers[token] = {
+            topics,
+            registeredAt: existingSubscriber?.registeredAt || now,
+            lastSeen: now,
+            platform: metadata.platform || existingSubscriber?.platform || 'unknown'
+        };
+
+        updateTopicStats();
+        saveSubscribersData();
+
+        return {
+            success: true,
+            topicsAdded: topicsToAdd,
+            topicsRemoved: topicsToRemove,
+            totalTopics: topics.length
+        };
+    } catch (error) {
+        console.error('[FCM] Error registering device:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Unregister a device
+ * @param {string} token - FCM device token
+ */
+async function unregisterDevice(token) {
+    if (!isConfigured()) {
+        return { success: false, error: 'FCM not configured' };
+    }
+
+    try {
+        const subscriber = subscribersData.subscribers[token];
+        if (!subscriber) {
+            return { success: true, message: 'Device not found' };
+        }
+
+        // Unsubscribe from all topics
+        for (const topic of (subscriber.topics || [])) {
+            try {
+                await admin.messaging().unsubscribeFromTopic([token], topic);
+            } catch (error) {
+                console.error(`[FCM] Error unsubscribing from topic ${topic}:`, error.message);
+            }
+        }
+
+        delete subscribersData.subscribers[token];
+        updateTopicStats();
+        saveSubscribersData();
+
+        return { success: true };
+    } catch (error) {
+        console.error('[FCM] Error unregistering device:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Send a notification to a topic
+ * @param {Object} options - Notification options
+ * @param {string} options.topic - Topic to send to
+ * @param {string} options.title - Notification title
+ * @param {string} options.body - Notification body
+ * @param {Object} options.data - Additional data payload
+ */
+async function sendToTopic({ topic, title, body, data = {} }) {
+    if (!isConfigured()) {
+        console.warn('[FCM] Not configured. Cannot send notification.');
+        return { success: false, error: 'Not configured' };
+    }
+
+    const message = {
+        topic,
+        notification: {
+            title,
+            body
+        },
+        data: Object.fromEntries(
+            Object.entries(data).map(([k, v]) => [k, String(v)])
+        ),
+        android: {
+            priority: 'high',
+            notification: {
+                channelId: 'goals',
+                priority: 'high',
+                defaultSound: true
+            }
+        },
+        apns: {
+            payload: {
+                aps: {
+                    sound: 'default',
+                    badge: 1
+                }
+            }
+        }
+    };
+
+    try {
+        const response = await admin.messaging().send(message);
+        stats.notificationsSent++;
+        stats.lastSent = formatSwedishTimestamp();
+        console.log(`[FCM] Sent notification to topic "${topic}": "${title}"`);
+        return { success: true, messageId: response };
+    } catch (error) {
+        stats.errors++;
+        console.error('[FCM] Error sending to topic:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Send a notification to multiple topics (OR logic)
+ * @param {Object} options - Notification options
+ * @param {string[]} options.topics - Topics to send to
+ * @param {string} options.title - Notification title
+ * @param {string} options.body - Notification body
+ * @param {Object} options.data - Additional data payload
+ */
+async function sendToTopics({ topics, title, body, data = {} }) {
+    if (!isConfigured()) {
+        console.warn('[FCM] Not configured. Cannot send notification.');
+        return { success: false, error: 'Not configured' };
+    }
+
+    if (!topics || topics.length === 0) {
+        return { success: false, error: 'No topics specified' };
+    }
+
+    // For a single topic, use simple topic messaging
+    if (topics.length === 1) {
+        return sendToTopic({ topic: topics[0], title, body, data });
+    }
+
+    // For multiple topics, use condition (OR logic)
+    // FCM condition: "'topic1' in topics || 'topic2' in topics"
+    const condition = topics.map(t => `'${t}' in topics`).join(' || ');
+
+    const message = {
+        condition,
+        notification: {
+            title,
+            body
+        },
+        data: Object.fromEntries(
+            Object.entries(data).map(([k, v]) => [k, String(v)])
+        ),
+        android: {
+            priority: 'high',
+            notification: {
+                channelId: 'goals',
+                priority: 'high',
+                defaultSound: true
+            }
+        },
+        apns: {
+            payload: {
+                aps: {
+                    sound: 'default',
+                    badge: 1
+                }
+            }
+        }
+    };
+
+    try {
+        const response = await admin.messaging().send(message);
+        stats.notificationsSent++;
+        stats.lastSent = formatSwedishTimestamp();
+        console.log(`[FCM] Sent notification to topics [${topics.join(', ')}]: "${title}"`);
+        return { success: true, messageId: response };
+    } catch (error) {
+        stats.errors++;
+        console.error('[FCM] Error sending to topics:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Send a notification to a specific device token
+ * @param {Object} options - Notification options
+ * @param {string} options.token - Device token
+ * @param {string} options.title - Notification title
+ * @param {string} options.body - Notification body
+ * @param {Object} options.data - Additional data payload
+ */
+async function sendToDevice({ token, title, body, data = {} }) {
+    if (!isConfigured()) {
+        console.warn('[FCM] Not configured. Cannot send notification.');
+        return { success: false, error: 'Not configured' };
+    }
+
+    const message = {
+        token,
+        notification: {
+            title,
+            body
+        },
+        data: Object.fromEntries(
+            Object.entries(data).map(([k, v]) => [k, String(v)])
+        ),
+        android: {
+            priority: 'high',
+            notification: {
+                channelId: 'goals',
+                priority: 'high',
+                defaultSound: true
+            }
+        },
+        apns: {
+            payload: {
+                aps: {
+                    sound: 'default',
+                    badge: 1
+                }
+            }
+        }
+    };
+
+    try {
+        const response = await admin.messaging().send(message);
+        stats.notificationsSent++;
+        stats.lastSent = formatSwedishTimestamp();
+        console.log(`[FCM] Sent notification to device: "${title}"`);
+        return { success: true, messageId: response };
+    } catch (error) {
+        stats.errors++;
+        console.error('[FCM] Error sending to device:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Send a goal notification
+ * @param {Object} goal - Goal details
+ * @param {Object} options - Options
+ */
+async function sendGoalNotification(goal, options = {}) {
+    const {
+        token = null,
+        sendOpposing = !token
+    } = options;
+
+    const {
+        sport,
+        gameId,
+        scorerName,
+        scoringTeamCode,
+        scoringTeamName,
+        opposingTeamCode,
+        homeTeamCode,
+        awayTeamCode,
+        homeScore,
+        awayScore,
+        time,
+        period
+    } = goal;
+
+    // Build notification content
+    const sportEmoji = sport === 'shl' ? '🏒' : '⚽';
+    const sportLabel = sport === 'shl' ? 'SHL' : 'Allsvenskan';
+    const title = `${sportEmoji} ${sportLabel} Goal: ${scoringTeamName}`;
+
+    let message = `${scorerName} scores!`;
+    if (homeScore !== undefined && awayScore !== undefined) {
+        message += ` ${homeScore}-${awayScore}`;
+    }
+    if (time) {
+        message += ` (${time}`;
+        if (period) {
+            message += ` ${period}`;
+        }
+        message += ')';
+    }
+
+    // Build deep link URL
+    const deepLinkUrl = `gamepulse://game/${sport}/${gameId}`;
+
+    const data = {
+        type: 'goal',
+        sport,
+        gameId,
+        scoringTeam: scoringTeamCode,
+        homeTeam: homeTeamCode,
+        awayTeam: awayTeamCode,
+        homeScore: String(homeScore),
+        awayScore: String(awayScore),
+        url: deepLinkUrl
+    };
+
+    let result;
+
+    if (token) {
+        // Send to specific device
+        result = await sendToDevice({ token, title, body: message, data });
+    } else {
+        // Build topics for scoring team
+        // Topics: goal_notifications AND team_{code}
+        // We use condition: "'goal_notifications' in topics && 'team_lif' in topics"
+        const scoringTeamTopic = `team_${scoringTeamCode.toLowerCase()}`;
+        
+        // For FCM, we need to use conditions for AND logic
+        const condition = `'goal_notifications' in topics && '${scoringTeamTopic}' in topics`;
+        
+        result = await sendWithCondition({
+            condition,
+            title,
+            body: message,
+            data
+        });
+    }
+
+    // Also send to opposing team followers
+    if (sendOpposing && homeTeamCode && awayTeamCode && !token) {
+        const opposingCode = scoringTeamCode === homeTeamCode ? awayTeamCode : homeTeamCode;
+        const opposingTopic = `team_${opposingCode.toLowerCase()}`;
+        const opposingCondition = `'goal_notifications' in topics && '${opposingTopic}' in topics`;
+
+        // Fire and forget
+        sendWithCondition({
+            condition: opposingCondition,
+            title,
+            body: `${scoringTeamName} scored. ${homeScore}-${awayScore}`,
+            data
+        }).catch(err => console.error('[FCM] Error sending opposing team notification:', err));
+    }
+
+    return result;
+}
+
+/**
+ * Send a notification with a condition
+ * @param {Object} options - Notification options
+ * @param {string} options.condition - FCM condition string
+ * @param {string} options.title - Notification title
+ * @param {string} options.body - Notification body
+ * @param {Object} options.data - Additional data payload
+ */
+async function sendWithCondition({ condition, title, body, data = {} }) {
+    if (!isConfigured()) {
+        console.warn('[FCM] Not configured. Cannot send notification.');
+        return { success: false, error: 'Not configured' };
+    }
+
+    const message = {
+        condition,
+        notification: {
+            title,
+            body
+        },
+        data: Object.fromEntries(
+            Object.entries(data).map(([k, v]) => [k, String(v)])
+        ),
+        android: {
+            priority: 'high',
+            notification: {
+                channelId: 'goals',
+                priority: 'high',
+                defaultSound: true
+            }
+        },
+        apns: {
+            payload: {
+                aps: {
+                    sound: 'default',
+                    badge: 1
+                }
+            }
+        }
+    };
+
+    try {
+        const response = await admin.messaging().send(message);
+        stats.notificationsSent++;
+        stats.lastSent = formatSwedishTimestamp();
+        console.log(`[FCM] Sent notification with condition: "${title}"`);
+        return { success: true, messageId: response };
+    } catch (error) {
+        stats.errors++;
+        console.error('[FCM] Error sending with condition:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Send a pre-game reminder notification
+ * @param {Object} gameInfo - Game information
+ */
+async function sendPreGameNotification(gameInfo) {
+    const {
+        sport,
+        gameId,
+        homeTeamName,
+        awayTeamName,
+        homeTeamCode,
+        awayTeamCode,
+        eventName,
+        venue,
+        minutesUntilStart = 5
+    } = gameInfo;
+
+    let title, message, sportEmoji, preGameTopic;
+
+    if (sport === 'shl') {
+        sportEmoji = '🏒';
+        preGameTopic = 'pre_game_shl';
+        title = `${sportEmoji} SHL Starting Soon`;
+        message = `${homeTeamName} vs ${awayTeamName}`;
+        if (venue) {
+            message += ` at ${venue}`;
+        }
+        message += ` - starts in ${minutesUntilStart} minutes!`;
+    } else if (sport === 'allsvenskan') {
+        sportEmoji = '⚽';
+        preGameTopic = 'pre_game_football';
+        title = `${sportEmoji} Allsvenskan Starting Soon`;
+        message = `${homeTeamName} vs ${awayTeamName}`;
+        if (venue) {
+            message += ` at ${venue}`;
+        }
+        message += ` - kicks off in ${minutesUntilStart} minutes!`;
+    } else if (sport === 'biathlon') {
+        sportEmoji = '🎯';
+        preGameTopic = 'pre_game_biathlon';
+        title = `${sportEmoji} Biathlon Starting Soon`;
+        message = eventName || 'Race';
+        if (venue) {
+            message += ` in ${venue}`;
+        }
+        message += ` - starts in ${minutesUntilStart} minutes!`;
+    } else {
+        console.warn(`[FCM] Unknown sport for pre-game notification: ${sport}`);
+        return { success: false, error: 'Unknown sport' };
+    }
+
+    const deepLinkUrl = `gamepulse://game/${sport}/${gameId}`;
+
+    const data = {
+        type: 'pre_game',
+        sport,
+        gameId,
+        homeTeam: homeTeamCode || '',
+        awayTeam: awayTeamCode || '',
+        url: deepLinkUrl
+    };
+
+    // For team sports, send to users following either team with pre-game enabled
+    if ((sport === 'shl' || sport === 'allsvenskan') && homeTeamCode && awayTeamCode) {
+        const homeTeamTopic = `team_${homeTeamCode.toLowerCase()}`;
+        const awayTeamTopic = `team_${awayTeamCode.toLowerCase()}`;
+        
+        // Condition: pre_game AND (home_team OR away_team)
+        const condition = `'${preGameTopic}' in topics && ('${homeTeamTopic}' in topics || '${awayTeamTopic}' in topics)`;
+        
+        console.log(`[FCM] Sending pre-game notification for ${sport}: ${message}`);
+        return sendWithCondition({ condition, title, body: message, data });
+    } else {
+        // For biathlon, just use the pre-game topic
+        console.log(`[FCM] Sending pre-game notification for ${sport}: ${message}`);
+        return sendToTopic({ topic: preGameTopic, title, body: message, data });
+    }
+}
+
+/**
+ * Send a test notification
+ * @param {Object} options - Options
+ * @param {string} options.message - Custom message
+ * @param {string} options.token - Optional device token
+ */
+async function sendTestNotification(options = {}) {
+    const { message = 'This is a test notification from GamePulse!', token = null } = 
+        typeof options === 'string' ? { message: options } : options;
+
+    const title = '🔔 GamePulse Test';
+    const data = { type: 'test' };
+
+    if (token) {
+        return sendToDevice({ token, title, body: message, data });
+    }
+
+    // Send to goal_notifications topic
+    return sendToTopic({ topic: 'goal_notifications', title, body: message, data });
+}
+
+/**
+ * Get notification stats
+ */
+function getStats() {
+    return {
+        configured: isConfigured(),
+        notificationsSent: stats.notificationsSent,
+        errors: stats.errors,
+        lastSent: stats.lastSent
+    };
+}
+
+/**
+ * Get subscriber stats for admin dashboard
+ */
+function getSubscriberStats() {
+    const subscribers = Object.entries(subscribersData.subscribers).map(([token, data]) => ({
+        tokenPreview: `...${token.slice(-12)}`,
+        topics: data.topics || [],
+        topicCount: (data.topics || []).length,
+        platform: data.platform || 'unknown',
+        registeredAt: data.registeredAt,
+        lastSeen: data.lastSeen
+    }));
+
+    const topicList = Object.entries(subscribersData.topicStats)
+        .map(([topic, stats]) => ({
+            topic,
+            subscriberCount: stats.subscriberCount,
+            lastUpdated: stats.lastUpdated
+        }))
+        .sort((a, b) => b.subscriberCount - a.subscriberCount);
+
+    return {
+        totalSubscribers: Object.keys(subscribersData.subscribers).length,
+        totalTopicSubscriptions: subscribersData.stats.totalTopicSubscriptions,
+        lastUpdated: subscribersData.stats.lastUpdated,
+        subscribers,
+        topics: topicList
+    };
+}
+
+/**
+ * Get topic details
+ * @param {string} topicName - Topic name
+ */
+function getTopicDetails(topicName) {
+    const subscribers = Object.entries(subscribersData.subscribers)
+        .filter(([_, data]) => (data.topics || []).includes(topicName))
+        .map(([token, data]) => ({
+            tokenPreview: `...${token.slice(-12)}`,
+            platform: data.platform || 'unknown',
+            registeredAt: data.registeredAt,
+            lastSeen: data.lastSeen
+        }));
+
+    return {
+        topic: topicName,
+        subscriberCount: subscribers.length,
+        subscribers
+    };
+}
+
+module.exports = {
+    isConfigured,
+    registerDevice,
+    unregisterDevice,
+    sendToTopic,
+    sendToTopics,
+    sendToDevice,
+    sendWithCondition,
+    sendGoalNotification,
+    sendPreGameNotification,
+    sendTestNotification,
+    getStats,
+    getSubscriberStats,
+    getTopicDetails
+};

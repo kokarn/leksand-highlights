@@ -173,6 +173,8 @@ function navigateToSection(sectionId) {
         cache: 'Cache Management',
         sports: 'Sports Providers',
         push: 'Push Notifications',
+        subscribers: 'FCM Subscribers',
+        topics: 'FCM Topics',
         'goal-test': 'Goal Testing',
         'create-game': 'Create Game',
         games: 'Manual Games'
@@ -448,7 +450,7 @@ async function loadPushStatus(options = {}) {
         ];
 
         elements.pushStatusGrid.innerHTML = [
-            buildStatusCard('OneSignal', pushRows, { type: status.pushNotifications?.configured ? 'online' : 'offline', text: status.pushNotifications?.configured ? 'Configured' : 'Not configured' }),
+            buildStatusCard('Firebase Cloud Messaging', pushRows, { type: status.pushNotifications?.configured ? 'online' : 'offline', text: status.pushNotifications?.configured ? 'Configured' : 'Not configured' }),
             buildStatusCard('Goal Watcher', goalWatcherRows, { type: status.goalWatcher?.running ? 'online' : 'offline', text: status.goalWatcher?.running ? 'Active' : 'Stopped' })
         ].join('');
 
@@ -456,6 +458,96 @@ async function loadPushStatus(options = {}) {
 
         if (options.showMessage) {
             showToast('success', 'Status Updated', 'Push notification status refreshed');
+        }
+    } catch (error) {
+        showToast('error', 'Error', error.message);
+    }
+}
+
+// ============ Load FCM Subscribers ============
+async function loadSubscribers(options = {}) {
+    try {
+        const data = await apiRequest('/api/fcm/subscribers');
+
+        document.getElementById('subscribers-count').textContent = `${data.totalSubscribers} subscribers`;
+
+        // Stats cards
+        const statsGrid = document.getElementById('subscribers-stats-grid');
+        const statsRows = [
+            { label: 'Total subscribers', value: data.totalSubscribers },
+            { label: 'Total topic subscriptions', value: data.totalTopicSubscriptions },
+            { label: 'Average topics/user', value: data.totalSubscribers > 0 ? (data.totalTopicSubscriptions / data.totalSubscribers).toFixed(1) : '0' },
+            { label: 'Last updated', value: formatTimestamp(data.lastUpdated) }
+        ];
+        statsGrid.innerHTML = buildStatusCard('Subscriber Statistics', statsRows, { type: 'online', text: 'Live' });
+
+        // Subscribers table
+        const tbody = document.getElementById('subscribers-table-body');
+        if (!data.subscribers || data.subscribers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-muted">No subscribers registered yet</td></tr>';
+        } else {
+            tbody.innerHTML = data.subscribers.map(sub => {
+                const platformClass = (sub.platform || 'unknown').toLowerCase();
+                const topicBadges = (sub.topics || []).slice(0, 5).map(topic => {
+                    const isTeam = topic.startsWith('team_');
+                    const badgeClass = isTeam ? 'team' : 'notification';
+                    return `<span class="topic-badge ${badgeClass}">${escapeHtml(topic)}</span>`;
+                }).join('');
+                const moreTopics = sub.topics.length > 5 ? `<span class="topic-badge">+${sub.topics.length - 5} more</span>` : '';
+
+                return `
+                    <tr>
+                        <td class="token-cell">${escapeHtml(sub.tokenPreview)}</td>
+                        <td><span class="platform-badge ${platformClass}">${escapeHtml(sub.platform)}</span></td>
+                        <td><div class="topics-badge-list">${topicBadges}${moreTopics}</div></td>
+                        <td>${formatTimestamp(sub.registeredAt)}</td>
+                        <td>${formatTimestamp(sub.lastSeen)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        refreshIcons();
+
+        if (options.showMessage) {
+            showToast('success', 'Subscribers Updated', `Loaded ${data.totalSubscribers} subscribers`);
+        }
+    } catch (error) {
+        showToast('error', 'Error', error.message);
+    }
+}
+
+// ============ Load FCM Topics ============
+async function loadTopics(options = {}) {
+    try {
+        const data = await apiRequest('/api/fcm/topics');
+
+        document.getElementById('topics-count').textContent = `${data.topics?.length || 0} topics`;
+
+        const topicsGrid = document.getElementById('topics-grid');
+
+        if (!data.topics || data.topics.length === 0) {
+            topicsGrid.innerHTML = '<p class="text-muted">No topics with subscribers yet</p>';
+        } else {
+            topicsGrid.innerHTML = data.topics.map(topic => {
+                const isTeam = topic.topic.startsWith('team_');
+                const cardClass = isTeam ? 'team' : 'notification';
+                return `
+                    <div class="topic-card ${cardClass}">
+                        <div class="topic-card-header">
+                            <span class="topic-card-name">${escapeHtml(topic.topic)}</span>
+                        </div>
+                        <div class="topic-card-count">${topic.subscriberCount}</div>
+                        <div class="topic-card-label">subscribers</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        refreshIcons();
+
+        if (options.showMessage) {
+            showToast('success', 'Topics Updated', `Loaded ${data.topics?.length || 0} topics`);
         }
     } catch (error) {
         showToast('error', 'Error', error.message);
@@ -692,16 +784,15 @@ function renderGames(records) {
 
 // ============ Target Input Helpers ============
 const TARGET_PLACEHOLDERS = {
-    tags: 'No ID needed (uses tags)',
-    subscription: 'OneSignal subscription ID',
-    player: 'OneSignal player ID',
-    external: 'External user ID'
+    topic: 'No token needed (uses topic)',
+    topics: 'No token needed (uses topics)',
+    token: 'FCM device token'
 };
 
 function updateTargetInput(select, input) {
     const type = select.value;
-    input.placeholder = TARGET_PLACEHOLDERS[type] || 'Target ID';
-    const shouldDisable = type === 'tags';
+    input.placeholder = TARGET_PLACEHOLDERS[type] || 'FCM device token';
+    const shouldDisable = type === 'topic' || type === 'topics';
     input.disabled = shouldDisable;
     if (shouldDisable) {
         input.value = '';
@@ -709,21 +800,15 @@ function updateTargetInput(select, input) {
 }
 
 function buildTargetPayload(type, id) {
-    if (type === 'tags') {
+    if (type === 'topic' || type === 'topics') {
         return {};
     }
     const trimmed = id.trim();
     if (!trimmed) {
-        throw new Error('Target ID is required for the selected target type.');
+        return {};
     }
-    if (type === 'subscription') {
-        return { subscriptionId: trimmed };
-    }
-    if (type === 'player') {
-        return { playerId: trimmed };
-    }
-    if (type === 'external') {
-        return { externalUserId: trimmed };
+    if (type === 'token') {
+        return { token: trimmed };
     }
     return {};
 }
@@ -809,8 +894,14 @@ function setupEventListeners() {
     testPushTargetType.addEventListener('change', () => updateTargetInput(testPushTargetType, testPushTargetId));
     goalTestTargetType.addEventListener('change', () => {
         updateTargetInput(goalTestTargetType, goalTestTargetId);
-        document.getElementById('goal-test-send-opposing').checked = goalTestTargetType.value === 'tags';
+        document.getElementById('goal-test-send-opposing').checked = goalTestTargetType.value === 'topics';
     });
+
+    // FCM Subscribers section
+    document.getElementById('refresh-subscribers').addEventListener('click', () => loadSubscribers({ showMessage: true }));
+
+    // FCM Topics section
+    document.getElementById('refresh-topics').addEventListener('click', () => loadTopics({ showMessage: true }));
 
     // Create game form
     document.getElementById('venue').addEventListener('input', () => { venueTouched = true; });
@@ -868,14 +959,21 @@ async function sendTestPush() {
     btn.disabled = true;
     try {
         const message = document.getElementById('test-push-message').value.trim() || undefined;
-        const targetPayload = buildTargetPayload(
-            document.getElementById('test-push-target-type').value,
-            document.getElementById('test-push-target-id').value
-        );
+        const targetType = document.getElementById('test-push-target-type').value;
+        const targetId = document.getElementById('test-push-target-id').value.trim();
+
+        const payload = {};
+        if (message) {
+            payload.message = message;
+        }
+        if (targetType === 'token' && targetId) {
+            payload.token = targetId;
+        }
+
         const result = await apiRequest('/api/notifications/test', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...(message ? { message } : {}), ...targetPayload })
+            body: JSON.stringify(payload)
         });
         showToast(result.success ? 'success' : 'error', 'Test Notification', result.success ? 'Notification sent!' : 'Failed to send');
         addActivity('notification', 'Test notification sent');
@@ -901,10 +999,8 @@ async function sendGoalTest() {
             throw new Error('Teams must be different.');
         }
 
-        const targetPayload = buildTargetPayload(
-            document.getElementById('goal-test-target-type').value,
-            document.getElementById('goal-test-target-id').value
-        );
+        const targetType = document.getElementById('goal-test-target-type').value;
+        const targetId = document.getElementById('goal-test-target-id').value.trim();
 
         const body = {
             sport: document.getElementById('goal-test-sport').value,
@@ -916,9 +1012,12 @@ async function sendGoalTest() {
             period: document.getElementById('goal-test-period').value.trim() || undefined,
             time: document.getElementById('goal-test-time').value.trim() || undefined,
             scorerName: document.getElementById('goal-test-scorer-name').value.trim() || undefined,
-            sendOpposing: document.getElementById('goal-test-send-opposing').checked,
-            ...targetPayload
+            sendOpposing: document.getElementById('goal-test-send-opposing').checked
         };
+
+        if (targetType === 'token' && targetId) {
+            body.token = targetId;
+        }
 
         const result = await apiRequest('/api/notifications/goal-test', {
             method: 'POST',
@@ -1009,7 +1108,9 @@ async function init() {
         loadStatus(),
         loadPushStatus(),
         loadSports(),
-        loadGames()
+        loadGames(),
+        loadSubscribers(),
+        loadTopics()
     ]);
 
     addActivity('info', 'Admin console loaded');
@@ -1021,6 +1122,8 @@ async function init() {
     // Auto-refresh
     setInterval(() => loadStatus(), 15000);
     setInterval(() => loadPushStatus(), 15000);
+    setInterval(() => loadSubscribers(), 30000);
+    setInterval(() => loadTopics(), 30000);
 }
 
 // Start the application

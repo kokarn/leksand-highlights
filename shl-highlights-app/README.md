@@ -4,6 +4,13 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.0.0
+- **BREAKING**: Migrate from OneSignal to Firebase Cloud Messaging (FCM)
+- Replace OneSignal SDK with @react-native-firebase/messaging
+- Topic-based subscriptions for team and notification preferences
+- Server-side subscriber tracking for admin dashboard
+- No more tag limits - FCM supports up to 2,000 topics per device
+
 ### 1.18.2
 - Fix OneSignal tags not being updated when changing push notification settings after app initialization
 - Use ref instead of state for initialization check to avoid stale closure issues

@@ -37,13 +37,16 @@ export const STORAGE_KEYS = {
     PRE_GAME_BIATHLON_ENABLED: 'preGameBiathlonEnabled'
 };
 
-// Sport-specific notification tag keys for OneSignal
-export const NOTIFICATION_TAGS = {
+// FCM Topic names for push notifications
+export const FCM_TOPICS = {
     GOAL_NOTIFICATIONS: 'goal_notifications',
     PRE_GAME_SHL: 'pre_game_shl',
     PRE_GAME_FOOTBALL: 'pre_game_football',
     PRE_GAME_BIATHLON: 'pre_game_biathlon'
 };
+
+// Legacy alias for backward compatibility
+export const NOTIFICATION_TAGS = FCM_TOPICS;
 
 // Gender options for biathlon
 export const GENDER_OPTIONS = [

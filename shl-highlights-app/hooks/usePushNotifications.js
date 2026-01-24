@@ -1,30 +1,34 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Platform } from 'react-native';
+import { Platform, PermissionsAndroid } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { STORAGE_KEYS, NOTIFICATION_TAGS } from '../constants';
+import { STORAGE_KEYS, FCM_TOPICS } from '../constants';
 
-// Only import OneSignal on native platforms
-let OneSignal = null;
+// Only import Firebase on native platforms
+let messaging = null;
 if (Platform.OS !== 'web') {
-    OneSignal = require('react-native-onesignal').OneSignal;
+    try {
+        messaging = require('@react-native-firebase/messaging').default;
+    } catch (e) {
+        console.log('[FCM] Firebase messaging not available:', e.message);
+    }
 }
 
 /**
- * Hook for managing OneSignal push notifications
- * Handles initialization, permission requests, and tag-based subscriptions
+ * Hook for managing Firebase Cloud Messaging push notifications
+ * Handles initialization, permission requests, and topic subscriptions
  *
- * Tag structure:
- * - goal_notifications: 'true' | removed - enables goal notification targeting
- * - team_{code}: 'true' | removed - individual team subscription (e.g., team_lif, team_aik)
- * - pre_game_shl: 'true' | removed - enables pre-game notifications for SHL
- * - pre_game_football: 'true' | removed - enables pre-game notifications for Allsvenskan
- * - pre_game_biathlon: 'true' | removed - enables pre-game notifications for Biathlon
+ * Topic structure:
+ * - goal_notifications - enables goal notification targeting
+ * - team_{code} - individual team subscription (e.g., team_lif, team_aik)
+ * - pre_game_shl - enables pre-game notifications for SHL
+ * - pre_game_football - enables pre-game notifications for Allsvenskan
+ * - pre_game_biathlon - enables pre-game notifications for Biathlon
  */
 export function usePushNotifications() {
     const [isInitialized, setIsInitialized] = useState(false);
     const [hasPermission, setHasPermission] = useState(false);
-    const [subscriptionId, setSubscriptionId] = useState(null);
+    const [fcmToken, setFcmToken] = useState(null);
 
     // Notification preferences state
     const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -35,127 +39,236 @@ export function usePushNotifications() {
     const [preGameFootballEnabled, setPreGameFootballEnabled] = useState(false);
     const [preGameBiathlonEnabled, setPreGameBiathlonEnabled] = useState(false);
 
-    // Track all current team tags to properly remove old ones
+    // Track all current team topics
     const currentTeamsRef = useRef(new Set());
 
-    // Queue for pending tag updates before initialization
+    // Queue for pending topic updates before initialization
     const pendingTeamUpdatesRef = useRef(null);
+    const pendingTopicUpdatesRef = useRef({});
 
-    // Queue for pending single tag updates before initialization
-    const pendingTagUpdatesRef = useRef({});
-
-    // Track initialization to prevent re-running init effect
+    // Track initialization
     const initCompletedRef = useRef(false);
-
-    // Ref for synchronous initialization check (avoids closure issues with state)
     const isInitializedRef = useRef(false);
 
-    // Apply team tags to OneSignal (internal helper)
-    const applyTeamTags = useCallback((teamCodes) => {
-        if (!OneSignal) {
+    // Get API base URL from config
+    const apiBaseUrl = Constants.expoConfig?.extra?.apiBaseUrl || 'http://localhost:3000';
+
+    /**
+     * Register device with backend server
+     */
+    const registerWithServer = useCallback(async (token, topics) => {
+        try {
+            const response = await fetch(`${apiBaseUrl}/api/fcm/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    token,
+                    topics,
+                    platform: Platform.OS
+                })
+            });
+            const result = await response.json();
+            if (result.success) {
+                console.log('[FCM] Registered with server successfully');
+            } else {
+                console.warn('[FCM] Server registration failed:', result.error);
+            }
+            return result;
+        } catch (error) {
+            console.error('[FCM] Error registering with server:', error.message);
+            return { success: false, error: error.message };
+        }
+    }, [apiBaseUrl]);
+
+    /**
+     * Subscribe to a topic
+     */
+    const subscribeToTopic = useCallback(async (topic) => {
+        if (!messaging) {
+            return false;
+        }
+        try {
+            await messaging().subscribeToTopic(topic);
+            console.log(`[FCM] Subscribed to topic: ${topic}`);
+            return true;
+        } catch (error) {
+            console.error(`[FCM] Error subscribing to ${topic}:`, error.message);
+            return false;
+        }
+    }, []);
+
+    /**
+     * Unsubscribe from a topic
+     */
+    const unsubscribeFromTopic = useCallback(async (topic) => {
+        if (!messaging) {
+            return false;
+        }
+        try {
+            await messaging().unsubscribeFromTopic(topic);
+            console.log(`[FCM] Unsubscribed from topic: ${topic}`);
+            return true;
+        } catch (error) {
+            console.error(`[FCM] Error unsubscribing from ${topic}:`, error.message);
+            return false;
+        }
+    }, []);
+
+    /**
+     * Apply team topics
+     */
+    const applyTeamTopics = useCallback(async (teamCodes) => {
+        if (!messaging) {
             return;
         }
 
         const newTeams = new Set(teamCodes.map(code => code.toLowerCase()));
         const currentTeams = currentTeamsRef.current;
 
-        // Find teams to remove (in current but not in new)
+        // Find teams to remove and add
         const teamsToRemove = [...currentTeams].filter(code => !newTeams.has(code));
-
-        // Find teams to add (in new but not in current)
         const teamsToAdd = [...newTeams].filter(code => !currentTeams.has(code));
 
-        // Remove old team tags
-        teamsToRemove.forEach(code => {
-            OneSignal.User.removeTag(`team_${code}`);
-        });
+        // Unsubscribe from removed teams
+        for (const code of teamsToRemove) {
+            await unsubscribeFromTopic(`team_${code}`);
+        }
 
-        // Add new team tags
-        teamsToAdd.forEach(code => {
-            OneSignal.User.addTag(`team_${code}`, 'true');
-        });
+        // Subscribe to new teams
+        for (const code of teamsToAdd) {
+            await subscribeToTopic(`team_${code}`);
+        }
 
         // Update ref
         currentTeamsRef.current = newTeams;
 
         if (teamsToAdd.length > 0 || teamsToRemove.length > 0) {
-            console.log('[OneSignal] Team tags updated - added:', teamsToAdd, 'removed:', teamsToRemove);
-        }
-    }, []);
+            console.log('[FCM] Team topics updated - added:', teamsToAdd, 'removed:', teamsToRemove);
 
-    // Helper to sync a single tag based on enabled state
-    // Uses ref for initialization check to avoid closure issues with async state updates
-    const syncTag = useCallback((tagKey, enabled, forceApply = false) => {
-        if (!OneSignal) {
-            console.log('[OneSignal] syncTag skipped - OneSignal not available (web)');
-            return;
-        }
-
-        // If not initialized yet and not forcing, queue the update
-        // Use ref instead of state to avoid stale closure issues
-        if (!isInitializedRef.current && !forceApply) {
-            console.log(`[OneSignal] Queuing tag update (not initialized): ${tagKey} = ${enabled}`);
-            pendingTagUpdatesRef.current[tagKey] = enabled;
-            return;
-        }
-
-        try {
-            if (enabled) {
-                OneSignal.User.addTag(tagKey, 'true');
-                console.log(`[OneSignal] Tag added: ${tagKey} = true`);
-            } else {
-                OneSignal.User.removeTag(tagKey);
-                console.log(`[OneSignal] Tag removed: ${tagKey}`);
+            // Sync with server
+            if (fcmToken) {
+                const allTopics = await buildCurrentTopicList();
+                await registerWithServer(fcmToken, allTopics);
             }
-        } catch (error) {
-            console.error(`[OneSignal] Error syncing tag ${tagKey}:`, error);
         }
+    }, [subscribeToTopic, unsubscribeFromTopic, fcmToken, registerWithServer]);
+
+    /**
+     * Build current topic list from state
+     */
+    const buildCurrentTopicList = useCallback(async () => {
+        const topics = [];
+
+        // Add notification type topics
+        const savedGoal = await AsyncStorage.getItem(STORAGE_KEYS.GOAL_NOTIFICATIONS_ENABLED);
+        if (savedGoal !== 'false') {
+            topics.push(FCM_TOPICS.GOAL_NOTIFICATIONS);
+        }
+
+        const savedPreGameShl = await AsyncStorage.getItem(STORAGE_KEYS.PRE_GAME_SHL_ENABLED);
+        if (savedPreGameShl === 'true') {
+            topics.push(FCM_TOPICS.PRE_GAME_SHL);
+        }
+
+        const savedPreGameFootball = await AsyncStorage.getItem(STORAGE_KEYS.PRE_GAME_FOOTBALL_ENABLED);
+        if (savedPreGameFootball === 'true') {
+            topics.push(FCM_TOPICS.PRE_GAME_FOOTBALL);
+        }
+
+        const savedPreGameBiathlon = await AsyncStorage.getItem(STORAGE_KEYS.PRE_GAME_BIATHLON_ENABLED);
+        if (savedPreGameBiathlon === 'true') {
+            topics.push(FCM_TOPICS.PRE_GAME_BIATHLON);
+        }
+
+        // Add team topics
+        for (const team of currentTeamsRef.current) {
+            topics.push(`team_${team}`);
+        }
+
+        return topics;
     }, []);
 
-    // Initialize OneSignal on mount
+    /**
+     * Sync a single topic based on enabled state
+     */
+    const syncTopic = useCallback(async (topicName, enabled, forceApply = false) => {
+        if (!messaging) {
+            console.log('[FCM] syncTopic skipped - Firebase not available (web)');
+            return;
+        }
+
+        if (!isInitializedRef.current && !forceApply) {
+            console.log(`[FCM] Queuing topic update (not initialized): ${topicName} = ${enabled}`);
+            pendingTopicUpdatesRef.current[topicName] = enabled;
+            return;
+        }
+
+        if (enabled) {
+            await subscribeToTopic(topicName);
+        } else {
+            await unsubscribeFromTopic(topicName);
+        }
+
+        // Sync with server
+        if (fcmToken) {
+            const allTopics = await buildCurrentTopicList();
+            await registerWithServer(fcmToken, allTopics);
+        }
+    }, [subscribeToTopic, unsubscribeFromTopic, fcmToken, registerWithServer, buildCurrentTopicList]);
+
+    /**
+     * Initialize Firebase Cloud Messaging
+     */
     useEffect(() => {
-        const initOneSignal = async () => {
-            // Prevent multiple initialization runs
+        const initFCM = async () => {
             if (initCompletedRef.current) {
                 return;
             }
 
-            // Skip on web - native module not available
-            if (!OneSignal) {
-                console.log('[OneSignal] Skipped - not supported on web');
+            if (!messaging) {
+                console.log('[FCM] Skipped - not supported on web');
                 return;
             }
 
             try {
-                const appId = Constants.expoConfig?.extra?.oneSignalAppId;
+                // Request permission on iOS
+                if (Platform.OS === 'ios') {
+                    const authStatus = await messaging().requestPermission();
+                    const enabled =
+                        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+                        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+                    setHasPermission(enabled);
 
-                if (!appId || appId === 'YOUR_ONESIGNAL_APP_ID') {
-                    console.warn('[OneSignal] App ID not configured. Push notifications disabled.');
-                    return;
+                    if (!enabled) {
+                        console.log('[FCM] Permission not granted');
+                        return;
+                    }
+                } else if (Platform.OS === 'android') {
+                    // Android 13+ requires POST_NOTIFICATIONS permission
+                    if (Platform.Version >= 33) {
+                        const granted = await PermissionsAndroid.request(
+                            PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+                        );
+                        setHasPermission(granted === PermissionsAndroid.RESULTS.GRANTED);
+                    } else {
+                        setHasPermission(true);
+                    }
                 }
 
-                // Initialize OneSignal
-                OneSignal.initialize(appId);
-
-                // Check current permission status
-                const permission = await OneSignal.Notifications.getPermissionAsync();
-                setHasPermission(permission);
-
-                // Get subscription ID
-                const subId = await OneSignal.User.pushSubscription.getIdAsync();
-                setSubscriptionId(subId);
+                // Get FCM token
+                const token = await messaging().getToken();
+                setFcmToken(token);
+                console.log('[FCM] Token obtained:', token.slice(-12));
 
                 // Load saved notification preferences
                 const savedEnabled = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATIONS_ENABLED);
                 const savedGoalNotifications = await AsyncStorage.getItem(STORAGE_KEYS.GOAL_NOTIFICATIONS_ENABLED);
-
-                // Load pre-game notification preferences
                 const savedPreGameShl = await AsyncStorage.getItem(STORAGE_KEYS.PRE_GAME_SHL_ENABLED);
                 const savedPreGameFootball = await AsyncStorage.getItem(STORAGE_KEYS.PRE_GAME_FOOTBALL_ENABLED);
                 const savedPreGameBiathlon = await AsyncStorage.getItem(STORAGE_KEYS.PRE_GAME_BIATHLON_ENABLED);
 
                 const isEnabled = savedEnabled === 'true';
-                const goalEnabled = savedGoalNotifications !== 'false'; // Default to true
+                const goalEnabled = savedGoalNotifications !== 'false';
                 const preGameShl = savedPreGameShl === 'true';
                 const preGameFootball = savedPreGameFootball === 'true';
                 const preGameBiathlon = savedPreGameBiathlon === 'true';
@@ -166,15 +279,21 @@ export function usePushNotifications() {
                 setPreGameFootballEnabled(preGameFootball);
                 setPreGameBiathlonEnabled(preGameBiathlon);
 
-                // Sync goal_notifications tag on initialization (forceApply since we just initialized)
-                syncTag(NOTIFICATION_TAGS.GOAL_NOTIFICATIONS, goalEnabled, true);
+                // Subscribe to topics
+                if (goalEnabled) {
+                    await subscribeToTopic(FCM_TOPICS.GOAL_NOTIFICATIONS);
+                }
+                if (preGameShl) {
+                    await subscribeToTopic(FCM_TOPICS.PRE_GAME_SHL);
+                }
+                if (preGameFootball) {
+                    await subscribeToTopic(FCM_TOPICS.PRE_GAME_FOOTBALL);
+                }
+                if (preGameBiathlon) {
+                    await subscribeToTopic(FCM_TOPICS.PRE_GAME_BIATHLON);
+                }
 
-                // Sync pre-game notification tags
-                syncTag(NOTIFICATION_TAGS.PRE_GAME_SHL, preGameShl, true);
-                syncTag(NOTIFICATION_TAGS.PRE_GAME_FOOTBALL, preGameFootball, true);
-                syncTag(NOTIFICATION_TAGS.PRE_GAME_BIATHLON, preGameBiathlon, true);
-
-                // Load and sync saved team preferences from both sports
+                // Load and sync saved team preferences
                 const savedShlTeams = await AsyncStorage.getItem(STORAGE_KEYS.SELECTED_TEAMS);
                 const savedFootballTeams = await AsyncStorage.getItem(STORAGE_KEYS.SELECTED_FOOTBALL_TEAMS);
 
@@ -187,7 +306,7 @@ export function usePushNotifications() {
                             allTeams.push(...teams);
                         }
                     } catch (e) {
-                        console.error('[OneSignal] Error parsing saved SHL teams:', e);
+                        console.error('[FCM] Error parsing saved SHL teams:', e);
                     }
                 }
 
@@ -198,103 +317,125 @@ export function usePushNotifications() {
                             allTeams.push(...teams);
                         }
                     } catch (e) {
-                        console.error('[OneSignal] Error parsing saved football teams:', e);
+                        console.error('[FCM] Error parsing saved football teams:', e);
                     }
                 }
 
-                // Apply all team tags
-                if (allTeams.length > 0) {
-                    applyTeamTags(allTeams);
-                    console.log('[OneSignal] Synced team tags on init:', allTeams);
+                // Subscribe to team topics
+                for (const team of allTeams) {
+                    const code = team.toLowerCase();
+                    await subscribeToTopic(`team_${code}`);
+                    currentTeamsRef.current.add(code);
                 }
 
-                // Listen for permission changes
-                OneSignal.Notifications.addEventListener('permissionChange', (granted) => {
-                    setHasPermission(granted);
+                console.log('[FCM] Synced team topics on init:', allTeams);
+
+                // Listen for token refresh
+                const unsubscribeTokenRefresh = messaging().onTokenRefresh(async (newToken) => {
+                    console.log('[FCM] Token refreshed');
+                    setFcmToken(newToken);
+                    const topics = await buildCurrentTopicList();
+                    await registerWithServer(newToken, topics);
                 });
 
-                // Listen for subscription changes
-                OneSignal.User.pushSubscription.addEventListener('change', (state) => {
-                    if (state.current?.id) {
-                        setSubscriptionId(state.current.id);
-                    }
+                // Handle foreground messages
+                const unsubscribeMessage = messaging().onMessage(async (remoteMessage) => {
+                    console.log('[FCM] Foreground message received:', remoteMessage);
                 });
 
-                // Set ref first for synchronous access in syncTag
+                // Set initialized
                 isInitializedRef.current = true;
                 setIsInitialized(true);
                 initCompletedRef.current = true;
-                console.log('[OneSignal] Initialized successfully');
+                console.log('[FCM] Initialized successfully');
 
-                // Process any pending team update that was queued before initialization
+                // Register with server
+                const topics = await buildCurrentTopicList();
+                await registerWithServer(token, topics);
+
+                // Process pending team updates
                 if (pendingTeamUpdatesRef.current !== null) {
-                    console.log('[OneSignal] Processing pending team update');
-                    applyTeamTags(pendingTeamUpdatesRef.current);
+                    console.log('[FCM] Processing pending team update');
+                    await applyTeamTopics(pendingTeamUpdatesRef.current);
                     pendingTeamUpdatesRef.current = null;
                 }
 
-                // Process any pending single tag updates that were queued before initialization
-                const pendingTags = pendingTagUpdatesRef.current;
-                if (Object.keys(pendingTags).length > 0) {
-                    console.log('[OneSignal] Processing pending tag updates:', pendingTags);
-                    for (const [tagKey, enabled] of Object.entries(pendingTags)) {
-                        try {
-                            if (enabled) {
-                                OneSignal.User.addTag(tagKey, 'true');
-                                console.log(`[OneSignal] Pending tag applied: ${tagKey} = true`);
-                            } else {
-                                OneSignal.User.removeTag(tagKey);
-                                console.log(`[OneSignal] Pending tag removed: ${tagKey}`);
-                            }
-                        } catch (error) {
-                            console.error(`[OneSignal] Error applying pending tag ${tagKey}:`, error);
+                // Process pending topic updates
+                const pendingTopics = pendingTopicUpdatesRef.current;
+                if (Object.keys(pendingTopics).length > 0) {
+                    console.log('[FCM] Processing pending topic updates:', pendingTopics);
+                    for (const [topicName, enabled] of Object.entries(pendingTopics)) {
+                        if (enabled) {
+                            await subscribeToTopic(topicName);
+                        } else {
+                            await unsubscribeFromTopic(topicName);
                         }
                     }
-                    pendingTagUpdatesRef.current = {};
+                    pendingTopicUpdatesRef.current = {};
                 }
+
+                // Cleanup
+                return () => {
+                    unsubscribeTokenRefresh();
+                    unsubscribeMessage();
+                };
             } catch (error) {
-                console.error('[OneSignal] Initialization error:', error);
+                console.error('[FCM] Initialization error:', error);
             }
         };
 
-        initOneSignal();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [applyTeamTags]);
+        initFCM();
+    }, [subscribeToTopic, unsubscribeFromTopic, registerWithServer, buildCurrentTopicList, applyTeamTopics]);
 
-    // Request notification permission
+    /**
+     * Request notification permission
+     */
     const requestPermission = useCallback(async () => {
-        if (!OneSignal) {
+        if (!messaging) {
             return false;
         }
 
         try {
-            const canRequest = await OneSignal.Notifications.canRequestPermission();
+            if (Platform.OS === 'ios') {
+                const authStatus = await messaging().requestPermission();
+                const enabled =
+                    authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+                    authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+                setHasPermission(enabled);
 
-            if (canRequest) {
-                const granted = await OneSignal.Notifications.requestPermission(true);
-                setHasPermission(granted);
-
-                if (granted) {
+                if (enabled) {
                     setNotificationsEnabled(true);
                     await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATIONS_ENABLED, 'true');
-                    OneSignal.User.pushSubscription.optIn();
                 }
 
-                return granted;
-            } else {
-                // User has already been prompted, check current status
-                const permission = await OneSignal.Notifications.getPermissionAsync();
-                return permission;
+                return enabled;
+            } else if (Platform.OS === 'android' && Platform.Version >= 33) {
+                const granted = await PermissionsAndroid.request(
+                    PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+                );
+                const enabled = granted === PermissionsAndroid.RESULTS.GRANTED;
+                setHasPermission(enabled);
+
+                if (enabled) {
+                    setNotificationsEnabled(true);
+                    await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATIONS_ENABLED, 'true');
+                }
+
+                return enabled;
             }
+
+            return true;
         } catch (error) {
-            console.error('[OneSignal] Permission request error:', error);
+            console.error('[FCM] Permission request error:', error);
             return false;
         }
     }, []);
 
-    // Toggle notifications on/off
+    /**
+     * Toggle notifications on/off
+     */
     const toggleNotifications = useCallback(async (enabled) => {
-        if (!OneSignal) {
+        if (!messaging) {
             return;
         }
 
@@ -302,88 +443,91 @@ export function usePushNotifications() {
             if (enabled) {
                 const granted = await requestPermission();
                 if (granted) {
-                    OneSignal.User.pushSubscription.optIn();
                     setNotificationsEnabled(true);
                     await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATIONS_ENABLED, 'true');
                 }
             } else {
-                OneSignal.User.pushSubscription.optOut();
                 setNotificationsEnabled(false);
                 await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATIONS_ENABLED, 'false');
             }
         } catch (error) {
-            console.error('[OneSignal] Toggle error:', error);
+            console.error('[FCM] Toggle error:', error);
         }
     }, [requestPermission]);
 
-    // Toggle goal notifications
+    /**
+     * Toggle goal notifications
+     */
     const toggleGoalNotifications = useCallback(async (enabled) => {
         setGoalNotificationsEnabled(enabled);
         await AsyncStorage.setItem(STORAGE_KEYS.GOAL_NOTIFICATIONS_ENABLED, enabled ? 'true' : 'false');
-        syncTag(NOTIFICATION_TAGS.GOAL_NOTIFICATIONS, enabled);
-    }, [syncTag]);
+        await syncTopic(FCM_TOPICS.GOAL_NOTIFICATIONS, enabled);
+    }, [syncTopic]);
 
-    // Toggle pre-game notifications for SHL
+    /**
+     * Toggle pre-game notifications for SHL
+     */
     const togglePreGameShl = useCallback(async (enabled) => {
         setPreGameShlEnabled(enabled);
         await AsyncStorage.setItem(STORAGE_KEYS.PRE_GAME_SHL_ENABLED, enabled ? 'true' : 'false');
-        syncTag(NOTIFICATION_TAGS.PRE_GAME_SHL, enabled);
-        console.log('[OneSignal] Pre-game SHL notifications:', enabled ? 'enabled' : 'disabled');
-    }, [syncTag]);
+        await syncTopic(FCM_TOPICS.PRE_GAME_SHL, enabled);
+        console.log('[FCM] Pre-game SHL notifications:', enabled ? 'enabled' : 'disabled');
+    }, [syncTopic]);
 
-    // Toggle pre-game notifications for Allsvenskan/Football
+    /**
+     * Toggle pre-game notifications for Allsvenskan/Football
+     */
     const togglePreGameFootball = useCallback(async (enabled) => {
         setPreGameFootballEnabled(enabled);
         await AsyncStorage.setItem(STORAGE_KEYS.PRE_GAME_FOOTBALL_ENABLED, enabled ? 'true' : 'false');
-        syncTag(NOTIFICATION_TAGS.PRE_GAME_FOOTBALL, enabled);
-        console.log('[OneSignal] Pre-game Football notifications:', enabled ? 'enabled' : 'disabled');
-    }, [syncTag]);
+        await syncTopic(FCM_TOPICS.PRE_GAME_FOOTBALL, enabled);
+        console.log('[FCM] Pre-game Football notifications:', enabled ? 'enabled' : 'disabled');
+    }, [syncTopic]);
 
-    // Toggle pre-game notifications for Biathlon
+    /**
+     * Toggle pre-game notifications for Biathlon
+     */
     const togglePreGameBiathlon = useCallback(async (enabled) => {
         setPreGameBiathlonEnabled(enabled);
         await AsyncStorage.setItem(STORAGE_KEYS.PRE_GAME_BIATHLON_ENABLED, enabled ? 'true' : 'false');
-        syncTag(NOTIFICATION_TAGS.PRE_GAME_BIATHLON, enabled);
-        console.log('[OneSignal] Pre-game Biathlon notifications:', enabled ? 'enabled' : 'disabled');
-    }, [syncTag]);
+        await syncTopic(FCM_TOPICS.PRE_GAME_BIATHLON, enabled);
+        console.log('[FCM] Pre-game Biathlon notifications:', enabled ? 'enabled' : 'disabled');
+    }, [syncTopic]);
 
     /**
-     * Update team tags in OneSignal
-     * Takes all currently selected teams from both sports combined
-     * @param {string[]} allTeamCodes - Array of all selected team codes (from all sports)
+     * Update team topics
+     * @param {string[]} allTeamCodes - Array of all selected team codes
      */
     const setTeamTags = useCallback((allTeamCodes) => {
-        // Use ref instead of state to avoid stale closure issues
         if (!isInitializedRef.current) {
-            // Queue the update to be applied after initialization
-            console.log('[OneSignal] Queuing team tags update (not initialized yet):', allTeamCodes);
+            console.log('[FCM] Queuing team topics update (not initialized yet):', allTeamCodes);
             pendingTeamUpdatesRef.current = [...allTeamCodes];
             return;
         }
 
-        applyTeamTags(allTeamCodes);
-    }, [applyTeamTags]);
+        applyTeamTopics(allTeamCodes);
+    }, [applyTeamTopics]);
 
-    // Get all current tags (for debugging)
+    /**
+     * Get all current topics (for debugging)
+     */
     const getTags = useCallback(async () => {
-        if (!OneSignal) {
-            return {};
+        // FCM doesn't have a direct way to get subscribed topics
+        // Return the locally tracked topics
+        const topics = await buildCurrentTopicList();
+        const result = {};
+        for (const topic of topics) {
+            result[topic] = 'true';
         }
+        return result;
+    }, [buildCurrentTopicList]);
 
-        try {
-            const tags = await OneSignal.User.getTags();
-            return tags;
-        } catch (error) {
-            console.error('[OneSignal] Get tags error:', error);
-            return {};
-        }
-    }, []);
-
-    // Force sync team tags from AsyncStorage to OneSignal
+    /**
+     * Force sync team topics from AsyncStorage
+     */
     const syncTeamTags = useCallback(async () => {
-        // Use ref instead of state to avoid stale closure issues
         if (!isInitializedRef.current) {
-            console.warn('[OneSignal] Cannot sync tags - not initialized');
+            console.warn('[FCM] Cannot sync topics - not initialized');
             return;
         }
 
@@ -407,18 +551,19 @@ export function usePushNotifications() {
                 }
             }
 
-            applyTeamTags(allTeams);
-            console.log('[OneSignal] Force synced team tags from AsyncStorage:', allTeams);
+            await applyTeamTopics(allTeams);
+            console.log('[FCM] Force synced team topics from AsyncStorage:', allTeams);
         } catch (error) {
-            console.error('[OneSignal] Sync team tags error:', error);
+            console.error('[FCM] Sync team topics error:', error);
         }
-    }, [applyTeamTags]);
+    }, [applyTeamTopics]);
 
     return {
         // State
         isInitialized,
         hasPermission,
-        subscriptionId,
+        subscriptionId: fcmToken, // Alias for compatibility
+        fcmToken,
         notificationsEnabled,
         goalNotificationsEnabled,
         // Pre-game notification state per sport

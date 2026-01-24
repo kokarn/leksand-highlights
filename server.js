@@ -33,7 +33,7 @@ const notifier = require('./modules/notifier');
 const scheduler = require('./modules/scheduler');
 const goalWatcher = require('./modules/goal-watcher');
 const preGameWatcher = require('./modules/pre-game-watcher');
-const pushNotifications = require('./modules/push-notifications');
+const pushNotifications = require('./modules/fcm-notifications');
 const {
     listAdminGames,
     findAdminGameRecord,
@@ -999,20 +999,19 @@ app.post('/api/notifications/test', async (req, res) => {
 
     if (!pushNotifications.isConfigured()) {
         return res.status(503).json({
-            error: 'Push notifications not configured. Set ONESIGNAL_APP_ID and ONESIGNAL_REST_API_KEY environment variables.'
+            error: 'Push notifications not configured. Set GOOGLE_APPLICATION_CREDENTIALS or FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY environment variables.'
         });
     }
 
     try {
         const message = req.body?.message || 'Test notification from GamePulse!';
-        const target = buildNotificationTarget(req.body);
-        const result = await pushNotifications.sendTestNotification({ message, target });
+        const token = req.body?.token || null;
+        const result = await pushNotifications.sendTestNotification({ message, token });
         res.json({
             success: result.success,
             message: 'Test notification sent',
             timestamp: formatSwedishTimestamp(),
-            result,
-            target
+            result
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -1028,7 +1027,7 @@ app.post('/api/notifications/goal-test', async (req, res) => {
 
     if (!pushNotifications.isConfigured()) {
         return res.status(503).json({
-            error: 'Push notifications not configured. Set ONESIGNAL_APP_ID and ONESIGNAL_REST_API_KEY environment variables.'
+            error: 'Push notifications not configured. Set GOOGLE_APPLICATION_CREDENTIALS or FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY environment variables.'
         });
     }
 
@@ -1066,8 +1065,8 @@ app.post('/api/notifications/goal-test', async (req, res) => {
         const scorerName = payload.scorerName ? String(payload.scorerName).trim() : 'Test Scorer';
         const time = payload.time ? String(payload.time).trim() : (sport === 'shl' ? '12:34' : '54:21');
         const period = payload.period ? String(payload.period).trim() : (sport === 'shl' ? 'P1' : '1st half');
-        const target = buildNotificationTarget(payload);
-        const sendOpposing = parseOptionalBoolean(payload.sendOpposing, !target);
+        const token = payload.token || null;
+        const sendOpposing = parseOptionalBoolean(payload.sendOpposing, !token);
 
         const goalDetails = {
             sport,
@@ -1085,14 +1084,13 @@ app.post('/api/notifications/goal-test', async (req, res) => {
             period
         };
 
-        const result = await pushNotifications.sendGoalNotification(goalDetails, { target, sendOpposing });
+        const result = await pushNotifications.sendGoalNotification(goalDetails, { token, sendOpposing });
 
         res.json({
             success: result.success,
             message: 'Goal notification sent',
             timestamp: formatSwedishTimestamp(),
             result,
-            target,
             sendOpposing,
             goal: {
                 sport,
@@ -1150,6 +1148,97 @@ app.post('/api/pre-game-watcher/check', async (req, res) => {
     }
 });
 
+// ============ FCM DEVICE REGISTRATION ENDPOINTS ============
+
+/**
+ * POST /api/fcm/register
+ * Register a device and subscribe to topics
+ * Body: { token, topics: [], platform: 'ios'|'android' }
+ */
+app.post('/api/fcm/register', async (req, res) => {
+    const { token, topics = [], platform = 'unknown' } = req.body || {};
+
+    if (!token) {
+        return res.status(400).json({ error: 'token is required' });
+    }
+
+    if (!Array.isArray(topics)) {
+        return res.status(400).json({ error: 'topics must be an array' });
+    }
+
+    try {
+        const result = await pushNotifications.registerDevice(token, topics, { platform });
+        res.json({
+            success: result.success,
+            timestamp: formatSwedishTimestamp(),
+            ...result
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /api/fcm/unregister
+ * Unregister a device
+ * Body: { token }
+ */
+app.post('/api/fcm/unregister', async (req, res) => {
+    const { token } = req.body || {};
+
+    if (!token) {
+        return res.status(400).json({ error: 'token is required' });
+    }
+
+    try {
+        const result = await pushNotifications.unregisterDevice(token);
+        res.json({
+            success: result.success,
+            timestamp: formatSwedishTimestamp(),
+            ...result
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/fcm/subscribers
+ * Get subscriber stats for admin dashboard
+ */
+app.get('/api/fcm/subscribers', (req, res) => {
+    const stats = pushNotifications.getSubscriberStats();
+    res.json({
+        timestamp: formatSwedishTimestamp(),
+        ...stats
+    });
+});
+
+/**
+ * GET /api/fcm/topics
+ * Get topic list with subscriber counts
+ */
+app.get('/api/fcm/topics', (req, res) => {
+    const stats = pushNotifications.getSubscriberStats();
+    res.json({
+        timestamp: formatSwedishTimestamp(),
+        topics: stats.topics
+    });
+});
+
+/**
+ * GET /api/fcm/topics/:topic
+ * Get details for a specific topic
+ */
+app.get('/api/fcm/topics/:topic', (req, res) => {
+    const topicName = req.params.topic;
+    const details = pushNotifications.getTopicDetails(topicName);
+    res.json({
+        timestamp: formatSwedishTimestamp(),
+        ...details
+    });
+});
+
 // ============ START SERVER ============
 app.listen(PORT, () => {
     const providerNames = getAvailableSports().map(sport => getProvider(sport).getName());
@@ -1174,7 +1263,7 @@ app.listen(PORT, () => {
     console.log(`  - Biathlon refresh: 1 hour`);
     console.log(`\nGoal Watcher:`);
     console.log(`  - Check interval: 15 seconds (live games)`);
-    console.log(`  - Push notifications: ${pushNotifications.isConfigured() ? 'Configured' : 'Not configured (set ONESIGNAL_APP_ID and ONESIGNAL_REST_API_KEY)'}`);
+    console.log(`  - Push notifications (FCM): ${pushNotifications.isConfigured() ? 'Configured' : 'Not configured (set GOOGLE_APPLICATION_CREDENTIALS or FIREBASE_* env vars)'}`);
     console.log(`\nPre-Game Watcher:`);
     console.log(`  - Check interval: 60 seconds`);
     console.log(`  - Reminder window: 5 minutes before start`);
