@@ -74,10 +74,10 @@ export const SettingsModal = ({
                         <Text style={themedStyles.settingsCardTitle}>Push Notifications</Text>
                     </View>
 
-                    <View style={styles.notificationRow}>
+                    <View style={themedStyles.notificationRow}>
                         <View style={styles.notificationTextContainer}>
-                            <Text style={styles.notificationLabel}>Enable Notifications</Text>
-                            <Text style={styles.notificationDescription}>
+                            <Text style={themedStyles.notificationLabel}>Enable Notifications</Text>
+                            <Text style={themedStyles.notificationDescription}>
                                 Receive push notifications on this device
                             </Text>
                         </View>
@@ -96,10 +96,10 @@ export const SettingsModal = ({
                     </View>
 
                     {notificationsEnabled && (
-                        <View style={styles.notificationRow}>
+                        <View style={themedStyles.notificationRow}>
                             <View style={styles.notificationTextContainer}>
-                                <Text style={styles.notificationLabel}>Goal Alerts</Text>
-                                <Text style={styles.notificationDescription}>
+                                <Text style={themedStyles.notificationLabel}>Goal Alerts</Text>
+                                <Text style={themedStyles.notificationDescription}>
                                     Get notified when your favorite teams score
                                 </Text>
                             </View>
@@ -114,8 +114,8 @@ export const SettingsModal = ({
 
                     {notificationsEnabled && (selectedTeams.length > 0 || selectedFootballTeams.length > 0) && (
                         <View style={styles.notificationInfo}>
-                            <Ionicons name="information-circle-outline" size={16} color="#8E8E93" />
-                            <Text style={styles.notificationInfoText}>
+                            <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
+                            <Text style={themedStyles.notificationInfoText}>
                                 You'll receive goal alerts for your selected teams below
                             </Text>
                         </View>
@@ -138,17 +138,17 @@ export const SettingsModal = ({
                             <Ionicons name="time-outline" size={22} color={colors.accentPurple} />
                             <Text style={themedStyles.settingsCardTitle}>Game Reminders</Text>
                         </View>
-                        <Text style={styles.preGameDescription}>
+                        <Text style={themedStyles.preGameDescription}>
                             Get notified 5 minutes before games start
                         </Text>
 
-                        <View style={styles.notificationRow}>
+                        <View style={themedStyles.notificationRow}>
                             <View style={styles.notificationTextContainer}>
                                 <View style={styles.sportLabelRow}>
                                     <Ionicons name="snow-outline" size={16} color={colors.accent} />
-                                    <Text style={styles.notificationLabel}>Hockey (SHL)</Text>
+                                    <Text style={themedStyles.notificationLabel}>Hockey (SHL)</Text>
                                 </View>
-                                <Text style={styles.notificationDescription}>
+                                <Text style={themedStyles.notificationDescription}>
                                     Remind me before hockey games
                                 </Text>
                             </View>
@@ -160,13 +160,13 @@ export const SettingsModal = ({
                             />
                         </View>
 
-                        <View style={styles.notificationRow}>
+                        <View style={themedStyles.notificationRow}>
                             <View style={styles.notificationTextContainer}>
                                 <View style={styles.sportLabelRow}>
                                     <Ionicons name="football-outline" size={16} color={colors.accentGreen} />
-                                    <Text style={styles.notificationLabel}>Football (Allsvenskan)</Text>
+                                    <Text style={themedStyles.notificationLabel}>Football (Allsvenskan)</Text>
                                 </View>
-                                <Text style={styles.notificationDescription}>
+                                <Text style={themedStyles.notificationDescription}>
                                     Remind me before football matches
                                 </Text>
                             </View>
@@ -178,13 +178,13 @@ export const SettingsModal = ({
                             />
                         </View>
 
-                        <View style={[styles.notificationRow, styles.notificationRowLast]}>
+                        <View style={[themedStyles.notificationRow, styles.notificationRowLast]}>
                             <View style={styles.notificationTextContainer}>
                                 <View style={styles.sportLabelRow}>
                                     <Ionicons name="locate-outline" size={16} color={colors.accentPink} />
-                                    <Text style={styles.notificationLabel}>Biathlon</Text>
+                                    <Text style={themedStyles.notificationLabel}>Biathlon</Text>
                                 </View>
-                                <Text style={styles.notificationDescription}>
+                                <Text style={themedStyles.notificationDescription}>
                                     Remind me before biathlon races
                                 </Text>
                             </View>
@@ -200,7 +200,7 @@ export const SettingsModal = ({
                          (selectedTeams.length > 0 || selectedFootballTeams.length > 0 || selectedNations.length > 0) && (
                             <View style={styles.notificationInfo}>
                                 <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
-                                <Text style={styles.notificationInfoText}>
+                                <Text style={themedStyles.notificationInfoText}>
                                     Reminders are sent for your favorite teams
                                 </Text>
                             </View>
@@ -768,5 +768,35 @@ const getThemedStyles = (colors, isDark) => ({
     },
     themeTextActive: {
         color: colors.accent
+    },
+    // Notification row styles
+    notificationLabel: {
+        color: colors.text,
+        fontSize: 15,
+        fontWeight: '600',
+        marginBottom: 2
+    },
+    notificationDescription: {
+        color: colors.textSecondary,
+        fontSize: 12
+    },
+    notificationInfoText: {
+        color: colors.textSecondary,
+        fontSize: 12,
+        flex: 1
+    },
+    preGameDescription: {
+        color: colors.textSecondary,
+        fontSize: 13,
+        marginBottom: 12,
+        marginTop: -8
+    },
+    notificationRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.separator
     }
 });
