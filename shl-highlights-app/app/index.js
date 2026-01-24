@@ -106,6 +106,7 @@ export default function App() {
         toggleGoalNotifications,
         requestPermission: requestNotificationPermission,
         setTeamTags,
+        fcmToken,
         // Pre-game notification state and toggles
         preGameShlEnabled,
         preGameFootballEnabled,
@@ -874,6 +875,7 @@ export default function App() {
                 onTogglePreGameFootball={togglePreGameFootball}
                 onTogglePreGameBiathlon={togglePreGameBiathlon}
                 selectedNations={selectedNations}
+                fcmToken={fcmToken}
             />
 
             {/* Onboarding Modal */}

@@ -1,12 +1,15 @@
-import { View, Text, Modal, ScrollView, TouchableOpacity, Image, StyleSheet, Switch } from 'react-native';
+import { useState, useRef } from 'react';
+import { View, Text, Modal, ScrollView, TouchableOpacity, Image, StyleSheet, Switch, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import * as Clipboard from 'expo-clipboard';
 import { getTeamLogoUrl } from '../../api/shl';
 import { GENDER_OPTIONS, THEME_OPTIONS } from '../../constants';
 import { useTheme } from '../../contexts';
 
 const APP_VERSION = Constants.expoConfig?.version || '1.0.0';
+const DEBUG_TAP_COUNT = 5; // Number of taps to show debug menu
 
 const CHIP_GAP = 8;
 const CONTENT_PADDING = 16;
@@ -45,9 +48,55 @@ export const SettingsModal = ({
     preGameBiathlonEnabled = false,
     onTogglePreGameShl,
     onTogglePreGameFootball,
-    onTogglePreGameBiathlon
+    onTogglePreGameBiathlon,
+    // Debug props
+    fcmToken = null
 }) => {
     const { colors, themeMode, setThemeMode, isDark } = useTheme();
+    
+    // Debug mode tap counter
+    const [versionTapCount, setVersionTapCount] = useState(0);
+    const tapTimeoutRef = useRef(null);
+
+    const handleVersionTap = () => {
+        // Clear previous timeout
+        if (tapTimeoutRef.current) {
+            clearTimeout(tapTimeoutRef.current);
+        }
+
+        const newCount = versionTapCount + 1;
+        setVersionTapCount(newCount);
+
+        if (newCount >= DEBUG_TAP_COUNT) {
+            // Show debug info
+            setVersionTapCount(0);
+            showDebugInfo();
+        } else {
+            // Reset counter after 2 seconds of no taps
+            tapTimeoutRef.current = setTimeout(() => {
+                setVersionTapCount(0);
+            }, 2000);
+        }
+    };
+
+    const showDebugInfo = () => {
+        Alert.alert(
+            'Debug Info',
+            `FCM Token:\n${fcmToken || 'Not available'}\n\nPlatform: ${Platform.OS}\nVersion: ${APP_VERSION}`,
+            [
+                {
+                    text: 'Copy Token',
+                    onPress: async () => {
+                        if (fcmToken) {
+                            await Clipboard.setStringAsync(fcmToken);
+                            Alert.alert('Copied', 'FCM token copied to clipboard');
+                        }
+                    }
+                },
+                { text: 'Close', style: 'cancel' }
+            ]
+        );
+    };
     
     const themedStyles = getThemedStyles(colors, isDark);
     
@@ -344,10 +393,19 @@ export const SettingsModal = ({
                     <Text style={themedStyles.resetOnboardingText}>Restart setup wizard</Text>
                 </TouchableOpacity>
 
-                {/* Version */}
-                <View style={styles.versionContainer}>
+                {/* Version - Tap 5 times for debug menu */}
+                <TouchableOpacity 
+                    style={styles.versionContainer} 
+                    onPress={handleVersionTap}
+                    activeOpacity={0.7}
+                >
                     <Text style={themedStyles.versionText}>GamePulse v{APP_VERSION}</Text>
-                </View>
+                    {versionTapCount > 0 && versionTapCount < DEBUG_TAP_COUNT && (
+                        <Text style={themedStyles.versionHint}>
+                            {DEBUG_TAP_COUNT - versionTapCount} more taps for debug
+                        </Text>
+                    )}
+                </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
     </Modal>
@@ -697,6 +755,12 @@ const getThemedStyles = (colors, isDark) => ({
         color: colors.textMuted,
         fontSize: 12,
         fontWeight: '500'
+    },
+    versionHint: {
+        color: colors.accent,
+        fontSize: 10,
+        fontWeight: '500',
+        marginTop: 4
     },
     // Team/selection chip styles
     teamChip: {
