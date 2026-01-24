@@ -8,6 +8,8 @@
 - Use context7
 - Keep the admin console in sync with new API features (e.g., new sports).
 - Before starting on a task, make sure we do a git pull
+- When incrementing versions, update the readme or changelog
+- Never change text for old versions in changelogs
 
 ## Design
 - Ensure that buttons and layouts are responsive and premium-looking across all devices.
@@ -26,4 +28,3 @@
 
 ## App
 - Always increment the version according to semver. Both in package.json and in app.json
-- When incrementing versions, update the readme
