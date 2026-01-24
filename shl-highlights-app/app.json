@@ -9,7 +9,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kokarn.sportsapp",
+      "bundleIdentifier": "com.kokarn.gamepulse",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": ["remote-notification"]
@@ -28,7 +28,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.kokarn.sportsapp",
+      "package": "com.kokarn.gamepulse",
       "googleServicesFile": "./google-services.json"
     },
     "web": {
