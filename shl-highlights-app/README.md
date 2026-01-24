@@ -4,6 +4,15 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.4.0
+- Upgrade React Native Firebase from v21 to v23.8.3
+- Set explicit iOS deployment target to 15.1 (Firebase v23 requirement)
+- Note: Android minSdk is now 23 (was 21)
+
+### 2.3.2
+- Update Expo SDK to 54.0.32 (latest patch)
+- Update react-native-webview to 13.16.0
+
 ### 2.3.1
 - Apply theme colors to all match/race modals and event components
 - Wrap events list in card container for better visual distinction

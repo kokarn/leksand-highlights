@@ -4,6 +4,10 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS, FCM_TOPICS } from '../constants';
 
+// Silence Firebase modular API deprecation warnings (namespaced API still works in v23)
+// TODO: Migrate to modular API in a future release
+globalThis.RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true;
+
 // Only import Firebase on native platforms
 let messaging = null;
 if (Platform.OS !== 'web') {

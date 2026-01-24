@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "GamePulse",
-    "version": "2.3.1",
+    "version": "2.4.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "gamepulse",
@@ -9,6 +9,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "deploymentTarget": "15.1",
       "bundleIdentifier": "com.kokarn.gamepulse",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
