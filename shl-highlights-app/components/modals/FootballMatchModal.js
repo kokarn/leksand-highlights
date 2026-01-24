@@ -465,7 +465,7 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
 
                 {/* Tab Content with gesture support */}
                 {loading ? (
-                    <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
+                    <ActivityIndicator size="large" color="#6C5CE7" style={{ marginTop: 50 }} />
                 ) : (
                     <PanGestureHandler
                         onGestureEvent={handleGestureEvent}

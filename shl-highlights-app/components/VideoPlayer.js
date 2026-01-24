@@ -24,7 +24,7 @@ export const VideoPlayer = ({
             <View style={styles.activePlayer}>
                 {loading ? (
                     <View style={styles.videoLoadingContainer}>
-                        <ActivityIndicator size="large" color="#0A84FF" />
+                        <ActivityIndicator size="large" color="#6C5CE7" />
                         <Text style={styles.videoLoadingText}>Loading stream...</Text>
                     </View>
                 ) : hlsUrl && Platform.OS === 'web' ? (

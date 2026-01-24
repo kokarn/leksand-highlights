@@ -28,7 +28,7 @@ export default function GameDeepLinkRedirect() {
 
     return (
         <View style={styles.container}>
-            <ActivityIndicator size="large" color="#0A84FF" />
+            <ActivityIndicator size="large" color="#6C5CE7" />
         </View>
     );
 }

@@ -113,7 +113,7 @@ export const SettingsModal = ({
                     )}
 
                     {notificationsEnabled && (selectedTeams.length > 0 || selectedFootballTeams.length > 0) && (
-                        <View style={styles.notificationInfo}>
+                        <View style={themedStyles.notificationInfo}>
                             <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
                             <Text style={themedStyles.notificationInfoText}>
                                 You'll receive goal alerts for your selected teams below
@@ -122,9 +122,9 @@ export const SettingsModal = ({
                     )}
 
                     {notificationsEnabled && selectedTeams.length === 0 && selectedFootballTeams.length === 0 && (
-                        <View style={styles.notificationWarning}>
-                            <Ionicons name="warning-outline" size={16} color="#FF9F0A" />
-                            <Text style={styles.notificationWarningText}>
+                        <View style={themedStyles.notificationWarning}>
+                            <Ionicons name="warning-outline" size={16} color={colors.accentOrange} />
+                            <Text style={themedStyles.notificationWarningText}>
                                 Select teams below to receive goal notifications
                             </Text>
                         </View>
@@ -198,7 +198,7 @@ export const SettingsModal = ({
 
                         {(preGameShlEnabled || preGameFootballEnabled || preGameBiathlonEnabled) &&
                          (selectedTeams.length > 0 || selectedFootballTeams.length > 0 || selectedNations.length > 0) && (
-                            <View style={styles.notificationInfo}>
+                            <View style={themedStyles.notificationInfo}>
                                 <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
                                 <Text style={themedStyles.notificationInfoText}>
                                     Reminders are sent for your favorite teams
@@ -236,7 +236,7 @@ export const SettingsModal = ({
                     </View>
                     {selectedTeams.length > 0 && (
                         <TouchableOpacity style={styles.clearButton} onPress={onClearTeams}>
-                            <Text style={styles.clearButtonText}>Clear selection</Text>
+                            <Text style={themedStyles.clearButtonText}>Clear selection</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -274,7 +274,7 @@ export const SettingsModal = ({
                     )}
                     {selectedFootballTeams.length > 0 && (
                         <TouchableOpacity style={styles.clearButton} onPress={onClearFootballTeams}>
-                            <Text style={styles.clearButtonText}>Clear selection</Text>
+                            <Text style={themedStyles.clearButtonText}>Clear selection</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -295,7 +295,7 @@ export const SettingsModal = ({
                                 ]}
                                 onPress={() => onToggleGender(gender.id)}
                             >
-                                <Text style={[themedStyles.genderText, selectedGenders.includes(gender.id) && styles.genderTextActive]}>
+                                <Text style={[themedStyles.genderText, selectedGenders.includes(gender.id) && themedStyles.genderTextActive]}>
                                     {gender.label}
                                 </Text>
                             </TouchableOpacity>
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
     },
     chipActive: {
         backgroundColor: 'rgba(10, 132, 255, 0.2)',
-        borderColor: '#0A84FF'
+        borderColor: '#6C5CE7'
     },
     chipActiveGreen: {
         backgroundColor: 'rgba(48, 209, 88, 0.2)',
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start'
     },
     clearButtonText: {
-        color: '#0A84FF',
+        color: '#6C5CE7',
         fontSize: 13,
         fontWeight: '600'
     },
@@ -798,5 +798,42 @@ const getThemedStyles = (colors, isDark) => ({
         paddingVertical: 12,
         borderBottomWidth: 1,
         borderBottomColor: colors.separator
+    },
+    // Clear button style
+    clearButtonText: {
+        color: colors.accent,
+        fontSize: 13,
+        fontWeight: '600'
+    },
+    // Notification info box
+    notificationInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginTop: 12,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        backgroundColor: isDark ? 'rgba(142, 142, 147, 0.1)' : 'rgba(142, 142, 147, 0.08)',
+        borderRadius: 8
+    },
+    // Gender text active state
+    genderTextActive: {
+        color: '#fff'
+    },
+    // Warning notification box
+    notificationWarning: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginTop: 12,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        backgroundColor: isDark ? 'rgba(255, 159, 10, 0.1)' : 'rgba(255, 159, 10, 0.08)',
+        borderRadius: 8
+    },
+    notificationWarningText: {
+        color: colors.accentOrange,
+        fontSize: 12,
+        flex: 1
     }
 });

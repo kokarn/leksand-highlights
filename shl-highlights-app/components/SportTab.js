@@ -23,7 +23,7 @@ export const SportTab = ({ sport, isActive, onPress }) => (
                         ? 'football-outline'
                         : 'snow-outline'}
             size={14}
-            color={isActive ? '#0A84FF' : '#666'}
+            color={isActive ? '#6C5CE7' : '#666'}
         />
         <Text style={[styles.sportTabText, isActive && styles.sportTabTextActive]}>
             {SPORT_NAMES[sport] || sport}
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     },
     sportTabActive: {
         backgroundColor: 'rgba(10, 132, 255, 0.15)',
-        borderColor: '#0A84FF'
+        borderColor: '#6C5CE7'
     },
     sportTabText: {
         color: '#666',
@@ -53,6 +53,6 @@ const styles = StyleSheet.create({
         fontWeight: '600'
     },
     sportTabTextActive: {
-        color: '#0A84FF'
+        color: '#6C5CE7'
     },
 });

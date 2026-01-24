@@ -39,7 +39,7 @@ export const GoalItem = ({ goal, homeTeamCode, hasVideo, onVideoPress }) => {
                 </View>
                 {hasVideo && (
                     <TouchableOpacity onPress={onVideoPress} style={styles.videoIconButton}>
-                        <Ionicons name="videocam" size={16} color="#0A84FF" />
+                        <Ionicons name="videocam" size={16} color="#6C5CE7" />
                     </TouchableOpacity>
                 )}
             </View>

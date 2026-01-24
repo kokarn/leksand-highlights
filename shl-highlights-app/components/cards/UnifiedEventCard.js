@@ -8,7 +8,7 @@ import { BiathlonRaceCard } from './BiathlonRaceCard';
  * Sport indicator colors
  */
 const SPORT_COLORS = {
-    shl: '#0A84FF',      // Ice blue
+    shl: '#6C5CE7',      // Purple (matches app icon)
     football: '#30D158', // Green
     biathlon: '#FF9500'  // Orange
 };

@@ -23,7 +23,7 @@ const styles = StyleSheet.create({
     },
     tabButtonActive: {
         borderBottomWidth: 2,
-        borderBottomColor: '#0A84FF'
+        borderBottomColor: '#6C5CE7'
     },
     tabButtonText: {
         color: '#888',

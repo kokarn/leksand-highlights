@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
         flex: 1
     },
     optionTextActive: {
-        color: '#0A84FF',
+        color: '#6C5CE7',
         fontWeight: '600'
     }
 });

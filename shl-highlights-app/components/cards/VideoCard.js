@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     },
     videoGridCardPlaying: {
         borderWidth: 2,
-        borderColor: '#0A84FF'
+        borderColor: '#6C5CE7'
     },
     videoGridThumbnailContainer: {
         width: '100%',
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
         left: 8,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#0A84FF',
+        backgroundColor: '#6C5CE7',
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 4,
@@ -113,6 +113,6 @@ const styles = StyleSheet.create({
         lineHeight: 18
     },
     videoGridTitlePlaying: {
-        color: '#0A84FF'
+        color: '#6C5CE7'
     },
 });

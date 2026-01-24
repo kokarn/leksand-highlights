@@ -262,7 +262,7 @@ export const ShlGameModal = ({
         <View style={{ flex: 1 }}>
             <View style={styles.highlightsTitleBox}>
                 <View style={styles.highlightsTitleHeader}>
-                    <Ionicons name="videocam" size={20} color="#0A84FF" />
+                    <Ionicons name="videocam" size={20} color="#6C5CE7" />
                     <Text style={styles.highlightsTitleLabel}>Match Highlights</Text>
                 </View>
                 {currentlyPlayingVideo ? (
@@ -350,7 +350,7 @@ export const ShlGameModal = ({
 
                         {/* Tab Content with gesture support */}
                         {loading ? (
-                            <ActivityIndicator size="large" color="#0A84FF" style={{ marginTop: 50 }} />
+                            <ActivityIndicator size="large" color="#6C5CE7" style={{ marginTop: 50 }} />
                         ) : (
                             <PanGestureHandler
                                 onGestureEvent={handleGestureEvent}
@@ -430,10 +430,10 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         padding: 12,
         borderLeftWidth: 3,
-        borderLeftColor: '#0A84FF'
+        borderLeftColor: '#6C5CE7'
     },
     nowPlayingLabel: {
-        color: '#0A84FF',
+        color: '#6C5CE7',
         fontSize: 11,
         fontWeight: '700',
         textTransform: 'uppercase',

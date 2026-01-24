@@ -401,7 +401,7 @@ const CountryFilterDropdown = ({ countries, selectedCountry, onSelectCountry }) 
                                 All countries
                             </Text>
                             {!selectedCountry && (
-                                <Ionicons name="checkmark" size={16} color="#0A84FF" />
+                                <Ionicons name="checkmark" size={16} color="#6C5CE7" />
                             )}
                         </TouchableOpacity>
                         {countries.map((country) => (
@@ -420,7 +420,7 @@ const CountryFilterDropdown = ({ countries, selectedCountry, onSelectCountry }) 
                                     {getNationFlag(country)} {country}
                                 </Text>
                                 {selectedCountry === country && (
-                                    <Ionicons name="checkmark" size={16} color="#0A84FF" />
+                                    <Ionicons name="checkmark" size={16} color="#6C5CE7" />
                                 )}
                             </TouchableOpacity>
                         ))}
@@ -652,7 +652,7 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
 
                             {loading ? (
                                 <View style={styles.resultsLoading}>
-                                    <ActivityIndicator size="small" color="#0A84FF" />
+                                    <ActivityIndicator size="small" color="#6C5CE7" />
                                     <Text style={styles.resultsLoadingText}>Loading results...</Text>
                                 </View>
                             ) : isRelay && relayTeams && relayTeams.length > 0 ? (
@@ -1109,7 +1109,7 @@ const styles = StyleSheet.create({
         fontSize: 12
     },
     relayTeamResult: {
-        color: '#0A84FF',
+        color: '#6C5CE7',
         fontSize: 14,
         fontWeight: '600'
     },

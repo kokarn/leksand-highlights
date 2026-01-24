@@ -171,8 +171,8 @@ const styles = StyleSheet.create({
         borderColor: '#333'
     },
     seasonChipActive: {
-        backgroundColor: '#0A84FF',
-        borderColor: '#0A84FF'
+        backgroundColor: '#6C5CE7',
+        borderColor: '#6C5CE7'
     },
     seasonChipText: {
         color: '#888',
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
         fontWeight: '500'
     },
     dropdownItemTextActive: {
-        color: '#0A84FF',
+        color: '#6C5CE7',
         fontWeight: '600'
     }
 });

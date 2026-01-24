@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: '#0A84FF',
+        backgroundColor: '#6C5CE7',
         paddingVertical: 16,
         paddingHorizontal: 32,
         borderRadius: 14
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: '#0A84FF',
+        backgroundColor: '#6C5CE7',
         paddingVertical: 18,
         paddingHorizontal: 32,
         borderRadius: 14,
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
         marginBottom: 8
     },
     onboardingStepNumber: {
-        color: '#0A84FF',
+        color: '#6C5CE7',
         fontSize: 13,
         fontWeight: '700',
         marginBottom: 12
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
     },
     chipActive: {
         backgroundColor: 'rgba(10, 132, 255, 0.2)',
-        borderColor: '#0A84FF'
+        borderColor: '#6C5CE7'
     },
     chipActiveGreen: {
         backgroundColor: 'rgba(48, 209, 88, 0.2)',

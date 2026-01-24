@@ -1018,7 +1018,7 @@ const styles = StyleSheet.create({
     },
     biathlonGenderButtonActive: {
         backgroundColor: 'rgba(10, 132, 255, 0.15)',
-        borderColor: '#0A84FF'
+        borderColor: '#6C5CE7'
     },
     biathlonGenderText: {
         color: '#8e8e93',
@@ -1026,7 +1026,7 @@ const styles = StyleSheet.create({
         fontWeight: '600'
     },
     biathlonGenderTextActive: {
-        color: '#0A84FF'
+        color: '#6C5CE7'
     },
     biathlonTypePicker: {
         flexDirection: 'row',
@@ -1045,7 +1045,7 @@ const styles = StyleSheet.create({
     },
     biathlonTypeButtonActive: {
         backgroundColor: 'rgba(10, 132, 255, 0.15)',
-        borderColor: '#0A84FF'
+        borderColor: '#6C5CE7'
     },
     biathlonTypeText: {
         color: '#8e8e93',
@@ -1053,7 +1053,7 @@ const styles = StyleSheet.create({
         fontWeight: '600'
     },
     biathlonTypeTextActive: {
-        color: '#0A84FF'
+        color: '#6C5CE7'
     },
     biathlonStandingsCategory: {
         backgroundColor: '#1c1c1e',
@@ -1119,7 +1119,7 @@ const styles = StyleSheet.create({
         fontWeight: '500'
     },
     biathlonPoints: {
-        color: '#0A84FF',
+        color: '#6C5CE7',
         fontSize: 13,
         fontWeight: '700',
         minWidth: 60,

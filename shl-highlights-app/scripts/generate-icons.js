@@ -53,7 +53,7 @@ function generateLogoSVG(size, cornerRadius) {
 <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0A84FF;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#6C5CE7;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#5AC8FA;stop-opacity:1" />
     </linearGradient>
   </defs>
@@ -248,7 +248,7 @@ async function generateIcons() {
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0A84FF;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#6C5CE7;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#5AC8FA;stop-opacity:1" />
     </linearGradient>
   </defs>

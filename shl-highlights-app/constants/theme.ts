@@ -5,7 +5,7 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
+const tintColorLight = '#6C5CE7';
 const tintColorDark = '#fff';
 
 export const Colors = {
@@ -34,13 +34,13 @@ export const Colors = {
     // Chips and buttons
     chip: '#F3F4F6',
     chipBorder: '#D1D5DB',
-    chipActive: 'rgba(10, 132, 255, 0.15)',
-    chipActiveBorder: '#0A84FF',
+    chipActive: 'rgba(108, 92, 231, 0.15)',
+    chipActiveBorder: '#6C5CE7',
     chipText: '#6B7280',
-    chipTextActive: '#0A84FF',
+    chipTextActive: '#6C5CE7',
     
     // Accents
-    accent: '#0A84FF',
+    accent: '#6C5CE7',
     accentGreen: '#30D158',
     accentOrange: '#FF9F0A',
     accentRed: '#FF453A',
@@ -79,13 +79,13 @@ export const Colors = {
     // Chips and buttons
     chip: '#252525',
     chipBorder: '#333333',
-    chipActive: 'rgba(10, 132, 255, 0.2)',
-    chipActiveBorder: '#0A84FF',
+    chipActive: 'rgba(108, 92, 231, 0.2)',
+    chipActiveBorder: '#6C5CE7',
     chipText: '#888888',
     chipTextActive: '#FFFFFF',
     
     // Accents
-    accent: '#0A84FF',
+    accent: '#6C5CE7',
     accentGreen: '#30D158',
     accentOrange: '#FF9F0A',
     accentRed: '#FF453A',
