@@ -1,6 +1,6 @@
 const { formatSwedishTimestamp } = require('./utils');
 const { getProvider } = require('./providers');
-const pushNotifications = require('./push-notifications');
+const pushNotifications = require('./fcm-notifications');
 
 // ============ GOAL WATCHER STATE ============
 // Track previously seen goals to detect new ones

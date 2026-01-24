@@ -1,13 +1,10 @@
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl, Platform } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-
-// OneSignal - platform-specific import (null on web)
-import { OneSignal } from '../utils/onesignal';
 
 // Card height constants for consistent scroll behavior
 // Height = padding (32) + header (~36) + content (~90) + marginBottom (16)
@@ -200,20 +197,6 @@ export default function App() {
             router.replace('/');
         }
 
-        // Handle notification click events (native only)
-        const handleNotificationClick = (event) => {
-            console.log('[Notification] Clicked:', event);
-            const data = event.notification?.additionalData;
-            if (data?.type === 'goal' && data?.gameId && data?.sport) {
-                openGameById(data.sport, data.gameId);
-            }
-        };
-
-        // Listen for notification clicks (native only)
-        if (OneSignal) {
-            OneSignal.Notifications.addEventListener('click', handleNotificationClick);
-        }
-
         // Handle deep link when app is already open
         const handleDeepLink = (event) => {
             const gameInfo = parseGameDeepLink(event.url);
@@ -239,9 +222,6 @@ export default function App() {
         const subscription = Linking.addEventListener('url', handleDeepLink);
 
         return () => {
-            if (OneSignal) {
-                OneSignal.Notifications.removeEventListener('click', handleNotificationClick);
-            }
             subscription?.remove();
         };
     }, [
@@ -838,7 +818,7 @@ export default function App() {
                 selectedTeams={selectedTeams}
                 onToggleTeam={(teamCode) => {
                     toggleTeamFilter(teamCode);
-                    // Update OneSignal tags with all teams from both sports
+                    // Update FCM topic subscriptions with all teams from both sports
                     const newShlTeams = selectedTeams.includes(teamCode)
                         ? selectedTeams.filter(t => t !== teamCode)
                         : [...selectedTeams, teamCode];
@@ -852,7 +832,7 @@ export default function App() {
                 selectedFootballTeams={selectedFootballTeams}
                 onToggleFootballTeam={(teamKey) => {
                     toggleFootballTeamFilter(teamKey);
-                    // Update OneSignal tags with all teams from both sports
+                    // Update FCM topic subscriptions with all teams from both sports
                     const newFootballTeams = selectedFootballTeams.includes(teamKey)
                         ? selectedFootballTeams.filter(t => t !== teamKey)
                         : [...selectedFootballTeams, teamKey];
@@ -895,7 +875,7 @@ export default function App() {
                 step={onboardingStep}
                 onStepChange={setOnboardingStep}
                 onComplete={() => {
-                    // Sync all team tags to OneSignal when onboarding completes
+                    // Sync all team topics to FCM when onboarding completes
                     setTeamTags([...selectedTeams, ...selectedFootballTeams]);
                     completeOnboarding();
                 }}
@@ -903,7 +883,7 @@ export default function App() {
                 selectedTeams={selectedTeams}
                 onToggleTeam={(teamCode) => {
                     toggleTeamFilter(teamCode);
-                    // Update OneSignal tags with all teams from both sports
+                    // Update FCM topic subscriptions with all teams from both sports
                     const newShlTeams = selectedTeams.includes(teamCode)
                         ? selectedTeams.filter(t => t !== teamCode)
                         : [...selectedTeams, teamCode];
@@ -913,7 +893,7 @@ export default function App() {
                 selectedFootballTeams={selectedFootballTeams}
                 onToggleFootballTeam={(teamKey) => {
                     toggleFootballTeamFilter(teamKey);
-                    // Update OneSignal tags with all teams from both sports
+                    // Update FCM topic subscriptions with all teams from both sports
                     const newFootballTeams = selectedFootballTeams.includes(teamKey)
                         ? selectedFootballTeams.filter(t => t !== teamKey)
                         : [...selectedFootballTeams, teamKey];

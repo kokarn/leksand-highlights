@@ -14,7 +14,7 @@ const {
 } = require('./config');
 const { getProvider } = require('./providers');
 const { formatSwedishTimestamp } = require('./utils');
-const pushNotifications = require('./push-notifications');
+const pushNotifications = require('./fcm-notifications');
 
 // ============ PRE-GAME WATCHER STATE ============
 let seenPreGameNotifications = new Set(); // Track sent notifications by gameId

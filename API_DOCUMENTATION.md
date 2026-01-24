@@ -699,16 +699,12 @@ Sends a test push notification.
 ```json
 {
   "message": "Custom test message",
-  "subscriptionId": "onesignal-subscription-id",
-  "playerId": "legacy-player-id",
-  "externalUserId": "external-user-id",
-  "sendToAll": false
+  "token": "fcm-device-token"
 }
 ```
 
-- If a target ID is provided, it will send directly to that device/user.
-- If no target is provided, it defaults to the `goal_notifications=true` tag.
-- `sendToAll` targets the OneSignal "Subscribed Users" segment when no direct target is set.
+- If a token is provided, it will send directly to that device.
+- If no token is provided, it sends to the `goal_notifications` topic.
 
 **Response:**
 ```json
@@ -718,11 +714,7 @@ Sends a test push notification.
   "timestamp": "2026-01-17 11:17:31",
   "result": {
     "success": true,
-    "recipients": 1,
-    "id": "notification-id"
-  },
-  "target": {
-    "subscriptionIds": ["onesignal-subscription-id"]
+    "messageId": "projects/xxx/messages/xxx"
   }
 }
 ```
@@ -746,12 +738,12 @@ Sends a simulated goal notification without waiting for a live game.
   "period": "P1",
   "time": "12:34",
   "sendOpposing": true,
-  "subscriptionId": "onesignal-subscription-id"
+  "token": "fcm-device-token"
 }
 ```
 
-- If a target ID is provided, it sends directly to that device/user.
-- If no target is provided, it uses team tags and goal notification tags.
+- If a token is provided, it sends directly to that device.
+- If no token is provided, it uses FCM topic targeting based on team subscriptions.
 - `sendOpposing` controls whether an opposing-team notification is also sent.
 
 **Response:**

@@ -4,6 +4,10 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.2.0
+- Remove legacy OneSignal integration code
+- Clean up unused OneSignal utility files and imports
+
 ### 2.1.0
 - Improve biathlon relay race start list view by grouping participants by team/nation
 - Display team header with nation flag, bib number, and start info
@@ -12,14 +16,13 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 - Filter out IBU's internal high ResultOrder values (10000+) from display
 
 ### 2.0.0
-- **BREAKING**: Migrate from OneSignal to Firebase Cloud Messaging (FCM)
-- Replace OneSignal SDK with @react-native-firebase/messaging
+- **BREAKING**: Migrate to Firebase Cloud Messaging (FCM) for push notifications
 - Topic-based subscriptions for team and notification preferences
 - Server-side subscriber tracking for admin dashboard
-- No more tag limits - FCM supports up to 2,000 topics per device
+- FCM supports up to 2,000 topics per device
 
 ### 1.18.2
-- Fix OneSignal tags not being updated when changing push notification settings after app initialization
+- Fix FCM topics not being updated when changing push notification settings after app initialization
 - Use ref instead of state for initialization check to avoid stale closure issues
 
 ### 1.18.1
@@ -32,9 +35,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 - Remove scroll animation when navigating to today's date on match lists
 
 ### 1.17.1
-- Fix OneSignal tags not updating when toggling sport notification preferences
-- Add queuing mechanism for tag updates before OneSignal initialization completes
-- Improve logging for OneSignal tag operations
+- Fix FCM topics not updating when toggling sport notification preferences
+- Add queuing mechanism for topic updates before FCM initialization completes
+- Improve logging for FCM topic operations
 
 ### 1.17.0
 - Add pull-to-refresh on game/race detail modals for SHL, Football, and Biathlon
