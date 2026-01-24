@@ -3,5 +3,6 @@ debug/
 my.secrets
 seen_games.json
 admin_games.json
+fcm_errors.json
 .env
 IconKitchen-Output/

@@ -61,6 +61,10 @@
                     <span class="nav-item-icon"><i data-lucide="circle-dot" class="icon-sm"></i></span>
                     Goal Testing
                 </div>
+                <div class="nav-item" data-section="pregame-test">
+                    <span class="nav-item-icon"><i data-lucide="timer" class="icon-sm"></i></span>
+                    Event Start Testing
+                </div>
             </div>
 
             <div class="nav-section">
@@ -334,6 +338,26 @@
                     <div id="push-feedback" class="mt-2 text-sm"></div>
                 </div>
             </div>
+
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this.parentElement)">
+                    <div class="section-title-group">
+                        <span class="section-icon"><i data-lucide="alert-triangle" class="icon-sm"></i></span>
+                        <h2 class="section-title">FCM Error Log</h2>
+                        <span class="section-badge" id="fcm-error-count">0 errors</span>
+                    </div>
+                    <span class="section-toggle"><i data-lucide="chevron-down" class="icon-sm"></i></span>
+                </div>
+                <div class="section-content">
+                    <div class="btn-group mb-2">
+                        <button class="btn btn-secondary" id="refresh-error-log"><i data-lucide="refresh-cw" class="icon-btn"></i> Refresh</button>
+                        <button class="btn btn-danger" id="clear-error-log"><i data-lucide="trash-2" class="icon-btn"></i> Clear Error Log</button>
+                    </div>
+                    <div class="error-log-list" id="fcm-error-log">
+                        <p class="text-muted">Loading error log...</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Goal Testing Section -->
@@ -409,6 +433,81 @@
                         <button class="btn btn-primary" id="send-goal-test"><i data-lucide="target" class="icon-btn"></i> Send Goal Test</button>
                     </div>
                     <div id="goal-test-feedback" class="mt-2 text-sm"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pre-Game/Event Start Testing Section -->
+        <div id="section-pregame-test" class="page-section hidden">
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this.parentElement)">
+                    <div class="section-title-group">
+                        <span class="section-icon"><i data-lucide="timer" class="icon-sm"></i></span>
+                        <h2 class="section-title">Event Start Notification Test</h2>
+                    </div>
+                    <span class="section-toggle"><i data-lucide="chevron-down" class="icon-sm"></i></span>
+                </div>
+                <div class="section-content">
+                    <p class="text-muted mb-2">Test pre-game reminder notifications for upcoming games or races.</p>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="pregame-test-sport">Sport</label>
+                            <select id="pregame-test-sport" class="form-control">
+                                <option value="shl">SHL (Hockey)</option>
+                                <option value="allsvenskan">Allsvenskan (Football)</option>
+                                <option value="biathlon">Biathlon</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="pregame-test-minutes">Minutes until start</label>
+                            <input id="pregame-test-minutes" type="number" min="1" max="60" class="form-control" value="5" />
+                        </div>
+                        <div class="form-group">
+                            <label for="pregame-test-venue">Venue (optional)</label>
+                            <input id="pregame-test-venue" type="text" class="form-control" placeholder="Arena name" />
+                        </div>
+                    </div>
+
+                    <!-- Team sports fields (SHL & Allsvenskan) -->
+                    <div id="pregame-team-fields" class="form-grid mt-2">
+                        <div class="form-group">
+                            <label for="pregame-test-home-team">Home team</label>
+                            <select id="pregame-test-home-team" class="form-control"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="pregame-test-away-team">Away team</label>
+                            <select id="pregame-test-away-team" class="form-control"></select>
+                        </div>
+                    </div>
+
+                    <!-- Biathlon fields -->
+                    <div id="pregame-biathlon-fields" class="form-grid mt-2 hidden">
+                        <div class="form-group">
+                            <label for="pregame-test-gender">Gender</label>
+                            <select id="pregame-test-gender" class="form-control">
+                                <option value="men">Men</option>
+                                <option value="women">Women</option>
+                                <option value="mixed">Mixed</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="pregame-test-discipline">Discipline</label>
+                            <select id="pregame-test-discipline" class="form-control">
+                                <option value="Sprint">Sprint</option>
+                                <option value="Pursuit">Pursuit</option>
+                                <option value="Individual">Individual</option>
+                                <option value="Mass Start">Mass Start</option>
+                                <option value="Relay">Relay</option>
+                                <option value="Mixed Relay">Mixed Relay</option>
+                                <option value="Single Mixed Relay">Single Mixed Relay</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="btn-group mt-2">
+                        <button class="btn btn-primary" id="send-pregame-test"><i data-lucide="timer" class="icon-btn"></i> Send Event Start Test</button>
+                    </div>
+                    <div id="pregame-test-feedback" class="mt-2 text-sm"></div>
                 </div>
             </div>
         </div>

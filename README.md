@@ -1,6 +1,6 @@
 # 🏒 GamePulse API Server
 
-**Version: 3.2.0**
+**Version: 3.4.0**
 
 A multi-sport API server that provides real-time game data, notifications, and highlights for Swedish sports leagues.
 
@@ -83,6 +83,7 @@ Access the admin dashboard at `/admin` with URL-based routing:
 - `/admin` - Dashboard
 - `/admin/push` - Push Notifications
 - `/admin/goal-test` - Goal Testing
+- `/admin/pregame-test` - Event Start Testing
 - `/admin/status` - System Status
 - `/admin/cache` - Cache Management
 - `/admin/games` - Manual Games
@@ -95,6 +96,9 @@ Access the admin dashboard at `/admin` with URL-based routing:
 | `POST /api/fcm/unregister` | Unregister a device token |
 | `POST /api/notifications/test` | Send a test notification |
 | `POST /api/notifications/goal-test` | Send a test goal notification |
+| `POST /api/notifications/pre-game-test` | Send a test pre-game/event start notification |
+| `GET /api/fcm/errors` | Get FCM error log (query param: `limit`) |
+| `POST /api/fcm/errors/clear` | Clear the FCM error log |
 
 > **Note:** FCM does not provide an API to query topic subscribers. The backend runs stateless - topic subscriptions are managed entirely by Firebase.
 

@@ -1184,3 +1184,69 @@ body {
 .info-note strong {
     color: var(--accent);
 }
+
+/* FCM Error Log */
+.error-log-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.error-log-item {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+}
+
+.error-log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.error-log-operation {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--danger);
+    background: rgba(239, 68, 68, 0.2);
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.error-log-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: monospace;
+}
+
+.error-log-message {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    word-break: break-word;
+}
+
+.error-log-context {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+}
+
+.error-context-item {
+    background: rgba(75, 85, 99, 0.3);
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
+    color: var(--text-secondary);
+}
+
+.error-context-item strong {
+    color: var(--text-muted);
+}

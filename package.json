@@ -1,6 +1,6 @@
 {
     "name": "shl-highlights-notify",
-    "version": "3.2.0",
+    "version": "3.4.0",
     "description": "GamePulse API server with push notifications for goals and highlights",
     "main": "server.js",
     "scripts": {

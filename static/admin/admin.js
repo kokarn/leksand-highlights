@@ -14,7 +14,9 @@ const elements = {
     notificationsChart: document.getElementById('notifications-chart'),
     cacheChart: document.getElementById('cache-chart'),
     mobileMenuButton: document.getElementById('mobile-menu-btn'),
-    sidebarOverlay: document.getElementById('sidebar-overlay')
+    sidebarOverlay: document.getElementById('sidebar-overlay'),
+    fcmErrorLog: document.getElementById('fcm-error-log'),
+    fcmErrorCount: document.getElementById('fcm-error-count')
 };
 
 // ============ State ============
@@ -160,6 +162,7 @@ const SECTION_TITLES = {
     sports: 'Sports Providers',
     push: 'Push Notifications',
     'goal-test': 'Goal Testing',
+    'pregame-test': 'Event Start Testing',
     'create-game': 'Create Game',
     games: 'Manual Games'
 };
@@ -492,6 +495,58 @@ async function loadPushStatus(options = {}) {
     }
 }
 
+// ============ Load FCM Error Log ============
+async function loadFcmErrorLog(options = {}) {
+    try {
+        const data = await apiRequest('/api/fcm/errors');
+        renderFcmErrorLog(data);
+
+        if (options.showMessage) {
+            showToast('success', 'Error Log Updated', `Loaded ${data.errors?.length || 0} error(s)`);
+        }
+    } catch (error) {
+        showToast('error', 'Error', error.message);
+    }
+}
+
+function renderFcmErrorLog(data) {
+    const errors = data.errors || [];
+    elements.fcmErrorCount.textContent = `${data.totalErrors || 0} errors`;
+
+    if (errors.length === 0) {
+        elements.fcmErrorLog.innerHTML = '<p class="text-muted">No FCM errors logged. This is good!</p>';
+        return;
+    }
+
+    elements.fcmErrorLog.innerHTML = errors.map(entry => `
+        <div class="error-log-item">
+            <div class="error-log-header">
+                <span class="error-log-operation">${escapeHtml(entry.operation)}</span>
+                <span class="error-log-time">${escapeHtml(entry.timestamp)}</span>
+            </div>
+            <div class="error-log-message">${escapeHtml(entry.error)}</div>
+            ${entry.context && Object.keys(entry.context).length > 0 ? `
+                <div class="error-log-context">
+                    ${Object.entries(entry.context).map(([key, value]) => 
+                        `<span class="error-context-item"><strong>${escapeHtml(key)}:</strong> ${escapeHtml(typeof value === 'object' ? JSON.stringify(value) : value)}</span>`
+                    ).join('')}
+                </div>
+            ` : ''}
+        </div>
+    `).join('');
+}
+
+async function clearFcmErrorLog() {
+    try {
+        await apiRequest('/api/fcm/errors/clear', { method: 'POST' });
+        showToast('success', 'Error Log Cleared', 'All FCM errors have been cleared');
+        addActivity('cache', 'FCM error log cleared');
+        await loadFcmErrorLog();
+    } catch (error) {
+        showToast('error', 'Error', error.message);
+    }
+}
+
 
 // ============ Load Sports ============
 async function loadSports(options = {}) {
@@ -793,7 +848,7 @@ function setupEventListeners() {
 
     // Refresh all
     document.getElementById('refresh-all').addEventListener('click', async () => {
-        await Promise.all([loadStatus({ showMessage: true }), loadPushStatus(), loadSports(), loadGames()]);
+        await Promise.all([loadStatus({ showMessage: true }), loadPushStatus(), loadSports(), loadGames(), loadFcmErrorLog()]);
     });
 
     // Quick actions
@@ -817,9 +872,17 @@ function setupEventListeners() {
     document.getElementById('run-goal-watcher').addEventListener('click', runGoalCheck);
     document.getElementById('send-test-push').addEventListener('click', sendTestPush);
 
+    // FCM Error Log
+    document.getElementById('refresh-error-log').addEventListener('click', () => loadFcmErrorLog({ showMessage: true }));
+    document.getElementById('clear-error-log').addEventListener('click', clearFcmErrorLog);
+
     // Goal test
     document.getElementById('goal-test-sport').addEventListener('change', updateGoalTestTeamDropdowns);
     document.getElementById('send-goal-test').addEventListener('click', sendGoalTest);
+
+    // Pre-game test
+    document.getElementById('pregame-test-sport').addEventListener('change', updatePregameTestSport);
+    document.getElementById('send-pregame-test').addEventListener('click', sendPregameTest);
 
     // Target type selects
     const testPushTargetType = document.getElementById('test-push-target-type');
@@ -968,6 +1031,89 @@ async function sendGoalTest() {
     }
 }
 
+// ============ Pre-Game Test Functions ============
+function updatePregameTestSport() {
+    const sport = document.getElementById('pregame-test-sport').value;
+    const teamFields = document.getElementById('pregame-team-fields');
+    const biathlonFields = document.getElementById('pregame-biathlon-fields');
+
+    if (sport === 'biathlon') {
+        teamFields.classList.add('hidden');
+        biathlonFields.classList.remove('hidden');
+    } else {
+        teamFields.classList.remove('hidden');
+        biathlonFields.classList.add('hidden');
+        updatePregameTestTeamDropdowns();
+    }
+}
+
+function updatePregameTestTeamDropdowns() {
+    const sport = document.getElementById('pregame-test-sport').value;
+    const teamList = sport === 'allsvenskan' ? footballTeams : teams;
+    const homeSelect = document.getElementById('pregame-test-home-team');
+    const awaySelect = document.getElementById('pregame-test-away-team');
+
+    const buildOptions = (list) => {
+        if (sport === 'allsvenskan') {
+            return list.map(team => `<option value="${escapeHtml(team.code)}">${escapeHtml(team.name)}</option>`).join('');
+        } else {
+            return list.map(team => `<option value="${escapeHtml(team.code)}">${escapeHtml(team.names?.long || team.names?.short || team.code)}</option>`).join('');
+        }
+    };
+
+    homeSelect.innerHTML = buildOptions(teamList);
+    awaySelect.innerHTML = buildOptions(teamList);
+    if (teamList.length > 1) {
+        awaySelect.selectedIndex = 1;
+    }
+}
+
+async function sendPregameTest() {
+    const btn = document.getElementById('send-pregame-test');
+    btn.disabled = true;
+    try {
+        const sport = document.getElementById('pregame-test-sport').value;
+        const body = {
+            sport,
+            minutesUntilStart: parseNumericInput(document.getElementById('pregame-test-minutes').value) || 5,
+            venue: document.getElementById('pregame-test-venue').value.trim() || undefined
+        };
+
+        if (sport === 'biathlon') {
+            body.gender = document.getElementById('pregame-test-gender').value;
+            body.discipline = document.getElementById('pregame-test-discipline').value;
+        } else {
+            const homeTeamCode = document.getElementById('pregame-test-home-team').value;
+            const awayTeamCode = document.getElementById('pregame-test-away-team').value;
+
+            if (!homeTeamCode || !awayTeamCode) {
+                throw new Error('Please select both teams.');
+            }
+            if (homeTeamCode === awayTeamCode) {
+                throw new Error('Teams must be different.');
+            }
+
+            body.homeTeamCode = homeTeamCode;
+            body.awayTeamCode = awayTeamCode;
+        }
+
+        const result = await apiRequest('/api/notifications/pre-game-test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        const sportLabel = sport === 'shl' ? 'SHL' : sport === 'allsvenskan' ? 'Allsvenskan' : 'Biathlon';
+        showToast(result.success ? 'success' : 'error', 'Event Start Test', result.success ? `${sportLabel} notification sent!` : 'Failed to send');
+        addActivity('notification', `Pre-game test: ${sportLabel}`);
+        await loadPushStatus();
+    } catch (error) {
+        showToast('error', 'Error', error.message);
+    } finally {
+        btn.disabled = false;
+    }
+}
+
 async function createGame(event) {
     event.preventDefault();
     const btn = event.target.querySelector('button[type="submit"]');
@@ -1036,12 +1182,14 @@ async function init() {
     ]);
 
     updateGoalTestTeamDropdowns();
+    updatePregameTestTeamDropdowns();
 
     await Promise.all([
         loadStatus(),
         loadPushStatus(),
         loadSports(),
-        loadGames()
+        loadGames(),
+        loadFcmErrorLog()
     ]);
 
     addActivity('info', 'Admin console loaded');

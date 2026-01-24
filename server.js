@@ -1153,6 +1153,106 @@ app.post('/api/pre-game-watcher/check', async (req, res) => {
     }
 });
 
+/**
+ * POST /api/notifications/pre-game-test
+ * Send a test pre-game/event start notification
+ */
+app.post('/api/notifications/pre-game-test', async (req, res) => {
+    console.log('[API] Pre-game notification test triggered');
+
+    if (!pushNotifications.isConfigured()) {
+        return res.status(503).json({
+            error: 'Push notifications not configured. Set GOOGLE_APPLICATION_CREDENTIALS or FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY environment variables.'
+        });
+    }
+
+    try {
+        const payload = req.body || {};
+        const sport = payload.sport || 'shl';
+
+        let gameInfo;
+
+        if (sport === 'biathlon') {
+            // Biathlon doesn't have teams
+            const gender = payload.gender || 'men';
+            const discipline = payload.discipline || 'Sprint';
+            const genderDisplay = gender === 'men' ? 'Men\'s' : gender === 'women' ? 'Women\'s' : 'Mixed';
+            const eventName = `${genderDisplay} ${discipline}`;
+
+            gameInfo = {
+                sport: 'biathlon',
+                gameId: `test-biathlon-${Date.now()}`,
+                eventName,
+                venue: payload.venue || 'Test Venue',
+                minutesUntilStart: parseOptionalNumber(payload.minutesUntilStart) || 5,
+                homeTeamCode: null,
+                awayTeamCode: null
+            };
+        } else {
+            // SHL or Allsvenskan
+            const homeTeamCode = normalizeTeamCode(payload.homeTeamCode);
+            const awayTeamCode = normalizeTeamCode(payload.awayTeamCode);
+
+            if (!homeTeamCode || !awayTeamCode) {
+                return res.status(400).json({
+                    error: 'homeTeamCode and awayTeamCode are required for team sports.'
+                });
+            }
+
+            if (homeTeamCode === awayTeamCode) {
+                return res.status(400).json({
+                    error: 'Home and away teams must be different.'
+                });
+            }
+
+            // Get team names from teams data
+            let homeTeamName = homeTeamCode;
+            let awayTeamName = awayTeamCode;
+
+            if (sport === 'shl') {
+                const homeTeam = teamsByCode.get(homeTeamCode);
+                const awayTeam = teamsByCode.get(awayTeamCode);
+                homeTeamName = homeTeam?.names?.long || homeTeam?.names?.short || homeTeamCode;
+                awayTeamName = awayTeam?.names?.long || awayTeam?.names?.short || awayTeamCode;
+            } else {
+                // For football, use the provided names or codes
+                homeTeamName = payload.homeTeamName || homeTeamCode;
+                awayTeamName = payload.awayTeamName || awayTeamCode;
+            }
+
+            gameInfo = {
+                sport,
+                gameId: `test-${sport}-${Date.now()}`,
+                homeTeamName,
+                awayTeamName,
+                homeTeamCode,
+                awayTeamCode,
+                venue: payload.venue || null,
+                minutesUntilStart: parseOptionalNumber(payload.minutesUntilStart) || 5
+            };
+        }
+
+        const result = await pushNotifications.sendPreGameNotification(gameInfo);
+
+        res.json({
+            success: result.success,
+            message: 'Pre-game notification sent',
+            timestamp: formatSwedishTimestamp(),
+            result,
+            gameInfo: {
+                sport: gameInfo.sport,
+                homeTeamCode: gameInfo.homeTeamCode,
+                awayTeamCode: gameInfo.awayTeamCode,
+                eventName: gameInfo.eventName,
+                venue: gameInfo.venue,
+                minutesUntilStart: gameInfo.minutesUntilStart
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ============ FCM DEVICE REGISTRATION ENDPOINTS ============
 
 /**
@@ -1241,6 +1341,31 @@ app.get('/api/fcm/topics/:topic', (req, res) => {
     res.json({
         timestamp: formatSwedishTimestamp(),
         ...details
+    });
+});
+
+/**
+ * GET /api/fcm/errors
+ * Get FCM error log for admin dashboard
+ */
+app.get('/api/fcm/errors', (req, res) => {
+    const limit = parseInt(req.query.limit) || 50;
+    const errorLog = pushNotifications.getErrorLog(limit);
+    res.json({
+        timestamp: formatSwedishTimestamp(),
+        ...errorLog
+    });
+});
+
+/**
+ * POST /api/fcm/errors/clear
+ * Clear the FCM error log
+ */
+app.post('/api/fcm/errors/clear', (req, res) => {
+    const result = pushNotifications.clearErrorLog();
+    res.json({
+        timestamp: formatSwedishTimestamp(),
+        ...result
     });
 });
 

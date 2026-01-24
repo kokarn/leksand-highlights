@@ -1,11 +1,96 @@
 const admin = require('firebase-admin');
 const fs = require('fs');
+const path = require('path');
 const { formatSwedishTimestamp } = require('./utils');
 
 // ============ FIREBASE CONFIGURATION ============
 // Set GOOGLE_APPLICATION_CREDENTIALS env var to path of service account JSON
 // Or set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY individually
 let firebaseApp = null;
+
+// ============ ERROR LOGGING ============
+const ERROR_LOG_PATH = path.join(__dirname, '..', 'fcm_errors.json');
+const MAX_ERROR_LOG_ENTRIES = 100;
+
+let errorLog = [];
+
+/**
+ * Load error log from file
+ */
+function loadErrorLog() {
+    try {
+        if (fs.existsSync(ERROR_LOG_PATH)) {
+            const data = fs.readFileSync(ERROR_LOG_PATH, 'utf8');
+            errorLog = JSON.parse(data);
+            if (!Array.isArray(errorLog)) {
+                errorLog = [];
+            }
+            console.log(`[FCM] Loaded ${errorLog.length} error log entries`);
+        }
+    } catch (error) {
+        console.error('[FCM] Error loading error log:', error.message);
+        errorLog = [];
+    }
+}
+
+/**
+ * Save error log to file
+ */
+function saveErrorLog() {
+    try {
+        fs.writeFileSync(ERROR_LOG_PATH, JSON.stringify(errorLog, null, 2), 'utf8');
+    } catch (error) {
+        console.error('[FCM] Error saving error log:', error.message);
+    }
+}
+
+/**
+ * Log an FCM error
+ * @param {string} operation - The operation that failed (e.g., 'sendToTopic', 'sendToDevice')
+ * @param {string} errorMessage - The error message
+ * @param {Object} context - Additional context about the error
+ */
+function logError(operation, errorMessage, context = {}) {
+    const entry = {
+        timestamp: formatSwedishTimestamp(),
+        operation,
+        error: errorMessage,
+        context
+    };
+
+    errorLog.unshift(entry);
+
+    // Keep only the most recent entries
+    if (errorLog.length > MAX_ERROR_LOG_ENTRIES) {
+        errorLog = errorLog.slice(0, MAX_ERROR_LOG_ENTRIES);
+    }
+
+    saveErrorLog();
+}
+
+/**
+ * Get error log entries
+ * @param {number} limit - Maximum number of entries to return (default: 50)
+ */
+function getErrorLog(limit = 50) {
+    return {
+        errors: errorLog.slice(0, limit),
+        totalErrors: errorLog.length,
+        maxEntries: MAX_ERROR_LOG_ENTRIES
+    };
+}
+
+/**
+ * Clear error log
+ */
+function clearErrorLog() {
+    errorLog = [];
+    saveErrorLog();
+    return { success: true, message: 'Error log cleared' };
+}
+
+// Load error log on module initialization
+loadErrorLog();
 
 // ============ SUBSCRIBER TRACKING ============
 // Note: FCM does not provide an API to list topic subscribers.
@@ -281,6 +366,7 @@ async function sendToTopic({ topic, title, body, data = {} }) {
     } catch (error) {
         stats.errors++;
         console.error('[FCM] Error sending to topic:', error.message);
+        logError('sendToTopic', error.message, { topic, title, body });
         return { success: false, error: error.message };
     }
 }
@@ -348,6 +434,7 @@ async function sendToTopics({ topics, title, body, data = {} }) {
     } catch (error) {
         stats.errors++;
         console.error('[FCM] Error sending to topics:', error.message);
+        logError('sendToTopics', error.message, { topics, title, body });
         return { success: false, error: error.message };
     }
 }
@@ -402,6 +489,7 @@ async function sendToDevice({ token, title, body, data = {} }) {
     } catch (error) {
         stats.errors++;
         console.error('[FCM] Error sending to device:', error.message);
+        logError('sendToDevice', error.message, { tokenPreview: `...${token.slice(-8)}`, title, body });
         return { success: false, error: error.message };
     }
 }
@@ -554,6 +642,7 @@ async function sendWithCondition({ condition, title, body, data = {} }) {
     } catch (error) {
         stats.errors++;
         console.error('[FCM] Error sending with condition:', error.message);
+        logError('sendWithCondition', error.message, { condition, title, body });
         return { success: false, error: error.message };
     }
 }
@@ -739,5 +828,7 @@ module.exports = {
     sendTestNotification,
     getStats,
     getSubscriberStats,
-    getTopicDetails
+    getTopicDetails,
+    getErrorLog,
+    clearErrorLog
 };
