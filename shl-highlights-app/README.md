@@ -4,6 +4,12 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.3.1
+- Apply theme colors to all match/race modals and event components
+- Wrap events list in card container for better visual distinction
+- Wrap highlights section in card container for consistency
+- Standardize padding across all modal tabs (Summary, Events, Highlights)
+
 ### 2.3.0
 - Add light mode support with theme toggle in Settings
 - Theme options: System (default), Light, and Dark
