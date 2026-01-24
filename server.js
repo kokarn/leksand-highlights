@@ -722,6 +722,33 @@ app.get('/api/games', async (req, res) => {
         if (baseGames) {
             console.log('[Cache HIT] /api/games');
 
+            // Check for games that might have transitioned to live since caching
+            // This handles the case where a game was cached as pre-game but has now started
+            const gamesInLiveWindow = baseGames.filter(g => provider.isGameInLiveWindow(g));
+            if (gamesInLiveWindow.length > 0) {
+                console.log(`[Cache] Checking ${gamesInLiveWindow.length} games that may have started...`);
+                const liveCheckResults = await Promise.all(
+                    gamesInLiveWindow.map(async (game) => {
+                        const hasStarted = await provider.checkGameHasStarted(game.uuid);
+                        return { gameId: game.uuid, hasStarted };
+                    })
+                );
+
+                const liveGameIds = new Set(
+                    liveCheckResults.filter(r => r.hasStarted).map(r => r.gameId)
+                );
+
+                if (liveGameIds.size > 0) {
+                    console.log(`[Cache] Found ${liveGameIds.size} games that have transitioned to live`);
+                    baseGames = baseGames.map(game => {
+                        if (liveGameIds.has(game.uuid)) {
+                            return { ...game, state: 'live' };
+                        }
+                        return game;
+                    });
+                }
+            }
+
             // For live games, always fetch fresh scores even on cache hit
             const hasLiveGames = baseGames.some(g => g.state === 'live');
             if (hasLiveGames) {
