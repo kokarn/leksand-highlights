@@ -47,13 +47,12 @@ export const VideoCard = ({ video, isPlaying, onPress }) => {
 
 const createStyles = (colors) => StyleSheet.create({
     videoGridCard: {
-        flex: 1,
-        marginBottom: 16,
+        // 2 cards per row: screen width - tabContent padding (32) - sectionCard padding (32) - gap (12) = width - 76
+        width: (width - 76) / 2,
+        marginBottom: 4,
         backgroundColor: colors.card,
         borderRadius: 8,
-        overflow: 'hidden',
-        marginHorizontal: 4,
-        maxWidth: (width - 48) / 2
+        overflow: 'hidden'
     },
     videoGridCardPlaying: {
         borderWidth: 2,

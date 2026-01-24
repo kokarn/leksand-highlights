@@ -1,16 +1,21 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getPlayerName, getPenaltyMinutes, getPenaltyOffense } from '../../utils';
+import { getPlayerName, getPenaltyMinutes, getPenaltyOffense, getPenaltyType } from '../../utils';
 import { useTheme } from '../../contexts/ThemeContext';
 
 export const PenaltyItem = ({ penalty }) => {
     const { colors } = useTheme();
     const themedStyles = createStyles(colors);
     
-    const playerName = getPlayerName(penalty.player);
+    const rawPlayerName = getPlayerName(penalty.player);
     const penaltyMinutes = getPenaltyMinutes(penalty);
     const offence = getPenaltyOffense(penalty);
-    const penaltyType = penalty.variant?.shortName || '';
+    const penaltyType = getPenaltyType(penalty.variant);
+    
+    // For team penalties (bench minor, too many men, etc.), show team name instead of "Unknown"
+    const teamCode = penalty.eventTeam?.teamCode || penalty.teamCode || null;
+    const isTeamPenalty = rawPlayerName === 'Unknown' && teamCode;
+    const playerName = isTeamPenalty ? `${teamCode} (Team)` : rawPlayerName;
 
     return (
         <View style={themedStyles.penaltyItem}>

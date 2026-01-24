@@ -16,9 +16,12 @@ export const GameCard = memo(function GameCard({ game, onPress }) {
     const awayName = awayTeam?.names?.short ?? awayCode ?? 'Away';
     const homeLogo = getTeamLogoUrl(homeCode);
     const awayLogo = getTeamLogoUrl(awayCode);
-    const formattedDate = formatRelativeDateEnglish(game?.startDateTime);
-    const formattedTime = formatTime(game?.startDateTime);
     const isLive = game?.state === 'live';
+    const isFinished = game?.state === 'post-game';
+    const rawDate = formatRelativeDateEnglish(game?.startDateTime);
+    const isFinishedToday = isFinished && rawDate === 'Today';
+    const formattedDate = isFinishedToday ? 'Ended' : rawDate;
+    const formattedTime = formatTime(game?.startDateTime);
     const homeScore = extractScore(game?.homeTeamResult, homeTeam);
     const awayScore = extractScore(game?.awayTeamResult, awayTeam);
     const gameState = game?.state ?? '-';
@@ -41,7 +44,7 @@ export const GameCard = memo(function GameCard({ game, onPress }) {
                         <Text style={[styles.gameDate, { color: colors.textSecondary }, isLive && styles.liveTextAccented]}>
                             {isLive ? 'LIVE' : formattedDate}
                         </Text>
-                        {!isLive && <Text style={[styles.gameTime, { color: colors.textMuted }]}>{formattedTime}</Text>}
+                        {!isLive && !isFinishedToday && <Text style={[styles.gameTime, { color: colors.textMuted }]}>{formattedTime}</Text>}
                     </View>
                 </View>
                 <View style={styles.matchupContainer}>

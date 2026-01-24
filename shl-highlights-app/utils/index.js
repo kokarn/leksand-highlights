@@ -234,11 +234,128 @@ export const getPenaltyMinutes = (penalty) => {
 };
 
 /**
+ * Map penalty type/variant codes to human-readable descriptions
+ */
+const PENALTY_TYPE_MAP = {
+    'UN SP': 'Unsportsmanlike',
+    'UN-SP': 'Unsportsmanlike',
+    'UNSPORT': 'Unsportsmanlike',
+    'MIN': 'Minor',
+    'MAJ': 'Major',
+    'MISC': 'Misconduct',
+    'GM': 'Game Misconduct',
+    'MP': 'Match Penalty',
+    'DBL MIN': 'Double Minor',
+    'DBL-MIN': 'Double Minor',
+    'BENCH': 'Bench Minor',
+    'PS': 'Penalty Shot'
+};
+
+/**
+ * Get formatted penalty type from variant
+ * @param {Object} variant - Penalty variant object
+ * @returns {string} Formatted penalty type
+ */
+export const getPenaltyType = (variant) => {
+    if (!variant) {
+        return '';
+    }
+    
+    const shortName = variant.shortName || '';
+    if (!shortName) {
+        return '';
+    }
+    
+    // Check if we have a mapping for this type
+    const upperValue = shortName.toUpperCase().trim();
+    if (PENALTY_TYPE_MAP[upperValue]) {
+        return PENALTY_TYPE_MAP[upperValue];
+    }
+    
+    // If it looks like an abbreviation, try to expand it
+    if (shortName.length <= 6 && !shortName.includes(' ')) {
+        // Return as-is for very short codes we don't recognize
+        return shortName;
+    }
+    
+    return shortName;
+};
+
+/**
+ * Map penalty codes to human-readable descriptions
+ */
+const PENALTY_CODE_MAP = {
+    'IL-HEAD': 'Illegal hit to head',
+    'IL-BODY': 'Illegal body check',
+    'HI-ST': 'High-sticking',
+    'HIGH-ST': 'High-sticking',
+    'HOLD': 'Holding',
+    'HOOK': 'Hooking',
+    'HOOKING': 'Hooking',
+    'INT': 'Interference',
+    'INTERF': 'Interference',
+    'SLASH': 'Slashing',
+    'SLASHING': 'Slashing',
+    'TRIP': 'Tripping',
+    'TRIPPING': 'Tripping',
+    'ROUGH': 'Roughing',
+    'ROUGHING': 'Roughing',
+    'BOARD': 'Boarding',
+    'BOARDING': 'Boarding',
+    'ELBOW': 'Elbowing',
+    'ELBOWING': 'Elbowing',
+    'CROSS': 'Cross-checking',
+    'CROSS-CH': 'Cross-checking',
+    'KNEE': 'Kneeing',
+    'CHAR': 'Charging',
+    'CHARGING': 'Charging',
+    'D-ZONE': 'Delay of game',
+    'DELAY': 'Delay of game',
+    'UNSPORT': 'Unsportsmanlike',
+    'UN SP': 'Unsportsmanlike',
+    'UN-SP': 'Unsportsmanlike',
+    'MISC': 'Misconduct',
+    'GM': 'Game misconduct',
+    'MP': 'Match penalty',
+    'FIGHT': 'Fighting',
+    'TOO-MEN': 'Too many men',
+    'TOO MANY': 'Too many men',
+    'TOO M': 'Too many men',
+    'TOOM': 'Too many men',
+    'TOO-M': 'Too many men',
+    'BENCH': 'Bench minor',
+    'SPEAR': 'Spearing',
+    'CLIP': 'Clipping',
+    'CHECK-BH': 'Checking from behind',
+    'BUTT-END': 'Butt-ending',
+    'DIVE': 'Diving',
+    'EMBEL': 'Embellishment',
+    'ABUSE-OFF': 'Abuse of officials'
+};
+
+/**
  * Get offense description from penalty event
  * @param {Object} penalty - Penalty event object
  * @returns {string} Offense description
  */
 export const getPenaltyOffense = (penalty) => {
     const offence = penalty.offence;
-    return typeof offence === 'string' ? offence : (offence?.shortName || offence?.name || 'Penalty');
+    const rawValue = typeof offence === 'string' ? offence : (offence?.shortName || offence?.name || 'Penalty');
+    
+    // Check if we have a mapping for this code
+    const upperValue = rawValue.toUpperCase().trim();
+    if (PENALTY_CODE_MAP[upperValue]) {
+        return PENALTY_CODE_MAP[upperValue];
+    }
+    
+    // Check if it looks like a code (has hyphens or is all caps with no spaces)
+    if (rawValue.includes('-') || (rawValue === rawValue.toUpperCase() && !rawValue.includes(' '))) {
+        // Try to make it more readable by replacing hyphens and capitalizing
+        return rawValue
+            .replace(/-/g, ' ')
+            .toLowerCase()
+            .replace(/\b\w/g, c => c.toUpperCase());
+    }
+    
+    return rawValue;
 };

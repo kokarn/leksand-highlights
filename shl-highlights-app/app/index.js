@@ -685,14 +685,6 @@ export default function App() {
             maxToRenderPerBatch={15}
             windowSize={15}
             ListEmptyComponent={<EmptyState message="No events found." />}
-            ListHeaderComponent={
-                <ScheduleHeader
-                    icon="grid-outline"
-                    title="All Events"
-                    count={unified.stats.total}
-                    countLabel="events"
-                />
-            }
         />
     );
 

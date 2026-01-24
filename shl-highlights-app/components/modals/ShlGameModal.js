@@ -467,7 +467,6 @@ const createStyles = (colors) => StyleSheet.create({
     videoGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'space-between',
         gap: 12
     },
     emptyText: {
