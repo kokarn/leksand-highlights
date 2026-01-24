@@ -10,11 +10,22 @@ import { ShootingDisplay, ShootingInline } from '../biathlon';
 /**
  * Parse shooting string into array of misses per stage
  */
+/**
+ * Parse shooting string into array of misses per stage
+ * Two formats: "0+1+0+0" (individual) or "0+2 0+3" (relay)
+ * Note: This function is kept for potential future use but ShootingDisplay has its own parser
+ */
 function parseShootings(shootings) {
     if (!shootings || typeof shootings !== 'string') {
         return null;
     }
-    return shootings.split('+').map(s => parseInt(s, 10) || 0);
+    const trimmed = shootings.trim();
+    // Relay format: space-separated stages like "0+2 0+3"
+    if (trimmed.includes(' ')) {
+        return trimmed.split(/\s+/).map(stage => parseInt(stage.split('+')[0], 10) || 0);
+    }
+    // Individual format: "0+1+0+0"
+    return trimmed.split('+').map(s => parseInt(s, 10) || 0);
 }
 
 /**
@@ -60,7 +71,7 @@ function groupByNation(participants) {
                 // Team data from first entry (either team header or first athlete)
                 rank: null,
                 startOrder: null,
-                result: null,
+                totalTime: null,
                 behind: null,
                 startInfo: null,
                 bib: null
@@ -72,7 +83,7 @@ function groupByNation(participants) {
             // Use team header data for team info
             groups[nation].rank = item?.Rank ?? null;
             groups[nation].startOrder = item?.StartOrder ?? null;
-            groups[nation].result = item?.Result || item?.TotalTime || null;
+            groups[nation].totalTime = item?.TotalTime || item?.Result || null;
             groups[nation].behind = item?.Behind || null;
             groups[nation].startInfo = item?.StartInfo || null;
             groups[nation].bib = item?.Bib || null;
@@ -83,7 +94,7 @@ function groupByNation(participants) {
             // If no team header was found, use first athlete's data for team info
             if (groups[nation].startOrder === null) {
                 groups[nation].startOrder = item?.StartOrder ?? null;
-                groups[nation].result = item?.Result || item?.TotalTime || null;
+                groups[nation].totalTime = item?.TotalTime || item?.Result || null;
                 groups[nation].behind = item?.Behind || null;
                 groups[nation].bib = item?.Bib || null;
             }
@@ -112,7 +123,7 @@ function groupByNation(participants) {
 /**
  * Result row component with enhanced shooting display
  */
-const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceCompleted, discipline, colors, themedStyles }) => {
+const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceCompleted, discipline, shootingPositions, colors, themedStyles }) => {
     const rank = (() => {
         // IBU uses ResultOrder >= 10000 for non-finishers (DNS, DNF, etc.)
         const rawResultOrder = item?.ResultOrder;
@@ -143,6 +154,8 @@ const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceComple
 
     const shootings = item?.Shootings;
     const shootingTotal = item?.ShootingTotal;
+    // Use athlete's shooting positions if available, otherwise fall back to passed prop
+    const athleteShootingPositions = item?.ShootingPositions || shootingPositions;
     const hasShootingData = Boolean(shootings);
     // Only show medals if the race is completed (not live or upcoming)
     const medal = isRaceCompleted ? getMedalEmoji(rank) : null;
@@ -192,10 +205,12 @@ const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceComple
                         <ShootingDisplay
                             shootings={shootings}
                             shootingTotal={shootingTotal}
+                            shootingPositions={athleteShootingPositions}
                             discipline={discipline}
                             compact={false}
                             showTotal={true}
                             showLabel={false}
+                            textColor={colors.text}
                         />
                     </View>
                 )}
@@ -221,7 +236,7 @@ const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceComple
 /**
  * Relay team row component - shows team header with nested athletes
  */
-const RelayTeamRow = ({ team, teamIndex, hasResults, expandedRows, onToggle, isRaceCompleted, discipline, colors, themedStyles }) => {
+const RelayTeamRow = ({ team, teamIndex, hasResults, expandedRows, onToggle, isRaceCompleted, discipline, shootingPositions, colors, themedStyles }) => {
     // For start lists, use bib number as display rank (cleaner than startOrder)
     // For results, use rank. Filter out high values (10000+ means no result)
     const getDisplayRank = () => {
@@ -266,8 +281,8 @@ const RelayTeamRow = ({ team, teamIndex, hasResults, expandedRows, onToggle, isR
                     {!hasResults && team.startInfo && (
                         <Text style={themedStyles.relayTeamStartInfo}>{team.startInfo}</Text>
                     )}
-                    {hasResults && team.result && (
-                        <Text style={themedStyles.relayTeamResult}>{team.result}</Text>
+                    {hasResults && team.totalTime && (
+                        <Text style={themedStyles.relayTeamResult}>{team.totalTime}</Text>
                     )}
                     {hasResults && team.behind && team.behind !== '+0.0' && (
                         <Text style={themedStyles.relayTeamBehind}>{team.behind}</Text>
@@ -294,6 +309,8 @@ const RelayTeamRow = ({ team, teamIndex, hasResults, expandedRows, onToggle, isR
                     const legNumber = item?.Leg || athleteIndex + 1;
                     const shootings = item?.Shootings;
                     const shootingTotal = item?.ShootingTotal;
+                    // Use athlete's shooting positions if available, otherwise fall back to competition's
+                    const athleteShootingPositions = item?.ShootingPositions || shootingPositions;
                     const hasShootingData = Boolean(shootings);
                     const isExpanded = expandedRows.has(item.originalIndex);
                     const athleteResult = item?.LegTime || item?.Result || null;
@@ -320,10 +337,12 @@ const RelayTeamRow = ({ team, teamIndex, hasResults, expandedRows, onToggle, isR
                                         <ShootingDisplay
                                             shootings={shootings}
                                             shootingTotal={shootingTotal}
+                                            shootingPositions={athleteShootingPositions}
                                             discipline={discipline}
-                                            compact={false}
+                                            compact={true}
                                             showTotal={true}
                                             showLabel={false}
+                                            textColor={colors.textSecondary}
                                         />
                                     </View>
                                 )}
@@ -560,7 +579,10 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
                             <Ionicons name="close" size={24} color={colors.text} />
                         </TouchableOpacity>
                         <View style={themedStyles.raceModalTitleContainer}>
-                            <Text style={themedStyles.raceModalEventName}>{raceInfo.eventName}</Text>
+                            <Text style={themedStyles.raceModalEventName}>
+                                {/* Strip location from event name since it's shown below */}
+                                {(raceInfo.eventName || '').split(' - ')[0]}
+                            </Text>
                             <Text style={themedStyles.raceModalLocation}>
                                 {getNationFlag(raceInfo.country)} {raceInfo.location}, {raceInfo.countryName}
                             </Text>
@@ -672,6 +694,7 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
                                         onToggle={toggleRow}
                                         isRaceCompleted={!isLiveRace && !isStartingSoon && !isUpcomingRace}
                                         discipline={raceInfo.discipline}
+                                        shootingPositions={competition?.ShootingPositions || raceInfo?.shootingPositions}
                                         colors={colors}
                                         themedStyles={themedStyles}
                                     />
@@ -691,6 +714,7 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
                                             onToggle={() => toggleRow(originalIndex)}
                                             isRaceCompleted={!isLiveRace && !isStartingSoon && !isUpcomingRace}
                                             discipline={raceInfo.discipline}
+                                            shootingPositions={competition?.ShootingPositions || raceInfo?.shootingPositions}
                                             colors={colors}
                                             themedStyles={themedStyles}
                                         />

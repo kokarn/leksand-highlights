@@ -4,6 +4,18 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.5.1
+- Show total time for all teams in biathlon relay results, with time difference shown separately
+- Fix duplicate time difference display on biathlon relay results for non-winning teams
+- Fix expanded shooting display overflowing screen on relay athlete rows
+- Show shooting position labels (P/S) in compact mode for relay athletes
+- Fix shooting display text colors for light/dark theme compatibility
+- Pass shooting positions from competition data to correctly display P/S for relay shooting stages
+- Fix relay shooting parsing: correctly handle "0+2 0+3" format (space-separated stages with spare rounds)
+- Display spare rounds used in relay shooting: orange indicators for hits using spare rounds
+- Only show "Clean!" badge if no misses AND no spare rounds were used
+- Fix duplicate location in biathlon race modal header
+
 ### 2.5.0
 - Remove "All Events" header from unified schedule view for cleaner look
 - Show "Ended" instead of "Today" with time for finished games and races
