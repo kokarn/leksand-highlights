@@ -6,11 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-// Only import OneSignal on native platforms
-let OneSignal = null;
-if (Platform.OS !== 'web') {
-    OneSignal = require('react-native-onesignal').OneSignal;
-}
+// OneSignal - platform-specific import (null on web)
+import { OneSignal } from '../utils/onesignal';
 
 // Card height constants for consistent scroll behavior
 // Height = padding (32) + header (~36) + content (~90) + marginBottom (16)

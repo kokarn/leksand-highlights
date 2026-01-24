@@ -4,6 +4,13 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.1.0
+- Improve biathlon relay race start list view by grouping participants by team/nation
+- Display team header with nation flag, bib number, and start info
+- Show nested athletes under their team with leg numbers (without redundant country/start info)
+- Add expandable shooting details for relay athletes
+- Filter out IBU's internal high ResultOrder values (10000+) from display
+
 ### 2.0.0
 - **BREAKING**: Migrate from OneSignal to Firebase Cloud Messaging (FCM)
 - Replace OneSignal SDK with @react-native-firebase/messaging

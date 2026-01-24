@@ -28,6 +28,87 @@ function getMedalEmoji(rank) {
 }
 
 /**
+ * Check if discipline is a relay race
+ */
+function isRelayRace(discipline) {
+    if (!discipline) {
+        return false;
+    }
+    const d = discipline.toLowerCase();
+    return d.includes('relay');
+}
+
+/**
+ * Group participants by nation for relay races
+ * IBU relay data has team entries (IsTeam: true, Leg: 0) followed by athlete entries (Leg: 1, 2, 3, 4)
+ */
+function groupByNation(participants) {
+    const groups = {};
+    const order = [];
+
+    participants.forEach((item, index) => {
+        const nation = item?.Nat || item?.Nation || item?.Country || 'Unknown';
+
+        // Check if this is a team header entry (IBU format: IsTeam=true or Leg=0)
+        const isTeamHeader = item?.IsTeam === true || item?.Leg === 0;
+
+        if (!groups[nation]) {
+            groups[nation] = {
+                nation,
+                athletes: [],
+                // Team data from first entry (either team header or first athlete)
+                rank: null,
+                startOrder: null,
+                result: null,
+                behind: null,
+                startInfo: null,
+                bib: null
+            };
+            order.push(nation);
+        }
+
+        if (isTeamHeader) {
+            // Use team header data for team info
+            groups[nation].rank = item?.Rank ?? null;
+            groups[nation].startOrder = item?.StartOrder ?? null;
+            groups[nation].result = item?.Result || item?.TotalTime || null;
+            groups[nation].behind = item?.Behind || null;
+            groups[nation].startInfo = item?.StartInfo || null;
+            groups[nation].bib = item?.Bib || null;
+        } else {
+            // Add athlete to the team
+            groups[nation].athletes.push({ ...item, originalIndex: index });
+
+            // If no team header was found, use first athlete's data for team info
+            if (groups[nation].startOrder === null) {
+                groups[nation].startOrder = item?.StartOrder ?? null;
+                groups[nation].result = item?.Result || item?.TotalTime || null;
+                groups[nation].behind = item?.Behind || null;
+                groups[nation].bib = item?.Bib || null;
+            }
+        }
+    });
+
+    // Sort by bib number (for start lists) or rank (for results)
+    return order
+        .map(nation => groups[nation])
+        .sort((a, b) => {
+            // Use bib for start list order, rank for results
+            // Filter out high values (10000+ means no result from IBU)
+            const getOrder = (team) => {
+                if (team.rank && team.rank < 10000) {
+                    return team.rank;
+                }
+                if (team.bib) {
+                    return parseInt(team.bib, 10) || 9999;
+                }
+                return team.startOrder || 9999;
+            };
+            return getOrder(a) - getOrder(b);
+        });
+}
+
+/**
  * Result row component with enhanced shooting display
  */
 const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceCompleted, discipline }) => {
@@ -137,6 +218,136 @@ const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceComple
 };
 
 /**
+ * Relay team row component - shows team header with nested athletes
+ */
+const RelayTeamRow = ({ team, teamIndex, hasResults, expandedRows, onToggle, isRaceCompleted, discipline }) => {
+    // For start lists, use bib number as display rank (cleaner than startOrder)
+    // For results, use rank. Filter out high values (10000+ means no result)
+    const getDisplayRank = () => {
+        if (hasResults) {
+            const r = team.rank;
+            if (r && r < 10000) {
+                return r;
+            }
+            return teamIndex + 1;
+        }
+        // For start lists, prefer bib number, fall back to calculated index
+        if (team.bib) {
+            return team.bib;
+        }
+        return teamIndex + 1;
+    };
+    const displayRank = getDisplayRank();
+    const rank = String(displayRank);
+    const medal = isRaceCompleted && hasResults ? getMedalEmoji(rank) : null;
+    const isTopThree = isRaceCompleted && hasResults && parseInt(rank, 10) <= 3;
+
+    return (
+        <View style={[styles.relayTeamContainer, isTopThree && styles.relayTeamHighlight]}>
+            {/* Team header */}
+            <View style={styles.relayTeamHeader}>
+                <View style={styles.resultRankContainer}>
+                    {medal ? (
+                        <Text style={styles.medalEmoji}>{medal}</Text>
+                    ) : (
+                        <Text style={styles.resultRank}>{rank}</Text>
+                    )}
+                </View>
+                <View style={styles.relayTeamInfo}>
+                    <View style={styles.relayTeamNameRow}>
+                        <Text style={[styles.relayTeamName, isTopThree && styles.resultNameHighlight]}>
+                            {getNationFlag(team.nation)} {team.nation}
+                        </Text>
+                        {team.bib && (
+                            <Text style={styles.relayTeamBib}>#{team.bib}</Text>
+                        )}
+                    </View>
+                    {!hasResults && team.startInfo && (
+                        <Text style={styles.relayTeamStartInfo}>{team.startInfo}</Text>
+                    )}
+                    {hasResults && team.result && (
+                        <Text style={styles.relayTeamResult}>{team.result}</Text>
+                    )}
+                    {hasResults && team.behind && team.behind !== '+0.0' && (
+                        <Text style={styles.relayTeamBehind}>{team.behind}</Text>
+                    )}
+                </View>
+            </View>
+
+            {/* Team athletes */}
+            <View style={styles.relayAthletesList}>
+                {team.athletes.map((item, athleteIndex) => {
+                    const name = (() => {
+                        if (!item) {
+                            return 'Unknown';
+                        }
+                        if (item.Name) {
+                            return item.Name;
+                        }
+                        const givenName = item.GivenName || '';
+                        const familyName = item.FamilyName || '';
+                        const combined = `${givenName} ${familyName}`.trim();
+                        return combined || item.ShortName || 'Unknown';
+                    })();
+
+                    const legNumber = item?.Leg || athleteIndex + 1;
+                    const shootings = item?.Shootings;
+                    const shootingTotal = item?.ShootingTotal;
+                    const hasShootingData = Boolean(shootings);
+                    const isExpanded = expandedRows.has(item.originalIndex);
+                    const athleteResult = item?.LegTime || item?.Result || null;
+
+                    return (
+                        <TouchableOpacity
+                            key={item?.IBUId || item?.Name || athleteIndex}
+                            style={styles.relayAthleteRow}
+                            onPress={hasShootingData ? () => onToggle(item.originalIndex) : undefined}
+                            activeOpacity={hasShootingData ? 0.7 : 1}
+                        >
+                            <View style={styles.relayLegBadge}>
+                                <Text style={styles.relayLegText}>{legNumber}</Text>
+                            </View>
+                            <View style={styles.relayAthleteMain}>
+                                <Text style={styles.relayAthleteName} numberOfLines={1}>{name}</Text>
+                                {hasShootingData && !isExpanded && (
+                                    <View style={styles.resultMetaRow}>
+                                        <ShootingInline shootings={shootings} shootingTotal={shootingTotal} />
+                                    </View>
+                                )}
+                                {isExpanded && hasShootingData && (
+                                    <View style={styles.expandedShooting}>
+                                        <ShootingDisplay
+                                            shootings={shootings}
+                                            shootingTotal={shootingTotal}
+                                            discipline={discipline}
+                                            compact={false}
+                                            showTotal={true}
+                                            showLabel={false}
+                                        />
+                                    </View>
+                                )}
+                            </View>
+                            <View style={styles.relayAthleteRight}>
+                                {hasResults && athleteResult && (
+                                    <Text style={styles.relayAthleteTime}>{athleteResult}</Text>
+                                )}
+                                {hasShootingData && (
+                                    <Ionicons
+                                        name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                                        size={14}
+                                        color="#555"
+                                    />
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                    );
+                })}
+            </View>
+        </View>
+    );
+};
+
+/**
  * Country filter dropdown component
  */
 const CountryFilterDropdown = ({ countries, selectedCountry, onSelectCountry }) => {
@@ -231,6 +442,7 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
     const hasStartList = Boolean(startList?.length);
     const allResultRows = hasResults ? results : (hasStartList ? startList : []);
     const isLiveRace = raceInfo?.state === 'live' || raceInfo?.state === 'ongoing';
+    const isRelay = isRelayRace(raceInfo?.discipline);
     const isStartingSoon = raceInfo?.state === 'starting-soon';
     const isUpcomingRace = raceInfo?.state === 'upcoming' || raceInfo?.state === 'pre-race';
 
@@ -262,6 +474,15 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
             return nation === selectedCountry;
         });
     }, [allResultRows, selectedCountry]);
+
+    // Group by nation for relay races
+    const relayTeams = React.useMemo(() => {
+        if (!isRelay) {
+            return null;
+        }
+        const dataToGroup = selectedCountry ? resultRows : allResultRows;
+        return groupByNation(dataToGroup);
+    }, [isRelay, allResultRows, resultRows, selectedCountry]);
 
     // Reset country filter when race changes
     React.useEffect(() => {
@@ -434,6 +655,19 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
                                     <ActivityIndicator size="small" color="#0A84FF" />
                                     <Text style={styles.resultsLoadingText}>Loading results...</Text>
                                 </View>
+                            ) : isRelay && relayTeams && relayTeams.length > 0 ? (
+                                relayTeams.map((team, teamIndex) => (
+                                    <RelayTeamRow
+                                        key={team.nation}
+                                        team={team}
+                                        teamIndex={teamIndex}
+                                        hasResults={hasResults}
+                                        expandedRows={expandedRows}
+                                        onToggle={toggleRow}
+                                        isRaceCompleted={!isLiveRace && !isStartingSoon && !isUpcomingRace}
+                                        discipline={raceInfo.discipline}
+                                    />
+                                ))
                             ) : resultRows.length > 0 ? (
                                 resultRows.map((item, index) => {
                                     const rowKey = item?.IBUId || item?.Name || item?.Bib || item?.StartOrder || index;
@@ -832,5 +1066,98 @@ const styles = StyleSheet.create({
         color: '#666',
         fontSize: 13,
         paddingVertical: 8
+    },
+    // Relay team styles
+    relayTeamContainer: {
+        borderBottomWidth: 1,
+        borderBottomColor: '#2a2a2a',
+        paddingVertical: 12
+    },
+    relayTeamHighlight: {
+        backgroundColor: 'rgba(255, 215, 0, 0.05)',
+        marginHorizontal: -8,
+        paddingHorizontal: 8,
+        borderRadius: 8
+    },
+    relayTeamHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 8
+    },
+    relayTeamInfo: {
+        flex: 1,
+        gap: 4
+    },
+    relayTeamNameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8
+    },
+    relayTeamName: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '700'
+    },
+    relayTeamBib: {
+        color: '#666',
+        fontSize: 12,
+        fontWeight: '600'
+    },
+    relayTeamStartInfo: {
+        color: '#888',
+        fontSize: 12
+    },
+    relayTeamResult: {
+        color: '#0A84FF',
+        fontSize: 14,
+        fontWeight: '600'
+    },
+    relayTeamBehind: {
+        color: '#888',
+        fontSize: 13
+    },
+    relayAthletesList: {
+        marginLeft: 44,
+        borderLeftWidth: 2,
+        borderLeftColor: '#333',
+        paddingLeft: 12
+    },
+    relayAthleteRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 10,
+        paddingVertical: 8
+    },
+    relayLegBadge: {
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        backgroundColor: '#333',
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+    relayLegText: {
+        color: '#aaa',
+        fontSize: 11,
+        fontWeight: '700'
+    },
+    relayAthleteMain: {
+        flex: 1,
+        gap: 4
+    },
+    relayAthleteName: {
+        color: '#ccc',
+        fontSize: 14,
+        fontWeight: '500'
+    },
+    relayAthleteRight: {
+        alignItems: 'flex-end',
+        gap: 2
+    },
+    relayAthleteTime: {
+        color: '#888',
+        fontSize: 12,
+        fontWeight: '500'
     }
 });
