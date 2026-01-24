@@ -139,10 +139,17 @@ async function checkGameForNewGoals(game, sport) {
             if (!previousGoalIds.has(goalId)) {
                 previousGoalIds.add(goalId);
 
+                // Merge team info - use schedule data (has code) as base, enhance with game-info data
                 const gameInfo = {
                     uuid: gameId,
-                    homeTeamInfo: details.info?.homeTeam || game.homeTeamInfo,
-                    awayTeamInfo: details.info?.awayTeam || game.awayTeamInfo
+                    homeTeamInfo: {
+                        ...(details.info?.homeTeam || {}),
+                        ...game.homeTeamInfo  // Schedule data has .code, must take precedence
+                    },
+                    awayTeamInfo: {
+                        ...(details.info?.awayTeam || {}),
+                        ...game.awayTeamInfo  // Schedule data has .code, must take precedence
+                    }
                 };
 
                 const goalDetails = extractGoalDetails(goal, gameInfo, sport);

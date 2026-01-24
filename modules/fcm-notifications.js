@@ -3,6 +3,28 @@ const fs = require('fs');
 const path = require('path');
 const { formatSwedishTimestamp } = require('./utils');
 
+/**
+ * Sanitize a string for use as an FCM topic name.
+ * FCM topics can only contain alphanumeric characters, underscores, and hyphens.
+ * @param {string} str - The string to sanitize
+ * @returns {string} Sanitized topic-safe string
+ */
+function sanitizeTopicName(str) {
+    if (!str) {
+        return 'unknown';
+    }
+    // Normalize Swedish characters to ASCII equivalents
+    const normalized = str
+        .toLowerCase()
+        .replace(/ä/g, 'a')
+        .replace(/å/g, 'a')
+        .replace(/ö/g, 'o')
+        .replace(/é/g, 'e')
+        .replace(/ü/g, 'u');
+    // Remove any remaining non-alphanumeric characters (except underscore and hyphen)
+    return normalized.replace(/[^a-z0-9_-]/g, '');
+}
+
 // ============ FIREBASE CONFIGURATION ============
 // Set GOOGLE_APPLICATION_CREDENTIALS env var to path of service account JSON
 // Or set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY individually
@@ -561,10 +583,13 @@ async function sendGoalNotification(goal, options = {}) {
         // Build topics for scoring team
         // Topics: goal_notifications AND team_{code}
         // We use condition: "'goal_notifications' in topics && 'team_lif' in topics"
-        const scoringTeamTopic = `team_${scoringTeamCode.toLowerCase()}`;
+        // Note: Team codes must be sanitized for FCM (no Swedish chars, no spaces)
+        const scoringTeamTopic = `team_${sanitizeTopicName(scoringTeamCode)}`;
         
         // For FCM, we need to use conditions for AND logic
         const condition = `'goal_notifications' in topics && '${scoringTeamTopic}' in topics`;
+        
+        console.log(`[FCM] Sending goal notification to: ${condition}`);
         
         result = await sendWithCondition({
             condition,
@@ -577,7 +602,7 @@ async function sendGoalNotification(goal, options = {}) {
     // Also send to opposing team followers
     if (sendOpposing && homeTeamCode && awayTeamCode && !token) {
         const opposingCode = scoringTeamCode === homeTeamCode ? awayTeamCode : homeTeamCode;
-        const opposingTopic = `team_${opposingCode.toLowerCase()}`;
+        const opposingTopic = `team_${sanitizeTopicName(opposingCode)}`;
         const opposingCondition = `'goal_notifications' in topics && '${opposingTopic}' in topics`;
 
         // Fire and forget
