@@ -4,6 +4,14 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.5.0
+- Remove "All Events" header from unified schedule view for cleaner look
+- Show "Ended" instead of "Today" with time for finished games and races
+- Fix video highlights grid layout to show 2 cards per row consistently
+- Improve penalty event display with human-readable offense descriptions
+- Map penalty codes like "IL-HEAD" to "Illegal hit to head", "Un Sp" to "Unsportsmanlike"
+- Show team name instead of "Unknown" for bench/team penalties
+
 ### 2.4.0
 - Upgrade React Native Firebase from v21 to v23.8.3
 - Set explicit iOS deployment target to 15.1 (Firebase v23 requirement)

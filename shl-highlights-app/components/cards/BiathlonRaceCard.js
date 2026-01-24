@@ -13,10 +13,12 @@ const GRADIENT_END = { x: 1, y: 1 };
 export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }) {
     const { colors, isDark } = useTheme();
     
-    const relativeDate = formatRelativeDateEnglish(race?.startDateTime);
+    const rawDate = formatRelativeDateEnglish(race?.startDateTime);
     const time = formatTime(race?.startDateTime);
     const isLive = race?.state === 'live';
     const isStartingSoon = race?.state === 'starting-soon';
+    const isFinished = race?.state === 'completed';
+    const isFinishedToday = isFinished && rawDate === 'Today';
 
     const statusText = useMemo(() => {
         if (isLive) {
@@ -25,8 +27,11 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
         if (isStartingSoon) {
             return 'STARTING SOON';
         }
-        return relativeDate;
-    }, [isLive, isStartingSoon, relativeDate]);
+        if (isFinishedToday) {
+            return 'Ended';
+        }
+        return rawDate;
+    }, [isLive, isStartingSoon, isFinishedToday, rawDate]);
 
     const cardColors = useMemo(() => {
         if (isDark) {
@@ -97,7 +102,7 @@ export const BiathlonRaceCard = memo(function BiathlonRaceCard({ race, onPress }
                         <Text style={[styles.dateText, { color: colors.textSecondary }, isLive && styles.liveText, isStartingSoon && styles.startingSoonText]}>
                             {statusText}
                         </Text>
-                        <Text style={[styles.timeText, { color: colors.textMuted }]}>{time}</Text>
+                        {!isFinishedToday && <Text style={[styles.timeText, { color: colors.textMuted }]}>{time}</Text>}
                     </View>
                 </View>
 
