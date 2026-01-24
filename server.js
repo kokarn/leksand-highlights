@@ -180,7 +180,12 @@ function buildNotificationTarget(payload) {
 
 // ============ API ENDPOINTS ============
 
+// Admin routes - serve the same HTML for all paths (client-side routing)
 app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'static', 'admin.html'));
+});
+
+app.get('/admin/:section', (req, res) => {
     res.sendFile(path.join(__dirname, 'static', 'admin.html'));
 });
 

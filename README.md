@@ -1,6 +1,6 @@
 # 🏒 GamePulse API Server
 
-**Version: 3.0.0**
+**Version: 3.2.0**
 
 A multi-sport API server that provides real-time game data, notifications, and highlights for Swedish sports leagues.
 
@@ -77,15 +77,26 @@ The notification system uses FCM topics for targeting:
 | `pre_game_biathlon` | Pre-game reminders for Biathlon |
 | `team_{code}` | Team-specific notifications (e.g., `team_lif`, `team_dif`) |
 
-## 📊 Admin API Endpoints
+## 📊 Admin Console
+
+Access the admin dashboard at `/admin` with URL-based routing:
+- `/admin` - Dashboard
+- `/admin/push` - Push Notifications
+- `/admin/goal-test` - Goal Testing
+- `/admin/status` - System Status
+- `/admin/cache` - Cache Management
+- `/admin/games` - Manual Games
+
+## 🔌 FCM API Endpoints
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /api/fcm/subscribers` | List all registered subscribers and their topics |
-| `GET /api/fcm/topics` | List all topics with subscriber counts |
-| `GET /api/fcm/topics/:topic` | Get details for a specific topic |
 | `POST /api/fcm/register` | Register a device token with topics |
 | `POST /api/fcm/unregister` | Unregister a device token |
+| `POST /api/notifications/test` | Send a test notification |
+| `POST /api/notifications/goal-test` | Send a test goal notification |
+
+> **Note:** FCM does not provide an API to query topic subscribers. The backend runs stateless - topic subscriptions are managed entirely by Firebase.
 
 ---
 *Powered by SHL Media API & Firebase Cloud Messaging*

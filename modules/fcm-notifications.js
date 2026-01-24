@@ -1,6 +1,5 @@
 const admin = require('firebase-admin');
 const fs = require('fs');
-const path = require('path');
 const { formatSwedishTimestamp } = require('./utils');
 
 // ============ FIREBASE CONFIGURATION ============
@@ -9,9 +8,11 @@ const { formatSwedishTimestamp } = require('./utils');
 let firebaseApp = null;
 
 // ============ SUBSCRIBER TRACKING ============
-const SUBSCRIBERS_FILE = path.join(__dirname, '..', 'fcm_subscribers.json');
+// Note: FCM does not provide an API to list topic subscribers.
+// This in-memory tracking is session-only and resets on restart.
+// For persistent tracking, use Firebase Realtime Database or Firestore.
 
-// In-memory store for subscribers and their topics
+// In-memory store for subscribers and their topics (session-only)
 let subscribersData = {
     subscribers: {},  // token -> { topics: [], registeredAt, lastSeen, platform }
     topicStats: {},   // topic -> { subscriberCount, lastUpdated }
@@ -19,7 +20,8 @@ let subscribersData = {
         totalSubscribers: 0,
         totalTopicSubscriptions: 0,
         lastUpdated: null
-    }
+    },
+    sessionStart: formatSwedishTimestamp()
 };
 
 // ============ STATS ============
@@ -78,42 +80,15 @@ function initializeFirebase() {
 }
 
 /**
- * Load subscribers data from file
+ * Update in-memory subscriber stats (session-only, no persistence)
+ * FCM does not provide an API to query topic subscribers, so we track
+ * what we see during this server session only.
  */
-function loadSubscribersData() {
-    try {
-        if (fs.existsSync(SUBSCRIBERS_FILE)) {
-            const data = JSON.parse(fs.readFileSync(SUBSCRIBERS_FILE, 'utf8'));
-            subscribersData = {
-                subscribers: data.subscribers || {},
-                topicStats: data.topicStats || {},
-                stats: data.stats || {
-                    totalSubscribers: 0,
-                    totalTopicSubscriptions: 0,
-                    lastUpdated: null
-                }
-            };
-            console.log(`[FCM] Loaded ${Object.keys(subscribersData.subscribers).length} subscribers from file`);
-        }
-    } catch (error) {
-        console.error('[FCM] Error loading subscribers file:', error.message);
-    }
-}
-
-/**
- * Save subscribers data to file
- */
-function saveSubscribersData() {
-    try {
-        subscribersData.stats.lastUpdated = formatSwedishTimestamp();
-        subscribersData.stats.totalSubscribers = Object.keys(subscribersData.subscribers).length;
-        subscribersData.stats.totalTopicSubscriptions = Object.values(subscribersData.subscribers)
-            .reduce((sum, sub) => sum + (sub.topics?.length || 0), 0);
-
-        fs.writeFileSync(SUBSCRIBERS_FILE, JSON.stringify(subscribersData, null, 2));
-    } catch (error) {
-        console.error('[FCM] Error saving subscribers file:', error.message);
-    }
+function updateSubscriberStats() {
+    subscribersData.stats.lastUpdated = formatSwedishTimestamp();
+    subscribersData.stats.totalSubscribers = Object.keys(subscribersData.subscribers).length;
+    subscribersData.stats.totalTopicSubscriptions = Object.values(subscribersData.subscribers)
+        .reduce((sum, sub) => sum + (sub.topics?.length || 0), 0);
 }
 
 /**
@@ -143,8 +118,8 @@ function updateTopicStats() {
     }
 }
 
-// Initialize on module load
-loadSubscribersData();
+// Note: No persistent storage - subscriber tracking is session-only
+console.log('[FCM] Subscriber tracking is session-only (no persistent storage)');
 
 // ============ PUBLIC API ============
 
@@ -207,7 +182,7 @@ async function registerDevice(token, topics = [], metadata = {}) {
         };
 
         updateTopicStats();
-        saveSubscribersData();
+        updateSubscriberStats();
 
         return {
             success: true,
@@ -247,7 +222,7 @@ async function unregisterDevice(token) {
 
         delete subscribersData.subscribers[token];
         updateTopicStats();
-        saveSubscribersData();
+        updateSubscriberStats();
 
         return { success: true };
     } catch (error) {
@@ -697,6 +672,8 @@ function getStats() {
 
 /**
  * Get subscriber stats for admin dashboard
+ * Note: This is session-only tracking. FCM does not provide an API to query
+ * topic subscribers, so we can only track devices that register during this session.
  */
 function getSubscriberStats() {
     const subscribers = Object.entries(subscribersData.subscribers).map(([token, data]) => ({
@@ -720,8 +697,11 @@ function getSubscriberStats() {
         totalSubscribers: Object.keys(subscribersData.subscribers).length,
         totalTopicSubscriptions: subscribersData.stats.totalTopicSubscriptions,
         lastUpdated: subscribersData.stats.lastUpdated,
+        sessionStart: subscribersData.sessionStart,
         subscribers,
-        topics: topicList
+        topics: topicList,
+        isSessionOnly: true,
+        trackingNote: 'FCM does not provide an API to query topic subscribers. This shows devices that registered during this server session only. Actual FCM topic subscribers are managed by Firebase and notifications will reach all subscribed devices.'
     };
 }
 

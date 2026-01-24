@@ -152,7 +152,24 @@ function showToast(type, title, message) {
 }
 
 // ============ Navigation ============
-function navigateToSection(sectionId) {
+const SECTION_TITLES = {
+    dashboard: 'Dashboard',
+    activity: 'Activity Log',
+    status: 'System Status',
+    cache: 'Cache Management',
+    sports: 'Sports Providers',
+    push: 'Push Notifications',
+    'goal-test': 'Goal Testing',
+    'create-game': 'Create Game',
+    games: 'Manual Games'
+};
+
+function navigateToSection(sectionId, updateUrl = true) {
+    // Default to dashboard if section doesn't exist
+    if (!SECTION_TITLES[sectionId]) {
+        sectionId = 'dashboard';
+    }
+
     document.querySelectorAll('.page-section').forEach(s => s.classList.add('hidden'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
@@ -166,21 +183,32 @@ function navigateToSection(sectionId) {
         navItem.classList.add('active');
     }
 
-    const titles = {
-        dashboard: 'Dashboard',
-        activity: 'Activity Log',
-        status: 'System Status',
-        cache: 'Cache Management',
-        sports: 'Sports Providers',
-        push: 'Push Notifications',
-        subscribers: 'FCM Subscribers',
-        topics: 'FCM Topics',
-        'goal-test': 'Goal Testing',
-        'create-game': 'Create Game',
-        games: 'Manual Games'
-    };
-    elements.pageTitle.textContent = titles[sectionId] || 'Dashboard';
+    elements.pageTitle.textContent = SECTION_TITLES[sectionId] || 'Dashboard';
+
+    // Update URL without page reload
+    if (updateUrl) {
+        const path = sectionId === 'dashboard' ? '/admin' : `/admin/${sectionId}`;
+        window.history.pushState({ section: sectionId }, '', path);
+    }
 }
+
+function getSectionFromPath() {
+    const path = window.location.pathname;
+    const match = path.match(/^\/admin(?:\/(.+))?$/);
+    if (match && match[1]) {
+        return match[1];
+    }
+    return 'dashboard';
+}
+
+// Handle browser back/forward navigation
+window.addEventListener('popstate', (event) => {
+    if (event.state && event.state.section) {
+        navigateToSection(event.state.section, false);
+    } else {
+        navigateToSection(getSectionFromPath(), false);
+    }
+});
 
 function toggleSection(section) {
     section.classList.toggle('collapsed');
@@ -464,95 +492,6 @@ async function loadPushStatus(options = {}) {
     }
 }
 
-// ============ Load FCM Subscribers ============
-async function loadSubscribers(options = {}) {
-    try {
-        const data = await apiRequest('/api/fcm/subscribers');
-
-        document.getElementById('subscribers-count').textContent = `${data.totalSubscribers} subscribers`;
-
-        // Stats cards
-        const statsGrid = document.getElementById('subscribers-stats-grid');
-        const statsRows = [
-            { label: 'Total subscribers', value: data.totalSubscribers },
-            { label: 'Total topic subscriptions', value: data.totalTopicSubscriptions },
-            { label: 'Average topics/user', value: data.totalSubscribers > 0 ? (data.totalTopicSubscriptions / data.totalSubscribers).toFixed(1) : '0' },
-            { label: 'Last updated', value: formatTimestamp(data.lastUpdated) }
-        ];
-        statsGrid.innerHTML = buildStatusCard('Subscriber Statistics', statsRows, { type: 'online', text: 'Live' });
-
-        // Subscribers table
-        const tbody = document.getElementById('subscribers-table-body');
-        if (!data.subscribers || data.subscribers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-muted">No subscribers registered yet</td></tr>';
-        } else {
-            tbody.innerHTML = data.subscribers.map(sub => {
-                const platformClass = (sub.platform || 'unknown').toLowerCase();
-                const topicBadges = (sub.topics || []).slice(0, 5).map(topic => {
-                    const isTeam = topic.startsWith('team_');
-                    const badgeClass = isTeam ? 'team' : 'notification';
-                    return `<span class="topic-badge ${badgeClass}">${escapeHtml(topic)}</span>`;
-                }).join('');
-                const moreTopics = sub.topics.length > 5 ? `<span class="topic-badge">+${sub.topics.length - 5} more</span>` : '';
-
-                return `
-                    <tr>
-                        <td class="token-cell">${escapeHtml(sub.tokenPreview)}</td>
-                        <td><span class="platform-badge ${platformClass}">${escapeHtml(sub.platform)}</span></td>
-                        <td><div class="topics-badge-list">${topicBadges}${moreTopics}</div></td>
-                        <td>${formatTimestamp(sub.registeredAt)}</td>
-                        <td>${formatTimestamp(sub.lastSeen)}</td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        refreshIcons();
-
-        if (options.showMessage) {
-            showToast('success', 'Subscribers Updated', `Loaded ${data.totalSubscribers} subscribers`);
-        }
-    } catch (error) {
-        showToast('error', 'Error', error.message);
-    }
-}
-
-// ============ Load FCM Topics ============
-async function loadTopics(options = {}) {
-    try {
-        const data = await apiRequest('/api/fcm/topics');
-
-        document.getElementById('topics-count').textContent = `${data.topics?.length || 0} topics`;
-
-        const topicsGrid = document.getElementById('topics-grid');
-
-        if (!data.topics || data.topics.length === 0) {
-            topicsGrid.innerHTML = '<p class="text-muted">No topics with subscribers yet</p>';
-        } else {
-            topicsGrid.innerHTML = data.topics.map(topic => {
-                const isTeam = topic.topic.startsWith('team_');
-                const cardClass = isTeam ? 'team' : 'notification';
-                return `
-                    <div class="topic-card ${cardClass}">
-                        <div class="topic-card-header">
-                            <span class="topic-card-name">${escapeHtml(topic.topic)}</span>
-                        </div>
-                        <div class="topic-card-count">${topic.subscriberCount}</div>
-                        <div class="topic-card-label">subscribers</div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        refreshIcons();
-
-        if (options.showMessage) {
-            showToast('success', 'Topics Updated', `Loaded ${data.topics?.length || 0} topics`);
-        }
-    } catch (error) {
-        showToast('error', 'Error', error.message);
-    }
-}
 
 // ============ Load Sports ============
 async function loadSports(options = {}) {
@@ -897,12 +836,6 @@ function setupEventListeners() {
         document.getElementById('goal-test-send-opposing').checked = goalTestTargetType.value === 'topics';
     });
 
-    // FCM Subscribers section
-    document.getElementById('refresh-subscribers').addEventListener('click', () => loadSubscribers({ showMessage: true }));
-
-    // FCM Topics section
-    document.getElementById('refresh-topics').addEventListener('click', () => loadTopics({ showMessage: true }));
-
     // Create game form
     document.getElementById('venue').addEventListener('input', () => { venueTouched = true; });
     document.getElementById('home-team').addEventListener('change', updateVenueFromHomeTeam);
@@ -1108,9 +1041,7 @@ async function init() {
         loadStatus(),
         loadPushStatus(),
         loadSports(),
-        loadGames(),
-        loadSubscribers(),
-        loadTopics()
+        loadGames()
     ]);
 
     addActivity('info', 'Admin console loaded');
@@ -1119,11 +1050,13 @@ async function init() {
     // Refresh icons after dynamic content is loaded
     refreshIcons();
 
+    // Navigate to section from URL path
+    const initialSection = getSectionFromPath();
+    navigateToSection(initialSection, false);
+
     // Auto-refresh
     setInterval(() => loadStatus(), 15000);
     setInterval(() => loadPushStatus(), 15000);
-    setInterval(() => loadSubscribers(), 30000);
-    setInterval(() => loadTopics(), 30000);
 }
 
 // Start the application

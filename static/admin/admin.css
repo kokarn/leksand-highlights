@@ -502,6 +502,11 @@ body {
     color: var(--danger);
 }
 
+.status-card-badge.warning {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--warning);
+}
+
 .status-card dl {
     display: grid;
     grid-template-columns: 1fr auto;
@@ -1163,4 +1168,19 @@ body {
 
 .topic-card.notification .topic-card-name {
     color: var(--success);
+}
+
+/* Info Note Box */
+.info-note {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 0.5rem;
+    padding: 1rem 1.25rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.info-note strong {
+    color: var(--accent);
 }

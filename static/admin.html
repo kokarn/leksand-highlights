@@ -57,14 +57,6 @@
                     <span class="nav-item-icon"><i data-lucide="bell" class="icon-sm"></i></span>
                     Push Notifications
                 </div>
-                <div class="nav-item" data-section="subscribers">
-                    <span class="nav-item-icon"><i data-lucide="users" class="icon-sm"></i></span>
-                    Subscribers
-                </div>
-                <div class="nav-item" data-section="topics">
-                    <span class="nav-item-icon"><i data-lucide="hash" class="icon-sm"></i></span>
-                    Topics
-                </div>
                 <div class="nav-item" data-section="goal-test">
                     <span class="nav-item-icon"><i data-lucide="circle-dot" class="icon-sm"></i></span>
                     Goal Testing
@@ -340,76 +332,6 @@
                         <button class="btn btn-primary" id="send-test-push"><i data-lucide="send" class="icon-btn"></i> Send Test Notification</button>
                     </div>
                     <div id="push-feedback" class="mt-2 text-sm"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Subscribers Section -->
-        <div id="section-subscribers" class="page-section hidden">
-            <div class="section">
-                <div class="section-header" onclick="toggleSection(this.parentElement)">
-                    <div class="section-title-group">
-                        <span class="section-icon"><i data-lucide="users" class="icon-sm"></i></span>
-                        <h2 class="section-title">FCM Subscribers</h2>
-                        <span class="section-badge" id="subscribers-count">0 subscribers</span>
-                    </div>
-                    <span class="section-toggle"><i data-lucide="chevron-down" class="icon-sm"></i></span>
-                </div>
-                <div class="section-content">
-                    <div class="status-grid" id="subscribers-stats-grid"></div>
-                    <div class="btn-group mt-2">
-                        <button class="btn btn-secondary" id="refresh-subscribers"><i data-lucide="refresh-cw" class="icon-btn"></i> Refresh</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section">
-                <div class="section-header" onclick="toggleSection(this.parentElement)">
-                    <div class="section-title-group">
-                        <span class="section-icon"><i data-lucide="list" class="icon-sm"></i></span>
-                        <h2 class="section-title">Subscriber List</h2>
-                    </div>
-                    <span class="section-toggle"><i data-lucide="chevron-down" class="icon-sm"></i></span>
-                </div>
-                <div class="section-content">
-                    <div class="subscribers-table-container">
-                        <table class="data-table" id="subscribers-table">
-                            <thead>
-                                <tr>
-                                    <th>Token</th>
-                                    <th>Platform</th>
-                                    <th>Topics</th>
-                                    <th>Registered</th>
-                                    <th>Last Seen</th>
-                                </tr>
-                            </thead>
-                            <tbody id="subscribers-table-body">
-                                <tr><td colspan="5" class="text-muted">Loading...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Topics Section -->
-        <div id="section-topics" class="page-section hidden">
-            <div class="section">
-                <div class="section-header" onclick="toggleSection(this.parentElement)">
-                    <div class="section-title-group">
-                        <span class="section-icon"><i data-lucide="hash" class="icon-sm"></i></span>
-                        <h2 class="section-title">FCM Topics</h2>
-                        <span class="section-badge" id="topics-count">0 topics</span>
-                    </div>
-                    <span class="section-toggle"><i data-lucide="chevron-down" class="icon-sm"></i></span>
-                </div>
-                <div class="section-content">
-                    <div class="btn-group mb-2">
-                        <button class="btn btn-secondary" id="refresh-topics"><i data-lucide="refresh-cw" class="icon-btn"></i> Refresh</button>
-                    </div>
-                    <div class="topics-grid" id="topics-grid">
-                        <p class="text-muted">Loading topics...</p>
-                    </div>
                 </div>
             </div>
         </div>
