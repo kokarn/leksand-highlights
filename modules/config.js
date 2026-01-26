@@ -29,8 +29,7 @@ const NOTIFIER_INTERVAL_LIVE = 30 * 1000;        // 30 seconds
 
 // ============ PRE-GAME NOTIFICATION CONFIGURATION ============
 const PRE_GAME_REMINDER_MINUTES = 5;             // Minutes before game start to send notification
-const PRE_GAME_CHECK_INTERVAL = 60 * 1000;       // Check every 1 minute
-const PRE_GAME_WINDOW_MINUTES = 10;              // Look ahead window for upcoming games
+const PRE_GAME_CHECK_INTERVAL = 60 * 1000;       // Legacy: kept for backwards compatibility
 const SEEN_PRE_GAME_FILE = path.join(__dirname, '..', 'seen_pre_game.json');
 
 module.exports = {
@@ -62,6 +61,5 @@ module.exports = {
     // Pre-game notifications
     PRE_GAME_REMINDER_MINUTES,
     PRE_GAME_CHECK_INTERVAL,
-    PRE_GAME_WINDOW_MINUTES,
     SEEN_PRE_GAME_FILE
 };

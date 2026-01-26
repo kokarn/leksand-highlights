@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Import modules
-const { PORT } = require('./modules/config');
+const { PORT, PRE_GAME_REMINDER_MINUTES } = require('./modules/config');
 const {
     getCachedGames,
     setCachedGames,
@@ -946,7 +946,7 @@ app.get('/api/status', (req, res) => {
             notifierLive: '30 seconds',
             biathlonScheduler: '1 hour',
             goalWatcher: '15 seconds (live games)',
-            preGameWatcher: '60 seconds'
+            preGameWatcher: 'Daily at 6:00 AM (Stockholm time)'
         }
     });
 });
@@ -1422,8 +1422,8 @@ app.listen(PORT, () => {
     console.log(`  - Check interval: 15 seconds (live games)`);
     console.log(`  - Push notifications (FCM): ${pushNotifications.isConfigured() ? 'Configured' : 'Not configured (set GOOGLE_APPLICATION_CREDENTIALS or FIREBASE_* env vars)'}`);
     console.log(`\nPre-Game Watcher:`);
-    console.log(`  - Check interval: 60 seconds`);
-    console.log(`  - Reminder window: 5 minutes before start`);
+    console.log(`  - Schedule: Daily at 6:00 AM (Stockholm time)`);
+    console.log(`  - Reminder: ${PRE_GAME_REMINDER_MINUTES} minutes before start`);
     console.log(`========================================\n`);
 
     // Start the notifier loop after server is ready

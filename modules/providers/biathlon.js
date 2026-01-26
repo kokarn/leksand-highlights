@@ -424,7 +424,20 @@ class BiathlonProvider extends BaseProvider {
 
         for (const event of events) {
             for (const race of event.races) {
-                const startDateTime = race.startDateTime || `${race.date}T${race.time}:00`;
+                // If startDateTime is not set (static calendar), construct it with CET timezone
+                // Biathlon races in Europe are in CET/CEST
+                let startDateTime = race.startDateTime;
+                if (!startDateTime && race.date && race.time) {
+                    // Determine if the date is in daylight saving time (CEST = UTC+2) or standard time (CET = UTC+1)
+                    // European DST: last Sunday of March to last Sunday of October
+                    const [year, month, day] = race.date.split('-').map(Number);
+                    const testDate = new Date(year, month - 1, day);
+                    const marchLastSunday = new Date(year, 2, 31 - (new Date(year, 2, 31).getDay()));
+                    const octoberLastSunday = new Date(year, 9, 31 - (new Date(year, 9, 31).getDay()));
+                    const isDST = testDate >= marchLastSunday && testDate < octoberLastSunday;
+                    const offset = isDST ? '+02:00' : '+01:00';
+                    startDateTime = `${race.date}T${race.time}:00${offset}`;
+                }
                 const raceDateTime = new Date(startDateTime);
                 if (Number.isNaN(raceDateTime.getTime())) {
                     continue;
