@@ -428,7 +428,7 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
                                 return <FootballGoalItem key={`goal-${item.id || idx}`} goal={item} homeTeamCode={homeCode} />;
                             }
                             if (item.type === 'card') {
-                                return <CardItem key={`card-${item.id || idx}`} card={item} />;
+                                return <CardItem key={`card-${item.id || idx}`} card={item} homeTeamCode={homeCode} />;
                             }
                             if (item.type === 'substitution') {
                                 return <SubstitutionItem key={`sub-${item.id || idx}`} substitution={item} />;

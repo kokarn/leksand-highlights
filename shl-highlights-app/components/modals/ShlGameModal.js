@@ -253,7 +253,7 @@ export const ShlGameModal = ({
                                 );
                             }
                             if (item.type === 'penalty') {
-                                return <PenaltyItem key={`penalty-${idx}`} penalty={item} />;
+                                return <PenaltyItem key={`penalty-${idx}`} penalty={item} homeTeamCode={homeCode} />;
                             }
                             if (item.type === 'goalkeeper') {
                                 return <GoalkeeperItem key={`gk-${idx}`} event={item} />;
