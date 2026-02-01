@@ -4,6 +4,10 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.5.2
+- Show home/away side indicators for hockey penalty events
+- Align football card indicators with home/away side
+
 ### 2.5.1
 - Show total time for all teams in biathlon relay results, with time difference shown separately
 - Fix duplicate time difference display on biathlon relay results for non-winning teams

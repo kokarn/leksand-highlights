@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getPlayerName, getPenaltyMinutes, getPenaltyOffense, getPenaltyType } from '../../utils';
 import { useTheme } from '../../contexts/ThemeContext';
 
-export const PenaltyItem = ({ penalty }) => {
+export const PenaltyItem = ({ penalty, homeTeamCode }) => {
     const { colors } = useTheme();
     const themedStyles = createStyles(colors);
     
@@ -11,14 +11,29 @@ export const PenaltyItem = ({ penalty }) => {
     const penaltyMinutes = getPenaltyMinutes(penalty);
     const offence = getPenaltyOffense(penalty);
     const penaltyType = getPenaltyType(penalty.variant);
+
+    const eventTeamCode = penalty.eventTeam?.teamCode
+        || penalty.teamCode
+        || penalty.team?.teamCode
+        || penalty.team?.code
+        || null;
+    const eventPlace = penalty.eventTeam?.place || penalty.team?.place || penalty.place || null;
+    const normalizedPlace = typeof eventPlace === 'string' ? eventPlace.toLowerCase() : null;
+    const isHomePenalty = penalty.isHome === true
+        || normalizedPlace === 'home'
+        || (eventTeamCode && homeTeamCode && eventTeamCode === homeTeamCode);
+    const isAwayPenalty = penalty.isHome === false
+        || normalizedPlace === 'away'
+        || (eventTeamCode && homeTeamCode && eventTeamCode !== homeTeamCode);
+    const indicatorStyle = isAwayPenalty ? themedStyles.penaltyItemAway : themedStyles.penaltyItemHome;
     
     // For team penalties (bench minor, too many men, etc.), show team name instead of "Unknown"
-    const teamCode = penalty.eventTeam?.teamCode || penalty.teamCode || null;
+    const teamCode = eventTeamCode;
     const isTeamPenalty = rawPlayerName === 'Unknown' && teamCode;
     const playerName = isTeamPenalty ? `${teamCode} (Team)` : rawPlayerName;
 
     return (
-        <View style={themedStyles.penaltyItem}>
+        <View style={[themedStyles.penaltyItem, indicatorStyle]}>
             <View style={themedStyles.goalTime}>
                 <Text style={themedStyles.goalPeriod}>P{penalty.period}</Text>
                 <Text style={themedStyles.goalTimeText}>{penalty.time}</Text>
@@ -45,8 +60,14 @@ const createStyles = (colors) => StyleSheet.create({
         borderRadius: 8,
         padding: 12,
         marginBottom: 8,
+    },
+    penaltyItemHome: {
         borderLeftWidth: 3,
         borderLeftColor: colors.accentOrange
+    },
+    penaltyItemAway: {
+        borderRightWidth: 3,
+        borderRightColor: colors.accentOrange
     },
     goalTime: {
         width: 45,

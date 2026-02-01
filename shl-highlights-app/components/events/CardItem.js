@@ -33,7 +33,7 @@ const formatTime = (time) => {
     return `${str}'`;
 };
 
-export const CardItem = ({ card }) => {
+export const CardItem = ({ card, homeTeamCode }) => {
     const { colors } = useTheme();
     const themedStyles = createStyles(colors);
     
@@ -49,10 +49,18 @@ export const CardItem = ({ card }) => {
     const clock = card.clock || '';
     const reason = card.reason || '';
     const periodLabel = card.period === 1 ? '1st' : card.period === 2 ? '2nd' : card.periodDisplay || '';
-    const teamLabel = card.teamCode || card.teamName || '';
+    const teamCode = card.teamCode || card.team?.teamCode || card.team?.code || null;
+    const teamLabel = teamCode || card.teamName || '';
+    const isHomeCard = card.isHome === true
+        || (teamCode && homeTeamCode && teamCode === homeTeamCode);
+    const isAwayCard = card.isHome === false
+        || (teamCode && homeTeamCode && teamCode !== homeTeamCode);
+    const borderStyle = isAwayCard
+        ? { borderRightWidth: 3, borderRightColor: cardColor }
+        : { borderLeftWidth: 3, borderLeftColor: cardColor };
 
     return (
-        <View style={[themedStyles.cardItem, { borderLeftColor: cardColor }]}>
+        <View style={[themedStyles.cardItem, borderStyle]}>
             <View style={themedStyles.eventTime}>
                 <Text style={themedStyles.eventPeriod}>{periodLabel}</Text>
                 <Text style={themedStyles.eventTimeText}>{formatTime(clock)}</Text>
@@ -81,8 +89,7 @@ const createStyles = (colors) => StyleSheet.create({
         backgroundColor: colors.chip,
         borderRadius: 8,
         padding: 12,
-        marginBottom: 8,
-        borderLeftWidth: 3
+        marginBottom: 8
     },
     eventTime: {
         width: 45,
