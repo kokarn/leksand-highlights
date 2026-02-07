@@ -10,11 +10,11 @@ class SHLProvider extends BaseProvider {
         super('SHL');
 
         this.baseUrl = 'https://www.shl.se/api';
-        // Current season identifiers (2024-25 season)
+        // Current season identifiers (2025-26 season)
         this.seasonUuid = 'xs4m9qupsi';
         this.seriesUuid = 'qQ9-bb0bzEWUk';
         this.gameTypeUuid = 'qQ9-af37Ti40B';
-        this.seasonLabel = '2024-25';
+        this.seasonLabel = '2025-26';
 
         this.scheduleUrl = `${this.baseUrl}/sports-v2/game-schedule?seasonUuid=${this.seasonUuid}&seriesUuid=${this.seriesUuid}&gameTypeUuid=${this.gameTypeUuid}&gamePlace=all&played=all`;
 
@@ -161,11 +161,22 @@ class SHLProvider extends BaseProvider {
      * @returns {boolean}
      */
     isGameInLiveWindow(game) {
-        if (!game || game.state !== 'pre-game' || !game.startDateTime) {
+        if (!game || game.state !== 'pre-game') {
             return false;
         }
 
-        const startTime = new Date(game.startDateTime).getTime();
+        // Prefer rawStartDateTime (ISO 8601 with UTC timezone) over startDateTime
+        // (local time without timezone info, which gets parsed as server-local TZ)
+        const dateStr = game.rawStartDateTime || game.startDateTime;
+        if (!dateStr) {
+            return false;
+        }
+
+        const startTime = new Date(dateStr).getTime();
+        if (Number.isNaN(startTime)) {
+            return false;
+        }
+
         const now = Date.now();
         const minutesSinceStart = (now - startTime) / (1000 * 60);
 

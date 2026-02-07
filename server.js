@@ -95,7 +95,8 @@ function isGameNearStart(game, now = new Date()) {
     if (!game || game.state === 'post-game') {
         return false;
     }
-    const startTime = new Date(game.startDateTime);
+    // Prefer rawStartDateTime (ISO 8601 UTC) over startDateTime (local time, TZ-ambiguous)
+    const startTime = new Date(game.rawStartDateTime || game.startDateTime);
     if (Number.isNaN(startTime.getTime())) {
         return false;
     }
@@ -780,14 +781,11 @@ app.get('/api/games', async (req, res) => {
         );
         const shouldUseFastCache = shouldUseFastGamesCache(combinedGames, now);
 
-        if (!usedCache) {
-            setCachedGames(baseGames, shouldUseFastCache);
-            if (shouldUseFastCache) {
-                const reason = hasLiveGame ? 'Live game' : 'Game starting soon';
-                console.log(`[Cache] ${reason} detected - using 15s cache duration`);
-            }
-        } else {
-            setGamesLiveFlag(shouldUseFastCache);
+        // Always update cache with latest data (including detected live states)
+        setCachedGames(baseGames, shouldUseFastCache);
+        if (!usedCache && shouldUseFastCache) {
+            const reason = hasLiveGame ? 'Live game' : 'Game starting soon';
+            console.log(`[Cache] ${reason} detected - using 15s cache duration`);
         }
 
         res.json(combinedGames);
