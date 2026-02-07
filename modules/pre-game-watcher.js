@@ -99,7 +99,7 @@ function extractShlGameInfo(game) {
         awayTeamName: game.awayTeamInfo?.names?.long || game.awayTeamInfo?.names?.short || 'Away',
         homeTeamCode: game.homeTeamInfo?.code || game.homeTeamInfo?.names?.short || '',
         awayTeamCode: game.awayTeamInfo?.code || game.awayTeamInfo?.names?.short || '',
-        startDateTime: game.startDateTime,
+        startDateTime: game.rawStartDateTime || game.startDateTime,
         venue: game.venueInfo?.name || game.venue || null
     };
 }
@@ -115,7 +115,7 @@ function extractFootballGameInfo(game) {
         awayTeamName: game.awayTeamInfo?.names?.long || game.awayTeamInfo?.names?.short || 'Away',
         homeTeamCode: game.homeTeamInfo?.code || game.homeTeamInfo?.names?.short || '',
         awayTeamCode: game.awayTeamInfo?.code || game.awayTeamInfo?.names?.short || '',
-        startDateTime: game.startDateTime,
+        startDateTime: game.rawStartDateTime || game.startDateTime,
         venue: game.venueInfo?.name || game.venue || null
     };
 }
@@ -131,7 +131,7 @@ function extractBiathlonGameInfo(race) {
         sport: 'biathlon',
         gameId: race.uuid,
         eventName,
-        startDateTime: race.startDateTime,
+        startDateTime: race.rawStartDateTime || race.startDateTime,
         venue: race.location || null,
         homeTeamCode: null,
         awayTeamCode: null
@@ -278,7 +278,7 @@ async function runDailySchedule() {
             if (game.state === 'post-game') {
                 continue;
             }
-            const startTime = new Date(game.startDateTime);
+            const startTime = new Date(game.rawStartDateTime || game.startDateTime);
             if (startTime >= now && startTime <= next24Hours) {
                 const gameInfo = extractShlGameInfo(game);
                 if (scheduleNotification(gameInfo)) {
@@ -302,7 +302,7 @@ async function runDailySchedule() {
             if (game.state === 'post-game') {
                 continue;
             }
-            const startTime = new Date(game.startDateTime);
+            const startTime = new Date(game.rawStartDateTime || game.startDateTime);
             if (startTime >= now && startTime <= next24Hours) {
                 const gameInfo = extractFootballGameInfo(game);
                 if (scheduleNotification(gameInfo)) {
@@ -326,7 +326,7 @@ async function runDailySchedule() {
             if (race.state === 'completed' || race.state === 'live') {
                 continue;
             }
-            const startTime = new Date(race.startDateTime);
+            const startTime = new Date(race.rawStartDateTime || race.startDateTime);
             if (startTime >= now && startTime <= next24Hours) {
                 const raceInfo = extractBiathlonGameInfo(race);
                 if (scheduleNotification(raceInfo)) {
