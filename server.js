@@ -37,6 +37,7 @@ const scheduler = require('./modules/scheduler');
 const goalWatcher = require('./modules/goal-watcher');
 const preGameWatcher = require('./modules/pre-game-watcher');
 const pushNotifications = require('./modules/fcm-notifications');
+const activityLog = require('./modules/activity-log');
 const {
     listAdminGames,
     findAdminGameRecord,
@@ -201,7 +202,8 @@ app.get('/api/sports', (req, res) => {
     const sportIcons = {
         shl: 'hockey-puck',
         allsvenskan: 'soccer-ball',
-        biathlon: 'target'
+        biathlon: 'target',
+        'olympics-hockey': 'medal'
     };
 
     const sports = getAvailableSports().map(sport => {
@@ -662,6 +664,24 @@ app.get('/api/olympics/hockey/games', async (req, res) => {
     }
 });
 
+/**
+ * GET /api/olympics/hockey/standings
+ * Get Olympics hockey group standings computed from completed games
+ * Query params:
+ *   - gender: 'M' or 'W' (optional, returns all groups if not specified)
+ */
+app.get('/api/olympics/hockey/standings', async (req, res) => {
+    try {
+        const gender = req.query.gender || null;
+        const provider = getProvider('olympics-hockey');
+        const standings = await provider.fetchStandings({ gender });
+        res.json(standings);
+    } catch (error) {
+        console.error('Error fetching Olympics hockey standings:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ============ SHL/HOCKEY ENDPOINTS ============
 
 /**
@@ -998,6 +1018,16 @@ app.get('/api/status', (req, res) => {
     });
 });
 
+app.get('/api/activity', (req, res) => {
+    const limit = parseInt(req.query.limit) || 50;
+    res.json(activityLog.getEntries(limit));
+});
+
+app.post('/api/activity/clear', (req, res) => {
+    activityLog.clear();
+    res.json({ message: 'Activity log cleared' });
+});
+
 app.post('/api/cache/clear', (req, res) => {
     clearAllCaches();
     console.log('[Cache] All caches cleared manually');
@@ -1121,7 +1151,8 @@ app.post('/api/notifications/goal-test', async (req, res) => {
             });
         }
 
-        const sport = payload.sport === 'allsvenskan' ? 'allsvenskan' : 'shl';
+        const validSports = ['shl', 'allsvenskan', 'olympics-hockey'];
+        const sport = validSports.includes(payload.sport) ? payload.sport : 'shl';
         const scoringIsHome = parseOptionalBoolean(payload.scoringIsHome, true);
         const homeTeamCode = normalizeTeamCode(payload.homeTeamCode)
             || (scoringIsHome ? scoringTeamCode : opposingTeamCode);

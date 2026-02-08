@@ -188,6 +188,28 @@ export async function fetchOlympicsHockeyGames() {
     }
 }
 
+/**
+ * Fetch Olympics hockey group standings
+ * @param {Object} options - Optional filters
+ * @param {string} options.gender - 'M' or 'W' (optional)
+ * @returns {Promise<Object>} Standings with groups array
+ */
+export async function fetchOlympicsHockeyStandings(options = {}) {
+    try {
+        const params = new URLSearchParams();
+        if (options.gender) params.append('gender', options.gender);
+        const url = `${API_BASE_URL}/api/olympics/hockey/standings${params.toString() ? '?' + params : ''}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching Olympics hockey standings:', error.message);
+        return { season: null, groups: [] };
+    }
+}
+
 // ============ FOOTBALL/ALLSVENSKAN API ============
 
 /**

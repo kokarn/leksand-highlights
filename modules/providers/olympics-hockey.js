@@ -74,6 +74,7 @@ class OlympicsHockeyProvider extends BaseProvider {
             awayTeamResult: { score: awayScore },
             genderCode: unit.genderCode || '',
             phaseName: phaseLabel,
+            eventUnitName: unit.eventUnitName || '',
             venueInfo: {
                 name: unit.venueDescription || ''
             },
@@ -89,6 +90,139 @@ class OlympicsHockeyProvider extends BaseProvider {
         const data = await response.json();
         const units = data?.units || [];
         return units.map(unit => this.normalizeUnit(unit));
+    }
+
+    async fetchStandings(options = {}) {
+        console.log(`[${this.name}] Calculating group standings from game data...`);
+
+        try {
+            const games = await this.fetchAllGames();
+
+            // Filter to completed group-stage games
+            const completedGames = games.filter(g =>
+                g.state === 'post-game' && g.eventUnitName.includes('Group')
+            );
+
+            // Optionally filter by gender
+            const genderFilter = options.gender ? options.gender.toUpperCase() : null;
+            const filteredGames = genderFilter
+                ? completedGames.filter(g => g.genderCode === genderFilter)
+                : completedGames;
+
+            // Group games by their group name
+            const groupGames = new Map();
+
+            for (const game of filteredGames) {
+                // Extract group name: "Women's Preliminary Round - Group A" → "Women - Group A"
+                let groupName = game.eventUnitName;
+                const groupMatch = groupName.match(/Group\s+[A-Z]/);
+                if (groupMatch) {
+                    const gender = game.genderCode === 'W' ? 'Women' : 'Men';
+                    groupName = `${gender} - ${groupMatch[0]}`;
+                }
+
+                if (!groupGames.has(groupName)) {
+                    groupGames.set(groupName, { gender: game.genderCode, games: [] });
+                }
+                groupGames.get(groupName).games.push(game);
+            }
+
+            // Build standings per group
+            const groups = [];
+
+            for (const [groupName, groupData] of groupGames) {
+                const teamStats = new Map();
+
+                for (const game of groupData.games) {
+                    const homeTeam = game.homeTeamInfo;
+                    const awayTeam = game.awayTeamInfo;
+
+                    if (!homeTeam?.code || !awayTeam?.code) continue;
+
+                    const homeScore = homeTeam.score ?? 0;
+                    const awayScore = awayTeam.score ?? 0;
+
+                    // Initialize team stats if not exists
+                    for (const team of [homeTeam, awayTeam]) {
+                        if (!teamStats.has(team.code)) {
+                            teamStats.set(team.code, {
+                                teamCode: team.code,
+                                teamName: team.names?.long || team.names?.short || team.code,
+                                teamShortName: team.names?.short || team.code,
+                                gamesPlayed: 0,
+                                wins: 0,
+                                losses: 0,
+                                points: 0,
+                                goalsFor: 0,
+                                goalsAgainst: 0
+                            });
+                        }
+                    }
+
+                    const homeStats = teamStats.get(homeTeam.code);
+                    const awayStats = teamStats.get(awayTeam.code);
+
+                    homeStats.gamesPlayed++;
+                    awayStats.gamesPlayed++;
+
+                    homeStats.goalsFor += homeScore;
+                    homeStats.goalsAgainst += awayScore;
+                    awayStats.goalsFor += awayScore;
+                    awayStats.goalsAgainst += homeScore;
+
+                    // Win = 3 pts, Loss = 0 pts (no OT detection available)
+                    if (homeScore > awayScore) {
+                        homeStats.wins++;
+                        homeStats.points += 3;
+                        awayStats.losses++;
+                    } else {
+                        awayStats.wins++;
+                        awayStats.points += 3;
+                        homeStats.losses++;
+                    }
+                }
+
+                const standings = Array.from(teamStats.values())
+                    .map(team => ({
+                        ...team,
+                        goalDiff: team.goalsFor - team.goalsAgainst
+                    }))
+                    .sort((a, b) => {
+                        if (b.points !== a.points) return b.points - a.points;
+                        if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff;
+                        return b.goalsFor - a.goalsFor;
+                    })
+                    .map((team, index) => ({
+                        position: index + 1,
+                        ...team
+                    }));
+
+                groups.push({
+                    name: groupName,
+                    gender: groupData.gender,
+                    standings
+                });
+            }
+
+            // Sort groups: Women first, then Men, alphabetically within each
+            groups.sort((a, b) => {
+                if (a.gender !== b.gender) return a.gender === 'W' ? -1 : 1;
+                return a.name.localeCompare(b.name);
+            });
+
+            console.log(`[${this.name}] Calculated standings for ${groups.length} groups from ${filteredGames.length} games`);
+
+            return {
+                season: 'Milan-Cortina 2026',
+                tournament: 'Olympics Ice Hockey',
+                lastUpdated: new Date().toISOString(),
+                gamesAnalyzed: filteredGames.length,
+                groups
+            };
+        } catch (error) {
+            console.error(`[${this.name}] Error calculating standings:`, error.message);
+            throw error;
+        }
     }
 
     async fetchActiveGames() {

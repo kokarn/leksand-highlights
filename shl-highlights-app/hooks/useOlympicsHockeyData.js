@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { fetchOlympicsHockeyGames } from '../api/shl';
+import { fetchOlympicsHockeyGames, fetchOlympicsHockeyStandings } from '../api/shl';
 
 const AUTO_REFRESH_INTERVAL_MS = 20000;
 
@@ -17,6 +17,10 @@ export function useOlympicsHockeyData(activeSport, options = {}) {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const hasLoadedOnce = useRef(false);
+
+    // Standings state
+    const [standings, setStandings] = useState(null);
+    const [loadingStandings, setLoadingStandings] = useState(false);
 
     // Selected game modal state
     const [selectedGame, setSelectedGame] = useState(null);
@@ -38,6 +42,18 @@ export function useOlympicsHockeyData(activeSport, options = {}) {
         } finally {
             if (!silent) setLoading(false);
             setRefreshing(false);
+        }
+    }, []);
+
+    const loadStandings = useCallback(async () => {
+        setLoadingStandings(true);
+        try {
+            const data = await fetchOlympicsHockeyStandings();
+            setStandings(data);
+        } catch (e) {
+            console.error('Failed to load Olympics hockey standings', e);
+        } finally {
+            setLoadingStandings(false);
         }
     }, []);
 
@@ -106,6 +122,9 @@ export function useOlympicsHockeyData(activeSport, options = {}) {
         games: sortedGames,
         loading,
         refreshing,
+        standings,
+        loadingStandings,
+        loadStandings,
         selectedGame,
         gameDetails,
         loadingModal,

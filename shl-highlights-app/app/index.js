@@ -253,6 +253,16 @@ export default function App() {
         });
     }, [shl.games, olympicsHockey.games]);
 
+    // Olympics standings gender filter
+    const [olympicsStandingsGender, setOlympicsStandingsGender] = useState(null);
+
+    // Load Olympics standings when hockey tab switches to standings view
+    useEffect(() => {
+        if (activeSport === 'shl' && shl.viewMode === 'standings' && !olympicsHockey.standings) {
+            olympicsHockey.loadStandings();
+        }
+    }, [activeSport, shl.viewMode, olympicsHockey.standings, olympicsHockey.loadStandings]);
+
     // Unified refresh handler
     const onRefresh = useCallback(() => {
         if (activeSport === 'all') {
@@ -407,6 +417,80 @@ export default function App() {
                                 return teamCode ? getTeamLogoUrl(teamCode) : team.teamIcon || null;
                             }}
                         />
+                    )}
+
+                    {/* Olympics Hockey Group Standings */}
+                    <View style={[styles.standingsHeader, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                        <View style={styles.standingsHeaderRow}>
+                            <Ionicons name="medal-outline" size={20} color={colors.accent} />
+                            <Text style={[styles.standingsTitle, { color: colors.text }]}>Olympics Hockey</Text>
+                            {olympicsHockey.standings?.gamesAnalyzed > 0 && (
+                                <Text style={[styles.standingsCount, { color: colors.textMuted }]}>
+                                    {olympicsHockey.standings.gamesAnalyzed} games
+                                </Text>
+                            )}
+                        </View>
+                        <View style={styles.biathlonGenderPicker}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.biathlonGenderButton,
+                                    !olympicsStandingsGender && styles.biathlonGenderButtonActive
+                                ]}
+                                onPress={() => setOlympicsStandingsGender(null)}
+                            >
+                                <Text style={[
+                                    styles.biathlonGenderText,
+                                    !olympicsStandingsGender && styles.biathlonGenderTextActive
+                                ]}>All</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[
+                                    styles.biathlonGenderButton,
+                                    olympicsStandingsGender === 'W' && styles.biathlonGenderButtonActive
+                                ]}
+                                onPress={() => setOlympicsStandingsGender('W')}
+                            >
+                                <Text style={[
+                                    styles.biathlonGenderText,
+                                    olympicsStandingsGender === 'W' && styles.biathlonGenderTextActive
+                                ]}>Women</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[
+                                    styles.biathlonGenderButton,
+                                    olympicsStandingsGender === 'M' && styles.biathlonGenderButtonActive
+                                ]}
+                                onPress={() => setOlympicsStandingsGender('M')}
+                            >
+                                <Text style={[
+                                    styles.biathlonGenderText,
+                                    olympicsStandingsGender === 'M' && styles.biathlonGenderTextActive
+                                ]}>Men</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {olympicsHockey.loadingStandings ? (
+                        <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 12 }} />
+                    ) : olympicsHockey.standings?.groups?.length > 0 ? (
+                        olympicsHockey.standings.groups
+                            .filter(group => !olympicsStandingsGender || group.gender === olympicsStandingsGender)
+                            .map(group => (
+                                <View key={group.name} style={{ marginBottom: 16 }}>
+                                    <Text style={[styles.olympicsGroupTitle, { color: colors.text }]}>{group.name}</Text>
+                                    <StandingsTable
+                                        standings={group.standings}
+                                        selectedTeams={[]}
+                                        sport="shl"
+                                        getTeamKey={(team) => team.teamCode}
+                                        getTeamLogo={() => null}
+                                    />
+                                </View>
+                            ))
+                    ) : (
+                        <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+                            <Text style={{ color: colors.textMuted, fontSize: 14 }}>No completed group games yet</Text>
+                        </View>
                     )}
                 </ScrollView>
             </View>
@@ -1149,5 +1233,11 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         minWidth: 60,
         textAlign: 'right'
+    },
+    olympicsGroupTitle: {
+        fontSize: 15,
+        fontWeight: '700',
+        marginBottom: 8,
+        paddingHorizontal: 4
     }
 });
