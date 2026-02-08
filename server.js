@@ -25,7 +25,10 @@ const {
     clearAllCaches,
     getCacheStatus,
     setGamesLiveFlag,
-    setAllsvenskanLiveFlag
+    setAllsvenskanLiveFlag,
+    getCachedOlympicsHockey,
+    setCachedOlympicsHockey,
+    setOlympicsHockeyLiveFlag
 } = require('./modules/cache');
 const { getProvider, getAvailableSports } = require('./modules/providers');
 const { formatSwedishTimestamp } = require('./modules/utils');
@@ -609,6 +612,52 @@ app.get('/api/football/standings', async (req, res) => {
         res.json(result);
     } catch (error) {
         console.error('Error fetching Allsvenskan standings:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ============ OLYMPICS HOCKEY ENDPOINTS ============
+
+/**
+ * GET /api/olympics/hockey/games
+ * Get Olympics ice hockey games with live scores
+ */
+app.get('/api/olympics/hockey/games', async (req, res) => {
+    try {
+        let games = getCachedOlympicsHockey();
+        let usedCache = true;
+
+        if (games) {
+            console.log('[Cache HIT] /api/olympics/hockey/games');
+        } else {
+            usedCache = false;
+            console.log('[Cache MISS] /api/olympics/hockey/games - fetching fresh data...');
+            const provider = getProvider('olympics-hockey');
+            games = await provider.fetchAllGames();
+        }
+
+        if (!Array.isArray(games)) {
+            games = [];
+        }
+
+        const getTimeValue = (value) => {
+            const time = new Date(value).getTime();
+            return Number.isNaN(time) ? 0 : time;
+        };
+        games = games.sort((a, b) => getTimeValue(b.startDateTime) - getTimeValue(a.startDateTime));
+
+        const now = new Date();
+        const shouldUseFastCache = games.some(game => game.state === 'live' || isGameNearStart(game, now));
+
+        if (!usedCache) {
+            setCachedOlympicsHockey(games, shouldUseFastCache);
+        } else {
+            setOlympicsHockeyLiveFlag(shouldUseFastCache);
+        }
+
+        res.json(games);
+    } catch (error) {
+        console.error('Error fetching Olympics hockey games:', error);
         res.status(500).json({ error: error.message });
     }
 });

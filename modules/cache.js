@@ -16,7 +16,8 @@ const cache = {
     biathlon: { data: null, timestamp: 0, lastUpdate: null },
     allsvenskanGames: { data: null, timestamp: 0, hasLive: false },
     allsvenskanDetails: new Map(),
-    allsvenskanStandings: new Map()
+    allsvenskanStandings: new Map(),
+    olympicsHockey: { data: null, timestamp: 0, hasLive: false }
 };
 
 // ============ CACHE HELPERS ============
@@ -144,6 +145,31 @@ function setCachedAllsvenskanStandings(season, data) {
     cache.allsvenskanStandings.set(key, { data, timestamp: Date.now() });
 }
 
+// ============ OLYMPICS HOCKEY CACHE ============
+function getOlympicsHockeyCacheDuration() {
+    return cache.olympicsHockey.hasLive ? CACHE_DURATION_LIVE : CACHE_DURATION_NORMAL;
+}
+
+function getCachedOlympicsHockey() {
+    const duration = getOlympicsHockeyCacheDuration();
+    if (isCacheValid(cache.olympicsHockey, duration)) {
+        return cache.olympicsHockey.data;
+    }
+    return null;
+}
+
+function setCachedOlympicsHockey(data, hasLive = false) {
+    cache.olympicsHockey = {
+        data,
+        timestamp: Date.now(),
+        hasLive
+    };
+}
+
+function setOlympicsHockeyLiveFlag(hasLive) {
+    cache.olympicsHockey.hasLive = Boolean(hasLive);
+}
+
 // ============ BIATHLON CACHE ============
 function getCachedBiathlon() {
     if (isCacheValid(cache.biathlon, CACHE_DURATION_BIATHLON)) {
@@ -173,6 +199,7 @@ function clearAllCaches() {
     cache.allsvenskanGames = { data: null, timestamp: 0, hasLive: false };
     cache.allsvenskanDetails.clear();
     cache.allsvenskanStandings.clear();
+    cache.olympicsHockey = { data: null, timestamp: 0, hasLive: false };
 }
 
 function getCacheStatus() {
@@ -261,5 +288,8 @@ module.exports = {
     getCacheStatus,
     getGamesCacheDuration,
     setGamesLiveFlag,
-    setAllsvenskanLiveFlag
+    setAllsvenskanLiveFlag,
+    getCachedOlympicsHockey,
+    setCachedOlympicsHockey,
+    setOlympicsHockeyLiveFlag
 };

@@ -1,12 +1,14 @@
 const SHLProvider = require('./shl');
 const BiathlonProvider = require('./biathlon');
 const AllsvenskanProvider = require('./allsvenskan');
+const OlympicsHockeyProvider = require('./olympics-hockey');
 
 // Available providers by sport
 const providers = {
     shl: SHLProvider,
     allsvenskan: AllsvenskanProvider,
-    biathlon: BiathlonProvider
+    biathlon: BiathlonProvider,
+    'olympics-hockey': OlympicsHockeyProvider
 };
 
 // Provider instances (singletons per sport)

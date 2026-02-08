@@ -169,6 +169,25 @@ export async function fetchVideoDetails(videoId) {
     }
 }
 
+// ============ OLYMPICS HOCKEY API ============
+
+/**
+ * Fetch Olympics ice hockey games
+ * @returns {Promise<Array>} Array of game objects
+ */
+export async function fetchOlympicsHockeyGames() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/olympics/hockey/games`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching Olympics hockey games:', error.message);
+        return [];
+    }
+}
+
 // ============ FOOTBALL/ALLSVENSKAN API ============
 
 /**

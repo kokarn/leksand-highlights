@@ -1,21 +1,25 @@
 import { memo } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getTeamLogoUrl } from '../../api/shl';
+import { getTeamLogoUrl, getNationFlag } from '../../api/shl';
 import { extractScore, formatRelativeDateEnglish, formatTime } from '../../utils';
 import { useTheme } from '../../contexts';
 
 export const GameCard = memo(function GameCard({ game, onPress }) {
     const { colors, isDark } = useTheme();
-    
+
+    const isOlympics = game?.league === 'Olympics' || game?.sport === 'olympics-hockey';
     const homeTeam = game?.homeTeamInfo ?? {};
     const awayTeam = game?.awayTeamInfo ?? {};
     const homeCode = homeTeam.code;
     const awayCode = awayTeam.code;
     const homeName = homeTeam?.names?.short ?? homeCode ?? 'Home';
     const awayName = awayTeam?.names?.short ?? awayCode ?? 'Away';
-    const homeLogo = getTeamLogoUrl(homeCode);
-    const awayLogo = getTeamLogoUrl(awayCode);
+    const homeLogo = isOlympics ? null : getTeamLogoUrl(homeCode);
+    const awayLogo = isOlympics ? null : getTeamLogoUrl(awayCode);
+    const homeFlag = isOlympics ? getNationFlag(homeCode) : null;
+    const awayFlag = isOlympics ? getNationFlag(awayCode) : null;
+    const leagueLabel = isOlympics ? 'Olympics' : 'SHL';
     const isLive = game?.state === 'live';
     const isFinished = game?.state === 'post-game';
     const rawDate = formatRelativeDateEnglish(game?.startDateTime);
@@ -39,7 +43,7 @@ export const GameCard = memo(function GameCard({ game, onPress }) {
                 style={[styles.gameCard, { borderColor: colors.cardBorder }]}
             >
                 <View style={styles.cardHeader}>
-                    <Text style={[styles.leagueText, { color: colors.textMuted }]}>SHL</Text>
+                    <Text style={[styles.leagueText, { color: colors.textMuted }]}>{leagueLabel}</Text>
                     <View style={styles.headerRight}>
                         <Text style={[styles.gameDate, { color: colors.textSecondary }, isLive && styles.liveTextAccented]}>
                             {isLive ? 'LIVE' : formattedDate}
@@ -55,6 +59,8 @@ export const GameCard = memo(function GameCard({ game, onPress }) {
                                 style={styles.teamLogo}
                                 resizeMode="contain"
                             />
+                        ) : homeFlag ? (
+                            <Text style={styles.teamFlag}>{homeFlag}</Text>
                         ) : (
                             <View style={[styles.teamLogoPlaceholder, { backgroundColor: colors.separator }]} />
                         )}
@@ -75,6 +81,8 @@ export const GameCard = memo(function GameCard({ game, onPress }) {
                                 style={styles.teamLogo}
                                 resizeMode="contain"
                             />
+                        ) : awayFlag ? (
+                            <Text style={styles.teamFlag}>{awayFlag}</Text>
                         ) : (
                             <View style={[styles.teamLogoPlaceholder, { backgroundColor: colors.separator }]} />
                         )}
@@ -147,6 +155,13 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         borderRadius: 30,
         backgroundColor: '#2c2c2e'
+    },
+    teamFlag: {
+        fontSize: 44,
+        height: 60,
+        lineHeight: 60,
+        marginBottom: 8,
+        textAlign: 'center'
     },
     teamName: {
         color: '#fff',

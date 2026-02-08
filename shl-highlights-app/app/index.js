@@ -41,6 +41,7 @@ import {
     useShlData,
     useFootballData,
     useBiathlonData,
+    useOlympicsHockeyData,
     useUnifiedData,
     usePushNotifications
 } from '../hooks';
@@ -91,11 +92,12 @@ export default function App() {
 
     // Eager load all sports data on app start for instant scroll
     const shl = useShlData(activeSport, selectedTeams, { eagerLoad: true });
+    const olympicsHockey = useOlympicsHockeyData(activeSport, { eagerLoad: true });
     const football = useFootballData(activeSport, selectedFootballTeams, { eagerLoad: true });
     const biathlon = useBiathlonData(activeSport, selectedNations, selectedGenders, { eagerLoad: true });
 
     // Unified data combining all sports
-    const unified = useUnifiedData(shl, football, biathlon);
+    const unified = useUnifiedData(shl, football, biathlon, olympicsHockey);
 
     // Push notifications
     const {
@@ -241,18 +243,29 @@ export default function App() {
         router
     ]);
 
+    // Combined hockey games (SHL + Olympics) for the Hockey tab
+    const combinedHockeyGames = useMemo(() => {
+        const all = [...shl.games, ...olympicsHockey.games];
+        return all.sort((a, b) => {
+            const timeA = new Date(a.startDateTime).getTime();
+            const timeB = new Date(b.startDateTime).getTime();
+            return timeA - timeB;
+        });
+    }, [shl.games, olympicsHockey.games]);
+
     // Unified refresh handler
     const onRefresh = useCallback(() => {
         if (activeSport === 'all') {
             unified.onRefresh();
         } else if (activeSport === 'shl') {
             shl.onRefresh();
+            olympicsHockey.onRefresh();
         } else if (activeSport === 'football') {
             football.onRefresh();
         } else if (activeSport === 'biathlon') {
             biathlon.onRefresh();
         }
-    }, [activeSport, shl, football, biathlon, unified]);
+    }, [activeSport, shl, olympicsHockey, football, biathlon, unified]);
 
     // getItemLayout functions for consistent scroll behavior
     const getShlItemLayout = useCallback((data, index) => ({
@@ -297,29 +310,33 @@ export default function App() {
     const refreshing = activeSport === 'all'
         ? unified.refreshing
         : activeSport === 'shl'
-            ? shl.refreshing
+            ? (shl.refreshing || olympicsHockey.refreshing)
             : activeSport === 'football'
                 ? football.refreshing
                 : biathlon.refreshing;
 
 
-    // Handle SHL game press - reset tab and open modal
-    const handleShlGamePress = useCallback((game) => {
+    // Handle hockey game press (SHL or Olympics) - reset tab and open modal
+    const handleHockeyGamePress = useCallback((game) => {
         setShlActiveTab('summary');
-        shl.handleGamePress(game);
-    }, [shl]);
+        if (game.sport === 'olympics-hockey' || game.league === 'Olympics') {
+            olympicsHockey.handleGamePress(game);
+        } else {
+            shl.handleGamePress(game);
+        }
+    }, [shl, olympicsHockey]);
 
     // Render sport picker
     const renderSportPicker = () => (
         <SportPicker activeSport={activeSport} onSportChange={handleSportChange} />
     );
 
-    // Render SHL schedule - start at the most recent/current game
+    // Render Hockey schedule (SHL + Olympics) - start at the most recent/current game
     const renderShlSchedule = () => (
         <FlatList
             ref={shl.listRef}
-            data={shl.games}
-            renderItem={({ item }) => <GameCard game={item} onPress={() => handleShlGamePress(item)} />}
+            data={combinedHockeyGames}
+            renderItem={({ item }) => <GameCard game={item} onPress={() => handleHockeyGamePress(item)} />}
             keyExtractor={item => item.uuid}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
@@ -332,7 +349,7 @@ export default function App() {
             windowSize={11}
             ListEmptyComponent={<EmptyState message="No games found." />}
             ListHeaderComponent={
-                <ScheduleHeader icon="snow-outline" title="SHL" count={shl.games.length} countLabel="games" />
+                <ScheduleHeader icon="snow-outline" title="Hockey" count={combinedHockeyGames.length} countLabel="games" />
             }
         />
     );
@@ -725,7 +742,7 @@ export default function App() {
                                 pointerEvents="none"
                             />
                         </View>
-                        {shl.loading ? (
+                        {(shl.loading && olympicsHockey.loading) ? (
                             <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
                         ) : (
                             renderShlSchedule()
@@ -786,6 +803,20 @@ export default function App() {
                 onTabChange={setShlActiveTab}
                 onRefresh={shl.refreshModalDetails}
                 refreshing={shl.refreshingModal}
+            />
+
+            {/* Olympics Hockey Game Modal (reuses ShlGameModal) */}
+            <ShlGameModal
+                game={olympicsHockey.selectedGame}
+                gameDetails={olympicsHockey.gameDetails}
+                videos={[]}
+                visible={!!olympicsHockey.selectedGame}
+                loading={olympicsHockey.loadingModal}
+                onClose={olympicsHockey.closeModal}
+                activeTab={shlActiveTab}
+                onTabChange={setShlActiveTab}
+                onRefresh={null}
+                refreshing={false}
             />
 
             {/* Football Match Modal */}
