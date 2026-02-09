@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { fetchOlympicsHockeyGames, fetchOlympicsHockeyStandings } from '../api/shl';
+import { fetchOlympicsHockeyGames, fetchOlympicsHockeyStandings, fetchOlympicsHockeyDirect, relayOlympicsHockeyData } from '../api/shl';
 
 const AUTO_REFRESH_INTERVAL_MS = 20000;
 
@@ -35,8 +35,20 @@ export function useOlympicsHockeyData(activeSport, options = {}) {
     const loadGames = useCallback(async (silent = false) => {
         if (!silent) setLoading(true);
         try {
-            const data = await fetchOlympicsHockeyGames();
-            setGames(data);
+            let data = await fetchOlympicsHockeyGames();
+
+            // If server returned no data, try direct fetch + relay
+            if (!data || data.length === 0) {
+                const units = await fetchOlympicsHockeyDirect();
+                if (units && units.length > 0) {
+                    // Relay to server (fire-and-forget)
+                    relayOlympicsHockeyData(units).catch(() => {});
+                    // Re-fetch from server (now has relayed data)
+                    data = await fetchOlympicsHockeyGames();
+                }
+            }
+
+            setGames(data || []);
         } catch (e) {
             console.error('Failed to load Olympics hockey games', e);
         } finally {

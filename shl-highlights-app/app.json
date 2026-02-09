@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "GamePulse",
-    "version": "2.6.0",
+    "version": "2.7.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "gamepulse",

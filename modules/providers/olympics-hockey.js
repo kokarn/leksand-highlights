@@ -1,10 +1,15 @@
 const BaseProvider = require('./base');
+const path = require('path');
+const fs = require('fs');
 
 /**
  * Olympics Hockey Data Provider (2026 Milan-Cortina)
  *
  * Fetches ice hockey game data from the official Olympics schedule API.
  * Normalizes data to match the app's existing game format (same as SHL).
+ *
+ * The Olympics API is behind Akamai CDN protection that blocks cloud servers (403).
+ * Mobile app clients can fetch directly and relay data to the server via POST /api/olympics/hockey/relay.
  */
 class OlympicsHockeyProvider extends BaseProvider {
     constructor() {
@@ -15,6 +20,67 @@ class OlympicsHockeyProvider extends BaseProvider {
         this.headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         };
+
+        // Relayed data from mobile clients (persisted to disk)
+        this.relayedUnits = [];
+        this.relayDataPath = path.join(__dirname, '..', '..', 'data', 'olympics-hockey-relay.json');
+        this._loadRelayedData();
+    }
+
+    /**
+     * Load previously relayed data from disk on startup
+     */
+    _loadRelayedData() {
+        try {
+            if (fs.existsSync(this.relayDataPath)) {
+                const raw = fs.readFileSync(this.relayDataPath, 'utf8');
+                const data = JSON.parse(raw);
+                if (Array.isArray(data)) {
+                    this.relayedUnits = data;
+                    console.log(`[${this.name}] Loaded ${this.relayedUnits.length} relayed units from disk`);
+                }
+            }
+        } catch (err) {
+            console.warn(`[${this.name}] Could not load relayed data:`, err.message);
+        }
+    }
+
+    /**
+     * Store raw units relayed from a mobile client
+     * @param {Array} units - Raw units array from Olympics API
+     */
+    setRelayedData(units) {
+        if (!Array.isArray(units)) {
+            throw new Error('units must be an array');
+        }
+
+        // Basic validation: each unit should have id, competitors, status
+        const valid = units.every(u => u.id && Array.isArray(u.competitors) && u.status);
+        if (!valid) {
+            throw new Error('Invalid unit data: each unit must have id, competitors array, and status');
+        }
+
+        this.relayedUnits = units;
+        console.log(`[${this.name}] Received relay data: ${units.length} units`);
+
+        // Persist to disk
+        try {
+            const dir = path.dirname(this.relayDataPath);
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
+            fs.writeFileSync(this.relayDataPath, JSON.stringify(units, null, 2));
+        } catch (err) {
+            console.warn(`[${this.name}] Could not persist relayed data:`, err.message);
+        }
+    }
+
+    /**
+     * Get normalized games from relayed data
+     * @returns {Array} Normalized game objects
+     */
+    getRelayedGames() {
+        return this.relayedUnits.map(unit => this.normalizeUnit(unit));
     }
 
     /**
@@ -83,18 +149,27 @@ class OlympicsHockeyProvider extends BaseProvider {
     }
 
     async fetchAllGames() {
-        const response = await fetch(this.scheduleUrl, { headers: this.headers });
-        if (!response.ok) {
-            // Olympics API is behind Akamai CDN — 403 is expected from cloud servers
-            if (response.status === 403) {
-                console.warn(`[${this.name}] Olympics API returned 403 (CDN blocked). Returning empty schedule.`);
-                return [];
+        try {
+            const response = await fetch(this.scheduleUrl, { headers: this.headers });
+            if (!response.ok) {
+                // Olympics API is behind Akamai CDN — 403 is expected from cloud servers
+                if (response.status === 403) {
+                    console.warn(`[${this.name}] API returned 403, using relayed data (${this.relayedUnits.length} units)`);
+                    return this.getRelayedGames();
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+            const units = data?.units || [];
+            return units.map(unit => this.normalizeUnit(unit));
+        } catch (error) {
+            // Network errors (ECONNREFUSED, timeout, etc.) — also fall back to relay
+            if (error.message?.startsWith('HTTP error')) {
+                throw error;
+            }
+            console.warn(`[${this.name}] Fetch failed (${error.message}), using relayed data (${this.relayedUnits.length} units)`);
+            return this.getRelayedGames();
         }
-        const data = await response.json();
-        const units = data?.units || [];
-        return units.map(unit => this.normalizeUnit(unit));
     }
 
     async fetchStandings(options = {}) {

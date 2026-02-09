@@ -665,6 +665,30 @@ app.get('/api/olympics/hockey/games', async (req, res) => {
 });
 
 /**
+ * POST /api/olympics/hockey/relay
+ * Accept raw Olympics schedule data relayed from mobile clients.
+ * Mobile devices can reach the Olympics API directly (no CDN block),
+ * so they fetch and POST the raw units here for the server to use.
+ */
+app.post('/api/olympics/hockey/relay', async (req, res) => {
+    const units = req.body?.units;
+    if (!Array.isArray(units)) {
+        return res.status(400).json({ error: 'units array required' });
+    }
+
+    try {
+        const provider = getProvider('olympics-hockey');
+        provider.setRelayedData(units);
+        // Clear cached games so next request uses fresh relayed data
+        setCachedOlympicsHockey(null);
+        res.json({ success: true, unitsReceived: units.length });
+    } catch (error) {
+        console.error('[Olympics Hockey Relay] Error:', error.message);
+        res.status(400).json({ error: error.message });
+    }
+});
+
+/**
  * GET /api/olympics/hockey/standings
  * Get Olympics hockey group standings computed from completed games
  * Query params:

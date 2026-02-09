@@ -210,6 +210,40 @@ export async function fetchOlympicsHockeyStandings(options = {}) {
     }
 }
 
+/**
+ * Fetch Olympics hockey schedule directly from olympics.com
+ * Used as fallback when the server can't reach the API (CDN blocked)
+ * @returns {Promise<Array|null>} Raw units array or null on failure
+ */
+export async function fetchOlympicsHockeyDirect() {
+    try {
+        const response = await fetch('https://www.olympics.com/wmr-owg2026/schedules/api/ENG/schedule/discipline/IHO');
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data?.units || null;
+    } catch (error) {
+        console.error('Error fetching Olympics hockey directly:', error.message);
+        return null;
+    }
+}
+
+/**
+ * Relay raw Olympics hockey data to the server
+ * @param {Array} units - Raw units array from Olympics API
+ * @returns {Promise<void>}
+ */
+export async function relayOlympicsHockeyData(units) {
+    try {
+        await fetch(`${API_BASE_URL}/api/olympics/hockey/relay`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ units })
+        });
+    } catch (error) {
+        console.error('Error relaying Olympics hockey data:', error.message);
+    }
+}
+
 // ============ FOOTBALL/ALLSVENSKAN API ============
 
 /**
