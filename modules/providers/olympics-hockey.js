@@ -85,6 +85,11 @@ class OlympicsHockeyProvider extends BaseProvider {
     async fetchAllGames() {
         const response = await fetch(this.scheduleUrl, { headers: this.headers });
         if (!response.ok) {
+            // Olympics API is behind Akamai CDN — 403 is expected from cloud servers
+            if (response.status === 403) {
+                console.warn(`[${this.name}] Olympics API returned 403 (CDN blocked). Returning empty schedule.`);
+                return [];
+            }
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
