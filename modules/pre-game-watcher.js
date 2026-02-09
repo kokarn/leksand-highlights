@@ -20,6 +20,7 @@ const {
 const { getProvider } = require('./providers');
 const { formatSwedishTimestamp } = require('./utils');
 const pushNotifications = require('./fcm-notifications');
+const { addEntry } = require('./activity-log');
 
 // ============ PRE-GAME WATCHER STATE ============
 let seenPreGameNotifications = new Set(); // Track sent notifications by gameId
@@ -244,11 +245,14 @@ async function sendScheduledNotification(gameId) {
             stats.notificationsSent++;
             stats.totalNotificationsSent++;
             console.log(`[PreGameWatcher] Successfully sent notification for ${displayName}`);
+            addEntry('pre-game-watcher', 'notification', `Pre-game notification sent: ${displayName}`);
         } else {
             console.error(`[PreGameWatcher] Failed to send notification for ${gameId}:`, result.error);
+            addEntry('pre-game-watcher', 'error', `Pre-game notification failed: ${displayName}`);
         }
     } catch (error) {
         console.error(`[PreGameWatcher] Error sending notification for ${gameId}:`, error.message);
+        addEntry('pre-game-watcher', 'error', `Pre-game notification error: ${error.message}`);
     }
 }
 
@@ -306,6 +310,7 @@ async function runDailySchedule() {
         totalScheduled += shlScheduled;
     } catch (error) {
         console.error('[PreGameWatcher] Error fetching SHL games:', error.message);
+        addEntry('pre-game-watcher', 'error', `Error fetching SHL games: ${error.message}`);
     }
 
     // Fetch and schedule Allsvenskan games
@@ -330,6 +335,7 @@ async function runDailySchedule() {
         totalScheduled += footballScheduled;
     } catch (error) {
         console.error('[PreGameWatcher] Error fetching Allsvenskan games:', error.message);
+        addEntry('pre-game-watcher', 'error', `Error fetching Allsvenskan games: ${error.message}`);
     }
 
     // Fetch and schedule Olympics hockey games
@@ -354,6 +360,7 @@ async function runDailySchedule() {
         totalScheduled += olympicsScheduled;
     } catch (error) {
         console.error('[PreGameWatcher] Error fetching Olympics hockey games:', error.message);
+        addEntry('pre-game-watcher', 'error', `Error fetching Olympics hockey games: ${error.message}`);
     }
 
     // Fetch and schedule Biathlon races
@@ -378,10 +385,12 @@ async function runDailySchedule() {
         totalScheduled += biathlonScheduled;
     } catch (error) {
         console.error('[PreGameWatcher] Error fetching Biathlon races:', error.message);
+        addEntry('pre-game-watcher', 'error', `Error fetching Biathlon races: ${error.message}`);
     }
 
     stats.lastScheduleRun = timestamp;
     stats.scheduledCount = totalScheduled;
+    addEntry('pre-game-watcher', 'refresh', `Daily schedule: ${totalScheduled} notifications scheduled`);
 
     // Log a clear summary of all scheduled notifications
     console.log(`\n[PreGameWatcher] ===== SCHEDULED NOTIFICATIONS SUMMARY =====`);

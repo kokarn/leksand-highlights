@@ -1,6 +1,7 @@
 const { formatSwedishTimestamp } = require('./utils');
 const { getProvider } = require('./providers');
 const pushNotifications = require('./fcm-notifications');
+const { addEntry } = require('./activity-log');
 
 // ============ GOAL WATCHER STATE ============
 // Track previously seen goals to detect new ones
@@ -265,6 +266,7 @@ async function runCheck() {
         }
     } catch (error) {
         console.error('[GoalWatcher] Error checking SHL games:', error.message);
+        addEntry('goal-watcher', 'error', `Error checking SHL games: ${error.message}`);
     }
 
     // Check Olympics hockey games (score-change detection, no play-by-play)
@@ -280,6 +282,7 @@ async function runCheck() {
         }
     } catch (error) {
         console.error('[GoalWatcher] Error checking Olympics hockey games:', error.message);
+        addEntry('goal-watcher', 'error', `Error checking Olympics hockey games: ${error.message}`);
     }
 
     // Check Allsvenskan games
@@ -295,18 +298,22 @@ async function runCheck() {
         }
     } catch (error) {
         console.error('[GoalWatcher] Error checking Allsvenskan games:', error.message);
+        addEntry('goal-watcher', 'error', `Error checking Allsvenskan games: ${error.message}`);
     }
 
     // Send notifications for new goals
     for (const goal of results.newGoals) {
         console.log(`[GoalWatcher] New goal detected: ${goal.scorerName} for ${goal.scoringTeamName} (${goal.homeScore}-${goal.awayScore})`);
+        addEntry('goal-watcher', 'goal', `Goal: ${goal.scorerName} for ${goal.scoringTeamName} (${goal.homeScore}-${goal.awayScore})`, { sport: goal.sport, gameId: goal.gameId });
 
         try {
             await pushNotifications.sendGoalNotification(goal);
             results.notificationsSent++;
             stats.notificationsSent++;
+            addEntry('goal-watcher', 'notification', `Goal notification sent: ${goal.scoringTeamName} (${goal.homeScore}-${goal.awayScore})`);
         } catch (error) {
             console.error('[GoalWatcher] Error sending notification:', error.message);
+            addEntry('goal-watcher', 'error', `Goal notification failed: ${error.message}`);
         }
     }
 

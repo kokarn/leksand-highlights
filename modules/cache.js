@@ -219,6 +219,10 @@ function getCacheStatus() {
         ? Math.round((now - allsvenskanStandingsLatest) / 1000)
         : null;
 
+    const olympicsHockeyAge = cache.olympicsHockey.timestamp
+        ? Math.round((now - cache.olympicsHockey.timestamp) / 1000)
+        : null;
+
     return {
         games: {
             cached: !!cache.games.data,
@@ -261,6 +265,14 @@ function getCacheStatus() {
                 ageSeconds: allsvenskanStandingsLatestAge,
                 cacheDuration: '5m',
                 entriesCount: cache.allsvenskanStandings.size
+            }
+        },
+        olympicsHockey: {
+            games: {
+                cached: !!cache.olympicsHockey.data,
+                ageSeconds: olympicsHockeyAge,
+                hasLiveGame: cache.olympicsHockey.hasLive,
+                cacheDuration: cache.olympicsHockey.hasLive ? '15s (live/starting soon mode)' : '60s (normal mode)'
             }
         }
     };

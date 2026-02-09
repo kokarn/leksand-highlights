@@ -10,6 +10,7 @@ const { BIATHLON_CHECK_INTERVAL } = require('./config');
 const { getProvider } = require('./providers');
 const { setCachedBiathlon, getBiathlonLastUpdate } = require('./cache');
 const { formatSwedishTimestamp } = require('./utils');
+const { addEntry } = require('./activity-log');
 
 // ============ SCHEDULER STATE ============
 let stats = {
@@ -41,11 +42,13 @@ async function refreshBiathlonSchedule() {
             const completed = races.filter(r => r.state === 'completed');
 
             console.log(`[Scheduler] Biathlon schedule refreshed: ${races.length} total races (${upcoming.length} upcoming, ${completed.length} completed)`);
+            addEntry('scheduler', 'refresh', `Biathlon schedule refreshed: ${races.length} races (${upcoming.length} upcoming, ${completed.length} completed)`);
         }
 
         return races;
     } catch (error) {
         console.error('[Scheduler] Error refreshing biathlon schedule:', error.message);
+        addEntry('scheduler', 'error', `Biathlon refresh failed: ${error.message}`);
         stats.errors.push({
             type: 'biathlon',
             message: error.message,
@@ -140,6 +143,7 @@ function getStats() {
  */
 async function forceRefreshBiathlon() {
     console.log('[Scheduler] Manual biathlon refresh triggered');
+    addEntry('scheduler', 'refresh', 'Manual biathlon refresh triggered');
     return await refreshBiathlonSchedule();
 }
 

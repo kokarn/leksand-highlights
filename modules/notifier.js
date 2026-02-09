@@ -11,6 +11,7 @@ const {
 } = require('./config');
 const { getProvider } = require('./providers');
 const { formatSwedishTimestamp } = require('./utils');
+const { addEntry } = require('./activity-log');
 
 // ============ NOTIFIER STATE ============
 let seenGames = [];
@@ -96,8 +97,10 @@ async function sendNotification(topic, video, gameInfo, isHighlight) {
             headers: { 'Content-Type': 'application/json' }
         });
         stats.notificationsSent++;
+        addEntry('notifier', 'notification', `Video notification: ${gameInfo.homeTeam} vs ${gameInfo.awayTeam}`);
     } catch (error) {
         console.error(`Error sending notification to ${topic}:`, error.message);
+        addEntry('notifier', 'error', `Video notification failed: ${error.message}`);
     }
 }
 
@@ -144,6 +147,7 @@ async function processGameVideos(game, skipNotifications = false) {
 
     } catch (e) {
         console.error(`Error processing videos for ${gameInfo.gameId}: ${e.message}`);
+        addEntry('notifier', 'error', `Error processing videos: ${e.message}`);
     }
 }
 

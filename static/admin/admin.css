@@ -842,6 +842,28 @@ body {
     color: var(--text-muted);
 }
 
+.activity-source {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    background: rgba(59, 130, 246, 0.1);
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
+.activity-icon.notification {
+    background: rgba(168, 85, 247, 0.15);
+    color: var(--purple);
+}
+
+.activity-icon.refresh {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--accent);
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
     .sidebar {
