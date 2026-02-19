@@ -35,10 +35,17 @@ export function useGameDetails(gameDetails, selectedGame, videos = []) {
         const detailAwayScore = normalizeScoreValue(gameDetails.info?.awayTeam?.score);
         const fallbackHomeScore = normalizeScoreValue(selectedGame.homeTeamResult?.score) ?? normalizeScoreValue(selectedGame.homeTeamInfo?.score);
         const fallbackAwayScore = normalizeScoreValue(selectedGame.awayTeamResult?.score) ?? normalizeScoreValue(selectedGame.awayTeamInfo?.score);
-        const scoreDisplay = {
-            home: actualScore.home ?? detailHomeScore ?? fallbackHomeScore ?? '-',
-            away: actualScore.away ?? detailAwayScore ?? fallbackAwayScore ?? '-'
-        };
+        const isPostGame = selectedGame.state === 'post-game';
+        const scoreDisplay = isPostGame
+            ? {
+                // Keep post-game score aligned with the schedule/listing score.
+                home: fallbackHomeScore ?? detailHomeScore ?? actualScore.home ?? '-',
+                away: fallbackAwayScore ?? detailAwayScore ?? actualScore.away ?? '-'
+            }
+            : {
+                home: actualScore.home ?? detailHomeScore ?? fallbackHomeScore ?? '-',
+                away: actualScore.away ?? detailAwayScore ?? fallbackAwayScore ?? '-'
+            };
 
         const interestingEvents = [];
         let currentPeriod = -1;
