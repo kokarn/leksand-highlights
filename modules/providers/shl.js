@@ -132,6 +132,84 @@ class SHLProvider extends BaseProvider {
         };
     }
 
+    buildScorePair(homeValue, awayValue) {
+        const home = this.normalizeScoreValue(homeValue);
+        const away = this.normalizeScoreValue(awayValue);
+        if (home === null || home === undefined || away === null || away === undefined) {
+            return null;
+        }
+        return { home, away };
+    }
+
+    getScoreFromGameInfoResult(gameInfo) {
+        if (!gameInfo) {
+            return null;
+        }
+        return this.buildScorePair(
+            gameInfo.homeTeamResult?.score,
+            gameInfo.awayTeamResult?.score
+        );
+    }
+
+    getScoreFromGameInfoTeams(gameInfo) {
+        if (!gameInfo) {
+            return null;
+        }
+        return this.buildScorePair(
+            gameInfo.homeTeam?.score,
+            gameInfo.awayTeam?.score
+        );
+    }
+
+    getScoreFromEvents(events) {
+        if (!Array.isArray(events) || events.length === 0) {
+            return null;
+        }
+
+        const eventsWithScore = events.filter(event =>
+            event?.homeTeam?.score !== undefined && event?.awayTeam?.score !== undefined
+        );
+        if (eventsWithScore.length === 0) {
+            return null;
+        }
+
+        eventsWithScore.sort((a, b) => {
+            if (b.period !== a.period) {
+                return b.period - a.period;
+            }
+            return (b.time || '').localeCompare(a.time || '');
+        });
+
+        const latest = eventsWithScore[0];
+        return this.buildScorePair(latest.homeTeam?.score, latest.awayTeam?.score);
+    }
+
+    getScoreFromTeamStats(teamStats) {
+        const stats = teamStats?.stats;
+        if (!Array.isArray(stats) || stats.length === 0) {
+            return null;
+        }
+
+        for (const stat of stats) {
+            const key = stat.homeTeam?.sideTranslateKey || stat.awayTeam?.sideTranslateKey;
+            if (key !== 'G') {
+                continue;
+            }
+            return this.buildScorePair(
+                stat.homeTeam?.left?.value,
+                stat.awayTeam?.left?.value
+            );
+        }
+        return null;
+    }
+
+    resolveGameScore({ gameInfo, events, teamStats }) {
+        return this.getScoreFromGameInfoResult(gameInfo)
+            || this.getScoreFromEvents(events)
+            || this.getScoreFromTeamStats(teamStats)
+            || this.getScoreFromGameInfoTeams(gameInfo);
+    }
+
     /**
      * Check if a game that shows pre-game is actually live by checking for events
      * @param {string} gameId - Game UUID
@@ -405,6 +483,21 @@ class SHLProvider extends BaseProvider {
             } catch (e) {
                 console.warn(`[${this.name}] Could not fetch team stats for ${gameId}:`, e.message);
             }
+        }
+
+        const resolvedScore = this.resolveGameScore({ gameInfo, events, teamStats });
+        if (gameInfo && resolvedScore) {
+            gameInfo = {
+                ...gameInfo,
+                homeTeam: {
+                    ...(gameInfo.homeTeam || {}),
+                    score: resolvedScore.home
+                },
+                awayTeam: {
+                    ...(gameInfo.awayTeam || {}),
+                    score: resolvedScore.away
+                }
+            };
         }
 
         return {
