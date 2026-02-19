@@ -25,6 +25,36 @@ function sanitizeTopicName(str) {
     return normalized.replace(/[^a-z0-9_-]/g, '');
 }
 
+/**
+ * Normalize sport identifiers for deep links
+ * @param {string} sport - Sport identifier
+ * @returns {string} Normalized sport key
+ */
+function normalizeSportForDeepLink(sport) {
+    const normalized = String(sport || '').toLowerCase();
+    if (!normalized) {
+        return 'shl';
+    }
+    if (normalized === 'football') {
+        return 'allsvenskan';
+    }
+    return normalized;
+}
+
+/**
+ * Build in-app deep link for game notifications
+ * @param {string} sport - Sport identifier
+ * @param {string} gameId - Game identifier
+ * @param {string|null} tab - Optional tab name
+ * @returns {string} Deep link URL
+ */
+function buildGameDeepLink(sport, gameId, tab = null) {
+    const safeSport = encodeURIComponent(normalizeSportForDeepLink(sport));
+    const safeGameId = encodeURIComponent(String(gameId || ''));
+    const tabQuery = tab ? `?tab=${encodeURIComponent(String(tab))}` : '';
+    return `gamepulse://game/${safeSport}/${safeGameId}${tabQuery}`;
+}
+
 // ============ FIREBASE CONFIGURATION ============
 // Set GOOGLE_APPLICATION_CREDENTIALS env var to path of service account JSON
 // Or set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY individually
@@ -542,9 +572,18 @@ async function sendGoalNotification(goal, options = {}) {
         period
     } = goal;
 
+    const normalizedSport = normalizeSportForDeepLink(sport);
+
     // Build notification content
-    const sportEmoji = sport === 'shl' ? '🏒' : '⚽';
-    const sportLabel = sport === 'shl' ? 'SHL' : 'Allsvenskan';
+    let sportEmoji = '🏒';
+    let sportLabel = 'SHL';
+    if (normalizedSport === 'allsvenskan') {
+        sportEmoji = '⚽';
+        sportLabel = 'Allsvenskan';
+    } else if (normalizedSport === 'olympics-hockey') {
+        sportEmoji = '🏒';
+        sportLabel = 'Olympics Hockey';
+    }
     const title = `${sportEmoji} ${sportLabel} Goal: ${scoringTeamName}`;
 
     let message = `${scorerName} scores!`;
@@ -560,17 +599,18 @@ async function sendGoalNotification(goal, options = {}) {
     }
 
     // Build deep link URL
-    const deepLinkUrl = `gamepulse://game/${sport}/${gameId}`;
+    const deepLinkUrl = buildGameDeepLink(normalizedSport, gameId, 'summary');
 
     const data = {
         type: 'goal',
-        sport,
+        sport: normalizedSport,
         gameId,
         scoringTeam: scoringTeamCode,
         homeTeam: homeTeamCode,
         awayTeam: awayTeamCode,
         homeScore: String(homeScore),
         awayScore: String(awayScore),
+        tab: 'summary',
         url: deepLinkUrl
     };
 
@@ -615,6 +655,74 @@ async function sendGoalNotification(goal, options = {}) {
     }
 
     return result;
+}
+
+/**
+ * Send a highlight notification
+ * @param {Object} highlight - Highlight details
+ * @param {Object} options - Options
+ */
+async function sendHighlightNotification(highlight, options = {}) {
+    const { token = null } = options;
+    const {
+        sport = 'shl',
+        gameId,
+        videoId = '',
+        clipTitle = '',
+        homeTeamCode = '',
+        awayTeamCode = '',
+        homeTeamName = 'Home',
+        awayTeamName = 'Away'
+    } = highlight || {};
+
+    if (!gameId) {
+        return { success: false, error: 'gameId is required' };
+    }
+
+    const normalizedSport = normalizeSportForDeepLink(sport);
+    const safeClipTitle = String(clipTitle || '').trim();
+    const title = `🎬 New Highlight: ${homeTeamName} vs ${awayTeamName}`;
+    const body = safeClipTitle
+        ? safeClipTitle
+        : `A new highlight clip is available from ${homeTeamName} vs ${awayTeamName}`;
+    const deepLinkUrl = buildGameDeepLink(normalizedSport, gameId, 'highlights');
+
+    const data = {
+        type: 'highlight',
+        sport: normalizedSport,
+        gameId,
+        videoId: String(videoId || ''),
+        homeTeam: String(homeTeamCode || ''),
+        awayTeam: String(awayTeamCode || ''),
+        tab: 'highlights',
+        url: deepLinkUrl
+    };
+
+    if (token) {
+        return sendToDevice({ token, title, body, data });
+    }
+
+    const teamTopics = [homeTeamCode, awayTeamCode]
+        .filter(Boolean)
+        .map(code => `team_${sanitizeTopicName(code)}`);
+    const uniqueTeamTopics = [...new Set(teamTopics)];
+
+    if (uniqueTeamTopics.length === 0) {
+        console.warn('[FCM] Highlight notification skipped - missing team topics');
+        return { success: false, error: 'Missing team codes for highlight targeting' };
+    }
+
+    const teamsCondition = uniqueTeamTopics.map(topic => `'${topic}' in topics`).join(' || ');
+    const condition = `'goal_notifications' in topics && (${teamsCondition})`;
+
+    console.log(`[FCM] Sending highlight notification to: ${condition}`);
+
+    return sendWithCondition({
+        condition,
+        title,
+        body,
+        data
+    });
 }
 
 /**
@@ -723,7 +831,7 @@ async function sendPreGameNotification(gameInfo) {
         return { success: false, error: 'Unknown sport' };
     }
 
-    const deepLinkUrl = `gamepulse://game/${sport}/${gameId}`;
+    const deepLinkUrl = buildGameDeepLink(sport, gameId, 'summary');
 
     const data = {
         type: 'pre_game',
@@ -731,6 +839,7 @@ async function sendPreGameNotification(gameInfo) {
         gameId,
         homeTeam: homeTeamCode || '',
         awayTeam: awayTeamCode || '',
+        tab: 'summary',
         url: deepLinkUrl
     };
 
@@ -849,6 +958,7 @@ module.exports = {
     sendToDevice,
     sendWithCondition,
     sendGoalNotification,
+    sendHighlightNotification,
     sendPreGameNotification,
     sendTestNotification,
     getStats,

@@ -12,6 +12,7 @@ const {
 const { getProvider } = require('./providers');
 const { formatSwedishTimestamp } = require('./utils');
 const { addEntry } = require('./activity-log');
+const pushNotifications = require('./fcm-notifications');
 
 // ============ NOTIFIER STATE ============
 let seenGames = [];
@@ -132,6 +133,33 @@ async function processGameVideos(game, skipNotifications = false) {
                 if (isHighlight) {
                     await sendNotification(`${HIGHLIGHTS_TOPIC_PREFIX}${gameInfo.homeTeamCode}`, video, gameInfo, isHighlight);
                     await sendNotification(`${HIGHLIGHTS_TOPIC_PREFIX}${gameInfo.awayTeamCode}`, video, gameInfo, isHighlight);
+
+                    // 4. FCM push notification for app users following either team
+                    const clipTitle = video.title
+                        || video.name
+                        || video.description
+                        || 'A new highlight clip is available';
+                    const pushResult = await pushNotifications.sendHighlightNotification({
+                        sport: 'shl',
+                        gameId: gameInfo.gameId,
+                        videoId: video.id,
+                        clipTitle,
+                        homeTeamCode: gameInfo.homeTeamCode,
+                        awayTeamCode: gameInfo.awayTeamCode,
+                        homeTeamName: gameInfo.homeTeam,
+                        awayTeamName: gameInfo.awayTeam
+                    });
+
+                    if (pushResult.success) {
+                        console.log(`[Notifier] FCM highlight notification sent for game ${gameInfo.gameId}`);
+                        addEntry('notifier', 'notification', `Highlight push sent: ${gameInfo.homeTeam} vs ${gameInfo.awayTeam}`, {
+                            sport: 'shl',
+                            gameId: gameInfo.gameId,
+                            videoId: video.id
+                        });
+                    } else {
+                        console.warn(`[Notifier] FCM highlight notification not sent: ${pushResult.error || 'unknown error'}`);
+                    }
                 }
             }
 

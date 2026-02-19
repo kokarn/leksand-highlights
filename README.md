@@ -1,6 +1,6 @@
 # 🏒 GamePulse API Server
 
-**Version: 3.4.3**
+**Version: 3.7.0**
 
 A multi-sport API server that provides real-time game data, notifications, and highlights for Swedish sports leagues.
 
@@ -12,7 +12,7 @@ A multi-sport API server that provides real-time game data, notifications, and h
 - **Biathlon**: World Cup races, results, and standings
 
 ### Core Features
-- **Push Notifications**: Goal alerts and pre-game reminders via Firebase Cloud Messaging (FCM)
+- **Push Notifications**: Goal alerts, highlight clip alerts, and pre-game reminders via Firebase Cloud Messaging (FCM)
 - **Real-time Monitoring**: Live game tracking with adaptive polling
 - **Rich Game Details**: Goals, penalties/cards, team stats, rosters
 - **Video Highlights**: Direct streaming URLs for SHL highlights
@@ -71,7 +71,7 @@ The notification system uses FCM topics for targeting:
 
 | Topic | Description |
 |-------|-------------|
-| `goal_notifications` | Users who want goal alerts |
+| `goal_notifications` | Enables goal and highlight alerts for followed teams |
 | `pre_game_shl` | Pre-game reminders for SHL |
 | `pre_game_football` | Pre-game reminders for Allsvenskan |
 | `pre_game_biathlon` | Pre-game reminders for Biathlon |

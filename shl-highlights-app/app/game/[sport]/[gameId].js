@@ -11,20 +11,26 @@ const normalizeParam = (value) => {
 
 export default function GameDeepLinkRedirect() {
     const router = useRouter();
-    const { sport, gameId } = useLocalSearchParams();
+    const { sport, gameId, tab } = useLocalSearchParams();
     const sportParam = normalizeParam(sport);
     const gameIdParam = normalizeParam(gameId);
+    const tabParam = normalizeParam(tab);
 
     useEffect(() => {
         if (!sportParam || !gameIdParam) {
             return;
         }
 
+        const params = { sport: sportParam, gameId: gameIdParam };
+        if (tabParam) {
+            params.tab = tabParam;
+        }
+
         router.replace({
             pathname: '/',
-            params: { sport: sportParam, gameId: gameIdParam }
+            params
         });
-    }, [sportParam, gameIdParam, router]);
+    }, [sportParam, gameIdParam, tabParam, router]);
 
     return (
         <View style={styles.container}>
