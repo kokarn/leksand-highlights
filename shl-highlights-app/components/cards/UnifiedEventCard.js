@@ -9,7 +9,6 @@ import { BiathlonRaceCard } from './BiathlonRaceCard';
  */
 const SPORT_COLORS = {
     shl: '#6C5CE7',              // Purple (matches app icon)
-    'olympics-hockey': '#0085C7', // Olympic blue
     football: '#30D158',          // Green
     biathlon: '#FF9500'           // Orange
 };
@@ -23,7 +22,7 @@ export const UnifiedEventCard = memo(function UnifiedEventCard({ event, onPress,
     const sportColor = SPORT_COLORS[sport] || '#666';
 
     const renderCard = () => {
-        if (sport === 'shl' || sport === 'olympics-hockey') {
+        if (sport === 'shl') {
             return <GameCard game={event} onPress={() => onPress(event)} />;
         }
         if (sport === 'football') {

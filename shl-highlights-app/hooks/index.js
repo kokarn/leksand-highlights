@@ -3,7 +3,6 @@ export { usePreferences } from './usePreferences';
 export { useShlData } from './useShlData';
 export { useFootballData } from './useFootballData';
 export { useBiathlonData } from './useBiathlonData';
-export { useOlympicsHockeyData } from './useOlympicsHockeyData';
 export { useUnifiedData } from './useUnifiedData';
 export { useGameDetails } from './useGameDetails';
 export { useVideoPlayer } from './useVideoPlayer';

@@ -131,11 +131,10 @@ const buildFlatListData = (sections) => {
  * @param {Object} shl - SHL data hook return value
  * @param {Object} football - Football data hook return value
  * @param {Object} biathlon - Biathlon data hook return value
- * @param {Object} olympicsHockey - Olympics hockey data hook return value
  * @param {Object} options - Filter options
  */
-export function useUnifiedData(shl, football, biathlon, olympicsHockey = null, options = {}) {
-    const { sportFilters = ['shl', 'olympics-hockey', 'football', 'biathlon'] } = options;
+export function useUnifiedData(shl, football, biathlon, options = {}) {
+    const { sportFilters = ['shl', 'football', 'biathlon'] } = options;
 
     // List scroll ref
     const listRef = useRef(null);
@@ -155,13 +154,6 @@ export function useUnifiedData(shl, football, biathlon, olympicsHockey = null, o
             });
         }
 
-        // Add Olympics hockey games
-        if (sportFilters.includes('olympics-hockey') && olympicsHockey?.games) {
-            olympicsHockey.games.forEach(game => {
-                events.push(normalizeEvent(game, 'olympics-hockey'));
-            });
-        }
-
         // Add Football games
         if (sportFilters.includes('football')) {
             football.games.forEach(game => {
@@ -178,7 +170,7 @@ export function useUnifiedData(shl, football, biathlon, olympicsHockey = null, o
 
         // Sort all events by start time
         return events.sort((a, b) => a.startTime - b.startTime);
-    }, [shl.games, olympicsHockey?.games, football.games, biathlon.races, sportFilters]);
+    }, [shl.games, football.games, biathlon.races, sportFilters]);
 
     // Group events into sections
     const sections = useMemo(() => {
@@ -228,18 +220,17 @@ export function useUnifiedData(shl, football, biathlon, olympicsHockey = null, o
     }, [flatListData]);
 
     // Combined loading state
-    const loading = shl.loading || football.loading || biathlon.loading || (olympicsHockey?.loading ?? false);
+    const loading = shl.loading || football.loading || biathlon.loading;
 
     // Combined refreshing state
-    const refreshing = shl.refreshing || football.refreshing || biathlon.refreshing || (olympicsHockey?.refreshing ?? false);
+    const refreshing = shl.refreshing || football.refreshing || biathlon.refreshing;
 
     // Unified refresh handler
     const onRefresh = useCallback(() => {
         shl.onRefresh();
         football.onRefresh();
         biathlon.onRefresh();
-        olympicsHockey?.onRefresh?.();
-    }, [shl, football, biathlon, olympicsHockey]);
+    }, [shl, football, biathlon]);
 
     // Handle scroll event to save position
     const handleScroll = useCallback((event) => {
@@ -252,14 +243,12 @@ export function useUnifiedData(shl, football, biathlon, olympicsHockey = null, o
     const handleEventPress = useCallback((event) => {
         if (event.sport === 'shl') {
             shl.handleGamePress(event);
-        } else if (event.sport === 'olympics-hockey') {
-            olympicsHockey?.handleGamePress?.(event);
         } else if (event.sport === 'football') {
             football.handleGamePress(event);
         } else if (event.sport === 'biathlon') {
             biathlon.handleRacePress(event);
         }
-    }, [shl, olympicsHockey, football, biathlon]);
+    }, [shl, football, biathlon]);
 
     // Stats for header display
     const stats = useMemo(() => ({
@@ -267,7 +256,6 @@ export function useUnifiedData(shl, football, biathlon, olympicsHockey = null, o
         live: sections.live.length,
         today: sections.today.length,
         shlCount: allEvents.filter(e => e.sport === 'shl').length,
-        olympicsHockeyCount: allEvents.filter(e => e.sport === 'olympics-hockey').length,
         footballCount: allEvents.filter(e => e.sport === 'football').length,
         biathlonCount: allEvents.filter(e => e.sport === 'biathlon').length
     }), [allEvents, sections]);
