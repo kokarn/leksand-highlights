@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl, Platform } from 'react-native';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +26,23 @@ const normalizeRouteParam = (value) => {
     }
     return value;
 };
+
+const normalizeDeepLinkTab = (value) => {
+    const normalized = String(normalizeRouteParam(value) || '').toLowerCase();
+    if (normalized === 'summary' || normalized === 'events' || normalized === 'highlights') {
+        return normalized;
+    }
+    return null;
+};
+
+let firebaseMessaging = null;
+if (Platform.OS !== 'web') {
+    try {
+        firebaseMessaging = require('@react-native-firebase/messaging').default;
+    } catch (error) {
+        console.log('[DeepLink] Firebase messaging unavailable:', error.message);
+    }
+}
 
 // API
 import { getTeamLogoUrl, getNationFlag } from '../api/shl';
@@ -122,17 +139,18 @@ export default function App() {
     const { colors, isDark } = useTheme();
 
     const router = useRouter();
-    const { sport: routeSport, gameId: routeGameId } = useLocalSearchParams();
+    const { sport: routeSport, gameId: routeGameId, tab: routeTab } = useLocalSearchParams();
     const deepLinkParams = useMemo(() => {
         const sportParam = normalizeRouteParam(routeSport);
         const gameIdParam = normalizeRouteParam(routeGameId);
+        const tabParam = normalizeDeepLinkTab(routeTab);
 
         if (!sportParam || !gameIdParam) {
             return null;
         }
 
-        return { sport: sportParam, gameId: gameIdParam };
-    }, [routeSport, routeGameId]);
+        return { sport: sportParam, gameId: gameIdParam, tab: tabParam };
+    }, [routeSport, routeGameId, routeTab]);
 
     // Settings modal
     const [showSettings, setShowSettings] = useState(false);
@@ -145,23 +163,69 @@ export default function App() {
 
     // Handle notification clicks and deep links to open games
     useEffect(() => {
+        const normalizeSport = (sport) => {
+            const normalized = String(sport || '').toLowerCase();
+            if (normalized === 'football') {
+                return 'allsvenskan';
+            }
+            return normalized;
+        };
+
+        const safeDecode = (value) => {
+            try {
+                return decodeURIComponent(value);
+            } catch (_error) {
+                return value;
+            }
+        };
+
         // Parse deep link URL to extract game info
         const parseGameDeepLink = (url) => {
             if (!url) {
                 return null;
             }
-            // Handle gamepulse://game/{sport}/{gameId}
-            const match = url.match(/gamepulse:\/\/game\/(\w+)\/(.+)/);
-            if (match) {
-                return { sport: match[1], gameId: match[2] };
+
+            const normalizedUrl = String(url).trim();
+            // Handle gamepulse://game/{sport}/{gameId} and gamepulse:///game/{sport}/{gameId}
+            const match = normalizedUrl.match(/^gamepulse:\/\/(?:\/)?game\/([^/?#]+)\/([^?#]+)/i);
+            if (!match) {
+                return null;
             }
-            return null;
+
+            const parsed = Linking.parse(normalizedUrl);
+            return {
+                sport: normalizeSport(safeDecode(match[1])),
+                gameId: safeDecode(match[2]),
+                tab: normalizeDeepLinkTab(parsed?.queryParams?.tab)
+            };
+        };
+
+        const parseRemoteMessageGame = (remoteMessage) => {
+            const data = remoteMessage?.data || {};
+            if (data.url) {
+                return parseGameDeepLink(data.url);
+            }
+
+            const sport = normalizeSport(normalizeRouteParam(data.sport));
+            const gameId = normalizeRouteParam(data.gameId);
+            if (!sport || !gameId) {
+                return null;
+            }
+
+            return {
+                sport,
+                gameId: safeDecode(String(gameId)),
+                tab: normalizeDeepLinkTab(data.tab)
+            };
         };
 
         // Open a game by ID
-        const openGameById = (sport, gameId) => {
+        const openGameById = (sport, gameId, tab = null) => {
+            const normalizedSport = normalizeSport(sport);
+            const normalizedTab = normalizeDeepLinkTab(tab) || 'summary';
+
             // Prevent processing the same deep link twice
-            const linkKey = `${sport}:${gameId}`;
+            const linkKey = `${normalizedSport}:${gameId}:${normalizedTab}`;
             if (processedDeepLinkRef.current === linkKey) {
                 return;
             }
@@ -172,23 +236,33 @@ export default function App() {
                 processedDeepLinkRef.current = null;
             }, 2000);
 
-            console.log('[DeepLink] Opening game:', sport, gameId);
+            console.log('[DeepLink] Opening game:', normalizedSport, gameId, normalizedTab);
 
-            if (sport === 'shl') {
+            if (normalizedSport === 'shl') {
                 // Find the game in SHL games list
                 const game = shl.games.find(g => g.uuid === gameId);
                 if (game) {
                     handleSportChange('shl');
-                    setShlActiveTab('summary');
+                    setShlActiveTab(normalizedTab);
                     shl.handleGamePress(game);
                 } else {
                     // Game not in list yet, try to open anyway with minimal data
                     console.log('[DeepLink] SHL game not found in list, opening with ID');
                     handleSportChange('shl');
-                    setShlActiveTab('summary');
+                    setShlActiveTab(normalizedTab);
                     shl.handleGamePress({ uuid: gameId });
                 }
-            } else if (sport === 'allsvenskan' || sport === 'football') {
+            } else if (normalizedSport === 'olympics-hockey') {
+                const game = olympicsHockey.games.find(g => g.uuid === gameId);
+                handleSportChange('shl');
+                setShlActiveTab('summary');
+                if (game) {
+                    olympicsHockey.handleGamePress(game);
+                } else {
+                    console.log('[DeepLink] Olympics hockey game not found in list');
+                    olympicsHockey.handleGamePress({ uuid: gameId, sport: 'olympics-hockey', league: 'Olympics' });
+                }
+            } else if (normalizedSport === 'allsvenskan') {
                 const game = football.games.find(g => g.uuid === gameId);
                 if (game) {
                     handleSportChange('football');
@@ -198,32 +272,60 @@ export default function App() {
                     handleSportChange('football');
                     football.handleGamePress({ uuid: gameId });
                 }
+            } else {
+                console.warn('[DeepLink] Unsupported sport in deep link:', normalizedSport);
             }
         };
 
+        const openFromGameInfo = (gameInfo, delayMs = 0) => {
+            if (!gameInfo) {
+                return;
+            }
+            if (delayMs > 0) {
+                setTimeout(() => {
+                    openGameById(gameInfo.sport, gameInfo.gameId, gameInfo.tab);
+                }, delayMs);
+                return;
+            }
+            openGameById(gameInfo.sport, gameInfo.gameId, gameInfo.tab);
+        };
+
         if (deepLinkParams) {
-            openGameById(deepLinkParams.sport, deepLinkParams.gameId);
+            openGameById(deepLinkParams.sport, deepLinkParams.gameId, deepLinkParams.tab);
             router.replace('/');
         }
 
         // Handle deep link when app is already open
         const handleDeepLink = (event) => {
             const gameInfo = parseGameDeepLink(event.url);
-            if (gameInfo) {
-                openGameById(gameInfo.sport, gameInfo.gameId);
-            }
+            openFromGameInfo(gameInfo);
         };
+
+        // Handle app opens from push notifications (background state)
+        let unsubscribeNotificationOpened = null;
+        if (firebaseMessaging) {
+            unsubscribeNotificationOpened = firebaseMessaging().onNotificationOpenedApp((remoteMessage) => {
+                const gameInfo = parseRemoteMessageGame(remoteMessage);
+                openFromGameInfo(gameInfo);
+            });
+
+            // Handle app opens from push notifications (quit state)
+            firebaseMessaging().getInitialNotification().then((remoteMessage) => {
+                if (!remoteMessage) {
+                    return;
+                }
+                const gameInfo = parseRemoteMessageGame(remoteMessage);
+                openFromGameInfo(gameInfo, 1000);
+            }).catch((error) => {
+                console.error('[DeepLink] Error reading initial notification:', error.message);
+            });
+        }
 
         // Check if app was opened with a deep link
         Linking.getInitialURL().then(url => {
             if (url) {
                 const gameInfo = parseGameDeepLink(url);
-                if (gameInfo) {
-                    // Wait a bit for data to load before opening
-                    setTimeout(() => {
-                        openGameById(gameInfo.sport, gameInfo.gameId);
-                    }, 1000);
-                }
+                openFromGameInfo(gameInfo, 1000);
             }
         });
 
@@ -232,12 +334,15 @@ export default function App() {
 
         return () => {
             subscription?.remove();
+            unsubscribeNotificationOpened?.();
         };
     }, [
         shl.games,
         football.games,
+        olympicsHockey.games,
         shl.handleGamePress,
         football.handleGamePress,
+        olympicsHockey.handleGamePress,
         handleSportChange,
         deepLinkParams,
         router
