@@ -15,10 +15,6 @@ const GAME_CARD_HEIGHT = 174;
 const FOOTBALL_CARD_HEIGHT = 174;
 // Biathlon: padding (32) + cardHeader (~40) + mainRow (~80) + marginBottom (16)
 const BIATHLON_CARD_HEIGHT = 168;
-// Section header height: paddingVertical (24) + text (~20) + marginBottom (8)
-const SECTION_HEADER_HEIGHT = 52;
-// Average unified card height (for estimation)
-const UNIFIED_CARD_HEIGHT = 174;
 
 const normalizeRouteParam = (value) => {
     if (Array.isArray(value)) {
@@ -58,7 +54,6 @@ import {
     useShlData,
     useFootballData,
     useBiathlonData,
-    useOlympicsHockeyData,
     useUnifiedData,
     usePushNotifications
 } from '../hooks';
@@ -109,12 +104,11 @@ export default function App() {
 
     // Eager load all sports data on app start for instant scroll
     const shl = useShlData(activeSport, selectedTeams, { eagerLoad: true });
-    const olympicsHockey = useOlympicsHockeyData(activeSport, { eagerLoad: true });
     const football = useFootballData(activeSport, selectedFootballTeams, { eagerLoad: true });
     const biathlon = useBiathlonData(activeSport, selectedNations, selectedGenders, { eagerLoad: true });
 
     // Unified data combining all sports
-    const unified = useUnifiedData(shl, football, biathlon, olympicsHockey);
+    const unified = useUnifiedData(shl, football, biathlon);
 
     // Push notifications
     const {
@@ -136,7 +130,7 @@ export default function App() {
     } = usePushNotifications();
 
     // Theme
-    const { colors, isDark } = useTheme();
+    const { colors } = useTheme();
 
     const router = useRouter();
     const { sport: routeSport, gameId: routeGameId, tab: routeTab } = useLocalSearchParams();
@@ -252,16 +246,6 @@ export default function App() {
                     setShlActiveTab(normalizedTab);
                     shl.handleGamePress({ uuid: gameId });
                 }
-            } else if (normalizedSport === 'olympics-hockey') {
-                const game = olympicsHockey.games.find(g => g.uuid === gameId);
-                handleSportChange('shl');
-                setShlActiveTab('summary');
-                if (game) {
-                    olympicsHockey.handleGamePress(game);
-                } else {
-                    console.log('[DeepLink] Olympics hockey game not found in list');
-                    olympicsHockey.handleGamePress({ uuid: gameId, sport: 'olympics-hockey', league: 'Olympics' });
-                }
             } else if (normalizedSport === 'allsvenskan') {
                 const game = football.games.find(g => g.uuid === gameId);
                 if (game) {
@@ -339,34 +323,12 @@ export default function App() {
     }, [
         shl.games,
         football.games,
-        olympicsHockey.games,
         shl.handleGamePress,
         football.handleGamePress,
-        olympicsHockey.handleGamePress,
         handleSportChange,
         deepLinkParams,
         router
     ]);
-
-    // Combined hockey games (SHL + Olympics) for the Hockey tab
-    const combinedHockeyGames = useMemo(() => {
-        const all = [...shl.games, ...olympicsHockey.games];
-        return all.sort((a, b) => {
-            const timeA = new Date(a.startDateTime).getTime();
-            const timeB = new Date(b.startDateTime).getTime();
-            return timeA - timeB;
-        });
-    }, [shl.games, olympicsHockey.games]);
-
-    // Olympics standings gender filter
-    const [olympicsStandingsGender, setOlympicsStandingsGender] = useState(null);
-
-    // Load Olympics standings when hockey tab switches to standings view
-    useEffect(() => {
-        if (activeSport === 'shl' && shl.viewMode === 'standings' && !olympicsHockey.standings) {
-            olympicsHockey.loadStandings();
-        }
-    }, [activeSport, shl.viewMode, olympicsHockey.standings, olympicsHockey.loadStandings]);
 
     // Unified refresh handler
     const onRefresh = useCallback(() => {
@@ -374,13 +336,12 @@ export default function App() {
             unified.onRefresh();
         } else if (activeSport === 'shl') {
             shl.onRefresh();
-            olympicsHockey.onRefresh();
         } else if (activeSport === 'football') {
             football.onRefresh();
         } else if (activeSport === 'biathlon') {
             biathlon.onRefresh();
         }
-    }, [activeSport, shl, olympicsHockey, football, biathlon, unified]);
+    }, [activeSport, shl, football, biathlon, unified]);
 
     // getItemLayout functions for consistent scroll behavior
     const getShlItemLayout = useCallback((data, index) => ({
@@ -425,32 +386,28 @@ export default function App() {
     const refreshing = activeSport === 'all'
         ? unified.refreshing
         : activeSport === 'shl'
-            ? (shl.refreshing || olympicsHockey.refreshing)
+            ? shl.refreshing
             : activeSport === 'football'
                 ? football.refreshing
                 : biathlon.refreshing;
 
 
-    // Handle hockey game press (SHL or Olympics) - reset tab and open modal
+    // Handle hockey game press
     const handleHockeyGamePress = useCallback((game) => {
         setShlActiveTab('summary');
-        if (game.sport === 'olympics-hockey' || game.league === 'Olympics') {
-            olympicsHockey.handleGamePress(game);
-        } else {
-            shl.handleGamePress(game);
-        }
-    }, [shl, olympicsHockey]);
+        shl.handleGamePress(game);
+    }, [shl]);
 
     // Render sport picker
     const renderSportPicker = () => (
         <SportPicker activeSport={activeSport} onSportChange={handleSportChange} />
     );
 
-    // Render Hockey schedule (SHL + Olympics) - start at the most recent/current game
+    // Render Hockey schedule - start at the most recent/current game
     const renderShlSchedule = () => (
         <FlatList
             ref={shl.listRef}
-            data={combinedHockeyGames}
+            data={shl.games}
             renderItem={({ item }) => <GameCard game={item} onPress={() => handleHockeyGamePress(item)} />}
             keyExtractor={item => item.uuid}
             contentContainerStyle={styles.listContent}
@@ -464,7 +421,7 @@ export default function App() {
             windowSize={11}
             ListEmptyComponent={<EmptyState message="No games found." />}
             ListHeaderComponent={
-                <ScheduleHeader icon="snow-outline" title="Hockey" count={combinedHockeyGames.length} countLabel="games" />
+                <ScheduleHeader icon="snow-outline" title="Hockey" count={shl.games.length} countLabel="games" />
             }
         />
     );
@@ -478,7 +435,6 @@ export default function App() {
         const lastUpdatedLabel = shl.standings?.lastUpdated
             ? formatSwedishDate(shl.standings.lastUpdated, 'd MMM HH:mm')
             : null;
-        const gamesAnalyzed = shl.standings?.gamesAnalyzed;
         const standingsRows = Array.isArray(shl.standings?.standings) ? shl.standings.standings : [];
 
         return (
@@ -522,80 +478,6 @@ export default function App() {
                                 return teamCode ? getTeamLogoUrl(teamCode) : team.teamIcon || null;
                             }}
                         />
-                    )}
-
-                    {/* Olympics Hockey Group Standings */}
-                    <View style={[styles.standingsHeader, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                        <View style={styles.standingsHeaderRow}>
-                            <Ionicons name="medal-outline" size={20} color={colors.accent} />
-                            <Text style={[styles.standingsTitle, { color: colors.text }]}>Olympics Hockey</Text>
-                            {olympicsHockey.standings?.gamesAnalyzed > 0 && (
-                                <Text style={[styles.standingsCount, { color: colors.textMuted }]}>
-                                    {olympicsHockey.standings.gamesAnalyzed} games
-                                </Text>
-                            )}
-                        </View>
-                        <View style={styles.biathlonGenderPicker}>
-                            <TouchableOpacity
-                                style={[
-                                    styles.biathlonGenderButton,
-                                    !olympicsStandingsGender && styles.biathlonGenderButtonActive
-                                ]}
-                                onPress={() => setOlympicsStandingsGender(null)}
-                            >
-                                <Text style={[
-                                    styles.biathlonGenderText,
-                                    !olympicsStandingsGender && styles.biathlonGenderTextActive
-                                ]}>All</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[
-                                    styles.biathlonGenderButton,
-                                    olympicsStandingsGender === 'W' && styles.biathlonGenderButtonActive
-                                ]}
-                                onPress={() => setOlympicsStandingsGender('W')}
-                            >
-                                <Text style={[
-                                    styles.biathlonGenderText,
-                                    olympicsStandingsGender === 'W' && styles.biathlonGenderTextActive
-                                ]}>Women</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[
-                                    styles.biathlonGenderButton,
-                                    olympicsStandingsGender === 'M' && styles.biathlonGenderButtonActive
-                                ]}
-                                onPress={() => setOlympicsStandingsGender('M')}
-                            >
-                                <Text style={[
-                                    styles.biathlonGenderText,
-                                    olympicsStandingsGender === 'M' && styles.biathlonGenderTextActive
-                                ]}>Men</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    {olympicsHockey.loadingStandings ? (
-                        <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 12 }} />
-                    ) : olympicsHockey.standings?.groups?.length > 0 ? (
-                        olympicsHockey.standings.groups
-                            .filter(group => !olympicsStandingsGender || group.gender === olympicsStandingsGender)
-                            .map(group => (
-                                <View key={group.name} style={{ marginBottom: 16 }}>
-                                    <Text style={[styles.olympicsGroupTitle, { color: colors.text }]}>{group.name}</Text>
-                                    <StandingsTable
-                                        standings={group.standings}
-                                        selectedTeams={[]}
-                                        sport="shl"
-                                        getTeamKey={(team) => team.teamCode}
-                                        getTeamLogo={() => null}
-                                    />
-                                </View>
-                            ))
-                    ) : (
-                        <View style={{ alignItems: 'center', paddingVertical: 16 }}>
-                            <Text style={{ color: colors.textMuted, fontSize: 14 }}>No completed group games yet</Text>
-                        </View>
                     )}
                 </ScrollView>
             </View>
@@ -864,18 +746,6 @@ export default function App() {
         return item.key || item.event?.uuid || `event-${item.event?.startTime}`;
     }, []);
 
-    // Get item layout for unified list (mixed heights)
-    const getUnifiedItemLayout = useCallback((data, index) => {
-        // Estimate: headers are smaller than cards
-        const item = data?.[index];
-        const height = item?.type === 'header' ? SECTION_HEADER_HEIGHT : UNIFIED_CARD_HEIGHT;
-        return {
-            length: height,
-            offset: index * UNIFIED_CARD_HEIGHT, // Rough estimate for offset
-            index
-        };
-    }, []);
-
     // Render Unified schedule - all sports combined
     const renderUnifiedSchedule = () => (
         <FlatList
@@ -931,7 +801,7 @@ export default function App() {
                                 pointerEvents="none"
                             />
                         </View>
-                        {(shl.loading && olympicsHockey.loading) ? (
+                        {shl.loading ? (
                             <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
                         ) : (
                             renderShlSchedule()
@@ -992,20 +862,6 @@ export default function App() {
                 onTabChange={setShlActiveTab}
                 onRefresh={shl.refreshModalDetails}
                 refreshing={shl.refreshingModal}
-            />
-
-            {/* Olympics Hockey Game Modal (reuses ShlGameModal) */}
-            <ShlGameModal
-                game={olympicsHockey.selectedGame}
-                gameDetails={olympicsHockey.gameDetails}
-                videos={[]}
-                visible={!!olympicsHockey.selectedGame}
-                loading={olympicsHockey.loadingModal}
-                onClose={olympicsHockey.closeModal}
-                activeTab={shlActiveTab}
-                onTabChange={setShlActiveTab}
-                onRefresh={null}
-                refreshing={false}
             />
 
             {/* Football Match Modal */}
@@ -1086,7 +942,6 @@ export default function App() {
                 onTogglePreGameShl={togglePreGameShl}
                 onTogglePreGameFootball={togglePreGameFootball}
                 onTogglePreGameBiathlon={togglePreGameBiathlon}
-                selectedNations={selectedNations}
                 fcmToken={fcmToken}
             />
 
@@ -1338,11 +1193,5 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         minWidth: 60,
         textAlign: 'right'
-    },
-    olympicsGroupTitle: {
-        fontSize: 15,
-        fontWeight: '700',
-        marginBottom: 8,
-        paddingHorizontal: 4
     }
 });

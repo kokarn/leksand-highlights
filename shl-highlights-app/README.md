@@ -4,6 +4,11 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.8.1
+- Remove Olympics hockey schedule and standings from the Hockey tab
+- Remove Olympics hockey events from the unified All view
+- Keep hockey deep links focused on SHL games only
+
 ### 2.5.2
 - Show home/away side indicators for hockey penalty events
 - Align football card indicators with home/away side
