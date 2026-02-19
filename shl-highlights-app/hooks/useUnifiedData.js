@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useRef } from 'react';
-import { parseISO, isToday, isTomorrow, isYesterday, differenceInDays, startOfDay } from 'date-fns';
+import { parseISO, isToday, isTomorrow, differenceInDays, startOfDay } from 'date-fns';
 
 /**
  * Normalize an event from any sport to a common structure

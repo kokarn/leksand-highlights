@@ -15,10 +15,6 @@ const GAME_CARD_HEIGHT = 174;
 const FOOTBALL_CARD_HEIGHT = 174;
 // Biathlon: padding (32) + cardHeader (~40) + mainRow (~80) + marginBottom (16)
 const BIATHLON_CARD_HEIGHT = 168;
-// Section header height: paddingVertical (24) + text (~20) + marginBottom (8)
-const SECTION_HEADER_HEIGHT = 52;
-// Average unified card height (for estimation)
-const UNIFIED_CARD_HEIGHT = 174;
 
 const normalizeRouteParam = (value) => {
     if (Array.isArray(value)) {
@@ -134,7 +130,7 @@ export default function App() {
     } = usePushNotifications();
 
     // Theme
-    const { colors, isDark } = useTheme();
+    const { colors } = useTheme();
 
     const router = useRouter();
     const { sport: routeSport, gameId: routeGameId, tab: routeTab } = useLocalSearchParams();
@@ -439,7 +435,6 @@ export default function App() {
         const lastUpdatedLabel = shl.standings?.lastUpdated
             ? formatSwedishDate(shl.standings.lastUpdated, 'd MMM HH:mm')
             : null;
-        const gamesAnalyzed = shl.standings?.gamesAnalyzed;
         const standingsRows = Array.isArray(shl.standings?.standings) ? shl.standings.standings : [];
 
         return (
@@ -751,18 +746,6 @@ export default function App() {
         return item.key || item.event?.uuid || `event-${item.event?.startTime}`;
     }, []);
 
-    // Get item layout for unified list (mixed heights)
-    const getUnifiedItemLayout = useCallback((data, index) => {
-        // Estimate: headers are smaller than cards
-        const item = data?.[index];
-        const height = item?.type === 'header' ? SECTION_HEADER_HEIGHT : UNIFIED_CARD_HEIGHT;
-        return {
-            length: height,
-            offset: index * UNIFIED_CARD_HEIGHT, // Rough estimate for offset
-            index
-        };
-    }, []);
-
     // Render Unified schedule - all sports combined
     const renderUnifiedSchedule = () => (
         <FlatList
@@ -959,7 +942,6 @@ export default function App() {
                 onTogglePreGameShl={togglePreGameShl}
                 onTogglePreGameFootball={togglePreGameFootball}
                 onTogglePreGameBiathlon={togglePreGameBiathlon}
-                selectedNations={selectedNations}
                 fcmToken={fcmToken}
             />
 
