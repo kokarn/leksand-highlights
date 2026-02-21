@@ -25,6 +25,47 @@ const TABS = ['summary', 'events', 'highlights'];
 const SWIPE_THRESHOLD = 50;
 const SWIPE_VELOCITY_THRESHOLD = 500;
 
+const pickDisplayText = (...values) => {
+    for (const value of values) {
+        if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (trimmed) {
+                return trimmed;
+            }
+            continue;
+        }
+        if (value !== null && value !== undefined) {
+            return String(value);
+        }
+    }
+    return '';
+};
+
+const normalizeGameState = (state) => {
+    const normalized = String(state || '')
+        .trim()
+        .toLowerCase()
+        .replace(/_/g, '-')
+        .replace(/\s+/g, '-');
+
+    if (normalized === 'pregame' || normalized === 'pre-game') {
+        return 'pre-game';
+    }
+    if (normalized === 'postgame' || normalized === 'post-game') {
+        return 'post-game';
+    }
+    if (
+        normalized === 'live'
+        || normalized === 'ongoing'
+        || normalized === 'inprogress'
+        || normalized === 'in-progress'
+    ) {
+        return 'live';
+    }
+
+    return normalized || '-';
+};
+
 export const ShlGameModal = ({
     game,
     gameDetails,
@@ -113,10 +154,42 @@ export const ShlGameModal = ({
     };
 
     const currentlyPlayingVideo = videos.find(v => v.id === playingVideoId);
-    const homeCode = game?.homeTeamInfo?.code;
-    const awayCode = game?.awayTeamInfo?.code;
-    const homeName = game?.homeTeamInfo?.names?.short ?? homeCode ?? 'Home';
-    const awayName = game?.awayTeamInfo?.names?.short ?? awayCode ?? 'Away';
+    const detailsHomeTeam = gameDetails?.info?.homeTeam || null;
+    const detailsAwayTeam = gameDetails?.info?.awayTeam || null;
+
+    const homeCode = pickDisplayText(
+        game?.homeTeamInfo?.code,
+        detailsHomeTeam?.names?.code,
+        detailsHomeTeam?.names?.codeSite
+    ) || null;
+    const awayCode = pickDisplayText(
+        game?.awayTeamInfo?.code,
+        detailsAwayTeam?.names?.code,
+        detailsAwayTeam?.names?.codeSite
+    ) || null;
+
+    const homeName = pickDisplayText(
+        game?.homeTeamInfo?.names?.short,
+        detailsHomeTeam?.names?.short,
+        detailsHomeTeam?.names?.long,
+        detailsHomeTeam?.names?.code,
+        homeCode,
+        'Home'
+    );
+    const awayName = pickDisplayText(
+        game?.awayTeamInfo?.names?.short,
+        detailsAwayTeam?.names?.short,
+        detailsAwayTeam?.names?.long,
+        detailsAwayTeam?.names?.code,
+        awayCode,
+        'Away'
+    );
+
+    const homeLogo = homeCode ? getTeamLogoUrl(homeCode) : detailsHomeTeam?.icon || null;
+    const awayLogo = awayCode ? getTeamLogoUrl(awayCode) : detailsAwayTeam?.icon || null;
+    const gameState = normalizeGameState(game?.state || gameDetails?.info?.gameInfo?.state);
+    const startDateTime = game?.startDateTime || gameDetails?.info?.gameInfo?.startDateTime || null;
+
     const homeColor = getTeamColor(homeCode);
     const awayColor = getTeamColor(awayCode);
 
@@ -127,17 +200,17 @@ export const ShlGameModal = ({
         }
 
         const { sog, pp, pim } = processedData;
-        const isPreGame = game?.state === 'pre-game';
+        const isPreGame = gameState === 'pre-game';
         const venueName = gameDetails?.venue?.name
+            || gameDetails?.info?.gameInfo?.arenaName
             || game?.venue?.name
             || game?.venueInfo?.name
             || '-';
-        const startDateTime = game?.startDateTime;
-        const stateLabel = game?.state === 'post-game'
+        const stateLabel = gameState === 'post-game'
             ? 'Final'
-            : game?.state === 'pre-game'
+            : gameState === 'pre-game'
                 ? 'Pre-game'
-                : game?.state || '-';
+                : gameState || '-';
 
         return (
             <ScrollView
@@ -331,12 +404,12 @@ export const ShlGameModal = ({
                 {game && (
                     <>
                         <GameModalHeader
-                            homeTeam={{ name: homeName, logo: homeCode ? getTeamLogoUrl(homeCode) : null }}
-                            awayTeam={{ name: awayName, logo: awayCode ? getTeamLogoUrl(awayCode) : null }}
+                            homeTeam={{ name: homeName, logo: homeLogo }}
+                            awayTeam={{ name: awayName, logo: awayLogo }}
                             homeScore={scoreDisplay.home}
                             awayScore={scoreDisplay.away}
-                            state={game.state}
-                            startDateTime={game.startDateTime}
+                            state={gameState}
+                            startDateTime={startDateTime}
                             onClose={handleClose}
                         />
 

@@ -197,7 +197,15 @@ export default function App() {
         const parseRemoteMessageGame = (remoteMessage) => {
             const data = remoteMessage?.data || {};
             if (data.url) {
-                return parseGameDeepLink(data.url);
+                const fromUrl = parseGameDeepLink(data.url);
+                if (!fromUrl) {
+                    return null;
+                }
+                return {
+                    ...fromUrl,
+                    homeTeamCode: safeDecode(String(normalizeRouteParam(data.homeTeam || data.homeTeamCode) || '')) || null,
+                    awayTeamCode: safeDecode(String(normalizeRouteParam(data.awayTeam || data.awayTeamCode) || '')) || null
+                };
             }
 
             const sport = normalizeSport(normalizeRouteParam(data.sport));
@@ -209,14 +217,18 @@ export default function App() {
             return {
                 sport,
                 gameId: safeDecode(String(gameId)),
-                tab: normalizeDeepLinkTab(data.tab)
+                tab: normalizeDeepLinkTab(data.tab),
+                homeTeamCode: safeDecode(String(normalizeRouteParam(data.homeTeam || data.homeTeamCode) || '')) || null,
+                awayTeamCode: safeDecode(String(normalizeRouteParam(data.awayTeam || data.awayTeamCode) || '')) || null
             };
         };
 
         // Open a game by ID
-        const openGameById = (sport, gameId, tab = null) => {
+        const openGameById = (sport, gameId, tab = null, options = {}) => {
             const normalizedSport = normalizeSport(sport);
             const normalizedTab = normalizeDeepLinkTab(tab) || 'summary';
+            const homeTeamCode = normalizeRouteParam(options?.homeTeamCode);
+            const awayTeamCode = normalizeRouteParam(options?.awayTeamCode);
 
             // Prevent processing the same deep link twice
             const linkKey = `${normalizedSport}:${gameId}:${normalizedTab}`;
@@ -244,7 +256,22 @@ export default function App() {
                     console.log('[DeepLink] SHL game not found in list, opening with ID');
                     handleSportChange('shl');
                     setShlActiveTab(normalizedTab);
-                    shl.handleGamePress({ uuid: gameId });
+                    const fallbackGame = {
+                        uuid: gameId,
+                        homeTeamInfo: homeTeamCode
+                            ? {
+                                code: homeTeamCode,
+                                names: { short: homeTeamCode }
+                            }
+                            : undefined,
+                        awayTeamInfo: awayTeamCode
+                            ? {
+                                code: awayTeamCode,
+                                names: { short: awayTeamCode }
+                            }
+                            : undefined
+                    };
+                    shl.handleGamePress(fallbackGame);
                 }
             } else if (normalizedSport === 'allsvenskan') {
                 const game = football.games.find(g => g.uuid === gameId);
@@ -267,11 +294,11 @@ export default function App() {
             }
             if (delayMs > 0) {
                 setTimeout(() => {
-                    openGameById(gameInfo.sport, gameInfo.gameId, gameInfo.tab);
+                    openGameById(gameInfo.sport, gameInfo.gameId, gameInfo.tab, gameInfo);
                 }, delayMs);
                 return;
             }
-            openGameById(gameInfo.sport, gameInfo.gameId, gameInfo.tab);
+            openGameById(gameInfo.sport, gameInfo.gameId, gameInfo.tab, gameInfo);
         };
 
         if (deepLinkParams) {
