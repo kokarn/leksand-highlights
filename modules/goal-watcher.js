@@ -38,7 +38,7 @@ function getGoalId(goal, gameId) {
  * Extract goal details for notification
  * @param {Object} goal - Goal event object
  * @param {Object} gameInfo - Game info object
- * @param {string} sport - Sport type ('shl' or 'allsvenskan')
+ * @param {string} sport - Sport type ('shl', 'allsvenskan', 'svenska-cupen')
  * @returns {Object} Goal details for notification
  */
 function extractGoalDetails(goal, gameInfo, sport) {
@@ -299,6 +299,22 @@ async function runCheck() {
     } catch (error) {
         console.error('[GoalWatcher] Error checking Allsvenskan games:', error.message);
         addEntry('goal-watcher', 'error', `Error checking Allsvenskan games: ${error.message}`);
+    }
+
+    // Check Svenska Cupen games
+    try {
+        const cupProvider = getProvider('svenska-cupen');
+        const cupGames = await cupProvider.fetchActiveGames();
+        const liveGames = cupGames.filter(g => g.state === 'live');
+
+        for (const game of liveGames) {
+            results.gamesChecked++;
+            const newGoals = await checkGameForNewGoals(game, 'svenska-cupen');
+            results.newGoals.push(...newGoals);
+        }
+    } catch (error) {
+        console.error('[GoalWatcher] Error checking Svenska Cupen games:', error.message);
+        addEntry('goal-watcher', 'error', `Error checking Svenska Cupen games: ${error.message}`);
     }
 
     // Send notifications for new goals

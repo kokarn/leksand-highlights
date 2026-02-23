@@ -22,10 +22,17 @@ const {
     setCachedAllsvenskanDetails,
     getCachedAllsvenskanStandings,
     setCachedAllsvenskanStandings,
+    getCachedSvenskaCupenGames,
+    setCachedSvenskaCupenGames,
+    getCachedSvenskaCupenDetails,
+    setCachedSvenskaCupenDetails,
+    getCachedSvenskaCupenStandings,
+    setCachedSvenskaCupenStandings,
     clearAllCaches,
     getCacheStatus,
     setGamesLiveFlag,
     setAllsvenskanLiveFlag,
+    setSvenskaCupenLiveFlag,
     getCachedOlympicsHockey,
     setCachedOlympicsHockey,
     setOlympicsHockeyLiveFlag
@@ -202,6 +209,7 @@ app.get('/api/sports', (req, res) => {
     const sportIcons = {
         shl: 'hockey-puck',
         allsvenskan: 'soccer-ball',
+        'svenska-cupen': 'trophy',
         biathlon: 'target',
         'olympics-hockey': 'medal'
     };
@@ -614,6 +622,183 @@ app.get('/api/football/standings', async (req, res) => {
         res.json(result);
     } catch (error) {
         console.error('Error fetching Allsvenskan standings:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ============ SVENSKA CUPEN ENDPOINTS ============
+
+/**
+ * GET /api/svenska-cupen/games
+ * Get Svenska Cupen fixtures
+ * Query params:
+ *   - season: optional season label (example: 2025/2026)
+ *   - team: filter by team code, id, or name (optional)
+ *   - state: filter by game state (pre-game, live, post-game)
+ *   - upcoming: only show upcoming games if 'true'
+ *   - limit: max number of games to return
+ */
+app.get('/api/svenska-cupen/games', async (req, res) => {
+    try {
+        const seasonQuery = req.query.season ? String(req.query.season).trim() : null;
+        const canUseCache = !seasonQuery;
+        let games = canUseCache ? getCachedSvenskaCupenGames() : null;
+        let usedCache = canUseCache;
+
+        if (games && canUseCache) {
+            console.log('[Cache HIT] /api/svenska-cupen/games');
+        } else {
+            usedCache = false;
+            console.log('[Cache MISS] /api/svenska-cupen/games - fetching fresh data...');
+            const provider = getProvider('svenska-cupen');
+            games = await provider.fetchAllGames({ season: seasonQuery });
+        }
+
+        if (!Array.isArray(games)) {
+            games = [];
+        }
+
+        const getTimeValue = (value) => {
+            const time = new Date(value).getTime();
+            return Number.isNaN(time) ? 0 : time;
+        };
+        games = games.sort((a, b) => getTimeValue(b.startDateTime) - getTimeValue(a.startDateTime));
+
+        const now = new Date();
+        const shouldUseFastCache = shouldUseFastGamesCache(games, now);
+
+        if (canUseCache) {
+            if (!usedCache) {
+                setCachedSvenskaCupenGames(games, shouldUseFastCache);
+            } else {
+                setSvenskaCupenLiveFlag(shouldUseFastCache);
+            }
+        }
+
+        let result = games;
+
+        if (req.query.team) {
+            const teamQuery = String(req.query.team).trim().toLowerCase();
+            const matchesTeam = (teamInfo) => {
+                if (!teamInfo) {
+                    return false;
+                }
+                const candidates = [
+                    teamInfo.code,
+                    teamInfo.uuid,
+                    teamInfo.names?.short,
+                    teamInfo.names?.long
+                ];
+                return candidates.some(value => value && String(value).toLowerCase() === teamQuery);
+            };
+            result = result.filter(game => matchesTeam(game.homeTeamInfo) || matchesTeam(game.awayTeamInfo));
+        }
+
+        if (req.query.state) {
+            const stateQuery = String(req.query.state).trim().toLowerCase();
+            result = result.filter(game => game.state === stateQuery);
+        }
+
+        if (req.query.upcoming === 'true') {
+            result = result.filter(game => {
+                const startTime = new Date(game.startDateTime);
+                return !Number.isNaN(startTime.getTime()) && startTime >= now;
+            });
+        }
+
+        if (req.query.limit) {
+            const limit = parseInt(req.query.limit);
+            if (limit > 0) {
+                result = result.slice(0, limit);
+            }
+        }
+
+        res.json(result);
+    } catch (error) {
+        console.error('Error fetching Svenska Cupen schedule:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/svenska-cupen/game/:id/details
+ * Get details for a specific Svenska Cupen match
+ */
+app.get('/api/svenska-cupen/game/:id/details', async (req, res) => {
+    const { id } = req.params;
+
+    const cached = getCachedSvenskaCupenDetails(id);
+    if (cached) {
+        console.log(`[Cache HIT] /api/svenska-cupen/game/${id}/details`);
+        return res.json(cached);
+    }
+
+    console.log(`[Cache MISS] /api/svenska-cupen/game/${id}/details - fetching...`);
+
+    try {
+        const provider = getProvider('svenska-cupen');
+        const details = await provider.fetchGameDetails(id);
+
+        if (!details) {
+            return res.status(404).json({ error: 'Game not found' });
+        }
+
+        setCachedSvenskaCupenDetails(id, details);
+        res.json(details);
+    } catch (error) {
+        console.error(`Error fetching Svenska Cupen details for ${id}:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/svenska-cupen/standings
+ * Get Svenska Cupen group standings
+ * Query params:
+ *   - season: optional season label
+ *   - group: optional group id or name filter
+ */
+app.get('/api/svenska-cupen/standings', async (req, res) => {
+    try {
+        const seasonQuery = req.query.season ? String(req.query.season).trim() : null;
+        let standings = getCachedSvenskaCupenStandings(seasonQuery);
+
+        if (standings) {
+            console.log('[Cache HIT] /api/svenska-cupen/standings');
+        } else {
+            console.log('[Cache MISS] /api/svenska-cupen/standings - fetching fresh data...');
+            const provider = getProvider('svenska-cupen');
+            standings = await provider.fetchStandings({ season: seasonQuery });
+            const resolvedSeason = standings?.season ? String(standings.season) : null;
+
+            if (seasonQuery) {
+                if (resolvedSeason && resolvedSeason !== seasonQuery) {
+                    setCachedSvenskaCupenStandings(resolvedSeason, standings);
+                } else {
+                    setCachedSvenskaCupenStandings(seasonQuery, standings);
+                }
+            } else {
+                setCachedSvenskaCupenStandings(null, standings);
+                if (resolvedSeason) {
+                    setCachedSvenskaCupenStandings(resolvedSeason, standings);
+                }
+            }
+        }
+
+        let result = { ...standings };
+
+        if (req.query.group) {
+            const groupQuery = String(req.query.group).trim().toLowerCase();
+            const groups = Array.isArray(standings.groups) ? standings.groups : [];
+            result.groups = groups.filter(group => {
+                const candidates = [group.id, group.name];
+                return candidates.some(value => value && String(value).toLowerCase() === groupQuery);
+            });
+        }
+
+        res.json(result);
+    } catch (error) {
+        console.error('Error fetching Svenska Cupen standings:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -1033,6 +1218,9 @@ app.get('/api/status', (req, res) => {
             allsvenskanGamesNormal: '60 seconds',
             allsvenskanGamesLive: '15 seconds (live/starting soon)',
             allsvenskanStandings: '5 minutes',
+            svenskaCupenGamesNormal: '60 seconds',
+            svenskaCupenGamesLive: '15 seconds (live/starting soon)',
+            svenskaCupenStandings: '5 minutes',
             notifierNormal: '5 minutes',
             notifierLive: '30 seconds',
             biathlonScheduler: '1 hour',
@@ -1175,7 +1363,7 @@ app.post('/api/notifications/goal-test', async (req, res) => {
             });
         }
 
-        const validSports = ['shl', 'allsvenskan', 'olympics-hockey'];
+        const validSports = ['shl', 'allsvenskan', 'svenska-cupen', 'olympics-hockey'];
         const sport = validSports.includes(payload.sport) ? payload.sport : 'shl';
         const scoringIsHome = parseOptionalBoolean(payload.scoringIsHome, true);
         const homeTeamCode = normalizeTeamCode(payload.homeTeamCode)
@@ -1318,7 +1506,7 @@ app.post('/api/notifications/pre-game-test', async (req, res) => {
                 awayTeamCode: null
             };
         } else {
-            // SHL or Allsvenskan
+            // SHL, Allsvenskan, or Svenska Cupen
             const homeTeamCode = normalizeTeamCode(payload.homeTeamCode);
             const awayTeamCode = normalizeTeamCode(payload.awayTeamCode);
 
@@ -1344,7 +1532,7 @@ app.post('/api/notifications/pre-game-test', async (req, res) => {
                 homeTeamName = homeTeam?.names?.long || homeTeam?.names?.short || homeTeamCode;
                 awayTeamName = awayTeam?.names?.long || awayTeam?.names?.short || awayTeamCode;
             } else {
-                // For football, use the provided names or codes
+                // For football, use provided names or fallback to team codes
                 homeTeamName = payload.homeTeamName || homeTeamCode;
                 awayTeamName = payload.awayTeamName || awayTeamCode;
             }

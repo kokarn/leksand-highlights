@@ -122,6 +122,22 @@ function extractFootballGameInfo(game) {
 }
 
 /**
+ * Extract game info for notification from a Svenska Cupen game
+ */
+function extractSvenskaCupenGameInfo(game) {
+    return {
+        sport: 'svenska-cupen',
+        gameId: game.uuid,
+        homeTeamName: game.homeTeamInfo?.names?.long || game.homeTeamInfo?.names?.short || 'Home',
+        awayTeamName: game.awayTeamInfo?.names?.long || game.awayTeamInfo?.names?.short || 'Away',
+        homeTeamCode: game.homeTeamInfo?.code || game.homeTeamInfo?.names?.short || '',
+        awayTeamCode: game.awayTeamInfo?.code || game.awayTeamInfo?.names?.short || '',
+        startDateTime: game.rawStartDateTime || game.startDateTime,
+        venue: game.venueInfo?.name || game.venue || null
+    };
+}
+
+/**
  * Extract game info for notification from an Olympics hockey game
  */
 function extractOlympicsHockeyGameInfo(game) {
@@ -338,6 +354,31 @@ async function runDailySchedule() {
         addEntry('pre-game-watcher', 'error', `Error fetching Allsvenskan games: ${error.message}`);
     }
 
+    // Fetch and schedule Svenska Cupen games
+    try {
+        const cupProvider = getProvider('svenska-cupen');
+        const cupGames = await cupProvider.fetchAllGames();
+
+        let cupScheduled = 0;
+        for (const game of cupGames) {
+            if (game.state === 'post-game') {
+                continue;
+            }
+            const startTime = new Date(game.rawStartDateTime || game.startDateTime);
+            if (startTime >= now && startTime <= next24Hours) {
+                const gameInfo = extractSvenskaCupenGameInfo(game);
+                if (scheduleNotification(gameInfo)) {
+                    cupScheduled++;
+                }
+            }
+        }
+        console.log(`[PreGameWatcher] Scheduled ${cupScheduled} Svenska Cupen notifications`);
+        totalScheduled += cupScheduled;
+    } catch (error) {
+        console.error('[PreGameWatcher] Error fetching Svenska Cupen games:', error.message);
+        addEntry('pre-game-watcher', 'error', `Error fetching Svenska Cupen games: ${error.message}`);
+    }
+
     // Fetch and schedule Olympics hockey games
     try {
         const olympicsProvider = getProvider('olympics-hockey');
@@ -414,7 +455,15 @@ async function runDailySchedule() {
             const notifyTime = new Date(notification.notifyAt);
             const gameTimeStr = gameTime.toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm', hour: '2-digit', minute: '2-digit' });
             const notifyTimeStr = notifyTime.toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm', hour: '2-digit', minute: '2-digit' });
-            const sportEmoji = notification.sport === 'shl' ? '🏒' : notification.sport === 'olympics-hockey' ? '🥇' : notification.sport === 'allsvenskan' ? '⚽' : '🎯';
+            const sportEmoji = notification.sport === 'shl'
+                ? '🏒'
+                : notification.sport === 'olympics-hockey'
+                    ? '🥇'
+                    : notification.sport === 'allsvenskan'
+                        ? '⚽'
+                        : notification.sport === 'svenska-cupen'
+                            ? '🏆'
+                            : '🎯';
             
             console.log(`[PreGameWatcher]   ${sportEmoji} ${notification.name}`);
             console.log(`[PreGameWatcher]      Game: ${gameTimeStr} | Notify: ${notifyTimeStr} | ${notification.venue || 'TBA'}`);
@@ -496,7 +545,7 @@ function startLoop() {
     loadSeenNotifications();
     
     console.log('[PreGameWatcher] Starting pre-game notification scheduler...');
-    console.log(`[PreGameWatcher] Sports: Hockey (SHL), Olympics Hockey, Football (Allsvenskan), Biathlon`);
+    console.log(`[PreGameWatcher] Sports: Hockey (SHL), Olympics Hockey, Football (Allsvenskan), Svenska Cupen, Biathlon`);
     console.log(`[PreGameWatcher] Reminder time: ${PRE_GAME_REMINDER_MINUTES} minutes before start`);
     console.log(`[PreGameWatcher] Daily schedule time: ${DAILY_SCHEDULE_HOUR}:00 (Stockholm time)`);
 

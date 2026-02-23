@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-GamePulse is a multi-sport API server + React Native mobile app for Swedish sports leagues. The server provides real-time game data and push notifications (via Firebase Cloud Messaging) for SHL hockey, Allsvenskan football, and biathlon.
+GamePulse is a multi-sport API server + React Native mobile app for Swedish sports leagues. The server provides real-time game data and push notifications (via Firebase Cloud Messaging) for SHL hockey, Allsvenskan football, Svenska Cupen football, and biathlon.
 
 ## Development Commands
 
@@ -36,6 +36,7 @@ npm run lint         # Run ESLint
   - `base.js` - Abstract interface (fetchAllGames, fetchGameDetails, etc.)
   - `shl.js` - SHL Media API integration
   - `allsvenskan.js` - Allsvenskan/football data
+ - `svenska-cupen.js` - Svenska Cupen/football cup data
   - `biathlon.js` - IBU biathlon data
 - `cache.js` - In-memory caching with TTL (15s live, 60s normal)
 - `goal-watcher.js` - Polls live games for new goals, triggers notifications
@@ -84,7 +85,8 @@ FIREBASE_PRIVATE_KEY=
 - `GET /api/games` - SHL schedule with live score enrichment
 - `GET /api/game/:uuid/details` - Game details, events, stats
 - `GET /api/football/games` - Allsvenskan fixtures
+- `GET /api/svenska-cupen/games` - Svenska Cupen fixtures
 - `GET /api/biathlon/races` - Biathlon race schedule
-- `GET /api/standings`, `/api/football/standings`, `/api/biathlon/standings`
+- `GET /api/standings`, `/api/football/standings`, `/api/svenska-cupen/standings`, `/api/biathlon/standings`
 - `POST /api/fcm/register` - Device registration with topics
 - `GET /admin` - Admin dashboard (client-side routing)
