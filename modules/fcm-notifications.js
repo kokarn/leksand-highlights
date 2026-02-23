@@ -580,6 +580,9 @@ async function sendGoalNotification(goal, options = {}) {
     if (normalizedSport === 'allsvenskan') {
         sportEmoji = '⚽';
         sportLabel = 'Allsvenskan';
+    } else if (normalizedSport === 'svenska-cupen') {
+        sportEmoji = '🏆';
+        sportLabel = 'Svenska Cupen';
     } else if (normalizedSport === 'olympics-hockey') {
         sportEmoji = '🏒';
         sportLabel = 'Olympics Hockey';
@@ -817,6 +820,15 @@ async function sendPreGameNotification(gameInfo) {
             message += ` at ${venue}`;
         }
         message += ` - kicks off in ${minutesUntilStart} minutes!`;
+    } else if (sport === 'svenska-cupen') {
+        sportEmoji = '🏆';
+        preGameTopic = 'pre_game_football';
+        title = `${sportEmoji} Svenska Cupen Starting Soon`;
+        message = `${homeTeamName} vs ${awayTeamName}`;
+        if (venue) {
+            message += ` at ${venue}`;
+        }
+        message += ` - kicks off in ${minutesUntilStart} minutes!`;
     } else if (sport === 'biathlon') {
         sportEmoji = '🎯';
         preGameTopic = 'pre_game_biathlon';
@@ -844,9 +856,9 @@ async function sendPreGameNotification(gameInfo) {
     };
 
     // For team sports, send to users following either team with pre-game enabled
-    if ((sport === 'shl' || sport === 'allsvenskan') && homeTeamCode && awayTeamCode) {
-        const homeTeamTopic = `team_${homeTeamCode.toLowerCase()}`;
-        const awayTeamTopic = `team_${awayTeamCode.toLowerCase()}`;
+    if ((sport === 'shl' || sport === 'allsvenskan' || sport === 'svenska-cupen') && homeTeamCode && awayTeamCode) {
+        const homeTeamTopic = `team_${sanitizeTopicName(homeTeamCode)}`;
+        const awayTeamTopic = `team_${sanitizeTopicName(awayTeamCode)}`;
         
         // Condition: pre_game AND (home_team OR away_team)
         const condition = `'${preGameTopic}' in topics && ('${homeTeamTopic}' in topics || '${awayTeamTopic}' in topics)`;

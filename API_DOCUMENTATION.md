@@ -1,6 +1,6 @@
 # GamePulse API Documentation
 
-This document describes the available API endpoints for the GamePulse server, supporting SHL (Swedish Hockey League), Allsvenskan football, and Biathlon sports data.
+This document describes the available API endpoints for the GamePulse server, supporting SHL (Swedish Hockey League), Allsvenskan football, Svenska Cupen football, and Biathlon sports data.
 
 ## Base URL
 
@@ -21,6 +21,7 @@ Returns a list of available sports supported by the API.
 [
   { "id": "shl", "name": "SHL", "icon": "hockey-puck" },
   { "id": "allsvenskan", "name": "Allsvenskan", "icon": "soccer-ball" },
+  { "id": "svenska-cupen", "name": "Svenska Cupen", "icon": "trophy" },
   { "id": "biathlon", "name": "Biathlon", "icon": "target" }
 ]
 ```
@@ -494,6 +495,124 @@ Returns the current Allsvenskan league standings.
 
 ---
 
+### `GET /api/svenska-cupen/games`
+
+Returns a list of Svenska Cupen matches for the selected or current season.
+
+**Query Parameters:**
+- `season` (optional): Season label (e.g., `2025/2026`)
+- `team` (optional): Filter by team code, id, or name
+- `state` (optional): Filter by match state (`pre-game`, `live`, `post-game`)
+- `upcoming` (optional): Set to `true` to only show upcoming matches
+- `limit` (optional): Max number of matches to return
+
+**Response:**
+```json
+[
+  {
+    "uuid": "5071549",
+    "startDateTime": "2026-02-23T18:00:00.000Z",
+    "state": "live",
+    "homeTeamInfo": {
+      "code": "GAIS",
+      "uuid": "8297",
+      "names": { "short": "GAIS", "long": "GAIS" },
+      "score": 1,
+      "icon": "https://images.fotmob.com/image_resources/logo/teamlogo/8297.png"
+    },
+    "awayTeamInfo": {
+      "code": "Landskrona BoIS",
+      "uuid": "8511",
+      "names": { "short": "Landskrona BoIS", "long": "Landskrona BoIS" },
+      "score": 0,
+      "icon": "https://images.fotmob.com/image_resources/logo/teamlogo/8511.png"
+    },
+    "venueInfo": { "name": null },
+    "statusText": "22'",
+    "round": 1,
+    "sport": "svenska-cupen",
+    "source": "fotmob"
+  }
+]
+```
+
+---
+
+### `GET /api/svenska-cupen/game/:id/details`
+
+Returns match details for a specific Svenska Cupen game, including incidents (goals/cards/substitutions) when available.
+
+**Parameters:**
+- `id` (path): The match identifier.
+
+**Response (shape):**
+```json
+{
+  "info": {
+    "uuid": "5071549",
+    "startDateTime": "2026-02-23T18:00:00.000Z",
+    "state": "live",
+    "homeTeamInfo": { "code": "GAIS", "score": 1 },
+    "awayTeamInfo": { "code": "Landskrona BoIS", "score": 0 },
+    "venueInfo": { "name": null },
+    "statusText": "22'",
+    "sport": "svenska-cupen",
+    "source": "fotmob"
+  },
+  "teamStats": null,
+  "events": {
+    "goals": [],
+    "cards": [],
+    "substitutions": [],
+    "all": []
+  },
+  "rosters": [],
+  "commentary": null
+}
+```
+
+---
+
+### `GET /api/svenska-cupen/standings`
+
+Returns Svenska Cupen group standings for the selected season.
+
+**Query Parameters:**
+- `season` (optional): Season label (e.g., `2025/2026`)
+- `group` (optional): Filter by group id or group name
+
+**Response:**
+```json
+{
+  "season": "2025/2026",
+  "league": "Svenska Cupen",
+  "lastUpdated": "2026-02-23T18:25:00.000Z",
+  "groups": [
+    {
+      "id": "913503",
+      "name": "Cup Grp. 1",
+      "standings": [
+        {
+          "position": 1,
+          "teamCode": "Mjällby",
+          "teamName": "Mjällby",
+          "teamUuid": "8127",
+          "gamesPlayed": 1,
+          "wins": 1,
+          "draws": 0,
+          "losses": 0,
+          "points": 3
+        }
+      ]
+    }
+  ],
+  "source": "fotmob",
+  "availableSeasons": ["2025/2026", "2024/2025"]
+}
+```
+
+---
+
 ### `GET /api/biathlon/races`
 
 Returns all biathlon races for the current season.
@@ -835,6 +954,11 @@ Allsvenskan data is sourced from ESPN public site APIs:
 - `https://site.api.espn.com/apis/site/v2/sports/soccer/swe.1/scoreboard` - Fixtures and scores
 - `https://site.api.espn.com/apis/site/v2/sports/soccer/swe.1/summary?event={id}` - Match summaries
 - `https://site.web.api.espn.com/apis/v2/sports/soccer/swe.1/standings` - League standings
+
+### Svenska Cupen (Football Cup)
+Svenska Cupen data is sourced from FotMob:
+- `https://www.fotmob.com/api/leagues?id=171` - Fixtures, live status, and group tables
+- `https://www.fotmob.com/matches/...` - Match page payload (`__NEXT_DATA__`) for incidents and lineups
 
 ### Biathlon
 Biathlon race schedule and results are maintained using the official IBU APIs for the 2025-26 season, including:

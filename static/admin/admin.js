@@ -22,6 +22,7 @@ const elements = {
 // ============ State ============
 let teams = [];
 let footballTeams = [];
+let svenskaCupenTeams = [];
 let sports = [];
 let venueTouched = false;
 let activityLog = [];
@@ -407,10 +408,12 @@ async function loadStatus(options = {}) {
         const cacheItems = [
             { name: 'Hockey Games', active: status.cache?.games?.cached },
             { name: 'Football Games', active: status.cache?.allsvenskan?.games?.cached },
+            { name: 'Svenska Cupen Games', active: status.cache?.svenskaCupen?.games?.cached },
             { name: 'Olympics Hockey', active: status.cache?.olympicsHockey?.games?.cached },
             { name: 'Biathlon Races', active: status.cache?.biathlon?.cached },
             { name: 'Hockey Standings', active: status.cache?.standings?.cached },
-            { name: 'Football Standings', active: status.cache?.allsvenskan?.standings?.cached }
+            { name: 'Football Standings', active: status.cache?.allsvenskan?.standings?.cached },
+            { name: 'Svenska Cupen Standings', active: status.cache?.svenskaCupen?.standings?.cached }
         ];
         const activeCaches = cacheItems.filter(c => c.active).length;
         document.getElementById('metric-cache').textContent = `${activeCaches}/${cacheItems.length}`;
@@ -477,6 +480,11 @@ async function loadStatus(options = {}) {
             { label: 'Age', value: formatAgeSeconds(status.cache?.allsvenskan?.games?.ageSeconds) },
             { label: 'Live mode', value: status.cache?.allsvenskan?.games?.hasLiveGame ? 'Yes (15s)' : 'No (60s)' }
         ];
+        const svenskaCupenGamesRows = [
+            { label: 'Cached', value: status.cache?.svenskaCupen?.games?.cached ? 'Yes' : 'No' },
+            { label: 'Age', value: formatAgeSeconds(status.cache?.svenskaCupen?.games?.ageSeconds) },
+            { label: 'Live mode', value: status.cache?.svenskaCupen?.games?.hasLiveGame ? 'Yes (15s)' : 'No (60s)' }
+        ];
         const biathlonRacesRows = [
             { label: 'Cached', value: status.cache?.biathlon?.cached ? 'Yes' : 'No' },
             { label: 'Age', value: formatAgeSeconds(status.cache?.biathlon?.ageSeconds) },
@@ -485,6 +493,7 @@ async function loadStatus(options = {}) {
         const standingsRows = [
             { label: 'Hockey', value: status.cache?.standings?.cached ? 'Yes' : 'No' },
             { label: 'Football', value: status.cache?.allsvenskan?.standings?.cached ? 'Yes' : 'No' },
+            { label: 'Svenska Cupen', value: status.cache?.svenskaCupen?.standings?.cached ? 'Yes' : 'No' },
             { label: 'TTL', value: '5 minutes' }
         ];
         const olympicsHockeyGamesRows = [
@@ -495,12 +504,14 @@ async function loadStatus(options = {}) {
         const mediaCacheRows = [
             { label: 'Game details', value: status.cache?.details?.entriesCount ?? 0 },
             { label: 'Videos', value: status.cache?.videos?.entriesCount ?? 0 },
-            { label: 'Football details', value: status.cache?.allsvenskan?.details?.entriesCount ?? 0 }
+            { label: 'Football details', value: status.cache?.allsvenskan?.details?.entriesCount ?? 0 },
+            { label: 'Cup details', value: status.cache?.svenskaCupen?.details?.entriesCount ?? 0 }
         ];
 
         elements.cacheStatusGrid.innerHTML = [
             buildStatusCard('Hockey Games', hockeyGamesRows, { type: status.cache?.games?.cached ? 'online' : 'offline', text: status.cache?.games?.cached ? 'Cached' : 'Empty' }),
             buildStatusCard('Football Games', footballGamesRows, { type: status.cache?.allsvenskan?.games?.cached ? 'online' : 'offline', text: status.cache?.allsvenskan?.games?.cached ? 'Cached' : 'Empty' }),
+            buildStatusCard('Svenska Cupen Games', svenskaCupenGamesRows, { type: status.cache?.svenskaCupen?.games?.cached ? 'online' : 'offline', text: status.cache?.svenskaCupen?.games?.cached ? 'Cached' : 'Empty' }),
             buildStatusCard('Olympics Hockey Games', olympicsHockeyGamesRows, { type: status.cache?.olympicsHockey?.games?.cached ? 'online' : 'offline', text: status.cache?.olympicsHockey?.games?.cached ? 'Cached' : 'Empty' }),
             buildStatusCard('Biathlon Races', biathlonRacesRows, { type: status.cache?.biathlon?.cached ? 'online' : 'offline', text: status.cache?.biathlon?.cached ? 'Cached' : 'Empty' }),
             buildStatusCard('Standings', standingsRows),
@@ -658,6 +669,26 @@ async function loadFootballTeams() {
     }
 }
 
+async function loadSvenskaCupenTeams() {
+    try {
+        const games = await apiRequest('/api/svenska-cupen/games?limit=200');
+        const teamMap = new Map();
+        (games || []).forEach(game => {
+            [game.homeTeamInfo, game.awayTeamInfo].forEach(info => {
+                if (info) {
+                    const code = info.code || info.uuid;
+                    if (code && !teamMap.has(code)) {
+                        teamMap.set(code, { code, name: info.names?.long || info.names?.short || code });
+                    }
+                }
+            });
+        });
+        svenskaCupenTeams = Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    } catch (_error) {
+        svenskaCupenTeams = [];
+    }
+}
+
 function populateTeamSelect(select) {
     select.innerHTML = teams.map(team =>
         `<option value="${escapeHtml(team.code)}">${escapeHtml(team.names.long || team.names.short || team.code)}</option>`
@@ -678,6 +709,7 @@ function updateGoalTestTeamDropdowns() {
     const sport = document.getElementById('goal-test-sport').value;
     const scoringSelect = document.getElementById('goal-test-scoring-team');
     const opposingSelect = document.getElementById('goal-test-opposing-team');
+    const isFootballStyleSport = sport === 'allsvenskan' || sport === 'svenska-cupen';
 
     if (sport === 'olympics-hockey') {
         // Olympics uses country codes typed manually — provide a text-like input via empty select + editable placeholder
@@ -692,10 +724,14 @@ function updateGoalTestTeamDropdowns() {
             opposingSelect.selectedIndex = 1;
         }
     } else {
-        const teamList = sport === 'allsvenskan' ? footballTeams : teams;
+        const teamList = sport === 'allsvenskan'
+            ? footballTeams
+            : sport === 'svenska-cupen'
+                ? svenskaCupenTeams
+                : teams;
 
         const buildOptions = (list) => {
-            if (sport === 'allsvenskan') {
+            if (isFootballStyleSport) {
                 return list.map(team => `<option value="${escapeHtml(team.code)}">${escapeHtml(team.name)}</option>`).join('');
             } else {
                 return list.map(team => `<option value="${escapeHtml(team.code)}">${escapeHtml(team.names?.long || team.names?.short || team.code)}</option>`).join('');
@@ -709,8 +745,8 @@ function updateGoalTestTeamDropdowns() {
         }
     }
 
-    document.getElementById('goal-test-period').placeholder = sport === 'allsvenskan' ? '1st half' : 'P1';
-    document.getElementById('goal-test-time').placeholder = sport === 'allsvenskan' ? '54:21' : '12:34';
+    document.getElementById('goal-test-period').placeholder = isFootballStyleSport ? '1st half' : 'P1';
+    document.getElementById('goal-test-time').placeholder = isFootballStyleSport ? '54:21' : '12:34';
 }
 
 // ============ Load Games ============
@@ -1125,6 +1161,7 @@ function updatePregameTestTeamDropdowns() {
     const sport = document.getElementById('pregame-test-sport').value;
     const homeSelect = document.getElementById('pregame-test-home-team');
     const awaySelect = document.getElementById('pregame-test-away-team');
+    const isFootballStyleSport = sport === 'allsvenskan' || sport === 'svenska-cupen';
 
     if (sport === 'olympics-hockey') {
         const countryCodes = [
@@ -1137,10 +1174,14 @@ function updatePregameTestTeamDropdowns() {
             awaySelect.selectedIndex = 1;
         }
     } else {
-        const teamList = sport === 'allsvenskan' ? footballTeams : teams;
+        const teamList = sport === 'allsvenskan'
+            ? footballTeams
+            : sport === 'svenska-cupen'
+                ? svenskaCupenTeams
+                : teams;
 
         const buildOptions = (list) => {
-            if (sport === 'allsvenskan') {
+            if (isFootballStyleSport) {
                 return list.map(team => `<option value="${escapeHtml(team.code)}">${escapeHtml(team.name)}</option>`).join('');
             } else {
                 return list.map(team => `<option value="${escapeHtml(team.code)}">${escapeHtml(team.names?.long || team.names?.short || team.code)}</option>`).join('');
@@ -1190,7 +1231,13 @@ async function sendPregameTest() {
             body: JSON.stringify(body)
         });
 
-        const sportLabels = { shl: 'SHL', allsvenskan: 'Allsvenskan', biathlon: 'Biathlon', 'olympics-hockey': 'Olympics Hockey' };
+        const sportLabels = {
+            shl: 'SHL',
+            allsvenskan: 'Allsvenskan',
+            'svenska-cupen': 'Svenska Cupen',
+            biathlon: 'Biathlon',
+            'olympics-hockey': 'Olympics Hockey'
+        };
         const sportLabel = sportLabels[sport] || sport;
         showToast(result.success ? 'success' : 'error', 'Event Start Test', result.success ? `${sportLabel} notification sent!` : 'Failed to send');
         addActivity('notification', `Pre-game test: ${sportLabel}`);
@@ -1266,7 +1313,8 @@ async function init() {
 
     await Promise.all([
         loadTeams(),
-        loadFootballTeams()
+        loadFootballTeams(),
+        loadSvenskaCupenTeams()
     ]);
 
     updateGoalTestTeamDropdowns();

@@ -17,11 +17,15 @@ const cache = {
     allsvenskanGames: { data: null, timestamp: 0, hasLive: false },
     allsvenskanDetails: new Map(),
     allsvenskanStandings: new Map(),
+    svenskaCupenGames: { data: null, timestamp: 0, hasLive: false },
+    svenskaCupenDetails: new Map(),
+    svenskaCupenStandings: new Map(),
     olympicsHockey: { data: null, timestamp: 0, hasLive: false }
 };
 
 // ============ CACHE HELPERS ============
 const DEFAULT_ALLSVENSKAN_STANDINGS_KEY = 'current';
+const DEFAULT_SVENSKA_CUPEN_STANDINGS_KEY = 'current';
 
 function isCacheValid(cacheEntry, duration) {
     return cacheEntry && cacheEntry.data && (Date.now() - cacheEntry.timestamp) < duration;
@@ -35,12 +39,20 @@ function getAllsvenskanGamesCacheDuration() {
     return cache.allsvenskanGames.hasLive ? CACHE_DURATION_LIVE : CACHE_DURATION_NORMAL;
 }
 
+function getSvenskaCupenGamesCacheDuration() {
+    return cache.svenskaCupenGames.hasLive ? CACHE_DURATION_LIVE : CACHE_DURATION_NORMAL;
+}
+
 function setGamesLiveFlag(hasLive) {
     cache.games.hasLive = Boolean(hasLive);
 }
 
 function setAllsvenskanLiveFlag(hasLive) {
     cache.allsvenskanGames.hasLive = Boolean(hasLive);
+}
+
+function setSvenskaCupenLiveFlag(hasLive) {
+    cache.svenskaCupenGames.hasLive = Boolean(hasLive);
 }
 
 function getCachedGames() {
@@ -75,6 +87,22 @@ function setCachedAllsvenskanGames(data, hasLive = false) {
     };
 }
 
+function getCachedSvenskaCupenGames() {
+    const duration = getSvenskaCupenGamesCacheDuration();
+    if (isCacheValid(cache.svenskaCupenGames, duration)) {
+        return cache.svenskaCupenGames.data;
+    }
+    return null;
+}
+
+function setCachedSvenskaCupenGames(data, hasLive = false) {
+    cache.svenskaCupenGames = {
+        data,
+        timestamp: Date.now(),
+        hasLive
+    };
+}
+
 function getCachedDetails(uuid) {
     const cached = cache.details.get(uuid);
     if (isCacheValid(cached, CACHE_DURATION_DETAILS)) {
@@ -97,6 +125,18 @@ function getCachedAllsvenskanDetails(uuid) {
 
 function setCachedAllsvenskanDetails(uuid, data) {
     cache.allsvenskanDetails.set(uuid, { data, timestamp: Date.now() });
+}
+
+function getCachedSvenskaCupenDetails(uuid) {
+    const cached = cache.svenskaCupenDetails.get(uuid);
+    if (isCacheValid(cached, CACHE_DURATION_DETAILS)) {
+        return cached.data;
+    }
+    return null;
+}
+
+function setCachedSvenskaCupenDetails(uuid, data) {
+    cache.svenskaCupenDetails.set(uuid, { data, timestamp: Date.now() });
 }
 
 function getCachedVideos(uuid) {
@@ -143,6 +183,28 @@ function getCachedAllsvenskanStandings(season) {
 function setCachedAllsvenskanStandings(season, data) {
     const key = normalizeAllsvenskanStandingsKey(season);
     cache.allsvenskanStandings.set(key, { data, timestamp: Date.now() });
+}
+
+function normalizeSvenskaCupenStandingsKey(season) {
+    if (!season) {
+        return DEFAULT_SVENSKA_CUPEN_STANDINGS_KEY;
+    }
+    const normalized = String(season).trim();
+    return normalized || DEFAULT_SVENSKA_CUPEN_STANDINGS_KEY;
+}
+
+function getCachedSvenskaCupenStandings(season) {
+    const key = normalizeSvenskaCupenStandingsKey(season);
+    const cached = cache.svenskaCupenStandings.get(key);
+    if (isCacheValid(cached, CACHE_DURATION_STANDINGS)) {
+        return cached.data;
+    }
+    return null;
+}
+
+function setCachedSvenskaCupenStandings(season, data) {
+    const key = normalizeSvenskaCupenStandingsKey(season);
+    cache.svenskaCupenStandings.set(key, { data, timestamp: Date.now() });
 }
 
 // ============ OLYMPICS HOCKEY CACHE ============
@@ -199,6 +261,9 @@ function clearAllCaches() {
     cache.allsvenskanGames = { data: null, timestamp: 0, hasLive: false };
     cache.allsvenskanDetails.clear();
     cache.allsvenskanStandings.clear();
+    cache.svenskaCupenGames = { data: null, timestamp: 0, hasLive: false };
+    cache.svenskaCupenDetails.clear();
+    cache.svenskaCupenStandings.clear();
     cache.olympicsHockey = { data: null, timestamp: 0, hasLive: false };
 }
 
@@ -217,6 +282,17 @@ function getCacheStatus() {
     }, 0);
     const allsvenskanStandingsLatestAge = allsvenskanStandingsLatest
         ? Math.round((now - allsvenskanStandingsLatest) / 1000)
+        : null;
+    const svenskaCupenGamesAge = cache.svenskaCupenGames.timestamp
+        ? Math.round((now - cache.svenskaCupenGames.timestamp) / 1000)
+        : null;
+    const svenskaCupenStandingsEntries = Array.from(cache.svenskaCupenStandings.values());
+    const svenskaCupenStandingsLatest = svenskaCupenStandingsEntries.reduce((latest, entry) => {
+        if (!entry?.timestamp) return latest;
+        return entry.timestamp > latest ? entry.timestamp : latest;
+    }, 0);
+    const svenskaCupenStandingsLatestAge = svenskaCupenStandingsLatest
+        ? Math.round((now - svenskaCupenStandingsLatest) / 1000)
         : null;
 
     const olympicsHockeyAge = cache.olympicsHockey.timestamp
@@ -267,6 +343,24 @@ function getCacheStatus() {
                 entriesCount: cache.allsvenskanStandings.size
             }
         },
+        svenskaCupen: {
+            games: {
+                cached: !!cache.svenskaCupenGames.data,
+                ageSeconds: svenskaCupenGamesAge,
+                hasLiveGame: cache.svenskaCupenGames.hasLive,
+                cacheDuration: cache.svenskaCupenGames.hasLive ? '15s (live/starting soon mode)' : '60s (normal mode)'
+            },
+            details: {
+                entriesCount: cache.svenskaCupenDetails.size,
+                cacheDuration: '30s'
+            },
+            standings: {
+                cached: cache.svenskaCupenStandings.size > 0,
+                ageSeconds: svenskaCupenStandingsLatestAge,
+                cacheDuration: '5m',
+                entriesCount: cache.svenskaCupenStandings.size
+            }
+        },
         olympicsHockey: {
             games: {
                 cached: !!cache.olympicsHockey.data,
@@ -296,11 +390,18 @@ module.exports = {
     setCachedAllsvenskanDetails,
     getCachedAllsvenskanStandings,
     setCachedAllsvenskanStandings,
+    getCachedSvenskaCupenGames,
+    setCachedSvenskaCupenGames,
+    getCachedSvenskaCupenDetails,
+    setCachedSvenskaCupenDetails,
+    getCachedSvenskaCupenStandings,
+    setCachedSvenskaCupenStandings,
     clearAllCaches,
     getCacheStatus,
     getGamesCacheDuration,
     setGamesLiveFlag,
     setAllsvenskanLiveFlag,
+    setSvenskaCupenLiveFlag,
     getCachedOlympicsHockey,
     setCachedOlympicsHockey,
     setOlympicsHockeyLiveFlag

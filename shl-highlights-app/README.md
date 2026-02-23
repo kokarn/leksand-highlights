@@ -4,6 +4,10 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.8.2
+- Bump app version to align with server release 3.8.0
+- Add admin support for selecting Svenska Cupen in goal and pre-game notification tests
+
 ### 2.8.1
 - Remove Olympics hockey schedule and standings from the Hockey tab
 - Remove Olympics hockey events from the unified All view
