@@ -19,8 +19,7 @@ const cache = {
     allsvenskanStandings: new Map(),
     svenskaCupenGames: { data: null, timestamp: 0, hasLive: false },
     svenskaCupenDetails: new Map(),
-    svenskaCupenStandings: new Map(),
-    olympicsHockey: { data: null, timestamp: 0, hasLive: false }
+    svenskaCupenStandings: new Map()
 };
 
 // ============ CACHE HELPERS ============
@@ -207,31 +206,6 @@ function setCachedSvenskaCupenStandings(season, data) {
     cache.svenskaCupenStandings.set(key, { data, timestamp: Date.now() });
 }
 
-// ============ OLYMPICS HOCKEY CACHE ============
-function getOlympicsHockeyCacheDuration() {
-    return cache.olympicsHockey.hasLive ? CACHE_DURATION_LIVE : CACHE_DURATION_NORMAL;
-}
-
-function getCachedOlympicsHockey() {
-    const duration = getOlympicsHockeyCacheDuration();
-    if (isCacheValid(cache.olympicsHockey, duration)) {
-        return cache.olympicsHockey.data;
-    }
-    return null;
-}
-
-function setCachedOlympicsHockey(data, hasLive = false) {
-    cache.olympicsHockey = {
-        data,
-        timestamp: Date.now(),
-        hasLive
-    };
-}
-
-function setOlympicsHockeyLiveFlag(hasLive) {
-    cache.olympicsHockey.hasLive = Boolean(hasLive);
-}
-
 // ============ BIATHLON CACHE ============
 function getCachedBiathlon() {
     if (isCacheValid(cache.biathlon, CACHE_DURATION_BIATHLON)) {
@@ -264,7 +238,6 @@ function clearAllCaches() {
     cache.svenskaCupenGames = { data: null, timestamp: 0, hasLive: false };
     cache.svenskaCupenDetails.clear();
     cache.svenskaCupenStandings.clear();
-    cache.olympicsHockey = { data: null, timestamp: 0, hasLive: false };
 }
 
 function getCacheStatus() {
@@ -293,10 +266,6 @@ function getCacheStatus() {
     }, 0);
     const svenskaCupenStandingsLatestAge = svenskaCupenStandingsLatest
         ? Math.round((now - svenskaCupenStandingsLatest) / 1000)
-        : null;
-
-    const olympicsHockeyAge = cache.olympicsHockey.timestamp
-        ? Math.round((now - cache.olympicsHockey.timestamp) / 1000)
         : null;
 
     return {
@@ -360,14 +329,6 @@ function getCacheStatus() {
                 cacheDuration: '5m',
                 entriesCount: cache.svenskaCupenStandings.size
             }
-        },
-        olympicsHockey: {
-            games: {
-                cached: !!cache.olympicsHockey.data,
-                ageSeconds: olympicsHockeyAge,
-                hasLiveGame: cache.olympicsHockey.hasLive,
-                cacheDuration: cache.olympicsHockey.hasLive ? '15s (live/starting soon mode)' : '60s (normal mode)'
-            }
         }
     };
 }
@@ -401,8 +362,5 @@ module.exports = {
     getGamesCacheDuration,
     setGamesLiveFlag,
     setAllsvenskanLiveFlag,
-    setSvenskaCupenLiveFlag,
-    getCachedOlympicsHockey,
-    setCachedOlympicsHockey,
-    setOlympicsHockeyLiveFlag
+    setSvenskaCupenLiveFlag
 };

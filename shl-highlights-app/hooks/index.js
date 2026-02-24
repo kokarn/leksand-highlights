@@ -2,6 +2,7 @@
 export { usePreferences } from './usePreferences';
 export { useShlData } from './useShlData';
 export { useFootballData } from './useFootballData';
+export { useSvenskaCupenData } from './useSvenskaCupenData';
 export { useBiathlonData } from './useBiathlonData';
 export { useUnifiedData } from './useUnifiedData';
 export { useGameDetails } from './useGameDetails';

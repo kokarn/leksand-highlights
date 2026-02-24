@@ -583,9 +583,6 @@ async function sendGoalNotification(goal, options = {}) {
     } else if (normalizedSport === 'svenska-cupen') {
         sportEmoji = '🏆';
         sportLabel = 'Svenska Cupen';
-    } else if (normalizedSport === 'olympics-hockey') {
-        sportEmoji = '🏒';
-        sportLabel = 'Olympics Hockey';
     }
     const title = `${sportEmoji} ${sportLabel} Goal: ${scoringTeamName}`;
 

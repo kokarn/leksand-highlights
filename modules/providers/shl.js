@@ -123,8 +123,20 @@ class SHLProvider extends BaseProvider {
             return game;
         }
 
+        // If API only gives startDateTime (local Swedish time without timezone),
+        // set rawStartDateTime to ISO UTC so cache and live-window logic are correct
+        // on servers in any timezone.
+        let rawStartDateTime = game.rawStartDateTime;
+        if (!rawStartDateTime && game.startDateTime) {
+            const utcTime = this.parseStartTimeAsStockholm(game.startDateTime);
+            if (!Number.isNaN(utcTime)) {
+                rawStartDateTime = new Date(utcTime).toISOString();
+            }
+        }
+
         return {
             ...game,
+            ...(rawStartDateTime && { rawStartDateTime }),
             homeTeamInfo: this.normalizeTeamInfo(game.homeTeamInfo),
             awayTeamInfo: this.normalizeTeamInfo(game.awayTeamInfo),
             homeTeamResult: this.normalizeTeamResult(game.homeTeamResult),
@@ -234,6 +246,31 @@ class SHLProvider extends BaseProvider {
     }
 
     /**
+     * Parse a date string as Europe/Stockholm time when it has no timezone.
+     * SHL API often returns startDateTime as local (Swedish) time without Z,
+     * which would otherwise be parsed as server-local (e.g. UTC), making the
+     * live-window check wrong by an hour.
+     * @param {string} dateStr - ISO-like date string (e.g. "2026-02-23T19:00:00")
+     * @returns {number} UTC timestamp, or NaN if invalid
+     */
+    parseStartTimeAsStockholm(dateStr) {
+        if (!dateStr || typeof dateStr !== 'string') {
+            return Number.NaN;
+        }
+        const trimmed = dateStr.trim();
+        // Already has timezone (Z or +01:00 style): parse as-is
+        if (trimmed.endsWith('Z') || /[+\-]\d{2}:?\d{2}$/.test(trimmed) || /[+\-]\d{2}$/.test(trimmed)) {
+            return new Date(trimmed).getTime();
+        }
+        // No timezone: assume Europe/Stockholm (CET/CEST)
+        // Sweden: CET (UTC+1) roughly Oct–Mar, CEST (UTC+2) Apr–Sep
+        const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        const month = match ? parseInt(match[2], 10) : 0;
+        const offset = (month >= 4 && month <= 10) ? '+02:00' : '+01:00';
+        return new Date(trimmed + offset).getTime();
+    }
+
+    /**
      * Check if a game should potentially be live based on time
      * @param {Object} game - Game object
      * @returns {boolean}
@@ -243,14 +280,17 @@ class SHLProvider extends BaseProvider {
             return false;
         }
 
-        // Prefer rawStartDateTime (ISO 8601 with UTC timezone) over startDateTime
-        // (local time without timezone info, which gets parsed as server-local TZ)
+        // Prefer rawStartDateTime (ISO 8601 with timezone). If only startDateTime
+        // exists, interpret as Europe/Stockholm so the live window is correct
+        // on servers in UTC or other timezones.
         const dateStr = game.rawStartDateTime || game.startDateTime;
         if (!dateStr) {
             return false;
         }
 
-        const startTime = new Date(dateStr).getTime();
+        const startTime = game.rawStartDateTime
+            ? new Date(dateStr).getTime()
+            : this.parseStartTimeAsStockholm(dateStr);
         if (Number.isNaN(startTime)) {
             return false;
         }

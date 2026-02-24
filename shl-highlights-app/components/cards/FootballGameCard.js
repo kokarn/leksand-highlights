@@ -12,7 +12,7 @@ const getTeamLogo = (team) => {
     return team?.icon || null;
 };
 
-export const FootballGameCard = memo(function FootballGameCard({ game, onPress }) {
+export const FootballGameCard = memo(function FootballGameCard({ game, onPress, leagueLabel = 'Allsvenskan' }) {
     const { colors, isDark } = useTheme();
     
     const homeTeam = game?.homeTeamInfo ?? {};
@@ -44,7 +44,7 @@ export const FootballGameCard = memo(function FootballGameCard({ game, onPress }
                 style={[styles.gameCard, { borderColor: colors.cardBorder }, isLive && styles.gameCardLive]}
             >
                 <View style={styles.cardHeader}>
-                    <Text style={[styles.leagueText, { color: colors.textMuted }]}>Allsvenskan</Text>
+                    <Text style={[styles.leagueText, { color: colors.textMuted }]}>{leagueLabel}</Text>
                     <View style={styles.headerRight}>
                         <Text style={[styles.gameDate, { color: colors.textSecondary }, isLive && styles.liveTextAccented]}>
                             {isLive ? 'LIVE' : formattedDate}

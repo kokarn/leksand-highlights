@@ -138,22 +138,6 @@ function extractSvenskaCupenGameInfo(game) {
 }
 
 /**
- * Extract game info for notification from an Olympics hockey game
- */
-function extractOlympicsHockeyGameInfo(game) {
-    return {
-        sport: 'olympics-hockey',
-        gameId: game.uuid,
-        homeTeamName: game.homeTeamInfo?.names?.long || game.homeTeamInfo?.names?.short || 'Home',
-        awayTeamName: game.awayTeamInfo?.names?.long || game.awayTeamInfo?.names?.short || 'Away',
-        homeTeamCode: game.homeTeamInfo?.code || '',
-        awayTeamCode: game.awayTeamInfo?.code || '',
-        startDateTime: game.rawStartDateTime || game.startDateTime,
-        venue: game.venueInfo?.name || null
-    };
-}
-
-/**
  * Extract game info for notification from a Biathlon race
  */
 function extractBiathlonGameInfo(race) {
@@ -379,31 +363,6 @@ async function runDailySchedule() {
         addEntry('pre-game-watcher', 'error', `Error fetching Svenska Cupen games: ${error.message}`);
     }
 
-    // Fetch and schedule Olympics hockey games
-    try {
-        const olympicsProvider = getProvider('olympics-hockey');
-        const olympicsGames = await olympicsProvider.fetchAllGames();
-
-        let olympicsScheduled = 0;
-        for (const game of olympicsGames) {
-            if (game.state === 'post-game') {
-                continue;
-            }
-            const startTime = new Date(game.rawStartDateTime || game.startDateTime);
-            if (startTime >= now && startTime <= next24Hours) {
-                const gameInfo = extractOlympicsHockeyGameInfo(game);
-                if (scheduleNotification(gameInfo)) {
-                    olympicsScheduled++;
-                }
-            }
-        }
-        console.log(`[PreGameWatcher] Scheduled ${olympicsScheduled} Olympics hockey notifications`);
-        totalScheduled += olympicsScheduled;
-    } catch (error) {
-        console.error('[PreGameWatcher] Error fetching Olympics hockey games:', error.message);
-        addEntry('pre-game-watcher', 'error', `Error fetching Olympics hockey games: ${error.message}`);
-    }
-
     // Fetch and schedule Biathlon races
     try {
         const biathlonProvider = getProvider('biathlon');
@@ -457,13 +416,11 @@ async function runDailySchedule() {
             const notifyTimeStr = notifyTime.toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm', hour: '2-digit', minute: '2-digit' });
             const sportEmoji = notification.sport === 'shl'
                 ? '🏒'
-                : notification.sport === 'olympics-hockey'
-                    ? '🥇'
-                    : notification.sport === 'allsvenskan'
-                        ? '⚽'
-                        : notification.sport === 'svenska-cupen'
-                            ? '🏆'
-                            : '🎯';
+                : notification.sport === 'allsvenskan'
+                    ? '⚽'
+                    : notification.sport === 'svenska-cupen'
+                        ? '🏆'
+                        : '🎯';
             
             console.log(`[PreGameWatcher]   ${sportEmoji} ${notification.name}`);
             console.log(`[PreGameWatcher]      Game: ${gameTimeStr} | Notify: ${notifyTimeStr} | ${notification.venue || 'TBA'}`);
@@ -545,7 +502,7 @@ function startLoop() {
     loadSeenNotifications();
     
     console.log('[PreGameWatcher] Starting pre-game notification scheduler...');
-    console.log(`[PreGameWatcher] Sports: Hockey (SHL), Olympics Hockey, Football (Allsvenskan), Svenska Cupen, Biathlon`);
+    console.log(`[PreGameWatcher] Sports: Hockey (SHL), Football (Allsvenskan), Svenska Cupen, Biathlon`);
     console.log(`[PreGameWatcher] Reminder time: ${PRE_GAME_REMINDER_MINUTES} minutes before start`);
     console.log(`[PreGameWatcher] Daily schedule time: ${DAILY_SCHEDULE_HOUR}:00 (Stockholm time)`);
 

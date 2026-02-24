@@ -240,6 +240,52 @@ export async function fetchFootballStandings(options = {}) {
     }
 }
 
+// ============ SVENSKA CUPEN API ============
+
+/**
+ * Fetch Svenska Cupen fixtures with optional filters
+ * @param {Object} filters - Optional filters (team, state, upcoming, limit, season)
+ * @returns {Promise<Array>} Array of match objects
+ */
+export async function fetchSvenskaCupenGames(filters = {}) {
+    try {
+        const params = new URLSearchParams();
+        if (filters.team) params.append('team', filters.team);
+        if (filters.state) params.append('state', filters.state);
+        if (filters.upcoming) params.append('upcoming', 'true');
+        if (filters.limit) params.append('limit', filters.limit);
+        if (filters.season) params.append('season', filters.season);
+
+        const url = `${API_BASE_URL}/api/svenska-cupen/games${params.toString() ? '?' + params.toString() : ''}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching Svenska Cupen games:', error.message);
+        return [];
+    }
+}
+
+/**
+ * Fetch details for a specific Svenska Cupen match
+ * @param {string} gameId - Match identifier
+ * @returns {Promise<Object|null>} Match details or null
+ */
+export async function fetchSvenskaCupenGameDetails(gameId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/svenska-cupen/game/${gameId}/details`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching Svenska Cupen match details for ${gameId}:`, error.message);
+        return null;
+    }
+}
+
 // ============ BIATHLON API ============
 
 /**

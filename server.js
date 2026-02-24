@@ -32,10 +32,7 @@ const {
     getCacheStatus,
     setGamesLiveFlag,
     setAllsvenskanLiveFlag,
-    setSvenskaCupenLiveFlag,
-    getCachedOlympicsHockey,
-    setCachedOlympicsHockey,
-    setOlympicsHockeyLiveFlag
+    setSvenskaCupenLiveFlag
 } = require('./modules/cache');
 const { getProvider, getAvailableSports } = require('./modules/providers');
 const { formatSwedishTimestamp } = require('./modules/utils');
@@ -210,8 +207,7 @@ app.get('/api/sports', (req, res) => {
         shl: 'hockey-puck',
         allsvenskan: 'soccer-ball',
         'svenska-cupen': 'trophy',
-        biathlon: 'target',
-        'olympics-hockey': 'medal'
+        biathlon: 'target'
     };
 
     const sports = getAvailableSports().map(sport => {
@@ -803,94 +799,6 @@ app.get('/api/svenska-cupen/standings', async (req, res) => {
     }
 });
 
-// ============ OLYMPICS HOCKEY ENDPOINTS ============
-
-/**
- * GET /api/olympics/hockey/games
- * Get Olympics ice hockey games with live scores
- */
-app.get('/api/olympics/hockey/games', async (req, res) => {
-    try {
-        let games = getCachedOlympicsHockey();
-        let usedCache = true;
-
-        if (games) {
-            console.log('[Cache HIT] /api/olympics/hockey/games');
-        } else {
-            usedCache = false;
-            console.log('[Cache MISS] /api/olympics/hockey/games - fetching fresh data...');
-            const provider = getProvider('olympics-hockey');
-            games = await provider.fetchAllGames();
-        }
-
-        if (!Array.isArray(games)) {
-            games = [];
-        }
-
-        const getTimeValue = (value) => {
-            const time = new Date(value).getTime();
-            return Number.isNaN(time) ? 0 : time;
-        };
-        games = games.sort((a, b) => getTimeValue(b.startDateTime) - getTimeValue(a.startDateTime));
-
-        const now = new Date();
-        const shouldUseFastCache = games.some(game => game.state === 'live' || isGameNearStart(game, now));
-
-        if (!usedCache) {
-            setCachedOlympicsHockey(games, shouldUseFastCache);
-        } else {
-            setOlympicsHockeyLiveFlag(shouldUseFastCache);
-        }
-
-        res.json(games);
-    } catch (error) {
-        console.error('Error fetching Olympics hockey games:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-/**
- * POST /api/olympics/hockey/relay
- * Accept raw Olympics schedule data relayed from mobile clients.
- * Mobile devices can reach the Olympics API directly (no CDN block),
- * so they fetch and POST the raw units here for the server to use.
- */
-app.post('/api/olympics/hockey/relay', async (req, res) => {
-    const units = req.body?.units;
-    if (!Array.isArray(units)) {
-        return res.status(400).json({ error: 'units array required' });
-    }
-
-    try {
-        const provider = getProvider('olympics-hockey');
-        provider.setRelayedData(units);
-        // Clear cached games so next request uses fresh relayed data
-        setCachedOlympicsHockey(null);
-        res.json({ success: true, unitsReceived: units.length });
-    } catch (error) {
-        console.error('[Olympics Hockey Relay] Error:', error.message);
-        res.status(400).json({ error: error.message });
-    }
-});
-
-/**
- * GET /api/olympics/hockey/standings
- * Get Olympics hockey group standings computed from completed games
- * Query params:
- *   - gender: 'M' or 'W' (optional, returns all groups if not specified)
- */
-app.get('/api/olympics/hockey/standings', async (req, res) => {
-    try {
-        const gender = req.query.gender || null;
-        const provider = getProvider('olympics-hockey');
-        const standings = await provider.fetchStandings({ gender });
-        res.json(standings);
-    } catch (error) {
-        console.error('Error fetching Olympics hockey standings:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
 // ============ SHL/HOCKEY ENDPOINTS ============
 
 /**
@@ -1363,7 +1271,7 @@ app.post('/api/notifications/goal-test', async (req, res) => {
             });
         }
 
-        const validSports = ['shl', 'allsvenskan', 'svenska-cupen', 'olympics-hockey'];
+        const validSports = ['shl', 'allsvenskan', 'svenska-cupen'];
         const sport = validSports.includes(payload.sport) ? payload.sport : 'shl';
         const scoringIsHome = parseOptionalBoolean(payload.scoringIsHome, true);
         const homeTeamCode = normalizeTeamCode(payload.homeTeamCode)

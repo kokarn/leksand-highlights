@@ -96,80 +96,6 @@ function extractGoalDetails(goal, gameInfo, sport) {
     };
 }
 
-// Track previous scores for Olympics hockey (no play-by-play available)
-const previousOlympicsScores = new Map(); // gameId -> { home, away }
-
-/**
- * Check an Olympics hockey game for score changes
- * Since there's no play-by-play API, we detect goals by comparing scores between polls.
- * @param {Object} game - Game object from Olympics provider
- * @returns {Array} Array of new goal notifications
- */
-function checkOlympicsGameForScoreChanges(game) {
-    const gameId = game.uuid;
-    const homeScore = game.homeTeamInfo?.score ?? 0;
-    const awayScore = game.awayTeamInfo?.score ?? 0;
-    const newGoals = [];
-
-    if (!previousOlympicsScores.has(gameId)) {
-        // First check - store current scores without triggering notifications
-        previousOlympicsScores.set(gameId, { home: homeScore, away: awayScore });
-        console.log(`[GoalWatcher] Olympics: Initialized scores for ${gameId}: ${homeScore}-${awayScore}`);
-        return [];
-    }
-
-    const prev = previousOlympicsScores.get(gameId);
-
-    // Detect home team score increase
-    if (homeScore > prev.home) {
-        const scoringTeam = game.homeTeamInfo;
-        const opposingTeam = game.awayTeamInfo;
-        newGoals.push({
-            sport: 'olympics-hockey',
-            gameId,
-            scorerName: 'Goal',
-            scoringTeamCode: scoringTeam?.code || '',
-            scoringTeamName: scoringTeam?.names?.long || scoringTeam?.names?.short || '',
-            opposingTeamCode: opposingTeam?.code || '',
-            opposingTeamName: opposingTeam?.names?.long || opposingTeam?.names?.short || '',
-            homeTeamCode: game.homeTeamInfo?.code,
-            awayTeamCode: game.awayTeamInfo?.code,
-            homeScore,
-            awayScore,
-            time: '',
-            period: '',
-            isHomeTeam: true
-        });
-    }
-
-    // Detect away team score increase
-    if (awayScore > prev.away) {
-        const scoringTeam = game.awayTeamInfo;
-        const opposingTeam = game.homeTeamInfo;
-        newGoals.push({
-            sport: 'olympics-hockey',
-            gameId,
-            scorerName: 'Goal',
-            scoringTeamCode: scoringTeam?.code || '',
-            scoringTeamName: scoringTeam?.names?.long || scoringTeam?.names?.short || '',
-            opposingTeamCode: opposingTeam?.code || '',
-            opposingTeamName: opposingTeam?.names?.long || opposingTeam?.names?.short || '',
-            homeTeamCode: game.homeTeamInfo?.code,
-            awayTeamCode: game.awayTeamInfo?.code,
-            homeScore,
-            awayScore,
-            time: '',
-            period: '',
-            isHomeTeam: false
-        });
-    }
-
-    // Update stored scores
-    previousOlympicsScores.set(gameId, { home: homeScore, away: awayScore });
-
-    return newGoals;
-}
-
 /**
  * Check a single game for new goals
  * @param {Object} game - Game object from provider
@@ -267,22 +193,6 @@ async function runCheck() {
     } catch (error) {
         console.error('[GoalWatcher] Error checking SHL games:', error.message);
         addEntry('goal-watcher', 'error', `Error checking SHL games: ${error.message}`);
-    }
-
-    // Check Olympics hockey games (score-change detection, no play-by-play)
-    try {
-        const olympicsProvider = getProvider('olympics-hockey');
-        const olympicsGames = await olympicsProvider.fetchActiveGames();
-        const liveOlympicsGames = olympicsGames.filter(g => g.state === 'live');
-
-        for (const game of liveOlympicsGames) {
-            results.gamesChecked++;
-            const newGoals = checkOlympicsGameForScoreChanges(game);
-            results.newGoals.push(...newGoals);
-        }
-    } catch (error) {
-        console.error('[GoalWatcher] Error checking Olympics hockey games:', error.message);
-        addEntry('goal-watcher', 'error', `Error checking Olympics hockey games: ${error.message}`);
     }
 
     // Check Allsvenskan games

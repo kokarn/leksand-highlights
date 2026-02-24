@@ -53,6 +53,7 @@ import {
     usePreferences,
     useShlData,
     useFootballData,
+    useSvenskaCupenData,
     useBiathlonData,
     useUnifiedData,
     usePushNotifications
@@ -105,10 +106,67 @@ export default function App() {
     // Eager load all sports data on app start for instant scroll
     const shl = useShlData(activeSport, selectedTeams, { eagerLoad: true });
     const football = useFootballData(activeSport, selectedFootballTeams, { eagerLoad: true });
+    const svenskaCupen = useSvenskaCupenData(activeSport, selectedFootballTeams, { eagerLoad: true });
     const biathlon = useBiathlonData(activeSport, selectedNations, selectedGenders, { eagerLoad: true });
 
+    // Combined football games (Allsvenskan + Svenska Cupen) for single list
+    const combinedFootballGames = useMemo(() => {
+        const allsvenskan = (football.games || []).map(g => ({ ...g, sport: g.sport || 'allsvenskan' }));
+        const cupen = (svenskaCupen.games || []).map(g => ({ ...g, sport: g.sport || 'svenska-cupen' }));
+        return [...allsvenskan, ...cupen].sort((a, b) => {
+            const timeA = new Date(a.startDateTime).getTime();
+            const timeB = new Date(b.startDateTime).getTime();
+            return timeA - timeB;
+        });
+    }, [football.games, svenskaCupen.games]);
+
+    const combinedFootballTargetGameIndex = useMemo(() => {
+        if (!combinedFootballGames.length) {
+            return 0;
+        }
+        const liveIndex = combinedFootballGames.findIndex(g => g.state === 'live');
+        if (liveIndex !== -1) {
+            return liveIndex;
+        }
+        const upcomingIndex = combinedFootballGames.findIndex(g => g.state !== 'post-game');
+        if (upcomingIndex !== -1) {
+            return upcomingIndex;
+        }
+        return combinedFootballGames.length - 1;
+    }, [combinedFootballGames]);
+
+    const hasFootballCombinedInitialScrolled = useRef(false);
+
+    // Initial scroll to live/upcoming in combined football list
+    useEffect(() => {
+        if (activeSport !== 'football' || football.viewMode !== 'schedule') {
+            return;
+        }
+        if (hasFootballCombinedInitialScrolled.current || combinedFootballTargetGameIndex <= 0 || !combinedFootballGames.length) {
+            return;
+        }
+        const timeoutId = setTimeout(() => {
+            if (football.listRef.current && !hasFootballCombinedInitialScrolled.current) {
+                hasFootballCombinedInitialScrolled.current = true;
+                football.listRef.current.scrollToOffset({
+                    offset: combinedFootballTargetGameIndex * FOOTBALL_CARD_HEIGHT,
+                    animated: false
+                });
+            }
+        }, 50);
+        return () => clearTimeout(timeoutId);
+    }, [activeSport, football.viewMode, combinedFootballTargetGameIndex, combinedFootballGames.length]);
+
+    // Merged football teams (Allsvenskan + Svenska Cupen) for filter in Settings/Onboarding
+    const combinedFootballTeams = useMemo(() => {
+        const byKey = new Map();
+        (football.teams || []).forEach(t => byKey.set(t.key, t));
+        (svenskaCupen.teams || []).forEach(t => byKey.set(t.key, t));
+        return Array.from(byKey.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }, [football.teams, svenskaCupen.teams]);
+
     // Unified data combining all sports
-    const unified = useUnifiedData(shl, football, biathlon);
+    const unified = useUnifiedData(shl, football, svenskaCupen, biathlon);
 
     // Push notifications
     const {
@@ -283,6 +341,14 @@ export default function App() {
                     handleSportChange('football');
                     football.handleGamePress({ uuid: gameId });
                 }
+            } else if (normalizedSport === 'svenska-cupen') {
+                handleSportChange('football');
+                const game = svenskaCupen.games.find(g => g.uuid === gameId);
+                if (game) {
+                    svenskaCupen.handleGamePress(game);
+                } else {
+                    svenskaCupen.handleGamePress({ uuid: gameId });
+                }
             } else {
                 console.warn('[DeepLink] Unsupported sport in deep link:', normalizedSport);
             }
@@ -350,8 +416,10 @@ export default function App() {
     }, [
         shl.games,
         football.games,
+        svenskaCupen.games,
         shl.handleGamePress,
         football.handleGamePress,
+        svenskaCupen.handleGamePress,
         handleSportChange,
         deepLinkParams,
         router
@@ -364,11 +432,16 @@ export default function App() {
         } else if (activeSport === 'shl') {
             shl.onRefresh();
         } else if (activeSport === 'football') {
-            football.onRefresh();
+            if (football.viewMode === 'standings') {
+                football.onRefresh();
+            } else {
+                football.onRefresh();
+                svenskaCupen.onRefresh();
+            }
         } else if (activeSport === 'biathlon') {
             biathlon.onRefresh();
         }
-    }, [activeSport, shl, football, biathlon, unified]);
+    }, [activeSport, shl, football, svenskaCupen, biathlon, unified]);
 
     // getItemLayout functions for consistent scroll behavior
     const getShlItemLayout = useCallback((data, index) => ({
@@ -415,7 +488,7 @@ export default function App() {
         : activeSport === 'shl'
             ? shl.refreshing
             : activeSport === 'football'
-                ? football.refreshing
+                ? (football.viewMode === 'standings' ? football.refreshing : (football.refreshing || svenskaCupen.refreshing))
                 : biathlon.refreshing;
 
 
@@ -511,13 +584,19 @@ export default function App() {
         );
     };
 
-    // Render Football schedule - start at the most recent/current match
+    // Render Football schedule (Allsvenskan + Svenska Cupen in one list)
     const renderFootballSchedule = () => (
         <FlatList
             ref={football.listRef}
-            data={football.games}
-            renderItem={({ item }) => <FootballGameCard game={item} onPress={() => football.handleGamePress(item)} />}
-            keyExtractor={item => item.uuid}
+            data={combinedFootballGames}
+            renderItem={({ item }) => (
+                <FootballGameCard
+                    game={item}
+                    onPress={() => (item.sport === 'svenska-cupen' ? svenskaCupen.handleGamePress(item) : football.handleGamePress(item))}
+                    leagueLabel={item.sport === 'svenska-cupen' ? 'Svenska Cupen' : 'Allsvenskan'}
+                />
+            )}
+            keyExtractor={item => `${item.sport}-${item.uuid}`}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
             getItemLayout={getFootballItemLayout}
@@ -529,7 +608,7 @@ export default function App() {
             windowSize={11}
             ListEmptyComponent={<EmptyState message="No matches found." />}
             ListHeaderComponent={
-                <ScheduleHeader icon="football-outline" title="Allsvenskan" count={football.games.length} countLabel="matches" />
+                <ScheduleHeader icon="football-outline" title="Football" count={combinedFootballGames.length} countLabel="matches" />
             }
         />
     );
@@ -836,25 +915,27 @@ export default function App() {
                     </View>
                 )
             ) : activeSport === 'football' ? (
-                football.viewMode === 'standings' ? (
-                    renderFootballStandings()
-                ) : (
-                    <View style={styles.scheduleContainer}>
-                        <View style={[styles.stickyToggle, { backgroundColor: colors.background }]}>
-                            <ViewToggle mode={football.viewMode} onChange={football.handleViewChange} />
-                            <LinearGradient
-                                colors={[colors.background, 'transparent']}
-                                style={styles.toggleGradient}
-                                pointerEvents="none"
-                            />
-                        </View>
-                        {football.loading ? (
-                            <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
-                        ) : (
-                            renderFootballSchedule()
-                        )}
-                    </View>
-                )
+                <View style={styles.scheduleContainer}>
+                    {football.viewMode === 'standings' ? (
+                        renderFootballStandings()
+                    ) : (
+                        <>
+                            <View style={[styles.stickyToggle, { backgroundColor: colors.background }]}>
+                                <ViewToggle mode={football.viewMode} onChange={football.handleViewChange} />
+                                <LinearGradient
+                                    colors={[colors.background, 'transparent']}
+                                    style={styles.toggleGradient}
+                                    pointerEvents="none"
+                                />
+                            </View>
+                            {(football.loading || svenskaCupen.loading) ? (
+                                <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
+                            ) : (
+                                renderFootballSchedule()
+                            )}
+                        </>
+                    )}
+                </View>
             ) : (
                 biathlon.viewMode === 'standings' ? (
                     renderBiathlonStandings()
@@ -902,6 +983,17 @@ export default function App() {
                 refreshing={football.refreshingModal}
             />
 
+            {/* Svenska Cupen Match Modal */}
+            <FootballMatchModal
+                match={svenskaCupen.selectedGame}
+                details={svenskaCupen.gameDetails}
+                visible={!!svenskaCupen.selectedGame}
+                loading={svenskaCupen.loadingDetails}
+                onClose={svenskaCupen.closeModal}
+                onRefresh={svenskaCupen.refreshModalDetails}
+                refreshing={svenskaCupen.refreshingModal}
+            />
+
             {/* Biathlon Race Modal */}
             <RaceModal
                 race={biathlon.selectedRace}
@@ -931,7 +1023,7 @@ export default function App() {
                     clearTeamFilter();
                     setTeamTags([...selectedFootballTeams]);
                 }}
-                footballTeams={football.teams}
+                footballTeams={combinedFootballTeams}
                 selectedFootballTeams={selectedFootballTeams}
                 onToggleFootballTeam={(teamKey) => {
                     toggleFootballTeamFilter(teamKey);
@@ -992,7 +1084,7 @@ export default function App() {
                         : [...selectedTeams, teamCode];
                     setTeamTags([...newShlTeams, ...selectedFootballTeams]);
                 }}
-                footballTeams={football.teams}
+                footballTeams={combinedFootballTeams}
                 selectedFootballTeams={selectedFootballTeams}
                 onToggleFootballTeam={(teamKey) => {
                     toggleFootballTeamFilter(teamKey);
@@ -1048,6 +1140,35 @@ const styles = StyleSheet.create({
         backgroundColor: '#000',
         position: 'relative',
         zIndex: 10
+    },
+    footballLeaguePicker: {
+        flexDirection: 'row',
+        gap: 8,
+        paddingHorizontal: 16,
+        paddingTop: 8,
+        paddingBottom: 8,
+        zIndex: 10
+    },
+    footballLeagueRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 16
+    },
+    leagueChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: 'transparent'
+    },
+    leagueChipText: {
+        fontSize: 14,
+        fontWeight: '600'
     },
     toggleGradient: {
         position: 'absolute',
