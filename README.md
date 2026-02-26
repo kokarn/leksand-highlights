@@ -54,7 +54,7 @@ A multi-sport API server that provides real-time game data, notifications, and h
 
 ## 🛠 Configuration
 
-The server uses native `fetch` and requires Node.js 18+.
+The server uses native `fetch` and requires Node.js 20+ (tested with Node 24 in Docker).
 
 ### Environment Variables
 
