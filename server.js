@@ -189,6 +189,18 @@ function buildNotificationTarget(payload) {
 
 // ============ API ENDPOINTS ============
 
+// Health check endpoint for load balancers / uptime monitors
+app.get('/healthz', (req, res) => {
+    const fcmStats = pushNotifications.getStats();
+
+    res.json({
+        status: 'ok',
+        timestamp: formatSwedishTimestamp(),
+        nodeVersion: process.version,
+        fcmConfigured: Boolean(fcmStats?.configured)
+    });
+});
+
 // Admin routes - serve the same HTML for all paths (client-side routing)
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'static', 'admin.html'));
