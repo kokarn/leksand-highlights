@@ -1,19 +1,20 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { View, Text, Modal, ScrollView, ActivityIndicator, StyleSheet, Animated, Dimensions, Platform, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const TABS = ['summary', 'events'];
 const SWIPE_THRESHOLD = 50;
 const SWIPE_VELOCITY_THRESHOLD = 500;
 import { extractScore, formatSwedishDate } from '../../utils';
 import { useTheme } from '../../contexts/ThemeContext';
 import { TabButton } from '../TabButton';
 import { StatBar } from '../StatBar';
+import { StandingsTable } from '../StandingsTable';
 import { FootballGoalItem, CardItem, SubstitutionItem, HalfMarker } from '../events';
 import { GameModalHeader } from './GameModalHeader';
+import { fetchFootballStandings } from '../../api/shl';
 
 const getTeamName = (team, fallback) => {
     return team?.names?.short || team?.names?.long || team?.code || fallback;
@@ -27,11 +28,41 @@ const getTeamLogo = (team) => {
 const HOME_COLOR = '#4CAF50';
 const AWAY_COLOR = '#2196F3';
 
-export const FootballMatchModal = ({ match, details, visible, onClose, loading, onRefresh, refreshing = false }) => {
+const TABS_BASE = ['summary', 'events'];
+const TABS_WITH_STANDINGS = ['summary', 'events', 'standings'];
+
+export const FootballMatchModal = ({ match, details, visible, onClose, loading, onRefresh, refreshing = false, selectedTeams = [], showStandingsTab = false }) => {
     const { colors } = useTheme();
     const [activeTab, setActiveTab] = useState('summary');
+    const [standingsData, setStandingsData] = useState(null);
+    const [loadingStandings, setLoadingStandings] = useState(false);
+    const [refreshingStandings, setRefreshingStandings] = useState(false);
     const translateX = useRef(new Animated.Value(0)).current;
     const themedStyles = createStyles(colors);
+    const TABS = showStandingsTab ? TABS_WITH_STANDINGS : TABS_BASE;
+
+    const loadStandings = useCallback(async (silent = false) => {
+        if (!silent) {
+            setLoadingStandings(true);
+        } else {
+            setRefreshingStandings(true);
+        }
+        try {
+            const data = await fetchFootballStandings();
+            setStandingsData(data);
+        } catch (e) {
+            console.error('Failed to load football standings', e);
+        } finally {
+            setLoadingStandings(false);
+            setRefreshingStandings(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (showStandingsTab && visible && activeTab === 'standings' && !standingsData) {
+            loadStandings();
+        }
+    }, [showStandingsTab, visible, activeTab, standingsData, loadStandings]);
 
     const handleGestureEvent = Animated.event(
         [{ nativeEvent: { translationX: translateX } }],
@@ -402,6 +433,50 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
         );
     };
 
+    // Standings Tab Content (Allsvenskan table)
+    const renderStandingsTab = () => {
+        const lastUpdatedLabel = standingsData?.lastUpdated
+            ? formatSwedishDate(standingsData.lastUpdated, 'd MMM HH:mm')
+            : null;
+        const standingsRows = Array.isArray(standingsData?.standings) ? standingsData.standings : [];
+        return (
+            <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={themedStyles.tabContent}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshingStandings}
+                        onRefresh={() => loadStandings(true)}
+                        tintColor={colors.text}
+                    />
+                }
+            >
+                <View style={[themedStyles.sectionCard, { marginBottom: 16 }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <Ionicons name="football-outline" size={20} color={colors.accent} />
+                        <Text style={[themedStyles.sectionTitle, { marginBottom: 0 }]}>Allsvenskan Table</Text>
+                        <Text style={{ color: colors.textMuted, fontSize: 13, fontWeight: '600' }}>{standingsRows.length} teams</Text>
+                    </View>
+                    {lastUpdatedLabel && (
+                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 12 }}>Updated {lastUpdatedLabel}</Text>
+                    )}
+                </View>
+                {loadingStandings ? (
+                    <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 24 }} />
+                ) : (
+                    <StandingsTable
+                        standings={standingsRows}
+                        selectedTeams={selectedTeams}
+                        sport="football"
+                        getTeamKey={(team) => team?.key || team?.code || team?.teamCode}
+                        getTeamLogo={(team) => team?.teamIcon || team?.icon || null}
+                    />
+                )}
+            </ScrollView>
+        );
+    };
+
     // Events Tab Content
     const renderEventsTab = () => {
         return (
@@ -468,6 +543,14 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
                         isActive={activeTab === 'events'}
                         onPress={() => setActiveTab('events')}
                     />
+                    {showStandingsTab && (
+                        <TabButton
+                            title="Standings"
+                            icon="podium-outline"
+                            isActive={activeTab === 'standings'}
+                            onPress={() => setActiveTab('standings')}
+                        />
+                    )}
                 </View>
 
                 {/* Tab Content with gesture support */}
@@ -488,6 +571,7 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
                         >
                             {activeTab === 'summary' && renderSummaryTab()}
                             {activeTab === 'events' && renderEventsTab()}
+                            {showStandingsTab && activeTab === 'standings' && renderStandingsTab()}
                         </Animated.View>
                     </PanGestureHandler>
                 )}

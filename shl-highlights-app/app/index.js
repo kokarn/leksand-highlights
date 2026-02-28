@@ -62,9 +62,7 @@ import {
 // Components
 import {
     SportPicker,
-    StandingsTable,
     ViewToggle,
-    SeasonPicker,
     ScheduleHeader,
     SectionHeader,
     EmptyState
@@ -432,12 +430,8 @@ export default function App() {
         } else if (activeSport === 'shl') {
             shl.onRefresh();
         } else if (activeSport === 'football') {
-            if (football.viewMode === 'standings') {
-                football.onRefresh();
-            } else {
-                football.onRefresh();
-                svenskaCupen.onRefresh();
-            }
+            football.onRefresh();
+            svenskaCupen.onRefresh();
         } else if (activeSport === 'biathlon') {
             biathlon.onRefresh();
         }
@@ -488,7 +482,7 @@ export default function App() {
         : activeSport === 'shl'
             ? shl.refreshing
             : activeSport === 'football'
-                ? (football.viewMode === 'standings' ? football.refreshing : (football.refreshing || svenskaCupen.refreshing))
+                ? (football.refreshing || svenskaCupen.refreshing)
                 : biathlon.refreshing;
 
 
@@ -526,64 +520,6 @@ export default function App() {
         />
     );
 
-    // Render SHL standings
-    const renderShlStandings = () => {
-        const seasonLabel = shl.standings?.season ? String(shl.standings.season) : null;
-        const seasonOptions = Array.isArray(shl.standings?.availableSeasons)
-            ? shl.standings.availableSeasons.map(value => String(value))
-            : (seasonLabel ? [seasonLabel] : []);
-        const lastUpdatedLabel = shl.standings?.lastUpdated
-            ? formatSwedishDate(shl.standings.lastUpdated, 'd MMM HH:mm')
-            : null;
-        const standingsRows = Array.isArray(shl.standings?.standings) ? shl.standings.standings : [];
-
-        return (
-            <View style={styles.scheduleContainer}>
-                <View style={[styles.stickyToggle, { backgroundColor: colors.background }]}>
-                    <ViewToggle mode={shl.viewMode} onChange={shl.handleViewChange} />
-                    <LinearGradient
-                        colors={[colors.background, 'transparent']}
-                        style={styles.toggleGradient}
-                        pointerEvents="none"
-                    />
-                </View>
-                <ScrollView
-                    contentContainerStyle={styles.listContent}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
-                >
-                    <View style={[styles.standingsHeader, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                        <View style={styles.standingsHeaderRow}>
-                            <Ionicons name="stats-chart" size={20} color={colors.accent} />
-                            <Text style={[styles.standingsTitle, { color: colors.text }]}>SHL Table</Text>
-                            <Text style={[styles.standingsCount, { color: colors.textMuted }]}>{standingsRows.length} teams</Text>
-                        </View>
-                        <SeasonPicker seasons={seasonOptions} selectedSeason={seasonLabel} onSelect={null} />
-                        <View style={styles.standingsMetaRow}>
-                            {lastUpdatedLabel && (
-                                <Text style={[styles.standingsMetaText, { color: colors.textSecondary }]}>Updated {lastUpdatedLabel}</Text>
-                            )}
-                        </View>
-                    </View>
-
-                    {shl.loadingStandings ? (
-                        <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 24 }} />
-                    ) : (
-                        <StandingsTable
-                            standings={standingsRows}
-                            selectedTeams={selectedTeams}
-                            sport="shl"
-                            getTeamKey={(team) => team.teamCode || team.teamShortName}
-                            getTeamLogo={(team) => {
-                                const teamCode = team.teamCode || team.teamShortName;
-                                return teamCode ? getTeamLogoUrl(teamCode) : team.teamIcon || null;
-                            }}
-                        />
-                    )}
-                </ScrollView>
-            </View>
-        );
-    };
-
     // Render Football schedule (Allsvenskan + Svenska Cupen in one list)
     const renderFootballSchedule = () => (
         <FlatList
@@ -612,63 +548,6 @@ export default function App() {
             }
         />
     );
-
-    // Render Football standings
-    const renderFootballStandings = () => {
-        const seasonLabel = football.activeSeason ? String(football.activeSeason) : null;
-        const lastUpdatedLabel = football.standings?.lastUpdated
-            ? formatSwedishDate(football.standings.lastUpdated, 'd MMM HH:mm')
-            : null;
-        const standingsRows = Array.isArray(football.standings?.standings) ? football.standings.standings : [];
-
-        return (
-            <View style={styles.scheduleContainer}>
-                <View style={[styles.stickyToggle, { backgroundColor: colors.background }]}>
-                    <ViewToggle mode={football.viewMode} onChange={football.handleViewChange} />
-                    <LinearGradient
-                        colors={[colors.background, 'transparent']}
-                        style={styles.toggleGradient}
-                        pointerEvents="none"
-                    />
-                </View>
-                <ScrollView
-                    contentContainerStyle={styles.listContent}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
-                >
-                    <View style={[styles.standingsHeader, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                        <View style={styles.standingsHeaderRow}>
-                            <Ionicons name="football-outline" size={20} color={colors.accent} />
-                            <Text style={[styles.standingsTitle, { color: colors.text }]}>Allsvenskan Table</Text>
-                            <Text style={[styles.standingsCount, { color: colors.textMuted }]}>{standingsRows.length} teams</Text>
-                        </View>
-                        <SeasonPicker
-                            seasons={football.seasonOptions}
-                            selectedSeason={seasonLabel}
-                            onSelect={football.handleSeasonSelect}
-                            variant="dropdown"
-                        />
-                        <View style={styles.standingsMetaRow}>
-                            {lastUpdatedLabel && (
-                                <Text style={[styles.standingsMetaText, { color: colors.textSecondary }]}>Updated {lastUpdatedLabel}</Text>
-                            )}
-                        </View>
-                    </View>
-
-                    {football.loadingStandings ? (
-                        <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 24 }} />
-                    ) : (
-                        <StandingsTable
-                            standings={standingsRows}
-                            selectedTeams={selectedFootballTeams}
-                            sport="football"
-                            getTeamKey={football.getStandingsTeamKey}
-                            getTeamLogo={(team) => team.teamIcon || null}
-                        />
-                    )}
-                </ScrollView>
-            </View>
-        );
-    };
 
     // Memoized render function for biathlon race items
     const renderBiathlonRaceItem = useCallback(({ item }) => (
@@ -701,7 +580,7 @@ export default function App() {
         />
     );
 
-    // Render Biathlon standings
+    // Render Biathlon standings (main screen only; no standings tab in race modal)
     const renderBiathlonStandings = () => {
         const seasonLabel = biathlon.standings?.season || null;
         const typeName = biathlon.standings?.typeName || 'World Cup Overall';
@@ -710,8 +589,6 @@ export default function App() {
         const lastUpdatedLabel = biathlon.standings?.lastUpdated
             ? formatSwedishDate(biathlon.standings.lastUpdated, 'd MMM HH:mm')
             : null;
-
-        // Filter to selected gender
         const selectedCategory = categories.find(c => c.gender === biathlon.standingsGender) || categories[0];
 
         return (
@@ -734,52 +611,28 @@ export default function App() {
                             <Text style={[styles.standingsTitle, { color: colors.text }]}>{typeName}</Text>
                             {seasonLabel && <Text style={[styles.standingsCount, { color: colors.textMuted }]}>{seasonLabel}</Text>}
                         </View>
-                        {/* Gender toggle */}
                         <View style={styles.biathlonGenderPicker}>
                             <TouchableOpacity
-                                style={[
-                                    styles.biathlonGenderButton,
-                                    biathlon.standingsGender === 'men' && styles.biathlonGenderButtonActive
-                                ]}
+                                style={[styles.biathlonGenderButton, biathlon.standingsGender === 'men' && styles.biathlonGenderButtonActive]}
                                 onPress={() => biathlon.handleStandingsGenderChange('men')}
                             >
-                                <Text style={[
-                                    styles.biathlonGenderText,
-                                    biathlon.standingsGender === 'men' && styles.biathlonGenderTextActive
-                                ]}>
-                                    Men
-                                </Text>
+                                <Text style={[styles.biathlonGenderText, biathlon.standingsGender === 'men' && styles.biathlonGenderTextActive]}>Men</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[
-                                    styles.biathlonGenderButton,
-                                    biathlon.standingsGender === 'women' && styles.biathlonGenderButtonActive
-                                ]}
+                                style={[styles.biathlonGenderButton, biathlon.standingsGender === 'women' && styles.biathlonGenderButtonActive]}
                                 onPress={() => biathlon.handleStandingsGenderChange('women')}
                             >
-                                <Text style={[
-                                    styles.biathlonGenderText,
-                                    biathlon.standingsGender === 'women' && styles.biathlonGenderTextActive
-                                ]}>
-                                    Women
-                                </Text>
+                                <Text style={[styles.biathlonGenderText, biathlon.standingsGender === 'women' && styles.biathlonGenderTextActive]}>Women</Text>
                             </TouchableOpacity>
                         </View>
-                        {/* Standings type picker */}
                         <View style={styles.biathlonTypePicker}>
                             {availableTypes.map((type) => (
                                 <TouchableOpacity
                                     key={type}
-                                    style={[
-                                        styles.biathlonTypeButton,
-                                        biathlon.standingsType === type && styles.biathlonTypeButtonActive
-                                    ]}
+                                    style={[styles.biathlonTypeButton, biathlon.standingsType === type && styles.biathlonTypeButtonActive]}
                                     onPress={() => biathlon.handleStandingsTypeChange(type)}
                                 >
-                                    <Text style={[
-                                        styles.biathlonTypeText,
-                                        biathlon.standingsType === type && styles.biathlonTypeTextActive
-                                    ]}>
+                                    <Text style={[styles.biathlonTypeText, biathlon.standingsType === type && styles.biathlonTypeTextActive]}>
                                         {type.charAt(0).toUpperCase() + type.slice(1).replace('-', ' ')}
                                     </Text>
                                 </TouchableOpacity>
@@ -791,26 +644,17 @@ export default function App() {
                             )}
                         </View>
                     </View>
-
                     {biathlon.loadingStandings ? (
                         <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 24 }} />
                     ) : selectedCategory ? (
                         <View style={[styles.biathlonStandingsCategory, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
                             <View style={[styles.biathlonCategoryHeader, { borderBottomColor: colors.cardBorder }]}>
                                 <Text style={[styles.biathlonCategoryTitle, { color: colors.text }]}>{selectedCategory.genderDisplay}</Text>
-                                <Text style={[styles.biathlonCategoryCount, { color: colors.textMuted }]}>
-                                    {selectedCategory.standings?.length || 0} athletes
-                                </Text>
+                                <Text style={[styles.biathlonCategoryCount, { color: colors.textMuted }]}>{selectedCategory.standings?.length || 0} athletes</Text>
                             </View>
                             {selectedCategory.standings?.slice(0, 30).map((athlete, index) => (
                                 <View key={athlete.athleteId || index} style={[styles.biathlonAthleteRow, { borderBottomColor: colors.separator }]}>
-                                    <Text style={[
-                                        styles.biathlonRank,
-                                        { color: colors.textSecondary },
-                                        athlete.rank <= 3 && styles.biathlonRankTop
-                                    ]}>
-                                        {athlete.rank}
-                                    </Text>
+                                    <Text style={[styles.biathlonRank, { color: colors.textSecondary }, athlete.rank <= 3 && styles.biathlonRankTop]}>{athlete.rank}</Text>
                                     <Text style={styles.biathlonNationFlag}>{getNationFlag(athlete.nation)}</Text>
                                     <Text style={[styles.biathlonName, { color: colors.text }]} numberOfLines={1}>{athlete.name}</Text>
                                     <Text style={[styles.biathlonPoints, { color: colors.accent }]}>{athlete.points} pts</Text>
@@ -895,45 +739,19 @@ export default function App() {
                     )}
                 </View>
             ) : activeSport === 'shl' ? (
-                shl.viewMode === 'standings' ? (
-                    renderShlStandings()
-                ) : (
-                    <View style={styles.scheduleContainer}>
-                        <View style={[styles.stickyToggle, { backgroundColor: colors.background }]}>
-                            <ViewToggle mode={shl.viewMode} onChange={shl.handleViewChange} />
-                            <LinearGradient
-                                colors={[colors.background, 'transparent']}
-                                style={styles.toggleGradient}
-                                pointerEvents="none"
-                            />
-                        </View>
-                        {shl.loading ? (
-                            <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
-                        ) : (
-                            renderShlSchedule()
-                        )}
-                    </View>
-                )
+                <View style={styles.scheduleContainer}>
+                    {shl.loading ? (
+                        <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
+                    ) : (
+                        renderShlSchedule()
+                    )}
+                </View>
             ) : activeSport === 'football' ? (
                 <View style={styles.scheduleContainer}>
-                    {football.viewMode === 'standings' ? (
-                        renderFootballStandings()
+                    {(football.loading || svenskaCupen.loading) ? (
+                        <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
                     ) : (
-                        <>
-                            <View style={[styles.stickyToggle, { backgroundColor: colors.background }]}>
-                                <ViewToggle mode={football.viewMode} onChange={football.handleViewChange} />
-                                <LinearGradient
-                                    colors={[colors.background, 'transparent']}
-                                    style={styles.toggleGradient}
-                                    pointerEvents="none"
-                                />
-                            </View>
-                            {(football.loading || svenskaCupen.loading) ? (
-                                <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
-                            ) : (
-                                renderFootballSchedule()
-                            )}
-                        </>
+                        renderFootballSchedule()
                     )}
                 </View>
             ) : (
@@ -970,6 +788,7 @@ export default function App() {
                 onTabChange={setShlActiveTab}
                 onRefresh={shl.refreshModalDetails}
                 refreshing={shl.refreshingModal}
+                selectedTeams={selectedTeams}
             />
 
             {/* Football Match Modal */}
@@ -981,6 +800,8 @@ export default function App() {
                 onClose={football.closeModal}
                 onRefresh={football.refreshModalDetails}
                 refreshing={football.refreshingModal}
+                selectedTeams={selectedFootballTeams}
+                showStandingsTab={true}
             />
 
             {/* Svenska Cupen Match Modal */}

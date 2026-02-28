@@ -1,11 +1,11 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { View, Text, Modal, ScrollView, ActivityIndicator, StyleSheet, Animated, Dimensions, Platform, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-import { getTeamLogoUrl } from '../../api/shl';
+import { getTeamLogoUrl, fetchStandings } from '../../api/shl';
 import { getTeamColor } from '../../constants';
 import { getVideoDisplayTitle, formatSwedishDate } from '../../utils';
 import { useGameDetails } from '../../hooks/useGameDetails';
@@ -13,15 +13,16 @@ import { useVideoPlayer } from '../../hooks/useVideoPlayer';
 import { useTheme } from '../../contexts/ThemeContext';
 import { TabButton } from '../TabButton';
 import { StatBar } from '../StatBar';
+import { StandingsTable } from '../StandingsTable';
 import { VideoCard } from '../cards';
 import { GoalItem, PenaltyItem, GoalkeeperItem, TimeoutItem, PeriodMarker } from '../events';
 import { VideoPlayer } from '../VideoPlayer';
 import { GameModalHeader } from './GameModalHeader';
 
 /**
- * SHL Game Modal with Summary, Events, and Highlights tabs
+ * SHL Game Modal with Summary, Events, Highlights, and Standings tabs
  */
-const TABS = ['summary', 'events', 'highlights'];
+const TABS = ['summary', 'events', 'highlights', 'standings'];
 const SWIPE_THRESHOLD = 50;
 const SWIPE_VELOCITY_THRESHOLD = 500;
 
@@ -76,7 +77,8 @@ export const ShlGameModal = ({
     activeTab,
     onTabChange,
     onRefresh,
-    refreshing = false
+    refreshing = false,
+    selectedTeams = []
 }) => {
     const { colors } = useTheme();
     const { processedData, scoreDisplay, events, goals, getGoalVideoId } = useGameDetails(gameDetails, game, videos);
@@ -87,6 +89,33 @@ export const ShlGameModal = ({
         playVideo,
         stopVideo
     } = useVideoPlayer();
+
+    const [standingsData, setStandingsData] = useState(null);
+    const [loadingStandings, setLoadingStandings] = useState(false);
+    const [refreshingStandings, setRefreshingStandings] = useState(false);
+
+    const loadStandings = useCallback(async (silent = false) => {
+        if (!silent) {
+            setLoadingStandings(true);
+        } else {
+            setRefreshingStandings(true);
+        }
+        try {
+            const data = await fetchStandings();
+            setStandingsData(data);
+        } catch (e) {
+            console.error('Failed to load standings', e);
+        } finally {
+            setLoadingStandings(false);
+            setRefreshingStandings(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (visible && activeTab === 'standings' && !standingsData) {
+            loadStandings();
+        }
+    }, [visible, activeTab, standingsData, loadStandings]);
 
     const translateX = useRef(new Animated.Value(0)).current;
     const themedStyles = createStyles(colors);
@@ -398,6 +427,53 @@ export const ShlGameModal = ({
         </ScrollView>
     );
 
+    // Standings Tab Content
+    const renderStandingsTab = () => {
+        const lastUpdatedLabel = standingsData?.lastUpdated
+            ? formatSwedishDate(standingsData.lastUpdated, 'd MMM HH:mm')
+            : null;
+        const standingsRows = Array.isArray(standingsData?.standings) ? standingsData.standings : [];
+        return (
+            <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={themedStyles.tabContent}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshingStandings}
+                        onRefresh={() => loadStandings(true)}
+                        tintColor={colors.text}
+                    />
+                }
+            >
+                <View style={[themedStyles.sectionCard, { marginBottom: 16 }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <Ionicons name="stats-chart" size={20} color={colors.accent} />
+                        <Text style={[themedStyles.sectionTitle, { marginBottom: 0 }]}>SHL Table</Text>
+                        <Text style={{ color: colors.textMuted, fontSize: 13, fontWeight: '600' }}>{standingsRows.length} teams</Text>
+                    </View>
+                    {lastUpdatedLabel && (
+                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 12 }}>Updated {lastUpdatedLabel}</Text>
+                    )}
+                </View>
+                {loadingStandings ? (
+                    <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 24 }} />
+                ) : (
+                    <StandingsTable
+                        standings={standingsRows}
+                        selectedTeams={selectedTeams}
+                        sport="shl"
+                        getTeamKey={(team) => team.teamCode || team.teamShortName}
+                        getTeamLogo={(team) => {
+                            const teamCode = team.teamCode || team.teamShortName;
+                            return teamCode ? getTeamLogoUrl(teamCode) : team.teamIcon || null;
+                        }}
+                    />
+                )}
+            </ScrollView>
+        );
+    };
+
     return (
         <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
             <SafeAreaView style={themedStyles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
@@ -433,6 +509,12 @@ export const ShlGameModal = ({
                                 isActive={activeTab === 'highlights'}
                                 onPress={() => handleTabChange('highlights')}
                             />
+                            <TabButton
+                                title="Standings"
+                                icon="podium-outline"
+                                isActive={activeTab === 'standings'}
+                                onPress={() => handleTabChange('standings')}
+                            />
                         </View>
 
                         {/* Tab Content with gesture support */}
@@ -454,6 +536,7 @@ export const ShlGameModal = ({
                                     {activeTab === 'summary' && renderSummaryTab()}
                                     {activeTab === 'events' && renderEventsTab()}
                                     {activeTab === 'highlights' && renderHighlightsTab()}
+                                    {activeTab === 'standings' && renderStandingsTab()}
                                 </Animated.View>
                             </PanGestureHandler>
                         )}
