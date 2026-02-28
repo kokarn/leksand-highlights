@@ -813,6 +813,8 @@ export default function App() {
                 onClose={svenskaCupen.closeModal}
                 onRefresh={svenskaCupen.refreshModalDetails}
                 refreshing={svenskaCupen.refreshingModal}
+                sport="svenska-cupen"
+                showStandingsTab={true}
             />
 
             {/* Biathlon Race Modal */}

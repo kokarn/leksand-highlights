@@ -286,6 +286,22 @@ export async function fetchSvenskaCupenGameDetails(gameId) {
     }
 }
 
+export async function fetchSvenskaCupenStandings(options = {}) {
+    try {
+        const params = new URLSearchParams();
+        if (options.season) params.append('season', options.season);
+        const url = `${API_BASE_URL}/api/svenska-cupen/standings${params.toString() ? '?' + params.toString() : ''}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching Svenska Cupen standings:', error.message);
+        return { season: null, groups: [] };
+    }
+}
+
 // ============ BIATHLON API ============
 
 /**

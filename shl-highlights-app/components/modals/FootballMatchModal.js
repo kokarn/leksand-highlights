@@ -14,7 +14,7 @@ import { StatBar } from '../StatBar';
 import { StandingsTable } from '../StandingsTable';
 import { FootballGoalItem, CardItem, SubstitutionItem, HalfMarker } from '../events';
 import { GameModalHeader } from './GameModalHeader';
-import { fetchFootballStandings } from '../../api/shl';
+import { fetchFootballStandings, fetchSvenskaCupenStandings } from '../../api/shl';
 
 const getTeamName = (team, fallback) => {
     return team?.names?.short || team?.names?.long || team?.code || fallback;
@@ -31,7 +31,7 @@ const AWAY_COLOR = '#2196F3';
 const TABS_BASE = ['summary', 'events'];
 const TABS_WITH_STANDINGS = ['summary', 'events', 'standings'];
 
-export const FootballMatchModal = ({ match, details, visible, onClose, loading, onRefresh, refreshing = false, selectedTeams = [], showStandingsTab = false }) => {
+export const FootballMatchModal = ({ match, details, visible, onClose, loading, onRefresh, refreshing = false, selectedTeams = [], showStandingsTab = false, sport = 'allsvenskan' }) => {
     const { colors } = useTheme();
     const [activeTab, setActiveTab] = useState('summary');
     const [standingsData, setStandingsData] = useState(null);
@@ -48,15 +48,20 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
             setRefreshingStandings(true);
         }
         try {
-            const data = await fetchFootballStandings();
+            const fetcher = sport === 'svenska-cupen' ? fetchSvenskaCupenStandings : fetchFootballStandings;
+            const data = await fetcher();
             setStandingsData(data);
         } catch (e) {
-            console.error('Failed to load football standings', e);
+            console.error('Failed to load standings', e);
         } finally {
             setLoadingStandings(false);
             setRefreshingStandings(false);
         }
-    }, []);
+    }, [sport]);
+
+    useEffect(() => {
+        setStandingsData(null);
+    }, [sport]);
 
     useEffect(() => {
         if (showStandingsTab && visible && activeTab === 'standings' && !standingsData) {
@@ -433,12 +438,19 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
         );
     };
 
-    // Standings Tab Content (Allsvenskan table)
+    // Standings Tab Content
     const renderStandingsTab = () => {
         const lastUpdatedLabel = standingsData?.lastUpdated
             ? formatSwedishDate(standingsData.lastUpdated, 'd MMM HH:mm')
             : null;
-        const standingsRows = Array.isArray(standingsData?.standings) ? standingsData.standings : [];
+        const isCupen = sport === 'svenska-cupen';
+        const groups = isCupen ? (standingsData?.groups || []) : null;
+        const standingsRows = !isCupen && Array.isArray(standingsData?.standings) ? standingsData.standings : [];
+        const title = isCupen ? 'Svenska Cupen Groups' : 'Allsvenskan Table';
+        const teamCount = isCupen
+            ? groups.reduce((sum, g) => sum + (g.standings?.length || 0), 0)
+            : standingsRows.length;
+
         return (
             <ScrollView
                 style={{ flex: 1 }}
@@ -455,8 +467,8 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
                 <View style={[themedStyles.sectionCard, { marginBottom: 16 }]}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                         <Ionicons name="football-outline" size={20} color={colors.accent} />
-                        <Text style={[themedStyles.sectionTitle, { marginBottom: 0 }]}>Allsvenskan Table</Text>
-                        <Text style={{ color: colors.textMuted, fontSize: 13, fontWeight: '600' }}>{standingsRows.length} teams</Text>
+                        <Text style={[themedStyles.sectionTitle, { marginBottom: 0 }]}>{title}</Text>
+                        <Text style={{ color: colors.textMuted, fontSize: 13, fontWeight: '600' }}>{teamCount} teams</Text>
                     </View>
                     {lastUpdatedLabel && (
                         <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 12 }}>Updated {lastUpdatedLabel}</Text>
@@ -464,6 +476,19 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
                 </View>
                 {loadingStandings ? (
                     <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 24 }} />
+                ) : isCupen ? (
+                    groups.map((group) => (
+                        <View key={group.id} style={[themedStyles.sectionCard, { marginBottom: 16 }]}>
+                            <Text style={[themedStyles.sectionTitle, { fontSize: 15, marginBottom: 12 }]}>{group.name}</Text>
+                            <StandingsTable
+                                standings={group.standings || []}
+                                selectedTeams={selectedTeams}
+                                sport="football"
+                                getTeamKey={(team) => team?.teamCode || team?.teamName}
+                                getTeamLogo={(team) => team?.teamIcon || null}
+                            />
+                        </View>
+                    ))
                 ) : (
                     <StandingsTable
                         standings={standingsRows}
