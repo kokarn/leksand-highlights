@@ -221,8 +221,8 @@ export const ShlGameModal = ({
     const gameState = normalizeGameState(game?.state || gameDetails?.info?.gameInfo?.state);
     const startDateTime = game?.startDateTime || gameDetails?.info?.gameInfo?.startDateTime || null;
 
-    const homeColor = getTeamColor(homeCode);
-    const awayColor = getTeamColor(awayCode);
+    const homeColor = getTeamColor(homeCode, '#1E88E5');
+    const awayColor = getTeamColor(awayCode, '#E53935');
 
     // Summary Tab Content
     const renderSummaryTab = () => {

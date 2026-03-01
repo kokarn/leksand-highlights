@@ -5,6 +5,7 @@ export const APP_TAGLINE = 'Sports schedule & highlights';
 // Team Color Mapping
 export const TEAM_COLORS = {
     'LIF': ['#12284C', '#FFFFFF'],
+    'DIF': ['#00247D', '#CF142B'],
     'FBK': ['#005336', '#B79256'],
     'RBK': ['#00573F', '#FFFFFF'],
     'LHF': ['#D31022', '#FCE300'],
@@ -18,6 +19,7 @@ export const TEAM_COLORS = {
     'MIK': ['#D31022', '#FFFFFF'],
     'BIF': ['#000000', '#FFFFFF'],
     'MODO': ['#D31022', '#005336'],
+    'VLH': ['#00205B', '#FFD700'],
 };
 
 // Storage keys for AsyncStorage
@@ -90,4 +92,15 @@ export const GENDER_COLORS = {
 };
 
 // Helper to get team color
-export const getTeamColor = (code) => TEAM_COLORS[code]?.[0] || '#333';
+export const getTeamColor = (code, fallbackColor = '#333') => {
+    if (typeof code !== 'string') {
+        return fallbackColor;
+    }
+
+    const normalizedCode = code.trim().toUpperCase();
+    if (!normalizedCode) {
+        return fallbackColor;
+    }
+
+    return TEAM_COLORS[normalizedCode]?.[0] || fallbackColor;
+};
