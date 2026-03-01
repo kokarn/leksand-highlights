@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { extractScore, formatRelativeDateEnglish, formatTime } from '../../utils';
 import { useTheme } from '../../contexts';
@@ -14,6 +14,8 @@ const getTeamLogo = (team) => {
 
 export const FootballGameCard = memo(function FootballGameCard({ game, onPress, leagueLabel = 'Allsvenskan' }) {
     const { colors, isDark } = useTheme();
+    const { width: windowWidth } = useWindowDimensions();
+    const isCompactLayout = windowWidth <= 430;
     
     const homeTeam = game?.homeTeamInfo ?? {};
     const awayTeam = game?.awayTeamInfo ?? {};
@@ -53,37 +55,71 @@ export const FootballGameCard = memo(function FootballGameCard({ game, onPress, 
                     </View>
                 </View>
                 <View style={styles.matchupContainer}>
-                    <View style={styles.teamContainer}>
+                    <View style={[styles.teamContainer, isCompactLayout && styles.teamContainerCompact]}>
                         {getTeamLogo(homeTeam) ? (
                             <Image
                                 source={{ uri: getTeamLogo(homeTeam) }}
-                                style={styles.teamLogo}
+                                style={[styles.teamLogo, isCompactLayout && styles.teamLogoCompact]}
                                 resizeMode="contain"
                             />
                         ) : (
-                            <View style={[styles.teamLogoPlaceholder, { backgroundColor: colors.separator }]} />
+                            <View
+                                style={[
+                                    styles.teamLogoPlaceholder,
+                                    isCompactLayout && styles.teamLogoCompact,
+                                    { backgroundColor: colors.separator }
+                                ]}
+                            />
                         )}
-                        <Text style={[styles.teamName, { color: colors.text }]}>
+                        <Text
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.82}
+                            style={[
+                                styles.teamName,
+                                isCompactLayout && styles.teamNameCompact,
+                                { color: colors.text }
+                            ]}
+                        >
                             {getTeamName(homeTeam, 'Home')}
                         </Text>
                     </View>
-                    <View style={styles.scoreContainer}>
-                        <Text style={[styles.scoreText, { color: colors.text }]}>{homeScore} - {awayScore}</Text>
+                    <View style={[styles.scoreContainer, isCompactLayout && styles.scoreContainerCompact]}>
+                        <Text style={[styles.scoreText, isCompactLayout && styles.scoreTextCompact, { color: colors.text }]}>
+                            {homeScore} - {awayScore}
+                        </Text>
                         <Text style={[styles.statusText, { color: colors.textMuted }]} numberOfLines={1}>
                             {stateLabel}
                         </Text>
                     </View>
-                    <View style={styles.teamContainer}>
+                    <View style={[styles.teamContainer, isCompactLayout && styles.teamContainerCompact]}>
                         {getTeamLogo(awayTeam) ? (
                             <Image
                                 source={{ uri: getTeamLogo(awayTeam) }}
-                                style={styles.teamLogo}
+                                style={[styles.teamLogo, isCompactLayout && styles.teamLogoCompact]}
                                 resizeMode="contain"
                             />
                         ) : (
-                            <View style={[styles.teamLogoPlaceholder, { backgroundColor: colors.separator }]} />
+                            <View
+                                style={[
+                                    styles.teamLogoPlaceholder,
+                                    isCompactLayout && styles.teamLogoCompact,
+                                    { backgroundColor: colors.separator }
+                                ]}
+                            />
                         )}
-                        <Text style={[styles.teamName, { color: colors.text }]}>
+                        <Text
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.82}
+                            style={[
+                                styles.teamName,
+                                isCompactLayout && styles.teamNameCompact,
+                                { color: colors.text }
+                            ]}
+                        >
                             {getTeamName(awayTeam, 'Away')}
                         </Text>
                     </View>
@@ -144,10 +180,18 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         minWidth: 0
     },
+    teamContainerCompact: {
+        flex: 2
+    },
     teamLogo: {
         width: 60,
         height: 60,
         marginBottom: 8
+    },
+    teamLogoCompact: {
+        width: 54,
+        height: 54,
+        marginBottom: 6
     },
     teamLogoPlaceholder: {
         width: 60,
@@ -160,7 +204,11 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 14,
         fontWeight: '600',
-        textAlign: 'center'
+        textAlign: 'center',
+        width: '100%'
+    },
+    teamNameCompact: {
+        fontSize: 13
     },
     scoreContainer: {
         flex: 4,
@@ -169,11 +217,18 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         minWidth: 0
     },
+    scoreContainerCompact: {
+        flex: 3,
+        paddingHorizontal: 8
+    },
     scoreText: {
         color: '#fff',
         fontSize: 28,
         fontWeight: '800',
         fontVariant: ['tabular-nums']
+    },
+    scoreTextCompact: {
+        fontSize: 24
     },
     statusText: {
         color: '#666',

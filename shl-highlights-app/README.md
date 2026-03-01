@@ -4,6 +4,11 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.8.4
+- Make SHL detail tabs more compact on smaller screens by shortening labels and reducing tab padding
+- Prevent awkward single-character wraps in team names on game cards and modal headers
+- Improve compact card balance by giving team labels more room and scaling score text on narrow devices
+
 ### 2.8.2
 - Bump app version to align with server release 3.8.0
 - Add admin support for selecting Svenska Cupen in goal and pre-game notification tests

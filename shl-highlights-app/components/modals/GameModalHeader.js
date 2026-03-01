@@ -1,4 +1,4 @@
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatSwedishDate } from '../../utils';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -25,7 +25,9 @@ export const GameModalHeader = ({
     onClose
 }) => {
     const { colors } = useTheme();
+    const { width: windowWidth } = useWindowDimensions();
     const isLive = state === 'live';
+    const isCompactHeader = windowWidth <= 430;
     const stateLabel = state === 'post-game'
         ? 'Final'
         : state === 'pre-game'
@@ -39,21 +41,31 @@ export const GameModalHeader = ({
             <TouchableOpacity onPress={onClose} style={themedStyles.closeButton}>
                 <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
-            <View style={themedStyles.scoreHeader}>
-                <View style={themedStyles.scoreTeam}>
+            <View style={[themedStyles.scoreHeader, isCompactHeader && themedStyles.scoreHeaderCompact]}>
+                <View style={[themedStyles.scoreTeam, isCompactHeader && themedStyles.scoreTeamCompact]}>
                     {homeTeam.logo ? (
                         <Image
                             source={{ uri: homeTeam.logo }}
-                            style={themedStyles.scoreTeamLogo}
+                            style={[themedStyles.scoreTeamLogo, isCompactHeader && themedStyles.scoreTeamLogoCompact]}
                             resizeMode="contain"
                         />
                     ) : (
-                        <View style={themedStyles.teamLogoPlaceholder} />
+                        <View style={[themedStyles.teamLogoPlaceholder, isCompactHeader && themedStyles.scoreTeamLogoCompact]} />
                     )}
-                    <Text style={themedStyles.scoreTeamName}>{homeTeam.name}</Text>
+                    <Text
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.85}
+                        style={[themedStyles.scoreTeamName, isCompactHeader && themedStyles.scoreTeamNameCompact]}
+                    >
+                        {homeTeam.name}
+                    </Text>
                 </View>
-                <View style={themedStyles.scoreCenterBlock}>
-                    <Text style={themedStyles.scoreLarge}>{homeScore} - {awayScore}</Text>
+                <View style={[themedStyles.scoreCenterBlock, isCompactHeader && themedStyles.scoreCenterBlockCompact]}>
+                    <Text style={[themedStyles.scoreLarge, isCompactHeader && themedStyles.scoreLargeCompact]}>
+                        {homeScore} - {awayScore}
+                    </Text>
                     <View style={[themedStyles.statusBadge, isLive && themedStyles.statusBadgeLive]}>
                         <Text style={themedStyles.statusBadgeText}>{stateLabel}</Text>
                     </View>
@@ -63,17 +75,25 @@ export const GameModalHeader = ({
                         </Text>
                     )}
                 </View>
-                <View style={themedStyles.scoreTeam}>
+                <View style={[themedStyles.scoreTeam, isCompactHeader && themedStyles.scoreTeamCompact]}>
                     {awayTeam.logo ? (
                         <Image
                             source={{ uri: awayTeam.logo }}
-                            style={themedStyles.scoreTeamLogo}
+                            style={[themedStyles.scoreTeamLogo, isCompactHeader && themedStyles.scoreTeamLogoCompact]}
                             resizeMode="contain"
                         />
                     ) : (
-                        <View style={themedStyles.teamLogoPlaceholder} />
+                        <View style={[themedStyles.teamLogoPlaceholder, isCompactHeader && themedStyles.scoreTeamLogoCompact]} />
                     )}
-                    <Text style={themedStyles.scoreTeamName}>{awayTeam.name}</Text>
+                    <Text
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.85}
+                        style={[themedStyles.scoreTeamName, isCompactHeader && themedStyles.scoreTeamNameCompact]}
+                    >
+                        {awayTeam.name}
+                    </Text>
                 </View>
             </View>
         </View>
@@ -102,14 +122,24 @@ const createStyles = (colors) => StyleSheet.create({
         justifyContent: 'center',
         paddingTop: 20
     },
+    scoreHeaderCompact: {
+        paddingTop: 16
+    },
     scoreTeam: {
         alignItems: 'center',
-        width: 80
+        width: 88
+    },
+    scoreTeamCompact: {
+        width: 82
     },
     scoreTeamLogo: {
         width: 50,
         height: 50,
         marginBottom: 4
+    },
+    scoreTeamLogoCompact: {
+        width: 46,
+        height: 46
     },
     teamLogoPlaceholder: {
         width: 50,
@@ -122,17 +152,27 @@ const createStyles = (colors) => StyleSheet.create({
         color: colors.text,
         fontSize: 12,
         fontWeight: '700',
-        textAlign: 'center'
+        textAlign: 'center',
+        width: '100%'
+    },
+    scoreTeamNameCompact: {
+        fontSize: 11
     },
     scoreCenterBlock: {
         alignItems: 'center',
-        marginHorizontal: 20
+        marginHorizontal: 16
+    },
+    scoreCenterBlockCompact: {
+        marginHorizontal: 10
     },
     scoreLarge: {
         color: colors.text,
-        fontSize: 42,
+        fontSize: 40,
         fontWeight: '800',
         fontVariant: ['tabular-nums']
+    },
+    scoreLargeCompact: {
+        fontSize: 34
     },
     statusBadge: {
         marginTop: 8,
