@@ -10,7 +10,14 @@ export const StatBar = ({ label, homeValue, awayValue, homeColor, awayColor }) =
 
     return (
         <View style={themedStyles.statBarContainer}>
-            <Text style={themedStyles.statValue}>{homeValue ?? '-'}</Text>
+            <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+                style={themedStyles.statValue}
+            >
+                {homeValue ?? '-'}
+            </Text>
             <View style={themedStyles.statBarMiddle}>
                 <Text style={themedStyles.statLabel}>{label}</Text>
                 <View style={themedStyles.statBarTrack}>
@@ -18,7 +25,14 @@ export const StatBar = ({ label, homeValue, awayValue, homeColor, awayColor }) =
                     <View style={[themedStyles.statBarFill, { width: `${100 - homePerc}%`, backgroundColor: awayColor }]} />
                 </View>
             </View>
-            <Text style={themedStyles.statValue}>{awayValue ?? '-'}</Text>
+            <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+                style={themedStyles.statValue}
+            >
+                {awayValue ?? '-'}
+            </Text>
         </View>
     );
 };
@@ -31,9 +45,9 @@ const createStyles = (colors) => StyleSheet.create({
     },
     statValue: {
         color: colors.text,
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '700',
-        width: 40,
+        width: 58,
         textAlign: 'center'
     },
     statBarMiddle: {
