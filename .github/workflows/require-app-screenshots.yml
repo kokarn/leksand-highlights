@@ -44,24 +44,65 @@ jobs:
             }
 
             const body = pr.body || '';
-            const markdownImageRegex = /!\[[^\]]*]\(([^)\s]+)(?:\s+"[^"]*")?\)/gi;
-            const htmlImageRegex = /<img[^>]+src=["'][^"']+["'][^>]*>/gi;
 
-            const markdownImages = body.match(markdownImageRegex) || [];
-            const htmlImages = body.match(htmlImageRegex) || [];
-            const imageCount = markdownImages.length + htmlImages.length;
+            const getSectionContent = (markdown, sectionName) => {
+              const sectionRegex = new RegExp(
+                `###\\s*${sectionName}\\b([\\s\\S]*?)(?=\\n###\\s+|\\n##\\s+|$)`,
+                'i'
+              );
+              const match = markdown.match(sectionRegex);
+              return match ? match[1] : '';
+            };
 
-            const hasDesktopLabel = /\bdesktop\b/i.test(body);
-            const hasMobileLabel = /\bmobile\b/i.test(body);
+            const collectImageUrls = (markdown) => {
+              const markdownImageRegex = /!\[[^\]]*]\(([^)\s]+)(?:\s+"[^"]*")?\)/gi;
+              const htmlImageRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
+              const imageUrls = [];
 
-            if (imageCount < 2 || !hasDesktopLabel || !hasMobileLabel) {
+              let markdownMatch = markdownImageRegex.exec(markdown);
+              while (markdownMatch !== null) {
+                imageUrls.push(markdownMatch[1]);
+                markdownMatch = markdownImageRegex.exec(markdown);
+              }
+
+              let htmlMatch = htmlImageRegex.exec(markdown);
+              while (htmlMatch !== null) {
+                imageUrls.push(htmlMatch[1]);
+                htmlMatch = htmlImageRegex.exec(markdown);
+              }
+
+              return imageUrls;
+            };
+
+            const disallowedImagePatterns = [
+              /cursor\.com\/assets\/images\/open-in-/i,
+            ];
+
+            const isAllowedScreenshot = (imageUrl) => {
+              return !disallowedImagePatterns.some((pattern) => pattern.test(imageUrl));
+            };
+
+            const desktopSectionContent = getSectionContent(body, 'Desktop');
+            const mobileSectionContent = getSectionContent(body, 'Mobile');
+
+            const desktopImageUrls = collectImageUrls(desktopSectionContent);
+            const mobileImageUrls = collectImageUrls(mobileSectionContent);
+
+            const desktopScreenshotUrls = desktopImageUrls.filter(isAllowedScreenshot);
+            const mobileScreenshotUrls = mobileImageUrls.filter(isAllowedScreenshot);
+
+            if (desktopScreenshotUrls.length === 0 || mobileScreenshotUrls.length === 0) {
               const changedPreview = appFiles.slice(0, 5).map((file) => `- ${file}`).join('\n');
               core.setFailed(
                 [
                   'This Cursor Cloud PR changes `shl-highlights-app/**` and must include screenshots in the PR description.',
                   'Required:',
-                  '1) At least two embedded images (desktop + mobile).',
-                  '2) "Desktop" and "Mobile" labels in the PR description.',
+                  '1) At least one embedded image in the `### Desktop` section.',
+                  '2) At least one embedded image in the `### Mobile` section.',
+                  '3) Cursor footer badge images do not count as screenshots.',
+                  '',
+                  `Desktop section: ${desktopScreenshotUrls.length} valid image(s), ${desktopImageUrls.length} total image(s).`,
+                  `Mobile section: ${mobileScreenshotUrls.length} valid image(s), ${mobileImageUrls.length} total image(s).`,
                   '',
                   'First changed app files:',
                   changedPreview || '- (none)',
@@ -70,4 +111,6 @@ jobs:
               return;
             }
 
-            core.info(`Screenshot requirement satisfied with ${imageCount} embedded image(s).`);
+            core.info(
+              `Screenshot requirement satisfied with ${desktopScreenshotUrls.length} desktop and ${mobileScreenshotUrls.length} mobile image(s).`
+            );
