@@ -563,7 +563,6 @@ async function sendGoalNotification(goal, options = {}) {
         scorerName,
         scoringTeamCode,
         scoringTeamName,
-        opposingTeamCode,
         homeTeamCode,
         awayTeamCode,
         homeScore,
@@ -620,15 +619,29 @@ async function sendGoalNotification(goal, options = {}) {
         // Send to specific device
         result = await sendToDevice({ token, title, body: message, data });
     } else {
-        // Build topics for scoring team
-        // Topics: goal_notifications AND team_{code}
-        // We use condition: "'goal_notifications' in topics && 'team_lif' in topics"
-        // Note: Team codes must be sanitized for FCM (no Swedish chars, no spaces)
-        const scoringTeamTopic = `team_${sanitizeTopicName(scoringTeamCode)}`;
-        
-        // For FCM, we need to use conditions for AND logic
-        const condition = `'goal_notifications' in topics && '${scoringTeamTopic}' in topics`;
-        
+        // Goal alerts should reach users following either team in this game.
+        // When sendOpposing is disabled (e.g. in certain tests), only target the scoring team.
+        const teamCodesToTarget = sendOpposing
+            ? [homeTeamCode, awayTeamCode, scoringTeamCode]
+            : [scoringTeamCode];
+
+        const teamTopics = [...new Set(
+            teamCodesToTarget
+                .filter(code => Boolean(code))
+                .map(code => sanitizeTopicName(code))
+                .filter(code => code && code !== 'unknown')
+                .map(code => `team_${code}`)
+        )];
+
+        if (teamTopics.length === 0) {
+            return { success: false, error: 'Missing team topics for goal notification targeting' };
+        }
+
+        const teamsCondition = teamTopics.length === 1
+            ? `'${teamTopics[0]}' in topics`
+            : `(${teamTopics.map(topic => `'${topic}' in topics`).join(' || ')})`;
+        const condition = `'goal_notifications' in topics && ${teamsCondition}`;
+
         console.log(`[FCM] Sending goal notification to: ${condition}`);
         
         result = await sendWithCondition({
@@ -637,21 +650,6 @@ async function sendGoalNotification(goal, options = {}) {
             body: message,
             data
         });
-    }
-
-    // Also send to opposing team followers
-    if (sendOpposing && homeTeamCode && awayTeamCode && !token) {
-        const opposingCode = scoringTeamCode === homeTeamCode ? awayTeamCode : homeTeamCode;
-        const opposingTopic = `team_${sanitizeTopicName(opposingCode)}`;
-        const opposingCondition = `'goal_notifications' in topics && '${opposingTopic}' in topics`;
-
-        // Fire and forget
-        sendWithCondition({
-            condition: opposingCondition,
-            title,
-            body: `${scoringTeamName} scored. ${homeScore}-${awayScore}`,
-            data
-        }).catch(err => console.error('[FCM] Error sending opposing team notification:', err));
     }
 
     return result;
