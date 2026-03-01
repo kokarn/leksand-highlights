@@ -36,7 +36,7 @@
 | Service | Port | Start command | Notes |
 |---------|------|---------------|-------|
 | API Server | 3080 | `npm run dev` (root) | Requires a `.env` file (can be empty or just `PORT=3080`). No database; uses in-memory cache + JSON files. |
-| Mobile App | 8081 | `cd shl-highlights-app && npm start` | Expo dev server. Optional for backend work. |
+| Mobile App (web) | 8081 | `cd shl-highlights-app && npx expo start --web --port 8081` | Expo web mode; auto-connects to API at `localhost:3080`. Use for UI verification. |
 
 ### Running the server
 
@@ -55,3 +55,5 @@
 - The server writes JSON state files (`admin_games.json`, `seen_games.json`, etc.) to the project root. These are gitignored.
 - `@resvg/resvg-js` ships prebuilt binaries; no native compilation tools needed beyond npm.
 - The `--watch` flag in `npm run dev` does not pick up new npm dependency installations; restart the server after `npm install`.
+- The mobile app's `api/shl.js` auto-detects `localhost` in the browser and points API calls to `localhost:3080`. No manual API URL config is needed for web mode.
+- The Expo web app has an onboarding flow on first load; click "Get Started" and optionally select favorite teams to reach the main feed.
