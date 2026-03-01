@@ -28,3 +28,30 @@
 
 ## App
 - Always increment the version according to semver. Both in package.json and in app.json
+
+## Cursor Cloud specific instructions
+
+### Services
+
+| Service | Port | Start command | Notes |
+|---------|------|---------------|-------|
+| API Server | 3080 | `npm run dev` (root) | Requires a `.env` file (can be empty or just `PORT=3080`). No database; uses in-memory cache + JSON files. |
+| Mobile App | 8081 | `cd shl-highlights-app && npm start` | Expo dev server. Optional for backend work. |
+
+### Running the server
+
+- The `npm run dev` script uses `node --watch --env-file=.env`, so a `.env` file must exist in the project root (it is gitignored). A minimal file with `PORT=3080` is sufficient.
+- Firebase/FCM credentials are optional; the server starts without them and logs a warning. Push notification features are gracefully disabled.
+- Admin dashboard: `http://localhost:3080/admin`
+- API status: `http://localhost:3080/api/status`
+
+### Lint and tests
+
+- **Server**: `npm test` is a placeholder (exits 1). No automated tests exist yet; manual API testing only.
+- **Mobile app**: `cd shl-highlights-app && npm run lint` runs ESLint via Expo. Pre-existing warnings/errors exist in the codebase.
+
+### Key gotchas
+
+- The server writes JSON state files (`admin_games.json`, `seen_games.json`, etc.) to the project root. These are gitignored.
+- `@resvg/resvg-js` ships prebuilt binaries; no native compilation tools needed beyond npm.
+- The `--watch` flag in `npm run dev` does not pick up new npm dependency installations; restart the server after `npm install`.
