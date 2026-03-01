@@ -3,6 +3,7 @@
 ## Workflows
 - Always verify the look of UI changes on both **desktop** and **mobile** screen sizes using the browser subagent.
 - When using the browser subagent, remember to close the tab after you are done.
+- For PRs opened from `cursor/**` branches that modify `shl-highlights-app/**`, include **both desktop and mobile screenshots** in the PR description.
 - When testing, if there's a npm script called "dev" available, use that
 - When adding tests, add it in a folder called "test"
 - Use context7

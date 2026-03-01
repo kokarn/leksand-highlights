@@ -1,0 +1,73 @@
+name: Require App Screenshots
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+      - ready_for_review
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  require-screenshots:
+    name: Validate Cursor app screenshots
+    if: startsWith(github.event.pull_request.head.ref, 'cursor/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce screenshot evidence for app changes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const files = await github.paginate(
+              github.rest.pulls.listFiles,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                per_page: 100,
+              }
+            );
+
+            const appFiles = files
+              .map((file) => file.filename)
+              .filter((filename) => filename.startsWith('shl-highlights-app/'));
+
+            if (appFiles.length === 0) {
+              core.info('No files under shl-highlights-app/ changed. Screenshot requirement skipped.');
+              return;
+            }
+
+            const body = pr.body || '';
+            const markdownImageRegex = /!\[[^\]]*]\(([^)\s]+)(?:\s+"[^"]*")?\)/gi;
+            const htmlImageRegex = /<img[^>]+src=["'][^"']+["'][^>]*>/gi;
+
+            const markdownImages = body.match(markdownImageRegex) || [];
+            const htmlImages = body.match(htmlImageRegex) || [];
+            const imageCount = markdownImages.length + htmlImages.length;
+
+            const hasDesktopLabel = /\bdesktop\b/i.test(body);
+            const hasMobileLabel = /\bmobile\b/i.test(body);
+
+            if (imageCount < 2 || !hasDesktopLabel || !hasMobileLabel) {
+              const changedPreview = appFiles.slice(0, 5).map((file) => `- ${file}`).join('\n');
+              core.setFailed(
+                [
+                  'This Cursor Cloud PR changes `shl-highlights-app/**` and must include screenshots in the PR description.',
+                  'Required:',
+                  '1) At least two embedded images (desktop + mobile).',
+                  '2) "Desktop" and "Mobile" labels in the PR description.',
+                  '',
+                  'First changed app files:',
+                  changedPreview || '- (none)',
+                ].join('\n')
+              );
+              return;
+            }
+
+            core.info(`Screenshot requirement satisfied with ${imageCount} embedded image(s).`);
