@@ -1,10 +1,8 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { View, Text, Modal, ScrollView, ActivityIndicator, StyleSheet, Animated, Dimensions, Platform, RefreshControl } from 'react-native';
+import { View, Text, Modal, ScrollView, ActivityIndicator, StyleSheet, Animated, Dimensions, Platform, RefreshControl, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 import { getTeamLogoUrl, fetchStandings } from '../../api/shl';
 import { getTeamColor } from '../../constants';
 import { getVideoDisplayTitle, formatSwedishDate } from '../../utils';
@@ -18,6 +16,8 @@ import { VideoCard } from '../cards';
 import { GoalItem, PenaltyItem, GoalkeeperItem, TimeoutItem, PeriodMarker } from '../events';
 import { VideoPlayer } from '../VideoPlayer';
 import { GameModalHeader } from './GameModalHeader';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 /**
  * SHL Game Modal with Summary, Events, Highlights, and Standings tabs
@@ -81,6 +81,8 @@ export const ShlGameModal = ({
     selectedTeams = []
 }) => {
     const { colors } = useTheme();
+    const { width: windowWidth } = useWindowDimensions();
+    const useCompactTabs = windowWidth <= 430;
     const { processedData, scoreDisplay, events, goals, getGoalVideoId } = useGameDetails(gameDetails, game, videos);
     const {
         playingVideoId,
@@ -493,25 +495,33 @@ export const ShlGameModal = ({
                         <View style={themedStyles.tabBar}>
                             <TabButton
                                 title="Summary"
+                                compactTitle="Stats"
                                 icon="stats-chart"
+                                compact={useCompactTabs}
                                 isActive={activeTab === 'summary'}
                                 onPress={() => handleTabChange('summary')}
                             />
                             <TabButton
                                 title="Events"
+                                compactTitle="Events"
                                 icon="list"
+                                compact={useCompactTabs}
                                 isActive={activeTab === 'events'}
                                 onPress={() => handleTabChange('events')}
                             />
                             <TabButton
                                 title="Highlights"
+                                compactTitle="Clips"
                                 icon="videocam"
+                                compact={useCompactTabs}
                                 isActive={activeTab === 'highlights'}
                                 onPress={() => handleTabChange('highlights')}
                             />
                             <TabButton
                                 title="Standings"
+                                compactTitle="Table"
                                 icon="podium-outline"
+                                compact={useCompactTabs}
                                 isActive={activeTab === 'standings'}
                                 onPress={() => handleTabChange('standings')}
                             />
