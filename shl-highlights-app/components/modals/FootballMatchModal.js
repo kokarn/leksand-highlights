@@ -24,6 +24,74 @@ const getTeamLogo = (team) => {
     return team?.icon || null;
 };
 
+const parseFootballClockToSortValue = (clock) => {
+    if (clock === null || clock === undefined || clock === '') {
+        return Number.POSITIVE_INFINITY;
+    }
+
+    const cleanedClock = String(clock)
+        .replace(/[\u200e\u200f\u202a-\u202e]/g, '')
+        .replace(/['’`]/g, '')
+        .trim();
+
+    if (!cleanedClock) {
+        return Number.POSITIVE_INFINITY;
+    }
+
+    const stoppageMatch = cleanedClock.match(/(\d+)\s*\+\s*(\d+)/);
+    if (stoppageMatch) {
+        return Number(stoppageMatch[1]) + (Number(stoppageMatch[2]) / 100);
+    }
+
+    const minuteSecondMatch = cleanedClock.match(/(\d+):(\d{1,2})/);
+    if (minuteSecondMatch) {
+        const minute = Number(minuteSecondMatch[1]);
+        const seconds = Number(minuteSecondMatch[2]);
+
+        if (!Number.isNaN(minute) && !Number.isNaN(seconds)) {
+            return minute + (seconds / 60);
+        }
+    }
+
+    const minuteMatch = cleanedClock.match(/(\d+)/);
+    if (!minuteMatch) {
+        return Number.POSITIVE_INFINITY;
+    }
+
+    return Number(minuteMatch[1]);
+};
+
+const getGoalProgressValue = (event) => {
+    const homeScore = Number(event?.score?.home ?? event?.homeGoals);
+    const awayScore = Number(event?.score?.away ?? event?.awayGoals);
+
+    if (Number.isNaN(homeScore) || Number.isNaN(awayScore)) {
+        return null;
+    }
+
+    return homeScore + awayScore;
+};
+
+const compareFootballEventsChronologically = (a, b) => {
+    const periodDiff = (a.period || 1) - (b.period || 1);
+    if (periodDiff !== 0) {
+        return periodDiff;
+    }
+
+    const timeDiff = parseFootballClockToSortValue(a.clock) - parseFootballClockToSortValue(b.clock);
+    if (timeDiff !== 0) {
+        return timeDiff;
+    }
+
+    const scoreProgressA = getGoalProgressValue(a);
+    const scoreProgressB = getGoalProgressValue(b);
+    if (scoreProgressA !== null && scoreProgressB !== null && scoreProgressA !== scoreProgressB) {
+        return scoreProgressA - scoreProgressB;
+    }
+
+    return 0;
+};
+
 // Default team colors for football
 const HOME_COLOR = '#4CAF50';
 const AWAY_COLOR = '#2196F3';
@@ -187,20 +255,7 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
         }
 
         // Sort goals by period and time first (chronological for score calculation)
-        const sortedGoals = [...rawGoals].sort((a, b) => {
-            const periodDiff = (a.period || 1) - (b.period || 1);
-            if (periodDiff !== 0) {
-                return periodDiff;
-            }
-            const parseTime = (clock) => {
-                if (!clock) {
-                    return 0;
-                }
-                const match = String(clock).match(/(\d+)/);
-                return match ? parseInt(match[1], 10) : 0;
-            };
-            return parseTime(a.clock) - parseTime(b.clock);
-        });
+        const sortedGoals = [...rawGoals].sort(compareFootballEventsChronologically);
 
         // Calculate running score for each goal
         let runningHome = 0;
@@ -245,20 +300,7 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
         ];
 
         // Sort by period and time (chronological first for score calculation)
-        combinedEvents.sort((a, b) => {
-            const periodDiff = (a.period || 1) - (b.period || 1);
-            if (periodDiff !== 0) {
-                return periodDiff;
-            }
-            const parseTime = (clock) => {
-                if (!clock) {
-                    return 0;
-                }
-                const match = String(clock).match(/(\d+)/);
-                return match ? parseInt(match[1], 10) : 0;
-            };
-            return parseTime(a.clock) - parseTime(b.clock);
-        });
+        combinedEvents.sort(compareFootballEventsChronologically);
 
         // Calculate running scores for goals first
         let runningHome = 0;
