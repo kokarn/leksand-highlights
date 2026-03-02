@@ -546,6 +546,67 @@ async function sendToDevice({ token, title, body, data = {} }) {
     }
 }
 
+function normalizeNotificationScore(scoreValue) {
+    if (scoreValue === undefined || scoreValue === null || scoreValue === '') {
+        return null;
+    }
+
+    const parsed = Number(scoreValue);
+    if (!Number.isFinite(parsed)) {
+        return null;
+    }
+
+    return String(parsed);
+}
+
+function normalizeKnownName(value) {
+    if (typeof value !== 'string') {
+        return '';
+    }
+    const trimmedValue = value.trim();
+    if (!trimmedValue || trimmedValue.toLowerCase() === 'unknown') {
+        return '';
+    }
+    return trimmedValue;
+}
+
+function buildGoalNotificationMessage({
+    scorerName,
+    scoringTeamName,
+    homeScore,
+    awayScore,
+    time,
+    period
+}) {
+    const safeScorerName = normalizeKnownName(scorerName);
+    const safeScoringTeamName = normalizeKnownName(scoringTeamName);
+    let message = 'Goal!';
+
+    if (safeScorerName) {
+        message = `${safeScorerName} scores!`;
+    } else if (safeScoringTeamName) {
+        message = `${safeScoringTeamName} scores!`;
+    }
+
+    const normalizedHomeScore = normalizeNotificationScore(homeScore);
+    const normalizedAwayScore = normalizeNotificationScore(awayScore);
+    if (normalizedHomeScore !== null && normalizedAwayScore !== null) {
+        message += ` ${normalizedHomeScore}-${normalizedAwayScore}`;
+    }
+
+    const safeTime = typeof time === 'string' ? time.trim() : '';
+    const safePeriod = typeof period === 'string' ? period.trim() : '';
+    if (safeTime) {
+        message += ` (${safeTime}`;
+        if (safePeriod) {
+            message += ` ${safePeriod}`;
+        }
+        message += ')';
+    }
+
+    return message;
+}
+
 /**
  * Send a goal notification
  * @param {Object} goal - Goal details
@@ -585,17 +646,16 @@ async function sendGoalNotification(goal, options = {}) {
     }
     const title = `${sportEmoji} ${sportLabel} Goal: ${scoringTeamName}`;
 
-    let message = `${scorerName} scores!`;
-    if (homeScore !== undefined && awayScore !== undefined) {
-        message += ` ${homeScore}-${awayScore}`;
-    }
-    if (time) {
-        message += ` (${time}`;
-        if (period) {
-            message += ` ${period}`;
-        }
-        message += ')';
-    }
+    const message = buildGoalNotificationMessage({
+        scorerName,
+        scoringTeamName,
+        homeScore,
+        awayScore,
+        time,
+        period
+    });
+    const normalizedHomeScore = normalizeNotificationScore(homeScore);
+    const normalizedAwayScore = normalizeNotificationScore(awayScore);
 
     // Build deep link URL
     const deepLinkUrl = buildGameDeepLink(normalizedSport, gameId, 'summary');
@@ -607,8 +667,8 @@ async function sendGoalNotification(goal, options = {}) {
         scoringTeam: scoringTeamCode,
         homeTeam: homeTeamCode,
         awayTeam: awayTeamCode,
-        homeScore: String(homeScore),
-        awayScore: String(awayScore),
+        homeScore: normalizedHomeScore || '',
+        awayScore: normalizedAwayScore || '',
         tab: 'summary',
         url: deepLinkUrl
     };
@@ -972,5 +1032,8 @@ module.exports = {
     getSubscriberStats,
     getTopicDetails,
     getErrorLog,
-    clearErrorLog
+    clearErrorLog,
+    __test: {
+        buildGoalNotificationMessage
+    }
 };

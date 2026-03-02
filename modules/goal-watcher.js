@@ -34,6 +34,103 @@ function getGoalId(goal, gameId) {
     return parts.join('-');
 }
 
+function buildFullName(firstName, lastName) {
+    const safeFirstName = typeof firstName === 'string' ? firstName.trim() : '';
+    const safeLastName = typeof lastName === 'string' ? lastName.trim() : '';
+    if (!safeFirstName || !safeLastName) {
+        return null;
+    }
+    return `${safeFirstName} ${safeLastName}`;
+}
+
+function resolveGoalScorerName(goal) {
+    const structuredName = buildFullName(goal.player?.firstName, goal.player?.familyName)
+        || buildFullName(goal.player?.firstName, goal.player?.lastName)
+        || buildFullName(goal.scorerPlayer?.firstName, goal.scorerPlayer?.familyName)
+        || buildFullName(goal.scorerPlayer?.firstName, goal.scorerPlayer?.lastName)
+        || buildFullName(goal.scorer?.firstName, goal.scorer?.familyName)
+        || buildFullName(goal.scorer?.firstName, goal.scorer?.lastName);
+
+    if (structuredName) {
+        return structuredName;
+    }
+
+    const directNameCandidates = [
+        goal.player?.name,
+        goal.scorerPlayer?.name,
+        goal.scorer?.name
+    ];
+
+    for (const candidate of directNameCandidates) {
+        if (typeof candidate !== 'string') {
+            continue;
+        }
+        const trimmedCandidate = candidate.trim();
+        if (trimmedCandidate) {
+            return trimmedCandidate;
+        }
+    }
+
+    return 'Unknown';
+}
+
+function isSameTeamCode(leftCode, rightCode) {
+    if (!leftCode || !rightCode) {
+        return false;
+    }
+    return String(leftCode).trim().toLowerCase() === String(rightCode).trim().toLowerCase();
+}
+
+function resolveGoalIsHomeTeam(goal, gameInfo) {
+    if (goal.eventTeam?.place === 'home' || goal.isHome === true) {
+        return true;
+    }
+    if (goal.eventTeam?.place === 'away' || goal.isHome === false) {
+        return false;
+    }
+
+    const teamUuid = goal.teamUuid || goal.team?.uuid || goal.eventTeam?.teamId;
+    if (teamUuid) {
+        const normalizedTeamUuid = String(teamUuid);
+        if (
+            normalizedTeamUuid === String(gameInfo.homeTeamInfo?.uuid || '')
+            || normalizedTeamUuid === String(gameInfo.homeTeamInfo?.code || '')
+        ) {
+            return true;
+        }
+        if (
+            normalizedTeamUuid === String(gameInfo.awayTeamInfo?.uuid || '')
+            || normalizedTeamUuid === String(gameInfo.awayTeamInfo?.code || '')
+        ) {
+            return false;
+        }
+    }
+
+    const goalTeamCode = goal.teamCode || goal.team?.code || goal.team?.abbreviation;
+    if (isSameTeamCode(goalTeamCode, gameInfo.homeTeamInfo?.code)) {
+        return true;
+    }
+    if (isSameTeamCode(goalTeamCode, gameInfo.awayTeamInfo?.code)) {
+        return false;
+    }
+
+    return false;
+}
+
+function resolveGoalScore(primaryValue, secondaryValue, fallbackValue) {
+    const candidates = [primaryValue, secondaryValue, fallbackValue];
+    for (const candidate of candidates) {
+        if (candidate === undefined || candidate === null || candidate === '') {
+            continue;
+        }
+        const parsed = Number(candidate);
+        if (!Number.isNaN(parsed)) {
+            return parsed;
+        }
+    }
+    return 0;
+}
+
 /**
  * Extract goal details for notification
  * @param {Object} goal - Goal event object
@@ -44,21 +141,11 @@ function getGoalId(goal, gameId) {
 function extractGoalDetails(goal, gameInfo, sport) {
     const isShl = sport === 'shl';
 
-    // Get scorer name
-    let scorerName = 'Unknown';
-    if (goal.player?.firstName && goal.player?.familyName) {
-        scorerName = `${goal.player.firstName} ${goal.player.familyName}`;
-    } else if (goal.scorerPlayer?.firstName && goal.scorerPlayer?.familyName) {
-        scorerName = `${goal.scorerPlayer.firstName} ${goal.scorerPlayer.familyName}`;
-    } else if (goal.player?.name) {
-        scorerName = goal.player.name;
-    }
+    // Goal payloads differ between sports/providers, so we support several scorer field shapes.
+    const scorerName = resolveGoalScorerName(goal);
 
     // Get scoring team
-    const teamUuid = goal.teamUuid || goal.team?.uuid || goal.eventTeam?.teamId;
-    const isHomeTeam = goal.eventTeam?.place === 'home' ||
-        teamUuid === gameInfo.homeTeamInfo?.uuid ||
-        teamUuid === gameInfo.homeTeamInfo?.code;
+    const isHomeTeam = resolveGoalIsHomeTeam(goal, gameInfo);
     const scoringTeam = isHomeTeam ? gameInfo.homeTeamInfo : gameInfo.awayTeamInfo;
     const opposingTeam = isHomeTeam ? gameInfo.awayTeamInfo : gameInfo.homeTeamInfo;
 
@@ -67,8 +154,8 @@ function extractGoalDetails(goal, gameInfo, sport) {
     const opposingTeamCode = opposingTeam?.code || opposingTeam?.names?.short || 'Unknown';
 
     // Get current score (API provides homeGoals/awayGoals or homeTeam.score/awayTeam.score)
-    const homeScore = goal.homeGoals ?? goal.homeTeam?.score ?? gameInfo.homeTeamInfo?.score ?? 0;
-    const awayScore = goal.awayGoals ?? goal.awayTeam?.score ?? gameInfo.awayTeamInfo?.score ?? 0;
+    const homeScore = resolveGoalScore(goal.homeGoals, goal.homeTeam?.score ?? goal.score?.home, gameInfo.homeTeamInfo?.score);
+    const awayScore = resolveGoalScore(goal.awayGoals, goal.awayTeam?.score ?? goal.score?.away, gameInfo.awayTeamInfo?.score);
 
     // Get period/half info
     let periodText = '';
@@ -344,5 +431,9 @@ module.exports = {
     runCheck,
     startLoop,
     stopLoop,
-    getStats
+    getStats,
+    __test: {
+        extractGoalDetails,
+        resolveGoalScorerName
+    }
 };
