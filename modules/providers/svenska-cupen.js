@@ -61,6 +61,69 @@ class SvenskaCupenProvider extends BaseProvider {
         return String(value).replace(INVISIBLE_TIME_CHARS_REGEX, '').trim();
     }
 
+    parseClockParts(clockValue) {
+        if (clockValue === null || clockValue === undefined || clockValue === '') {
+            return null;
+        }
+
+        if (typeof clockValue === 'number' && Number.isFinite(clockValue)) {
+            return {
+                minute: clockValue,
+                stoppage: 0
+            };
+        }
+
+        const cleanedClock = this.cleanLiveTime(clockValue).replace(/['’`]/g, '');
+        if (!cleanedClock) {
+            return null;
+        }
+
+        const stoppageMatch = cleanedClock.match(/(\d+)\s*\+\s*(\d+)/);
+        if (stoppageMatch) {
+            return {
+                minute: Number(stoppageMatch[1]),
+                stoppage: Number(stoppageMatch[2])
+            };
+        }
+
+        const minuteSecondMatch = cleanedClock.match(/(\d+):(\d{1,2})/);
+        if (minuteSecondMatch) {
+            const minute = Number(minuteSecondMatch[1]);
+            const seconds = Number(minuteSecondMatch[2]);
+
+            if (!Number.isNaN(minute) && !Number.isNaN(seconds)) {
+                return {
+                    minute: minute + (seconds / 60),
+                    stoppage: 0
+                };
+            }
+        }
+
+        const minuteMatch = cleanedClock.match(/(\d+)/);
+        if (!minuteMatch) {
+            return null;
+        }
+
+        return {
+            minute: Number(minuteMatch[1]),
+            stoppage: 0
+        };
+    }
+
+    getClockSortValue(clockValue) {
+        const parsedClock = this.parseClockParts(clockValue);
+        if (!parsedClock || Number.isNaN(parsedClock.minute)) {
+            return Number.POSITIVE_INFINITY;
+        }
+
+        const stoppage = Number(parsedClock.stoppage);
+        if (!Number.isNaN(stoppage) && stoppage > 0) {
+            return parsedClock.minute + (stoppage / 100);
+        }
+
+        return parsedClock.minute;
+    }
+
     normalizeState(status) {
         if (!status || typeof status !== 'object') {
             return 'pre-game';
@@ -315,7 +378,8 @@ class SvenskaCupenProvider extends BaseProvider {
     }
 
     inferPeriod(minuteValue) {
-        const minute = Number(minuteValue);
+        const parsedClock = this.parseClockParts(minuteValue);
+        const minute = Number(parsedClock?.minute);
         if (Number.isNaN(minute)) {
             return {
                 number: 1,
@@ -349,13 +413,20 @@ class SvenskaCupenProvider extends BaseProvider {
             return String(incident.halfStrShort);
         }
 
-        const baseTime = Number(incident.timeStr ?? incident.time);
+        const parsedFromTime = this.parseClockParts(incident.time);
+        const parsedFromTimeString = this.parseClockParts(incident.timeStr);
+        const baseTime = parsedFromTime?.minute ?? parsedFromTimeString?.minute;
         const overloadTime = Number(incident.overloadTime);
-        if (!Number.isNaN(baseTime)) {
-            if (!Number.isNaN(overloadTime) && overloadTime > 0) {
-                return `${baseTime}+${overloadTime}'`;
+        const parsedStoppage = Number(parsedFromTime?.stoppage ?? parsedFromTimeString?.stoppage ?? 0);
+        const stoppage = !Number.isNaN(overloadTime) && overloadTime > 0 ? overloadTime : parsedStoppage;
+
+        if (baseTime !== null && baseTime !== undefined && !Number.isNaN(baseTime)) {
+            const normalizedMinute = Math.trunc(baseTime);
+
+            if (!Number.isNaN(stoppage) && stoppage > 0) {
+                return `${normalizedMinute}+${stoppage}'`;
             }
-            return `${baseTime}'`;
+            return `${normalizedMinute}'`;
         }
 
         return null;
@@ -431,7 +502,7 @@ class SvenskaCupenProvider extends BaseProvider {
         for (const incident of (Array.isArray(incidents) ? incidents : [])) {
             const incidentType = String(incident?.type || '').toLowerCase();
             const teamInfo = this.getIncidentTeamInfo(incident, homeTeamInfo, awayTeamInfo);
-            const period = this.inferPeriod(incident?.timeStr ?? incident?.time);
+            const period = this.inferPeriod(incident?.time ?? incident?.timeStr);
             const clock = this.formatIncidentClock(incident);
 
             const baseEvent = {
@@ -524,20 +595,13 @@ class SvenskaCupenProvider extends BaseProvider {
             });
         }
 
-        const parseClockToNumber = (clockValue) => {
-            if (!clockValue) {
-                return 0;
-            }
-            const match = String(clockValue).match(/(\d+)/);
-            return match ? Number(match[1]) : 0;
-        };
-
         const sortByTime = (a, b) => {
             const periodDiff = (a.period || 1) - (b.period || 1);
             if (periodDiff !== 0) {
                 return periodDiff;
             }
-            return parseClockToNumber(a.clock) - parseClockToNumber(b.clock);
+
+            return this.getClockSortValue(a.clock) - this.getClockSortValue(b.clock);
         };
 
         goals.sort(sortByTime);
