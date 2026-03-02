@@ -118,16 +118,22 @@ async function checkGameForNewGoals(game, sport) {
         }
 
         const goals = details.events.goals || [];
-        if (goals.length === 0) {
-            return [];
-        }
 
         // Initialize seen goals for this game if needed
         if (!seenGoals.has(gameId)) {
-            // First check for this game - mark all current goals as seen
+            if (goals.length === 0) {
+                seenGoals.set(gameId, new Set());
+                return [];
+            }
+
+            // First check for this game with goals - mark all current goals as seen
             const goalIds = new Set(goals.map(g => getGoalId(g, gameId)));
             seenGoals.set(gameId, goalIds);
             console.log(`[GoalWatcher] Initialized ${goalIds.size} existing goals for game ${gameId}`);
+            return [];
+        }
+
+        if (goals.length === 0) {
             return [];
         }
 
