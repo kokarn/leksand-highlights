@@ -78,7 +78,7 @@ const formatTime = (time) => {
     return `${str}'`;
 };
 
-export const SubstitutionItem = ({ substitution }) => {
+export const SubstitutionItem = ({ substitution, homeTeamCode }) => {
     const { colors } = useTheme();
     const themedStyles = createStyles(colors);
     
@@ -97,7 +97,13 @@ export const SubstitutionItem = ({ substitution }) => {
 
     const clock = substitution.clock || '';
     const periodLabel = substitution.period === 1 ? '1st' : substitution.period === 2 ? '2nd' : substitution.periodDisplay || '';
-    const teamLabel = substitution.teamCode || substitution.teamName || '';
+    const teamCode = substitution.teamCode || substitution.team?.teamCode || substitution.team?.code || null;
+    const teamLabel = teamCode || substitution.teamName || '';
+    const isAwaySubstitution = substitution.isHome === false
+        || (teamCode && homeTeamCode && teamCode !== homeTeamCode);
+    const borderStyle = isAwaySubstitution
+        ? themedStyles.subItemAway
+        : themedStyles.subItemHome;
 
     // If we have both players, show the nice format
     const hasBothPlayers = playerIn && playerOut;
@@ -105,7 +111,7 @@ export const SubstitutionItem = ({ substitution }) => {
     const showRawText = !playerIn && !playerOut && substitution.text;
 
     return (
-        <View style={themedStyles.subItem}>
+        <View style={[themedStyles.subItem, borderStyle]}>
             <View style={themedStyles.eventTime}>
                 <Text style={themedStyles.eventPeriod}>{periodLabel}</Text>
                 <Text style={themedStyles.eventTimeText}>{formatTime(clock)}</Text>
@@ -164,9 +170,15 @@ const createStyles = (colors) => StyleSheet.create({
         backgroundColor: colors.chip,
         borderRadius: 8,
         padding: 12,
-        marginBottom: 8,
+        marginBottom: 8
+    },
+    subItemHome: {
         borderLeftWidth: 3,
         borderLeftColor: '#2196F3'
+    },
+    subItemAway: {
+        borderRightWidth: 3,
+        borderRightColor: '#2196F3'
     },
     eventTime: {
         width: 45,
