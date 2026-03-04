@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { fetchFootballGames, fetchFootballStandings, fetchFootballGameDetails } from '../api/shl';
+import { fetchFootballGames, fetchFootballStandings, fetchFootballGameDetails, fetchFootballVideosForGame } from '../api/shl';
 
 const AUTO_REFRESH_INTERVAL_MS = 20000;
 const STARTING_SOON_WINDOW_MINUTES = 30;
@@ -32,6 +32,7 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
     // Selected game modal state
     const [selectedGame, setSelectedGame] = useState(null);
     const [gameDetails, setGameDetails] = useState(null);
+    const [videos, setVideos] = useState([]);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [refreshingModal, setRefreshingModal] = useState(false);
 
@@ -272,10 +273,29 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
         setLoadingDetails(true);
         setGameDetails(null);
         try {
-            const details = await fetchFootballGameDetails(game.uuid);
+            const [details, clips] = await Promise.all([
+                fetchFootballGameDetails(game.uuid),
+                fetchFootballVideosForGame(game.uuid)
+            ]);
             setGameDetails(details);
+
+            const sortedClips = (Array.isArray(clips) ? clips : []).sort((a, b) => {
+                const aHighlight = a?.tags?.includes('custom.highlights');
+                const bHighlight = b?.tags?.includes('custom.highlights');
+                if (aHighlight && !bHighlight) {
+                    return -1;
+                }
+                if (!aHighlight && bHighlight) {
+                    return 1;
+                }
+                const aTime = new Date(a?.date || 0).getTime();
+                const bTime = new Date(b?.date || 0).getTime();
+                return bTime - aTime;
+            });
+            setVideos(sortedClips);
         } catch (error) {
             console.error('Failed to load football match details', error);
+            setVideos([]);
         } finally {
             setLoadingDetails(false);
         }
@@ -285,6 +305,7 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
     const closeModal = useCallback(() => {
         setSelectedGame(null);
         setGameDetails(null);
+        setVideos([]);
         setLoadingDetails(false);
     }, []);
 
@@ -295,8 +316,26 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
         }
         setRefreshingModal(true);
         try {
-            const details = await fetchFootballGameDetails(selectedGame.uuid);
+            const [details, clips] = await Promise.all([
+                fetchFootballGameDetails(selectedGame.uuid),
+                fetchFootballVideosForGame(selectedGame.uuid)
+            ]);
             setGameDetails(details);
+
+            const sortedClips = (Array.isArray(clips) ? clips : []).sort((a, b) => {
+                const aHighlight = a?.tags?.includes('custom.highlights');
+                const bHighlight = b?.tags?.includes('custom.highlights');
+                if (aHighlight && !bHighlight) {
+                    return -1;
+                }
+                if (!aHighlight && bHighlight) {
+                    return 1;
+                }
+                const aTime = new Date(a?.date || 0).getTime();
+                const bTime = new Date(b?.date || 0).getTime();
+                return bTime - aTime;
+            });
+            setVideos(sortedClips);
         } catch (error) {
             console.error('Failed to refresh football match details', error);
         } finally {
@@ -368,6 +407,7 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
         viewMode,
         selectedGame,
         gameDetails,
+        videos,
         loadingDetails,
         refreshingModal,
         teams,

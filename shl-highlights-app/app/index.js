@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 
 // Theme
 import { useTheme } from '../contexts';
@@ -188,7 +188,6 @@ export default function App() {
     // Theme
     const { colors } = useTheme();
 
-    const router = useRouter();
     const { sport: routeSport, gameId: routeGameId, tab: routeTab } = useLocalSearchParams();
     const deepLinkParams = useMemo(() => {
         const sportParam = normalizeRouteParam(routeSport);
@@ -210,6 +209,7 @@ export default function App() {
 
     // Track if we've processed a pending deep link
     const processedDeepLinkRef = useRef(null);
+    const processedRouteDeepLinkRef = useRef(null);
 
     // Handle notification clicks and deep links to open games
     useEffect(() => {
@@ -366,8 +366,19 @@ export default function App() {
         };
 
         if (deepLinkParams) {
-            openGameById(deepLinkParams.sport, deepLinkParams.gameId, deepLinkParams.tab);
-            router.replace('/');
+            const routeLinkKey = `${normalizeSport(deepLinkParams.sport)}:${deepLinkParams.gameId}:${normalizeDeepLinkTab(deepLinkParams.tab) || 'summary'}`;
+            if (processedRouteDeepLinkRef.current === routeLinkKey) {
+                return;
+            }
+            processedRouteDeepLinkRef.current = routeLinkKey;
+
+            const timeoutId = setTimeout(() => {
+                openGameById(deepLinkParams.sport, deepLinkParams.gameId, deepLinkParams.tab);
+            }, 0);
+
+            return () => {
+                clearTimeout(timeoutId);
+            };
         }
 
         // Handle deep link when app is already open
@@ -419,8 +430,7 @@ export default function App() {
         football.handleGamePress,
         svenskaCupen.handleGamePress,
         handleSportChange,
-        deepLinkParams,
-        router
+        deepLinkParams
     ]);
 
     // Unified refresh handler
@@ -795,6 +805,7 @@ export default function App() {
             <FootballMatchModal
                 match={football.selectedGame}
                 details={football.gameDetails}
+                videos={football.videos}
                 visible={!!football.selectedGame}
                 loading={football.loadingDetails}
                 onClose={football.closeModal}
@@ -808,6 +819,7 @@ export default function App() {
             <FootballMatchModal
                 match={svenskaCupen.selectedGame}
                 details={svenskaCupen.gameDetails}
+                videos={[]}
                 visible={!!svenskaCupen.selectedGame}
                 loading={svenskaCupen.loadingDetails}
                 onClose={svenskaCupen.closeModal}

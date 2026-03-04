@@ -4,6 +4,11 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.9.0
+- Add Allsvenskan highlights integration via FotbollPlay clips
+- Add football match modal Highlights tab with in-modal clip playback
+- Fix deep links for football games so modal auto-opens reliably for games outside the current list
+
 ### 2.8.4
 - Make SHL detail tabs more compact on smaller screens by shortening labels and reducing tab padding
 - Prevent awkward single-character wraps in team names on game cards and modal headers
