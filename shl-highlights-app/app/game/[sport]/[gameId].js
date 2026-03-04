@@ -26,10 +26,14 @@ export default function GameDeepLinkRedirect() {
             params.tab = tabParam;
         }
 
-        router.replace({
-            pathname: '/',
-            params
-        });
+        const timeoutId = setTimeout(() => {
+            router.replace({
+                pathname: '/',
+                params
+            });
+        }, 0);
+
+        return () => clearTimeout(timeoutId);
     }, [sportParam, gameIdParam, tabParam, router]);
 
     return (

@@ -541,6 +541,33 @@ app.get('/api/football/games', async (req, res) => {
 });
 
 /**
+ * GET /api/football/game/:id/videos
+ * Get clips for a specific Allsvenskan match
+ */
+app.get('/api/football/game/:id/videos', async (req, res) => {
+    const { id } = req.params;
+    const cacheKey = `football:${id}`;
+
+    const cached = getCachedVideos(cacheKey);
+    if (cached) {
+        console.log(`[Cache HIT] /api/football/game/${id}/videos`);
+        return res.json(cached);
+    }
+
+    console.log(`[Cache MISS] /api/football/game/${id}/videos - fetching...`);
+
+    try {
+        const provider = getProvider('allsvenskan');
+        const videos = await provider.fetchGameVideos(id);
+        setCachedVideos(cacheKey, videos);
+        res.json(videos);
+    } catch (error) {
+        console.error(`Error fetching Allsvenskan videos for ${id}:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
  * GET /api/football/game/:id/details
  * Get details for a specific Allsvenskan match
  */

@@ -215,6 +215,24 @@ export async function fetchFootballGameDetails(gameId) {
 }
 
 /**
+ * Fetch clips for a specific Allsvenskan match
+ * @param {string} gameId - Match identifier
+ * @returns {Promise<Array>} Array of video clip objects
+ */
+export async function fetchFootballVideosForGame(gameId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/football/game/${gameId}/videos`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching football match clips for ${gameId}:`, error.message);
+        return [];
+    }
+}
+
+/**
  * Fetch Allsvenskan standings
  * @param {Object} options - Optional filters
  * @param {string} options.team - Filter by team code

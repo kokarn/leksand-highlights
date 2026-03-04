@@ -12,6 +12,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { TabButton } from '../TabButton';
 import { StatBar } from '../StatBar';
 import { StandingsTable } from '../StandingsTable';
+import { VideoCard } from '../cards';
+import { VideoPlayer } from '../VideoPlayer';
 import { FootballGoalItem, CardItem, SubstitutionItem, HalfMarker } from '../events';
 import { GameModalHeader } from './GameModalHeader';
 import { fetchFootballStandings, fetchSvenskaCupenStandings } from '../../api/shl';
@@ -96,15 +98,17 @@ const compareFootballEventsChronologically = (a, b) => {
 const HOME_COLOR = '#4CAF50';
 const AWAY_COLOR = '#2196F3';
 
-const TABS_BASE = ['summary', 'events'];
-const TABS_WITH_STANDINGS = ['summary', 'events', 'standings'];
+const TABS_BASE = ['summary', 'events', 'highlights'];
+const TABS_WITH_STANDINGS = ['summary', 'events', 'highlights', 'standings'];
 
-export const FootballMatchModal = ({ match, details, visible, onClose, loading, onRefresh, refreshing = false, selectedTeams = [], showStandingsTab = false, sport = 'allsvenskan' }) => {
+export const FootballMatchModal = ({ match, details, videos = [], visible, onClose, loading, onRefresh, refreshing = false, selectedTeams = [], showStandingsTab = false, sport = 'allsvenskan' }) => {
     const { colors } = useTheme();
     const [activeTab, setActiveTab] = useState('summary');
     const [standingsData, setStandingsData] = useState(null);
     const [loadingStandings, setLoadingStandings] = useState(false);
     const [refreshingStandings, setRefreshingStandings] = useState(false);
+    const [playingVideoId, setPlayingVideoId] = useState(null);
+    const [playingVideo, setPlayingVideo] = useState(null);
     const translateX = useRef(new Animated.Value(0)).current;
     const themedStyles = createStyles(colors);
     const TABS = showStandingsTab ? TABS_WITH_STANDINGS : TABS_BASE;
@@ -137,6 +141,47 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
         }
     }, [showStandingsTab, visible, activeTab, standingsData, loadStandings]);
 
+    const stopVideo = useCallback(() => {
+        setPlayingVideoId(null);
+        setPlayingVideo(null);
+    }, []);
+
+    const playVideo = useCallback((video) => {
+        if (!video?.id) {
+            return;
+        }
+        setPlayingVideoId(video.id);
+        setPlayingVideo(video);
+    }, []);
+
+    useEffect(() => {
+        if (!visible) {
+            stopVideo();
+        }
+    }, [visible, stopVideo]);
+
+    useEffect(() => {
+        if (!playingVideoId) {
+            return;
+        }
+        const stillExists = videos.some(video => video.id === playingVideoId);
+        if (!stillExists) {
+            stopVideo();
+        }
+    }, [videos, playingVideoId, stopVideo]);
+
+    const handleClose = useCallback(() => {
+        stopVideo();
+        onClose();
+    }, [onClose, stopVideo]);
+
+    const handleTabChange = useCallback((nextTab) => {
+        if (activeTab === 'highlights' && nextTab !== 'highlights') {
+            stopVideo();
+        }
+        setActiveTab(nextTab);
+    }, [activeTab, stopVideo]);
+
     const handleGestureEvent = Animated.event(
         [{ nativeEvent: { translationX: translateX } }],
         { useNativeDriver: Platform.OS !== 'web' }
@@ -166,7 +211,7 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
                     duration: 150,
                     useNativeDriver: Platform.OS !== 'web'
                 }).start(() => {
-                    setActiveTab(TABS[currentIndex + direction]);
+                    handleTabChange(TABS[currentIndex + direction]);
                     translateX.setValue(direction * SCREEN_WIDTH);
                     Animated.spring(translateX, {
                         toValue: 0,
@@ -480,6 +525,61 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
         );
     };
 
+    const renderHighlightsTab = () => (
+        <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={themedStyles.tabContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+                onRefresh ? (
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />
+                ) : undefined
+            }
+        >
+            {playingVideo && (
+                <View style={themedStyles.nowPlayingCard}>
+                    <View style={themedStyles.nowPlayingHeader}>
+                        <Ionicons name="play-circle" size={18} color={colors.accent} />
+                        <Text style={themedStyles.nowPlayingLabel}>Now Playing</Text>
+                    </View>
+                    <Text style={themedStyles.nowPlayingTitle} numberOfLines={2}>
+                        {playingVideo.title || playingVideo.description || 'Video Clip'}
+                    </Text>
+                    <VideoPlayer
+                        video={playingVideo}
+                        videoDetails={null}
+                        loading={false}
+                        onClose={stopVideo}
+                    />
+                </View>
+            )}
+
+            <View style={themedStyles.sectionCard}>
+                <View style={themedStyles.highlightsTitleHeader}>
+                    <Ionicons name="videocam" size={20} color={colors.accent} />
+                    <Text style={themedStyles.highlightsSectionTitle}>Match Highlights</Text>
+                </View>
+                <Text style={themedStyles.highlightsSubtitle}>
+                    {videos.length} {videos.length === 1 ? 'clip' : 'clips'} available
+                </Text>
+                {videos.length === 0 ? (
+                    <Text style={themedStyles.emptyText}>No clips available yet.</Text>
+                ) : (
+                    <View style={themedStyles.videoGrid}>
+                        {videos.map((item) => (
+                            <VideoCard
+                                key={item.id}
+                                video={item}
+                                isPlaying={playingVideoId === item.id}
+                                onPress={() => playVideo(item)}
+                            />
+                        ))}
+                    </View>
+                )}
+            </View>
+        </ScrollView>
+    );
+
     // Standings Tab Content
     const renderStandingsTab = () => {
         const lastUpdatedLabel = standingsData?.lastUpdated
@@ -584,7 +684,7 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
     };
 
     return (
-        <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+        <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
             <SafeAreaView style={themedStyles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
                 <GameModalHeader
                     homeTeam={{ name: getTeamName(homeTeam, 'Home'), logo: getTeamLogo(homeTeam) }}
@@ -593,7 +693,7 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
                     awayScore={awayScore}
                     state={info?.state}
                     startDateTime={startDateTime}
-                    onClose={onClose}
+                    onClose={handleClose}
                 />
 
                 {/* Tab Bar */}
@@ -602,20 +702,26 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
                         title="Summary"
                         icon="stats-chart"
                         isActive={activeTab === 'summary'}
-                        onPress={() => setActiveTab('summary')}
+                        onPress={() => handleTabChange('summary')}
                     />
                     <TabButton
                         title="Events"
                         icon="list"
                         isActive={activeTab === 'events'}
-                        onPress={() => setActiveTab('events')}
+                        onPress={() => handleTabChange('events')}
+                    />
+                    <TabButton
+                        title="Highlights"
+                        icon="videocam"
+                        isActive={activeTab === 'highlights'}
+                        onPress={() => handleTabChange('highlights')}
                     />
                     {showStandingsTab && (
                         <TabButton
                             title="Standings"
                             icon="podium-outline"
                             isActive={activeTab === 'standings'}
-                            onPress={() => setActiveTab('standings')}
+                            onPress={() => handleTabChange('standings')}
                         />
                     )}
                 </View>
@@ -638,6 +744,7 @@ export const FootballMatchModal = ({ match, details, visible, onClose, loading, 
                         >
                             {activeTab === 'summary' && renderSummaryTab()}
                             {activeTab === 'events' && renderEventsTab()}
+                            {activeTab === 'highlights' && renderHighlightsTab()}
                             {showStandingsTab && activeTab === 'standings' && renderStandingsTab()}
                         </Animated.View>
                     </PanGestureHandler>
@@ -675,6 +782,55 @@ const createStyles = (colors) => StyleSheet.create({
         fontSize: 18,
         fontWeight: '700',
         marginBottom: 16
+    },
+    highlightsTitleHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 4
+    },
+    highlightsSectionTitle: {
+        color: colors.text,
+        fontSize: 18,
+        fontWeight: '700',
+        marginBottom: 0
+    },
+    highlightsSubtitle: {
+        color: colors.textSecondary,
+        fontSize: 14,
+        marginBottom: 16
+    },
+    nowPlayingCard: {
+        backgroundColor: colors.card,
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 16,
+        borderLeftWidth: 3,
+        borderLeftColor: colors.accent
+    },
+    nowPlayingHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: 4
+    },
+    nowPlayingLabel: {
+        color: colors.accent,
+        fontSize: 12,
+        fontWeight: '700',
+        textTransform: 'uppercase'
+    },
+    nowPlayingTitle: {
+        color: colors.text,
+        fontSize: 15,
+        fontWeight: '600',
+        lineHeight: 20,
+        marginBottom: 12
+    },
+    videoGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12
     },
     detailRow: {
         flexDirection: 'row',
