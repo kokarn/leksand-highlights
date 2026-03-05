@@ -99,11 +99,11 @@ const HOME_COLOR = '#4CAF50';
 const AWAY_COLOR = '#2196F3';
 
 const FOOTBALL_BASE_TABS = [
-    { key: 'summary', title: 'Summary', compactTitle: 'Stats', icon: 'stats-chart' },
-    { key: 'events', title: 'Events', compactTitle: 'Events', icon: 'list' },
-    { key: 'highlights', title: 'Highlights', compactTitle: 'Clips', icon: 'videocam' }
+    { key: 'summary', title: 'Summary', icon: 'stats-chart' },
+    { key: 'events', title: 'Events', icon: 'list' },
+    { key: 'highlights', title: 'Highlights', icon: 'videocam' }
 ];
-const FOOTBALL_STANDINGS_TAB = { key: 'standings', title: 'Standings', compactTitle: 'Table', icon: 'podium-outline' };
+const FOOTBALL_STANDINGS_TAB = { key: 'standings', title: 'Standings', icon: 'podium-outline' };
 
 export const FootballMatchModal = ({ match, details, videos = [], visible, onClose, loading, onRefresh, refreshing = false, selectedTeams = [], showStandingsTab = false, sport = 'allsvenskan' }) => {
     const { colors } = useTheme();
