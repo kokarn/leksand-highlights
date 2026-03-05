@@ -9,20 +9,26 @@ import { getVideoDisplayTitle, formatSwedishDate } from '../../utils';
 import { useGameDetails } from '../../hooks/useGameDetails';
 import { useVideoPlayer } from '../../hooks/useVideoPlayer';
 import { useTheme } from '../../contexts/ThemeContext';
-import { TabButton } from '../TabButton';
 import { StatBar } from '../StatBar';
 import { StandingsTable } from '../StandingsTable';
 import { VideoCard } from '../cards';
 import { GoalItem, PenaltyItem, GoalkeeperItem, TimeoutItem, PeriodMarker } from '../events';
 import { VideoPlayer } from '../VideoPlayer';
 import { GameModalHeader } from './GameModalHeader';
+import { MatchTabBar } from './MatchTabBar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 /**
  * SHL Game Modal with Summary, Events, Highlights, and Standings tabs
  */
-const TABS = ['summary', 'events', 'highlights', 'standings'];
+const SHL_MODAL_TABS = [
+    { key: 'summary', title: 'Summary', compactTitle: 'Stats', icon: 'stats-chart' },
+    { key: 'events', title: 'Events', compactTitle: 'Events', icon: 'list' },
+    { key: 'highlights', title: 'Highlights', compactTitle: 'Clips', icon: 'videocam' },
+    { key: 'standings', title: 'Standings', compactTitle: 'Table', icon: 'podium-outline' }
+];
+const SHL_TAB_KEYS = SHL_MODAL_TABS.map((tab) => tab.key);
 const SWIPE_THRESHOLD = 50;
 const SWIPE_VELOCITY_THRESHOLD = 500;
 
@@ -130,7 +136,7 @@ export const ShlGameModal = ({
     const handleGestureStateChange = ({ nativeEvent }) => {
         if (nativeEvent.state === State.END) {
             const { translationX: tx, velocityX } = nativeEvent;
-            const currentIndex = TABS.indexOf(activeTab);
+            const currentIndex = SHL_TAB_KEYS.indexOf(activeTab);
 
             let shouldSwipe = false;
             let direction = 0;
@@ -139,7 +145,7 @@ export const ShlGameModal = ({
             if (Math.abs(tx) > SWIPE_THRESHOLD || Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
                 direction = tx > 0 ? -1 : 1; // Swipe right = go left (previous), swipe left = go right (next)
                 const nextIndex = currentIndex + direction;
-                if (nextIndex >= 0 && nextIndex < TABS.length) {
+                if (nextIndex >= 0 && nextIndex < SHL_TAB_KEYS.length) {
                     shouldSwipe = true;
                 }
             }
@@ -151,7 +157,7 @@ export const ShlGameModal = ({
                     duration: 150,
                     useNativeDriver: Platform.OS !== 'web'
                 }).start(() => {
-                    handleTabChange(TABS[currentIndex + direction]);
+                    handleTabChange(SHL_TAB_KEYS[currentIndex + direction]);
                     translateX.setValue(direction * SCREEN_WIDTH);
                     Animated.spring(translateX, {
                         toValue: 0,
@@ -492,40 +498,12 @@ export const ShlGameModal = ({
                         />
 
                         {/* Tab Bar */}
-                        <View style={themedStyles.tabBar}>
-                            <TabButton
-                                title="Summary"
-                                compactTitle="Stats"
-                                icon="stats-chart"
-                                compact={useCompactTabs}
-                                isActive={activeTab === 'summary'}
-                                onPress={() => handleTabChange('summary')}
-                            />
-                            <TabButton
-                                title="Events"
-                                compactTitle="Events"
-                                icon="list"
-                                compact={useCompactTabs}
-                                isActive={activeTab === 'events'}
-                                onPress={() => handleTabChange('events')}
-                            />
-                            <TabButton
-                                title="Highlights"
-                                compactTitle="Clips"
-                                icon="videocam"
-                                compact={useCompactTabs}
-                                isActive={activeTab === 'highlights'}
-                                onPress={() => handleTabChange('highlights')}
-                            />
-                            <TabButton
-                                title="Standings"
-                                compactTitle="Table"
-                                icon="podium-outline"
-                                compact={useCompactTabs}
-                                isActive={activeTab === 'standings'}
-                                onPress={() => handleTabChange('standings')}
-                            />
-                        </View>
+                        <MatchTabBar
+                            tabs={SHL_MODAL_TABS}
+                            activeTab={activeTab}
+                            onTabChange={handleTabChange}
+                            compact={useCompactTabs}
+                        />
 
                         {/* Tab Content with gesture support */}
                         {loading ? (
@@ -561,12 +539,6 @@ const createStyles = (colors) => StyleSheet.create({
     modalContainer: {
         flex: 1,
         backgroundColor: colors.background
-    },
-    tabBar: {
-        flexDirection: 'row',
-        backgroundColor: colors.card,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.cardBorder
     },
     tabContentContainer: {
         flex: 1

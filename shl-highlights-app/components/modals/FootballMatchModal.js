@@ -1,22 +1,22 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { View, Text, Modal, ScrollView, ActivityIndicator, StyleSheet, Animated, Dimensions, Platform, RefreshControl } from 'react-native';
+import { View, Text, Modal, ScrollView, ActivityIndicator, StyleSheet, Animated, Dimensions, Platform, RefreshControl, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const SWIPE_THRESHOLD = 50;
-const SWIPE_VELOCITY_THRESHOLD = 500;
 import { extractScore, formatSwedishDate } from '../../utils';
 import { useTheme } from '../../contexts/ThemeContext';
-import { TabButton } from '../TabButton';
 import { StatBar } from '../StatBar';
 import { StandingsTable } from '../StandingsTable';
 import { VideoCard } from '../cards';
 import { VideoPlayer } from '../VideoPlayer';
 import { FootballGoalItem, CardItem, SubstitutionItem, HalfMarker } from '../events';
 import { GameModalHeader } from './GameModalHeader';
+import { MatchTabBar } from './MatchTabBar';
 import { fetchFootballStandings, fetchSvenskaCupenStandings } from '../../api/shl';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const SWIPE_THRESHOLD = 50;
+const SWIPE_VELOCITY_THRESHOLD = 500;
 
 const getTeamName = (team, fallback) => {
     return team?.names?.short || team?.names?.long || team?.code || fallback;
@@ -98,11 +98,17 @@ const compareFootballEventsChronologically = (a, b) => {
 const HOME_COLOR = '#4CAF50';
 const AWAY_COLOR = '#2196F3';
 
-const TABS_BASE = ['summary', 'events', 'highlights'];
-const TABS_WITH_STANDINGS = ['summary', 'events', 'highlights', 'standings'];
+const FOOTBALL_BASE_TABS = [
+    { key: 'summary', title: 'Summary', compactTitle: 'Stats', icon: 'stats-chart' },
+    { key: 'events', title: 'Events', compactTitle: 'Events', icon: 'list' },
+    { key: 'highlights', title: 'Highlights', compactTitle: 'Clips', icon: 'videocam' }
+];
+const FOOTBALL_STANDINGS_TAB = { key: 'standings', title: 'Standings', compactTitle: 'Table', icon: 'podium-outline' };
 
 export const FootballMatchModal = ({ match, details, videos = [], visible, onClose, loading, onRefresh, refreshing = false, selectedTeams = [], showStandingsTab = false, sport = 'allsvenskan' }) => {
     const { colors } = useTheme();
+    const { width: windowWidth } = useWindowDimensions();
+    const useCompactTabs = windowWidth <= 430;
     const [activeTab, setActiveTab] = useState('summary');
     const [standingsData, setStandingsData] = useState(null);
     const [loadingStandings, setLoadingStandings] = useState(false);
@@ -111,7 +117,13 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
     const [playingVideo, setPlayingVideo] = useState(null);
     const translateX = useRef(new Animated.Value(0)).current;
     const themedStyles = createStyles(colors);
-    const TABS = showStandingsTab ? TABS_WITH_STANDINGS : TABS_BASE;
+    const tabs = useMemo(() => {
+        if (!showStandingsTab) {
+            return FOOTBALL_BASE_TABS;
+        }
+        return [...FOOTBALL_BASE_TABS, FOOTBALL_STANDINGS_TAB];
+    }, [showStandingsTab]);
+    const tabKeys = useMemo(() => tabs.map((tab) => tab.key), [tabs]);
 
     const loadStandings = useCallback(async (silent = false) => {
         if (!silent) {
@@ -190,7 +202,7 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
     const handleGestureStateChange = ({ nativeEvent }) => {
         if (nativeEvent.state === State.END) {
             const { translationX: tx, velocityX } = nativeEvent;
-            const currentIndex = TABS.indexOf(activeTab);
+            const currentIndex = tabKeys.indexOf(activeTab);
 
             let shouldSwipe = false;
             let direction = 0;
@@ -199,7 +211,7 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
             if (Math.abs(tx) > SWIPE_THRESHOLD || Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
                 direction = tx > 0 ? -1 : 1; // Swipe right = go left (previous), swipe left = go right (next)
                 const nextIndex = currentIndex + direction;
-                if (nextIndex >= 0 && nextIndex < TABS.length) {
+                if (nextIndex >= 0 && nextIndex < tabKeys.length) {
                     shouldSwipe = true;
                 }
             }
@@ -211,7 +223,7 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
                     duration: 150,
                     useNativeDriver: Platform.OS !== 'web'
                 }).start(() => {
-                    handleTabChange(TABS[currentIndex + direction]);
+                    handleTabChange(tabKeys[currentIndex + direction]);
                     translateX.setValue(direction * SCREEN_WIDTH);
                     Animated.spring(translateX, {
                         toValue: 0,
@@ -697,34 +709,12 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
                 />
 
                 {/* Tab Bar */}
-                <View style={themedStyles.tabBar}>
-                    <TabButton
-                        title="Summary"
-                        icon="stats-chart"
-                        isActive={activeTab === 'summary'}
-                        onPress={() => handleTabChange('summary')}
-                    />
-                    <TabButton
-                        title="Events"
-                        icon="list"
-                        isActive={activeTab === 'events'}
-                        onPress={() => handleTabChange('events')}
-                    />
-                    <TabButton
-                        title="Highlights"
-                        icon="videocam"
-                        isActive={activeTab === 'highlights'}
-                        onPress={() => handleTabChange('highlights')}
-                    />
-                    {showStandingsTab && (
-                        <TabButton
-                            title="Standings"
-                            icon="podium-outline"
-                            isActive={activeTab === 'standings'}
-                            onPress={() => handleTabChange('standings')}
-                        />
-                    )}
-                </View>
+                <MatchTabBar
+                    tabs={tabs}
+                    activeTab={activeTab}
+                    onTabChange={handleTabChange}
+                    compact={useCompactTabs}
+                />
 
                 {/* Tab Content with gesture support */}
                 {loading ? (
@@ -758,12 +748,6 @@ const createStyles = (colors) => StyleSheet.create({
     modalContainer: {
         flex: 1,
         backgroundColor: colors.background
-    },
-    tabBar: {
-        flexDirection: 'row',
-        backgroundColor: colors.card,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.cardBorder
     },
     tabContentContainer: {
         flex: 1
