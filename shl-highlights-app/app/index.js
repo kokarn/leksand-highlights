@@ -15,6 +15,11 @@ const GAME_CARD_HEIGHT = 174;
 const FOOTBALL_CARD_HEIGHT = 174;
 // Biathlon: padding (32) + cardHeader (~40) + mainRow (~80) + marginBottom (16)
 const BIATHLON_CARD_HEIGHT = 168;
+const BIATHLON_MEDAL_COLORS = {
+    1: '#FFD700',
+    2: '#C0C0C0',
+    3: '#CD7F32'
+};
 
 const normalizeRouteParam = (value) => {
     if (Array.isArray(value)) {
@@ -623,26 +628,50 @@ export default function App() {
                         </View>
                         <View style={styles.biathlonGenderPicker}>
                             <TouchableOpacity
-                                style={[styles.biathlonGenderButton, biathlon.standingsGender === 'men' && styles.biathlonGenderButtonActive]}
+                                style={[
+                                    styles.biathlonGenderButton,
+                                    { backgroundColor: colors.chip, borderColor: colors.chipBorder },
+                                    biathlon.standingsGender === 'men' && { backgroundColor: colors.chipActive, borderColor: colors.accent }
+                                ]}
                                 onPress={() => biathlon.handleStandingsGenderChange('men')}
                             >
-                                <Text style={[styles.biathlonGenderText, biathlon.standingsGender === 'men' && styles.biathlonGenderTextActive]}>Men</Text>
+                                <Text style={[
+                                    styles.biathlonGenderText,
+                                    { color: colors.textSecondary },
+                                    biathlon.standingsGender === 'men' && { color: colors.accent }
+                                ]}>Men</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.biathlonGenderButton, biathlon.standingsGender === 'women' && styles.biathlonGenderButtonActive]}
+                                style={[
+                                    styles.biathlonGenderButton,
+                                    { backgroundColor: colors.chip, borderColor: colors.chipBorder },
+                                    biathlon.standingsGender === 'women' && { backgroundColor: colors.chipActive, borderColor: colors.accent }
+                                ]}
                                 onPress={() => biathlon.handleStandingsGenderChange('women')}
                             >
-                                <Text style={[styles.biathlonGenderText, biathlon.standingsGender === 'women' && styles.biathlonGenderTextActive]}>Women</Text>
+                                <Text style={[
+                                    styles.biathlonGenderText,
+                                    { color: colors.textSecondary },
+                                    biathlon.standingsGender === 'women' && { color: colors.accent }
+                                ]}>Women</Text>
                             </TouchableOpacity>
                         </View>
                         <View style={styles.biathlonTypePicker}>
                             {availableTypes.map((type) => (
                                 <TouchableOpacity
                                     key={type}
-                                    style={[styles.biathlonTypeButton, biathlon.standingsType === type && styles.biathlonTypeButtonActive]}
+                                    style={[
+                                        styles.biathlonTypeButton,
+                                        { backgroundColor: colors.chip, borderColor: colors.chipBorder },
+                                        biathlon.standingsType === type && { backgroundColor: colors.chipActive, borderColor: colors.accent }
+                                    ]}
                                     onPress={() => biathlon.handleStandingsTypeChange(type)}
                                 >
-                                    <Text style={[styles.biathlonTypeText, biathlon.standingsType === type && styles.biathlonTypeTextActive]}>
+                                    <Text style={[
+                                        styles.biathlonTypeText,
+                                        { color: colors.textSecondary },
+                                        biathlon.standingsType === type && { color: colors.accent }
+                                    ]}>
                                         {type.charAt(0).toUpperCase() + type.slice(1).replace('-', ' ')}
                                     </Text>
                                 </TouchableOpacity>
@@ -664,7 +693,15 @@ export default function App() {
                             </View>
                             {selectedCategory.standings?.slice(0, 30).map((athlete, index) => (
                                 <View key={athlete.athleteId || index} style={[styles.biathlonAthleteRow, { borderBottomColor: colors.separator }]}>
-                                    <Text style={[styles.biathlonRank, { color: colors.textSecondary }, athlete.rank <= 3 && styles.biathlonRankTop]}>{athlete.rank}</Text>
+                                    <Text
+                                        style={[
+                                            styles.biathlonRank,
+                                            { color: colors.textSecondary },
+                                            BIATHLON_MEDAL_COLORS[Number(athlete.rank)] && { color: BIATHLON_MEDAL_COLORS[Number(athlete.rank)] }
+                                        ]}
+                                    >
+                                        {athlete.rank}
+                                    </Text>
                                     <Text style={styles.biathlonNationFlag}>{getNationFlag(athlete.nation)}</Text>
                                     <Text style={[styles.biathlonName, { color: colors.text }]} numberOfLines={1}>{athlete.name}</Text>
                                     <Text style={[styles.biathlonPoints, { color: colors.accent }]}>{athlete.points} pts</Text>
@@ -1068,17 +1105,10 @@ const styles = StyleSheet.create({
         borderColor: '#3c3c3e',
         alignItems: 'center'
     },
-    biathlonGenderButtonActive: {
-        backgroundColor: 'rgba(10, 132, 255, 0.15)',
-        borderColor: '#6C5CE7'
-    },
     biathlonGenderText: {
         color: '#8e8e93',
         fontSize: 14,
         fontWeight: '600'
-    },
-    biathlonGenderTextActive: {
-        color: '#6C5CE7'
     },
     biathlonTypePicker: {
         flexDirection: 'row',
@@ -1095,17 +1125,10 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#3c3c3e'
     },
-    biathlonTypeButtonActive: {
-        backgroundColor: 'rgba(10, 132, 255, 0.15)',
-        borderColor: '#6C5CE7'
-    },
     biathlonTypeText: {
         color: '#8e8e93',
         fontSize: 11,
         fontWeight: '600'
-    },
-    biathlonTypeTextActive: {
-        color: '#6C5CE7'
     },
     biathlonStandingsCategory: {
         backgroundColor: '#1c1c1e',
@@ -1147,9 +1170,6 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '700',
         textAlign: 'center'
-    },
-    biathlonRankTop: {
-        color: '#FFD700'
     },
     biathlonNation: {
         width: 36,

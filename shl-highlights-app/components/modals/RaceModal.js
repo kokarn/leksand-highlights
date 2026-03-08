@@ -187,7 +187,7 @@ const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceComple
 
                 <View style={themedStyles.resultMetaRow}>
                     {nation && (
-                        <Text style={themedStyles.resultNation}>
+                        <Text style={themedStyles.resultNation} numberOfLines={1}>
                             {getNationFlag(nation)} {nation}
                         </Text>
                     )}
@@ -1062,13 +1062,14 @@ const createStyles = (colors) => StyleSheet.create({
     },
     resultMetaRow: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
+        flexWrap: 'nowrap',
         alignItems: 'center',
         gap: 10
     },
     resultNation: {
         color: colors.textSecondary,
-        fontSize: 12
+        fontSize: 12,
+        flexShrink: 0
     },
     startInfoText: {
         color: colors.textMuted,
