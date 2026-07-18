@@ -41,9 +41,21 @@ class SvenskaCupenProvider extends BaseProvider {
         const response = await fetch(url, { headers: this.headers });
 
         if (!response.ok) {
-            throw new Error(`[${this.name}] League fetch failed (${response.status})`);
+            // FotMob withdrew unauthenticated access to its public API — /api/leagues
+            // now returns 404/403 for everyone without a signed request header. Rather
+            // than throw on every 15s poll (which spammed the GoalWatcher error log and
+            // masked real failures), degrade gracefully: warn ONCE, then return an empty
+            // dataset so downstream normalization yields zero games. Revisit when a
+            // replacement data source (e.g. TheSportsDB league 4756) is wired in.
+            if (!this._sourceUnavailableWarned) {
+                console.warn(`[${this.name}] League source unavailable (${response.status}) — Svenska Cupen data disabled until a new provider source is configured. Suppressing further warnings.`);
+                this._sourceUnavailableWarned = true;
+            }
+            return null;
         }
 
+        // Source is back — allow a fresh warning if it fails again later.
+        this._sourceUnavailableWarned = false;
         return response.json();
     }
 

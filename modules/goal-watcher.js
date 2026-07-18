@@ -117,8 +117,7 @@ function resolveGoalIsHomeTeam(goal, gameInfo) {
     return false;
 }
 
-function resolveGoalScore(primaryValue, secondaryValue, fallbackValue) {
-    const candidates = [primaryValue, secondaryValue, fallbackValue];
+function resolveGoalScore(...candidates) {
     for (const candidate of candidates) {
         if (candidate === undefined || candidate === null || candidate === '') {
             continue;
@@ -128,7 +127,7 @@ function resolveGoalScore(primaryValue, secondaryValue, fallbackValue) {
             return parsed;
         }
     }
-    return 0;
+    return null;
 }
 
 /**
@@ -138,7 +137,7 @@ function resolveGoalScore(primaryValue, secondaryValue, fallbackValue) {
  * @param {string} sport - Sport type ('shl', 'allsvenskan', 'svenska-cupen')
  * @returns {Object} Goal details for notification
  */
-function extractGoalDetails(goal, gameInfo, sport) {
+function extractGoalDetails(goal, gameInfo, sport, computedScore = null) {
     const isShl = sport === 'shl';
 
     // Goal payloads differ between sports/providers, so we support several scorer field shapes.
@@ -153,9 +152,26 @@ function extractGoalDetails(goal, gameInfo, sport) {
     const scoringTeamCode = scoringTeam?.code || scoringTeam?.names?.short || 'Unknown';
     const opposingTeamCode = opposingTeam?.code || opposingTeam?.names?.short || 'Unknown';
 
-    // Get current score (API provides homeGoals/awayGoals or homeTeam.score/awayTeam.score)
-    const homeScore = resolveGoalScore(goal.homeGoals, goal.homeTeam?.score ?? goal.score?.home, gameInfo.homeTeamInfo?.score);
-    const awayScore = resolveGoalScore(goal.awayGoals, goal.awayTeam?.score ?? goal.score?.away, gameInfo.awayTeamInfo?.score);
+    // Determine the running score AT THE MOMENT OF THIS GOAL.
+    // Order of trust:
+    //   1. goal.homeGoals/awayGoals — explicit per-goal running score (SHL provides this,
+    //      and it's authoritative; keep it first so SHL behaviour is unchanged).
+    //   2. computedScore — running tally counted from ordered goals; used when the provider
+    //      gives no per-goal score (Allsvenskan/ESPN keyEvents carry null score, which used
+    //      to make goal pushes announce a stale 0-0).
+    //   3. goal-level score object, then the (possibly lagging) team-level score.
+    const homeScore = resolveGoalScore(
+        goal.homeGoals,
+        computedScore?.home,
+        goal.homeTeam?.score ?? goal.score?.home,
+        gameInfo.homeTeamInfo?.score
+    ) ?? 0;
+    const awayScore = resolveGoalScore(
+        goal.awayGoals,
+        computedScore?.away,
+        goal.awayTeam?.score ?? goal.score?.away,
+        gameInfo.awayTeamInfo?.score
+    ) ?? 0;
 
     // Get period/half info
     let periodText = '';
@@ -228,25 +244,42 @@ async function checkGameForNewGoals(game, sport) {
         const previousGoalIds = seenGoals.get(gameId);
         const newGoals = [];
 
+        // Merge team info once — schedule data (has .code) takes precedence over the
+        // richer summary-header team objects. NOTE: fetchGameDetails returns team info
+        // under .homeTeamInfo/.awayTeamInfo (this previously read .homeTeam/.awayTeam,
+        // which are undefined, silently discarding the fresher summary data).
+        const gameInfo = {
+            uuid: gameId,
+            homeTeamInfo: {
+                ...(details.info?.homeTeamInfo || {}),
+                ...game.homeTeamInfo  // Schedule data has .code, must take precedence
+            },
+            awayTeamInfo: {
+                ...(details.info?.awayTeamInfo || {}),
+                ...game.awayTeamInfo  // Schedule data has .code, must take precedence
+            }
+        };
+
+        // Walk goals in chronological order, maintaining a running tally so each goal's
+        // announced score is the scoreline AT THE MOMENT IT WAS SCORED. This is
+        // authoritative and immune to lagging scoreboard/summary score fields (the cause
+        // of goal pushes announcing a stale 0-0 for the first goal of a match).
+        let homeTally = 0;
+        let awayTally = 0;
         for (const goal of goals) {
+            const isHomeGoal = resolveGoalIsHomeTeam(goal, gameInfo);
+            if (isHomeGoal) {
+                homeTally++;
+            } else {
+                awayTally++;
+            }
+
             const goalId = getGoalId(goal, gameId);
             if (!previousGoalIds.has(goalId)) {
                 previousGoalIds.add(goalId);
 
-                // Merge team info - use schedule data (has code) as base, enhance with game-info data
-                const gameInfo = {
-                    uuid: gameId,
-                    homeTeamInfo: {
-                        ...(details.info?.homeTeam || {}),
-                        ...game.homeTeamInfo  // Schedule data has .code, must take precedence
-                    },
-                    awayTeamInfo: {
-                        ...(details.info?.awayTeam || {}),
-                        ...game.awayTeamInfo  // Schedule data has .code, must take precedence
-                    }
-                };
-
-                const goalDetails = extractGoalDetails(goal, gameInfo, sport);
+                const computedScore = { home: homeTally, away: awayTally };
+                const goalDetails = extractGoalDetails(goal, gameInfo, sport, computedScore);
                 newGoals.push(goalDetails);
             }
         }

@@ -77,6 +77,43 @@ test('extractGoalDetails reads score object fallback used by football providers'
     assert.equal(goalDetails.scoringTeamCode, 'MFF');
 });
 
+test('extractGoalDetails prefers computed running score over lagging team score (Allsvenskan 0-0 bug)', () => {
+    const gameInfo = makeGameInfo();
+    // Simulate the ESPN case: the goal event carries no score, and the scoreboard-derived
+    // team score still lags at 0-0 at the moment the first goal is detected.
+    gameInfo.homeTeamInfo.score = 0;
+    gameInfo.awayTeamInfo.score = 0;
+    const goal = {
+        isHome: true,
+        scorer: { name: 'Late Feed' },
+        time: "12'"
+        // no homeGoals/awayGoals, no score object — mirrors ESPN keyEvents
+    };
+
+    const goalDetails = extractGoalDetails(goal, gameInfo, 'allsvenskan', { home: 1, away: 0 });
+
+    assert.equal(goalDetails.homeScore, 1);
+    assert.equal(goalDetails.awayScore, 0);
+});
+
+test('extractGoalDetails keeps explicit per-goal score ahead of computed tally (SHL unchanged)', () => {
+    const gameInfo = makeGameInfo();
+    const goal = {
+        isHome: false,
+        scorer: { name: 'Shl Sniper' },
+        homeGoals: 2,
+        awayGoals: 3,
+        period: 3,
+        time: '18:20'
+    };
+
+    // Even if a (hypothetical) miscounted tally were passed, the explicit per-goal score wins.
+    const goalDetails = extractGoalDetails(goal, gameInfo, 'shl', { home: 9, away: 9 });
+
+    assert.equal(goalDetails.homeScore, 2);
+    assert.equal(goalDetails.awayScore, 3);
+});
+
 test('goal notification message falls back when scorer is unknown', () => {
     const message = buildGoalNotificationMessage({
         scorerName: 'Unknown',
