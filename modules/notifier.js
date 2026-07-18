@@ -179,6 +179,78 @@ async function processGameVideos(game, skipNotifications = false) {
     }
 }
 
+// ============ FOOTBALL GOAL-CLIP NOTIFICATIONS ============
+// Allsvenskan clips come from FotbollPlay, which publishes per-event clips (goals,
+// shots, cards, plus a full-match highlights reel). Per the product decision we push
+// ONLY goal clips for football, via the same FCM goal audience used for live goal
+// alerts. This path is deliberately separate from the SHL video/highlights flow above
+// so hockey behaviour is unchanged.
+async function processFootballGoalClips(game, sport, skipNotifications = false) {
+    const provider = getProvider(sport);
+    const gameInfo = provider.getGameDisplayInfo(game);
+    const timestamp = formatSwedishTimestamp();
+
+    console.log(`[${timestamp}] [${sport}] Checking goal clips for ${gameInfo.homeTeam} vs ${gameInfo.awayTeam} (${gameInfo.gameId})...`);
+
+    try {
+        const videos = await provider.fetchGameVideos(gameInfo.gameId);
+        if (!Array.isArray(videos) || videos.length === 0) {
+            return;
+        }
+
+        for (const video of videos) {
+            if (seenVideos.includes(video.id)) {
+                continue;
+            }
+
+            // Only goal clips trigger a push for football.
+            const isGoalClip = typeof provider.isGoalClip === 'function' && provider.isGoalClip(video);
+
+            if (isGoalClip && !skipNotifications) {
+                const clipTitle = video.title
+                    || video.name
+                    || video.description
+                    || `Goal: ${gameInfo.homeTeam} vs ${gameInfo.awayTeam}`;
+
+                const pushResult = await pushNotifications.sendHighlightNotification({
+                    sport,
+                    gameId: gameInfo.gameId,
+                    videoId: video.id,
+                    clipTitle,
+                    homeTeamCode: gameInfo.homeTeamCode,
+                    awayTeamCode: gameInfo.awayTeamCode,
+                    homeTeamName: gameInfo.homeTeam,
+                    awayTeamName: gameInfo.awayTeam
+                });
+
+                if (pushResult.success) {
+                    console.log(`[Notifier] [${sport}] Goal-clip push sent for game ${gameInfo.gameId}: ${clipTitle}`);
+                    addEntry('notifier', 'notification', `Goal clip push: ${gameInfo.homeTeam} vs ${gameInfo.awayTeam} — ${clipTitle}`, {
+                        sport,
+                        gameId: gameInfo.gameId,
+                        videoId: video.id
+                    });
+                } else {
+                    console.warn(`[Notifier] [${sport}] Goal-clip push not sent: ${pushResult.error || 'unknown error'}`);
+                }
+            }
+
+            // Mark every clip seen (goal or not) so we don't re-scan it next tick.
+            saveSeenVideo(video.id);
+        }
+
+        // If game is old, mark it as seen so we stop polling it.
+        const startTime = new Date(gameInfo.startTime);
+        const hoursSinceStart = (new Date() - startTime) / (1000 * 60 * 60);
+        if (hoursSinceStart > MAX_HOURS_SINCE_GAME) {
+            saveSeenGame(gameInfo.gameId);
+        }
+    } catch (e) {
+        console.error(`[${sport}] Error processing goal clips for ${gameInfo.gameId}: ${e.message}`);
+        addEntry('notifier', 'error', `Error processing ${sport} goal clips: ${e.message}`);
+    }
+}
+
 // ============ MAIN CHECK LOOP ============
 async function runCheck() {
     const provider = getProvider();
@@ -202,8 +274,28 @@ async function runCheck() {
         await processGameVideos(game, skipNotifications);
     }
 
+    // Football goal clips (Allsvenskan): FotbollPlay publishes per-event clips; we push
+    // only goal clips. Kept separate from the SHL flow above so hockey is unchanged.
+    let footballGames = [];
+    try {
+        const footballProvider = getProvider('allsvenskan');
+        footballGames = await footballProvider.fetchActiveGames();
+        for (const game of footballGames) {
+            const gameInfo = footballProvider.getGameDisplayInfo(game);
+            if (seenGames.includes(gameInfo.gameId)) continue;
+            await processFootballGoalClips(game, 'allsvenskan', skipNotifications);
+        }
+    } catch (e) {
+        console.error(`[Notifier] Error checking Allsvenskan goal clips: ${e.message}`);
+        addEntry('notifier', 'error', `Error checking Allsvenskan goal clips: ${e.message}`);
+    }
+
+    stats.gamesChecked = games.length + footballGames.length;
     stats.lastCheck = formatSwedishTimestamp();
-    return games;
+
+    // Return the combined game list so the loop's live-interval decision also speeds up
+    // (30s polling) while a football match is live, not just hockey.
+    return [...games, ...footballGames];
 }
 
 function startLoop() {

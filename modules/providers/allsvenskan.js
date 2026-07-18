@@ -1124,6 +1124,18 @@ class AllsvenskanProvider extends BaseProvider {
             || tags.includes('highlights');
     }
 
+    /**
+     * Is this FotbollPlay clip a single-goal clip (not the full-match highlights reel)?
+     * FotbollPlay tags per-event clips with an `action.<action>` tag; goal clips carry
+     * `action.goal`. Used by the notifier to push goal clips for football.
+     * @param {Object} video - Normalized clip object
+     * @returns {boolean}
+     */
+    isGoalClip(video) {
+        const tags = Array.isArray(video?.tags) ? video.tags : [];
+        return tags.includes('action.goal');
+    }
+
     getGameDisplayInfo(game) {
         return {
             homeTeam: game.homeTeamInfo?.names?.short || game.homeTeamInfo?.code || 'Unknown',
