@@ -50,7 +50,14 @@ export const SettingsModal = ({
     onTogglePreGameFootball,
     onTogglePreGameBiathlon,
     // Debug props
-    fcmToken = null
+    fcmToken = null,
+    // App update props (from useAppUpdate)
+    updateStatus = 'idle',
+    updateInfo = null,
+    updateProgress = 0,
+    updateError = null,
+    onCheckForUpdate,
+    onDownloadAndInstall
 }) => {
     const { colors, themeMode, setThemeMode, isDark } = useTheme();
     
@@ -387,6 +394,93 @@ export const SettingsModal = ({
                     </View>
                 </View>
 
+                {/* App Updates Section (Android sideload self-update) */}
+                {Platform.OS === 'android' && (
+                    <>
+                        <Text style={themedStyles.settingsSection}>App Updates</Text>
+                        <Text style={themedStyles.settingsSectionSubtitle}>Download and install the latest version directly</Text>
+
+                        <View style={themedStyles.settingsCard}>
+                            <View style={styles.settingsCardHeader}>
+                                <Ionicons name="cloud-download-outline" size={22} color={colors.accent} />
+                                <Text style={themedStyles.settingsCardTitle}>App Version</Text>
+                                <Text style={[styles.settingsCardCount, { color: colors.textMuted }]}>
+                                    v{APP_VERSION}
+                                </Text>
+                            </View>
+
+                            {updateStatus === 'available' && updateInfo ? (
+                                <>
+                                    <View style={themedStyles.notificationInfo}>
+                                        <Ionicons name="sparkles-outline" size={16} color={colors.accent} />
+                                        <Text style={themedStyles.notificationInfoText}>
+                                            Version {updateInfo.version} is available
+                                        </Text>
+                                    </View>
+                                    {updateInfo.notes ? (
+                                        <Text style={[styles.updateNotes, { color: colors.textSecondary }]} numberOfLines={6}>
+                                            {updateInfo.notes.trim()}
+                                        </Text>
+                                    ) : null}
+                                    <TouchableOpacity
+                                        style={[styles.updateButton, { backgroundColor: colors.accent }]}
+                                        onPress={onDownloadAndInstall}
+                                        activeOpacity={0.85}
+                                    >
+                                        <Ionicons name="download-outline" size={18} color="#fff" />
+                                        <Text style={styles.updateButtonText}>Download & install v{updateInfo.version}</Text>
+                                    </TouchableOpacity>
+                                </>
+                            ) : updateStatus === 'downloading' || updateStatus === 'ready' ? (
+                                <>
+                                    <View style={styles.updateProgressTrack}>
+                                        <View
+                                            style={[
+                                                styles.updateProgressFill,
+                                                { backgroundColor: colors.accent, width: `${Math.round(updateProgress * 100)}%` }
+                                            ]}
+                                        />
+                                    </View>
+                                    <Text style={[styles.updateProgressText, { color: colors.textSecondary }]}>
+                                        {updateStatus === 'ready'
+                                            ? 'Download complete — opening installer…'
+                                            : `Downloading… ${Math.round(updateProgress * 100)}%`}
+                                    </Text>
+                                </>
+                            ) : (
+                                <>
+                                    <TouchableOpacity
+                                        style={[styles.updateButton, { backgroundColor: colors.chip, borderWidth: 1, borderColor: colors.cardBorder }]}
+                                        onPress={() => onCheckForUpdate?.({ silent: false })}
+                                        activeOpacity={0.85}
+                                        disabled={updateStatus === 'checking'}
+                                    >
+                                        <Ionicons
+                                            name={updateStatus === 'checking' ? 'sync-outline' : 'refresh-outline'}
+                                            size={18}
+                                            color={colors.text}
+                                        />
+                                        <Text style={[styles.updateButtonText, { color: colors.text }]}>
+                                            {updateStatus === 'checking' ? 'Checking…' : 'Check for updates'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                    {updateStatus === 'up-to-date' && (
+                                        <Text style={[styles.updateProgressText, { color: colors.textMuted }]}>
+                                            You&apos;re on the latest version
+                                        </Text>
+                                    )}
+                                    {updateStatus === 'error' && updateError && (
+                                        <View style={themedStyles.notificationWarning}>
+                                            <Ionicons name="warning-outline" size={16} color={colors.accentOrange} />
+                                            <Text style={themedStyles.notificationWarningText}>{updateError}</Text>
+                                        </View>
+                                    )}
+                                </>
+                            )}
+                        </View>
+                    </>
+                )}
+
                 {/* Reset Onboarding */}
                 <TouchableOpacity style={themedStyles.resetOnboardingButton} onPress={onResetOnboarding}>
                     <Ionicons name="refresh-outline" size={20} color={colors.accentOrange} />
@@ -669,6 +763,43 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 6,
         marginBottom: 2
+    },
+    // App update styles
+    updateButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        paddingVertical: 14,
+        borderRadius: 12,
+        marginTop: 12
+    },
+    updateButtonText: {
+        color: '#fff',
+        fontSize: 15,
+        fontWeight: '700'
+    },
+    updateNotes: {
+        fontSize: 13,
+        lineHeight: 18,
+        marginTop: 12
+    },
+    updateProgressTrack: {
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: 'rgba(142, 142, 147, 0.25)',
+        overflow: 'hidden',
+        marginTop: 12
+    },
+    updateProgressFill: {
+        height: '100%',
+        borderRadius: 4
+    },
+    updateProgressText: {
+        fontSize: 12,
+        fontWeight: '500',
+        textAlign: 'center',
+        marginTop: 8
     },
     // Version styles
     versionContainer: {

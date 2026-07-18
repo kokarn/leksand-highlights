@@ -52,6 +52,8 @@ jobs:
   local-build:
     name: Build locally (fallback)
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     # needs: eas-build
     # if: needs.eas-build.outputs.eas_success != 'true'
     steps:
@@ -123,17 +125,33 @@ jobs:
           name: GamePulse-${{ steps.app_version.outputs.version }}
           path: ${{ github.workspace }}/GamePulse-${{ steps.app_version.outputs.version }}.apk
 
-      - name: Notify ntfy with artifact link
+      - name: Publish GitHub Release with APK
+        id: release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.app_version.outputs.version }}
+          name: GamePulse v${{ steps.app_version.outputs.version }}
+          body: |
+            Automated GamePulse Android build v${{ steps.app_version.outputs.version }}.
+
+            Install directly from the app: **Settings → App Updates → Download & install**.
+            Or download the APK below and open it to install.
+          files: ${{ github.workspace }}/GamePulse-${{ steps.app_version.outputs.version }}.apk
+          make_latest: true
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify ntfy with release link
         if: success()
         env:
           NTFY_TOPIC: "gamepulse-release"
           APP_VERSION: ${{ steps.app_version.outputs.version }}
-          ARTIFACT_URL: ${{ steps.upload_apk.outputs.artifact-url }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RELEASE_URL: ${{ steps.release.outputs.url }}
         run: |
           curl -s -X POST "https://ntfy.sh/${NTFY_TOPIC}" \
             -H "Title: GamePulse v${APP_VERSION}" \
             -H "Priority: default" \
             -H "Tags: package,rocket" \
-            -H "Actions: view, Download APK, ${ARTIFACT_URL}; view, View Build, ${RUN_URL}" \
-            -d "New Android build available for download."
+            -H "Actions: view, View Release, ${RELEASE_URL}" \
+            -d "New Android build published. Update in-app via Settings → App Updates."

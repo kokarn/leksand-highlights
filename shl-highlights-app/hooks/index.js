@@ -8,6 +8,7 @@ export { useUnifiedData } from './useUnifiedData';
 export { useGameDetails } from './useGameDetails';
 export { useVideoPlayer } from './useVideoPlayer';
 export { usePushNotifications } from './usePushNotifications';
+export { useAppUpdate } from './useAppUpdate';
 
 // Re-export theme hook from contexts for convenience
 export { useTheme } from '../contexts';

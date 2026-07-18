@@ -61,7 +61,8 @@ import {
     useSvenskaCupenData,
     useBiathlonData,
     useUnifiedData,
-    usePushNotifications
+    usePushNotifications,
+    useAppUpdate
 } from '../hooks';
 
 // Components
@@ -189,6 +190,18 @@ export default function App() {
         togglePreGameFootball,
         togglePreGameBiathlon
     } = usePushNotifications();
+
+    // App self-update (Android sideload) — check GitHub Releases on launch
+    const appUpdate = useAppUpdate();
+    const hasCheckedUpdateRef = useRef(false);
+    useEffect(() => {
+        if (hasCheckedUpdateRef.current) {
+            return;
+        }
+        hasCheckedUpdateRef.current = true;
+        // Silent check so we don't flash a spinner; the Settings badge/card reflects the result.
+        appUpdate.checkForUpdate({ silent: true });
+    }, [appUpdate]);
 
     // Theme
     const { colors } = useTheme();
@@ -772,6 +785,9 @@ export default function App() {
                     {renderSportPicker()}
                     <TouchableOpacity style={[styles.settingsButton, { backgroundColor: colors.card, borderColor: colors.cardBorder }]} onPress={() => setShowSettings(true)}>
                         <Ionicons name="settings-outline" size={16} color={colors.textSecondary} />
+                        {appUpdate.isUpdateAvailable && (
+                            <View style={[styles.settingsUpdateBadge, { backgroundColor: colors.accent, borderColor: colors.background }]} />
+                        )}
                     </TouchableOpacity>
                 </View>
             </View>
@@ -934,6 +950,12 @@ export default function App() {
                 onTogglePreGameFootball={togglePreGameFootball}
                 onTogglePreGameBiathlon={togglePreGameBiathlon}
                 fcmToken={fcmToken}
+                updateStatus={appUpdate.status}
+                updateInfo={appUpdate.updateInfo}
+                updateProgress={appUpdate.progress}
+                updateError={appUpdate.error}
+                onCheckForUpdate={appUpdate.checkForUpdate}
+                onDownloadAndInstall={appUpdate.downloadAndInstall}
             />
 
             {/* Onboarding Modal */}
@@ -1001,6 +1023,15 @@ const styles = StyleSheet.create({
         backgroundColor: '#1c1c1e',
         borderWidth: 1,
         borderColor: '#333'
+    },
+    settingsUpdateBadge: {
+        position: 'absolute',
+        top: 4,
+        right: 4,
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        borderWidth: 1.5
     },
     scheduleContainer: {
         flex: 1
