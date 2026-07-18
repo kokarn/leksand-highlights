@@ -492,7 +492,12 @@ class AllsvenskanProvider extends BaseProvider {
             const url = new URL(`${this.fotbollPlayApiBaseUrl}/playlist`);
             url.searchParams.set('game_id', String(matchedGame.id));
             url.searchParams.set('count', String(this.maxFotbollPlayPlaylists));
-            url.searchParams.set('holdback', 'public');
+            // NOTE: do NOT send holdback=public. FotbollPlay marks per-event clips
+            // is_available_publicly=false for hours after full-time (only the full
+            // highlights reel flips public immediately), and holdback=public filters
+            // those out server-side, returning zero clips right after a match. We fetch
+            // the unfiltered list and gate client-side (see below) so goal clips can be
+            // surfaced as soon as they exist — their media URLs are already playable.
 
             const response = await fetch(url.toString(), { headers: this.headers });
             if (!response.ok) {
@@ -506,7 +511,14 @@ class AllsvenskanProvider extends BaseProvider {
 
             for (const playlist of playlists) {
                 const clip = this.normalizeFotbollPlayPlaylist(playlist, matchedGame.id);
-                if (!clip || !clip.isAvailablePublicly) {
+                if (!clip) {
+                    continue;
+                }
+                // Goal clips are surfaced as soon as they exist, even before FotbollPlay
+                // flips is_available_publicly (their media is already playable). All other
+                // clip types still require the public flag to avoid surfacing content the
+                // source hasn't released.
+                if (!clip.isAvailablePublicly && !this.isGoalClip(clip)) {
                     continue;
                 }
                 uniqueClips.set(clip.id, clip);

@@ -3,9 +3,18 @@ const assert = require('node:assert/strict');
 
 const goalWatcher = require('../modules/goal-watcher');
 const pushNotifications = require('../modules/fcm-notifications');
+const AllsvenskanProvider = require('../modules/providers/allsvenskan');
 
 const { extractGoalDetails } = goalWatcher.__test;
 const { buildGoalNotificationMessage } = pushNotifications.__test;
+
+test('AllsvenskanProvider.isGoalClip detects action.goal tag only', () => {
+    const p = new AllsvenskanProvider();
+    assert.equal(p.isGoalClip({ tags: ['clip', 'event', 'action.goal'] }), true);
+    assert.equal(p.isGoalClip({ tags: ['clip', 'event', 'action.shot'] }), false);
+    assert.equal(p.isGoalClip({ tags: ['custom.highlights'] }), false);
+    assert.equal(p.isGoalClip({}), false);
+});
 
 function makeGameInfo() {
     return {
