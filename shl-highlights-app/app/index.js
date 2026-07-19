@@ -90,7 +90,6 @@ export default function App() {
     const {
         activeSport,
         selectedTeams,
-        selectedHaTeams,
         selectedFootballTeams,
         selectedNations,
         selectedGenders,
@@ -100,8 +99,6 @@ export default function App() {
         handleSportChange,
         toggleTeamFilter,
         clearTeamFilter,
-        toggleHaTeamFilter,
-        clearHaTeamFilter,
         toggleFootballTeamFilter,
         clearFootballTeamFilter,
         toggleNationFilter,
@@ -113,7 +110,7 @@ export default function App() {
 
     // Eager load all sports data on app start for instant scroll
     const shl = useShlData(activeSport, selectedTeams, { eagerLoad: true });
-    const hockeyAllsvenskan = useHockeyAllsvenskanData(activeSport, selectedHaTeams, { eagerLoad: true });
+    const hockeyAllsvenskan = useHockeyAllsvenskanData(activeSport, selectedTeams, { eagerLoad: true });
     const football = useFootballData(activeSport, selectedFootballTeams, { eagerLoad: true });
     const svenskaCupen = useSvenskaCupenData(activeSport, selectedFootballTeams, { eagerLoad: true });
     const biathlon = useBiathlonData(activeSport, selectedNations, selectedGenders, { eagerLoad: true });
@@ -166,6 +163,55 @@ export default function App() {
         return () => clearTimeout(timeoutId);
     }, [activeSport, football.viewMode, combinedFootballTargetGameIndex, combinedFootballGames.length]);
 
+    // Combined hockey games (SHL + HockeyAllsvenskan) for single list
+    const combinedHockeyGames = useMemo(() => {
+        const shlGames = (shl.games || []).map(g => ({ ...g, sport: g.sport || 'shl' }));
+        const haGames = (hockeyAllsvenskan.games || []).map(g => ({ ...g, sport: g.sport || 'hockeyallsvenskan' }));
+        return [...shlGames, ...haGames].sort((a, b) => {
+            const timeA = new Date(a.startDateTime).getTime();
+            const timeB = new Date(b.startDateTime).getTime();
+            return timeA - timeB;
+        });
+    }, [shl.games, hockeyAllsvenskan.games]);
+
+    const combinedHockeyTargetGameIndex = useMemo(() => {
+        if (!combinedHockeyGames.length) {
+            return 0;
+        }
+        const liveIndex = combinedHockeyGames.findIndex(g => g.state === 'live');
+        if (liveIndex !== -1) {
+            return liveIndex;
+        }
+        const upcomingIndex = combinedHockeyGames.findIndex(g => g.state !== 'post-game');
+        if (upcomingIndex !== -1) {
+            return upcomingIndex;
+        }
+        return combinedHockeyGames.length - 1;
+    }, [combinedHockeyGames]);
+
+    const hasHockeyCombinedInitialScrolled = useRef(false);
+
+    // Initial scroll to live/upcoming in combined hockey list
+    useEffect(() => {
+        if (activeSport !== 'hockey') {
+            return;
+        }
+        if (hasHockeyCombinedInitialScrolled.current || combinedHockeyTargetGameIndex <= 0 || !combinedHockeyGames.length) {
+            return;
+        }
+        const timeoutId = setTimeout(() => {
+            if (shl.listRef.current && !hasHockeyCombinedInitialScrolled.current) {
+                hasHockeyCombinedInitialScrolled.current = true;
+                shl.listRef.current.scrollToOffset({
+                    offset: combinedHockeyTargetGameIndex * GAME_CARD_HEIGHT,
+                    animated: false
+                });
+            }
+        }, 50);
+        return () => clearTimeout(timeoutId);
+    }, [activeSport, combinedHockeyTargetGameIndex, combinedHockeyGames.length]);
+
+    // Merged hockey teams (SHL + HockeyAllsvenskan) for filter in Settings/Onboarding
     // Merged football teams (Allsvenskan + Svenska Cupen) for filter in Settings/Onboarding
     const combinedFootballTeams = useMemo(() => {
         const byKey = new Map();
@@ -173,6 +219,15 @@ export default function App() {
         (svenskaCupen.teams || []).forEach(t => byKey.set(t.key, t));
         return Array.from(byKey.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }, [football.teams, svenskaCupen.teams]);
+
+    // Merged hockey teams (SHL + HockeyAllsvenskan) for filter in Settings/Onboarding.
+    // Both use { code }; merge by code so a team shared across leagues isn't duplicated.
+    const combinedHockeyTeams = useMemo(() => {
+        const byCode = new Map();
+        (shl.teams || []).forEach(t => byCode.set(t.code, t));
+        (hockeyAllsvenskan.teams || []).forEach(t => byCode.set(t.code, t));
+        return Array.from(byCode.values()).sort((a, b) => (a.code || '').localeCompare(b.code || ''));
+    }, [shl.teams, hockeyAllsvenskan.teams]);
 
     // Unified data combining all sports
     const unified = useUnifiedData(shl, hockeyAllsvenskan, football, svenskaCupen, biathlon);
@@ -330,13 +385,13 @@ export default function App() {
                 // Find the game in SHL games list
                 const game = shl.games.find(g => g.uuid === gameId);
                 if (game) {
-                    handleSportChange('shl');
+                    handleSportChange('hockey');
                     setShlActiveTab(normalizedTab);
                     shl.handleGamePress(game);
                 } else {
                     // Game not in list yet, try to open anyway with minimal data
                     console.log('[DeepLink] SHL game not found in list, opening with ID');
-                    handleSportChange('shl');
+                    handleSportChange('hockey');
                     setShlActiveTab(normalizedTab);
                     const fallbackGame = {
                         uuid: gameId,
@@ -357,7 +412,7 @@ export default function App() {
                 }
             } else if (normalizedSport === 'hockeyallsvenskan') {
                 const game = hockeyAllsvenskan.games.find(g => g.uuid === gameId);
-                handleSportChange('hockeyallsvenskan');
+                handleSportChange('hockey');
                 setHaActiveTab(normalizedTab);
                 if (game) {
                     hockeyAllsvenskan.handleGamePress(game);
@@ -484,9 +539,8 @@ export default function App() {
     const onRefresh = useCallback(() => {
         if (activeSport === 'all') {
             unified.onRefresh();
-        } else if (activeSport === 'shl') {
+        } else if (activeSport === 'hockey') {
             shl.onRefresh();
-        } else if (activeSport === 'hockeyallsvenskan') {
             hockeyAllsvenskan.onRefresh();
         } else if (activeSport === 'football') {
             football.onRefresh();
@@ -523,8 +577,7 @@ export default function App() {
                 // We have measured frames up to this point, try again
                 const listRef =
                     activeSport === 'all' ? unified.listRef :
-                    activeSport === 'shl' ? shl.listRef :
-                    activeSport === 'hockeyallsvenskan' ? hockeyAllsvenskan.listRef :
+                    activeSport === 'hockey' ? shl.listRef :
                     activeSport === 'football' ? football.listRef :
                     biathlon.listRef;
 
@@ -539,39 +592,42 @@ export default function App() {
     // Get current refreshing state
     const refreshing = activeSport === 'all'
         ? unified.refreshing
-        : activeSport === 'shl'
-            ? shl.refreshing
-            : activeSport === 'hockeyallsvenskan'
-                ? hockeyAllsvenskan.refreshing
-                : activeSport === 'football'
-                    ? (football.refreshing || svenskaCupen.refreshing)
-                    : biathlon.refreshing;
+        : activeSport === 'hockey'
+            ? (shl.refreshing || hockeyAllsvenskan.refreshing)
+            : activeSport === 'football'
+                ? (football.refreshing || svenskaCupen.refreshing)
+                : biathlon.refreshing;
 
 
-    // Handle hockey game press
+    // Handle hockey game press — routes to the correct league's handler
     const handleHockeyGamePress = useCallback((game) => {
-        setShlActiveTab('summary');
-        shl.handleGamePress(game);
-    }, [shl]);
-
-    // Handle HockeyAllsvenskan game press
-    const handleHaGamePress = useCallback((game) => {
-        setHaActiveTab('summary');
-        hockeyAllsvenskan.handleGamePress(game);
-    }, [hockeyAllsvenskan]);
+        if (game.sport === 'hockeyallsvenskan') {
+            setHaActiveTab('summary');
+            hockeyAllsvenskan.handleGamePress(game);
+        } else {
+            setShlActiveTab('summary');
+            shl.handleGamePress(game);
+        }
+    }, [shl, hockeyAllsvenskan]);
 
     // Render sport picker
     const renderSportPicker = () => (
         <SportPicker activeSport={activeSport} onSportChange={handleSportChange} />
     );
 
-    // Render Hockey schedule - start at the most recent/current game
-    const renderShlSchedule = () => (
+    // Render Hockey schedule (SHL + HockeyAllsvenskan in one list)
+    const renderHockeySchedule = () => (
         <FlatList
             ref={shl.listRef}
-            data={shl.games}
-            renderItem={({ item }) => <GameCard game={item} onPress={() => handleHockeyGamePress(item)} />}
-            keyExtractor={item => item.uuid}
+            data={combinedHockeyGames}
+            renderItem={({ item }) => (
+                <GameCard
+                    game={item}
+                    onPress={() => handleHockeyGamePress(item)}
+                    leagueLabel={item.sport === 'hockeyallsvenskan' ? 'HockeyAllsvenskan' : 'SHL'}
+                />
+            )}
+            keyExtractor={item => `${item.sport}-${item.uuid}`}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
             getItemLayout={getShlItemLayout}
@@ -583,30 +639,7 @@ export default function App() {
             windowSize={11}
             ListEmptyComponent={<EmptyState message="No games found." />}
             ListHeaderComponent={
-                <ScheduleHeader icon="snow-outline" title="Hockey" count={shl.games.length} countLabel="games" />
-            }
-        />
-    );
-
-    // Render HockeyAllsvenskan schedule - start at the most recent/current game
-    const renderHaSchedule = () => (
-        <FlatList
-            ref={hockeyAllsvenskan.listRef}
-            data={hockeyAllsvenskan.games}
-            renderItem={({ item }) => <GameCard game={item} onPress={() => handleHaGamePress(item)} leagueLabel="HockeyAllsvenskan" />}
-            keyExtractor={item => item.uuid}
-            contentContainerStyle={styles.listContent}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
-            getItemLayout={getShlItemLayout}
-            onScrollToIndexFailed={handleScrollToIndexFailed}
-            onScroll={hockeyAllsvenskan.handleScroll}
-            scrollEventThrottle={100}
-            removeClippedSubviews={true}
-            maxToRenderPerBatch={10}
-            windowSize={11}
-            ListEmptyComponent={<EmptyState message="No games found." />}
-            ListHeaderComponent={
-                <ScheduleHeader icon="snow-outline" title="HockeyAllsvenskan" count={hockeyAllsvenskan.games.length} countLabel="games" />
+                <ScheduleHeader icon="snow-outline" title="Hockey" count={combinedHockeyGames.length} countLabel="games" />
             }
         />
     );
@@ -864,20 +897,12 @@ export default function App() {
                         renderUnifiedSchedule()
                     )}
                 </View>
-            ) : activeSport === 'shl' ? (
+            ) : activeSport === 'hockey' ? (
                 <View style={styles.scheduleContainer}>
-                    {shl.loading ? (
+                    {(shl.loading || hockeyAllsvenskan.loading) ? (
                         <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
                     ) : (
-                        renderShlSchedule()
-                    )}
-                </View>
-            ) : activeSport === 'hockeyallsvenskan' ? (
-                <View style={styles.scheduleContainer}>
-                    {hockeyAllsvenskan.loading ? (
-                        <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
-                    ) : (
-                        renderHaSchedule()
+                        renderHockeySchedule()
                     )}
                 </View>
             ) : activeSport === 'football' ? (
@@ -937,7 +962,7 @@ export default function App() {
                 onTabChange={setHaActiveTab}
                 onRefresh={hockeyAllsvenskan.refreshModalDetails}
                 refreshing={hockeyAllsvenskan.refreshingModal}
-                selectedTeams={selectedHaTeams}
+                selectedTeams={selectedTeams}
                 standingsFetcher={fetchHockeyAllsvenskanStandings}
                 standingsSport="hockeyallsvenskan"
             />
@@ -985,32 +1010,19 @@ export default function App() {
             <SettingsModal
                 visible={showSettings}
                 onClose={() => setShowSettings(false)}
-                teams={shl.teams}
+                teams={combinedHockeyTeams}
                 selectedTeams={selectedTeams}
                 onToggleTeam={(teamCode) => {
                     toggleTeamFilter(teamCode);
                     // Update FCM topic subscriptions with all teams from all sports
-                    const newShlTeams = selectedTeams.includes(teamCode)
+                    const newHockeyTeams = selectedTeams.includes(teamCode)
                         ? selectedTeams.filter(t => t !== teamCode)
                         : [...selectedTeams, teamCode];
-                    setTeamTags([...newShlTeams, ...selectedHaTeams, ...selectedFootballTeams]);
+                    setTeamTags([...newHockeyTeams, ...selectedFootballTeams]);
                 }}
                 onClearTeams={() => {
                     clearTeamFilter();
-                    setTeamTags([...selectedHaTeams, ...selectedFootballTeams]);
-                }}
-                haTeams={hockeyAllsvenskan.teams}
-                selectedHaTeams={selectedHaTeams}
-                onToggleHaTeam={(teamCode) => {
-                    toggleHaTeamFilter(teamCode);
-                    const newHaTeams = selectedHaTeams.includes(teamCode)
-                        ? selectedHaTeams.filter(t => t !== teamCode)
-                        : [...selectedHaTeams, teamCode];
-                    setTeamTags([...selectedTeams, ...newHaTeams, ...selectedFootballTeams]);
-                }}
-                onClearHaTeams={() => {
-                    clearHaTeamFilter();
-                    setTeamTags([...selectedTeams, ...selectedFootballTeams]);
+                    setTeamTags([...selectedFootballTeams]);
                 }}
                 footballTeams={combinedFootballTeams}
                 selectedFootballTeams={selectedFootballTeams}
@@ -1020,11 +1032,11 @@ export default function App() {
                     const newFootballTeams = selectedFootballTeams.includes(teamKey)
                         ? selectedFootballTeams.filter(t => t !== teamKey)
                         : [...selectedFootballTeams, teamKey];
-                    setTeamTags([...selectedTeams, ...selectedHaTeams, ...newFootballTeams]);
+                    setTeamTags([...selectedTeams, ...newFootballTeams]);
                 }}
                 onClearFootballTeams={() => {
                     clearFootballTeamFilter();
-                    setTeamTags([...selectedTeams, ...selectedHaTeams]);
+                    setTeamTags([...selectedTeams]);
                 }}
                 biathlonNations={biathlon.nations}
                 selectedNations={selectedNations}
@@ -1066,27 +1078,18 @@ export default function App() {
                 onStepChange={setOnboardingStep}
                 onComplete={() => {
                     // Sync all team topics to FCM when onboarding completes
-                    setTeamTags([...selectedTeams, ...selectedHaTeams, ...selectedFootballTeams]);
+                    setTeamTags([...selectedTeams, ...selectedFootballTeams]);
                     completeOnboarding();
                 }}
-                teams={shl.teams}
+                teams={combinedHockeyTeams}
                 selectedTeams={selectedTeams}
                 onToggleTeam={(teamCode) => {
                     toggleTeamFilter(teamCode);
                     // Update FCM topic subscriptions with all teams from all sports
-                    const newShlTeams = selectedTeams.includes(teamCode)
+                    const newHockeyTeams = selectedTeams.includes(teamCode)
                         ? selectedTeams.filter(t => t !== teamCode)
                         : [...selectedTeams, teamCode];
-                    setTeamTags([...newShlTeams, ...selectedHaTeams, ...selectedFootballTeams]);
-                }}
-                haTeams={hockeyAllsvenskan.teams}
-                selectedHaTeams={selectedHaTeams}
-                onToggleHaTeam={(teamCode) => {
-                    toggleHaTeamFilter(teamCode);
-                    const newHaTeams = selectedHaTeams.includes(teamCode)
-                        ? selectedHaTeams.filter(t => t !== teamCode)
-                        : [...selectedHaTeams, teamCode];
-                    setTeamTags([...selectedTeams, ...newHaTeams, ...selectedFootballTeams]);
+                    setTeamTags([...newHockeyTeams, ...selectedFootballTeams]);
                 }}
                 footballTeams={combinedFootballTeams}
                 selectedFootballTeams={selectedFootballTeams}
@@ -1096,7 +1099,7 @@ export default function App() {
                     const newFootballTeams = selectedFootballTeams.includes(teamKey)
                         ? selectedFootballTeams.filter(t => t !== teamKey)
                         : [...selectedFootballTeams, teamKey];
-                    setTeamTags([...selectedTeams, ...selectedHaTeams, ...newFootballTeams]);
+                    setTeamTags([...selectedTeams, ...newFootballTeams]);
                 }}
                 biathlonNations={biathlon.nations}
                 selectedNations={selectedNations}

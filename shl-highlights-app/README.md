@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.12.0
+- Merge SHL and HockeyAllsvenskan into a single "Hockey" tab (mirrors how Football combines Allsvenskan + Svenska Cupen) — one combined schedule with per-game league labels, one merged hockey team list in Settings/onboarding
+
 ### 2.11.0
 - Add HockeyAllsvenskan as a selectable league in the app (own sport tab, schedule, standings, and game modal)
 - Add HockeyAllsvenskan team selection in Settings and onboarding, wired into goal-notification topics

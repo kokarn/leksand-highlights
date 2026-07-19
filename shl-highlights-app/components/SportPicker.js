@@ -5,8 +5,7 @@ import { useTheme } from '../contexts';
 
 const SPORTS = [
     { key: 'all', name: 'All', icon: 'grid-outline' },
-    { key: 'shl', name: 'SHL', icon: 'snow-outline' },
-    { key: 'hockeyallsvenskan', name: 'HockeyAllsvenskan', icon: 'snow-outline' },
+    { key: 'hockey', name: 'Hockey', icon: 'snow-outline' },
     { key: 'football', name: 'Football', icon: 'football-outline' },
     { key: 'biathlon', name: 'Biathlon', icon: 'locate-outline' }
 ];

@@ -20,9 +20,6 @@ export const OnboardingModal = ({
     teams,
     selectedTeams,
     onToggleTeam,
-    haTeams = [],
-    selectedHaTeams = [],
-    onToggleHaTeam,
     footballTeams = [],
     selectedFootballTeams = [],
     onToggleFootballTeam,
@@ -66,7 +63,7 @@ export const OnboardingModal = ({
                         <Text style={themedStyles.onboardingStepNumber}>1 of 4</Text>
                         <Ionicons name="snow-outline" size={32} color={colors.accent} style={styles.stepIcon} />
                         <Text style={themedStyles.onboardingStepTitle}>Pick your Hockey teams</Text>
-                        <Text style={themedStyles.onboardingStepSubtitle}>Select the SHL teams you want to follow</Text>
+                        <Text style={themedStyles.onboardingStepSubtitle}>Select the SHL and HockeyAllsvenskan teams you want to follow</Text>
                     </View>
                     <ScrollView style={styles.onboardingScrollContent} showsVerticalScrollIndicator={false}>
                         <View style={styles.chipGrid}>
@@ -86,28 +83,6 @@ export const OnboardingModal = ({
                                 </TouchableOpacity>
                             ))}
                         </View>
-                        {haTeams.length > 0 && (
-                            <>
-                                <Text style={[themedStyles.onboardingStepSubtitle, { marginTop: 20, marginBottom: 12 }]}>HockeyAllsvenskan teams</Text>
-                                <View style={styles.chipGrid}>
-                                    {haTeams.map(team => (
-                                        <TouchableOpacity
-                                            key={team.code}
-                                            style={[themedStyles.teamChip, selectedHaTeams.includes(team.code) && themedStyles.chipActive]}
-                                            onPress={() => onToggleHaTeam(team.code)}
-                                        >
-                                            <Image source={{ uri: getTeamLogoUrl(team.code) }} style={styles.chipLogo} resizeMode="contain" />
-                                            <Text style={[themedStyles.chipText, selectedHaTeams.includes(team.code) && themedStyles.chipTextActive]} numberOfLines={1}>
-                                                {team.code}
-                                            </Text>
-                                            {selectedHaTeams.includes(team.code) && (
-                                                <Ionicons name="checkmark-circle" size={16} color={colors.accent} style={styles.chipCheck} />
-                                            )}
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
-                            </>
-                        )}
                     </ScrollView>
                     <View style={styles.onboardingNav}>
                         <TouchableOpacity style={styles.onboardingNavButton} onPress={() => onStepChange(0)}>
@@ -115,7 +90,7 @@ export const OnboardingModal = ({
                             <Text style={themedStyles.onboardingNavButtonText}>Back</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={themedStyles.onboardingButton} onPress={() => onStepChange(2)}>
-                            <Text style={styles.onboardingButtonText}>{(selectedTeams.length > 0 || selectedHaTeams.length > 0) ? 'Continue' : 'Skip'}</Text>
+                            <Text style={styles.onboardingButtonText}>{selectedTeams.length > 0 ? 'Continue' : 'Skip'}</Text>
                             <Ionicons name="arrow-forward" size={20} color="#fff" />
                         </TouchableOpacity>
                     </View>

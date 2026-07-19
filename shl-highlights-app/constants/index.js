@@ -26,7 +26,6 @@ export const TEAM_COLORS = {
 export const STORAGE_KEYS = {
     SELECTED_SPORT: 'selectedSport',
     SELECTED_TEAMS: 'selectedTeams',
-    SELECTED_HA_TEAMS: 'selectedHockeyAllsvenskanTeams',
     SELECTED_FOOTBALL_TEAMS: 'selectedFootballTeams',
     SELECTED_NATIONS: 'selectedNations',
     SELECTED_GENDERS: 'selectedGenders',

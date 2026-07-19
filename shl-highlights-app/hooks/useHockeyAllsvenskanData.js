@@ -13,7 +13,7 @@ const RECENT_START_WINDOW_MINUTES = 90;
 /**
  * Hook for managing HockeyAllsvenskan games data, standings, and auto-refresh.
  * Mirrors useShlData (same shl.se-clone payload shape) but hits the namespaced
- * /api/hockeyallsvenskan/* routes and keys off the 'hockeyallsvenskan' sport tab.
+ * /api/hockeyallsvenskan/* routes and shares the 'hockey' sport tab with SHL.
  * @param {string} activeSport - Currently active sport tab
  * @param {string[]} selectedTeams - Selected team filters
  * @param {object} options - Additional options
@@ -94,7 +94,7 @@ export function useHockeyAllsvenskanData(activeSport, selectedTeams, options = {
 
     // Initial data load (eager load on mount if enabled, otherwise wait for active sport)
     useEffect(() => {
-        if (!hasLoadedOnce.current && (eagerLoad || activeSport === 'hockeyallsvenskan')) {
+        if (!hasLoadedOnce.current && (eagerLoad || activeSport === 'hockey')) {
             hasLoadedOnce.current = true;
             loadGames();
         }
@@ -102,14 +102,14 @@ export function useHockeyAllsvenskanData(activeSport, selectedTeams, options = {
 
     // Load standings when view mode changes
     useEffect(() => {
-        if (activeSport !== 'hockeyallsvenskan') return;
+        if (activeSport !== 'hockey') return;
         if (viewMode !== 'standings') return;
         loadStandings();
     }, [activeSport, viewMode, loadStandings]);
 
     // Auto-refresh for live games (also when viewing 'all' sports)
     useEffect(() => {
-        if (activeSport !== 'hockeyallsvenskan' && activeSport !== 'all') return;
+        if (activeSport !== 'hockey' && activeSport !== 'all') return;
         const shouldAutoRefresh = shouldAutoRefreshGames(games);
         if (!shouldAutoRefresh) return;
 
@@ -123,7 +123,7 @@ export function useHockeyAllsvenskanData(activeSport, selectedTeams, options = {
 
     // Restore scroll position when switching back to HockeyAllsvenskan
     useEffect(() => {
-        if (activeSport === 'hockeyallsvenskan' && hasUserScrolled.current && savedScrollOffset.current !== null) {
+        if (activeSport === 'hockey' && hasUserScrolled.current && savedScrollOffset.current !== null) {
             const timeoutId = setTimeout(() => {
                 listRef.current?.scrollToOffset({
                     offset: savedScrollOffset.current,
@@ -298,7 +298,7 @@ export function useHockeyAllsvenskanData(activeSport, selectedTeams, options = {
     // Scroll to target position after data loads (without animation)
     useEffect(() => {
         if (
-            activeSport === 'hockeyallsvenskan' &&
+            activeSport === 'hockey' &&
             !hasInitialScrolled.current &&
             !hasUserScrolled.current &&
             targetGameIndex > 0 &&

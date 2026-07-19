@@ -88,7 +88,7 @@ export function useShlData(activeSport, selectedTeams, options = {}) {
     // Initial data load (eager load on mount if enabled, otherwise wait for active sport)
     useEffect(() => {
         // First load: load immediately if eagerLoad or if sport is active
-        if (!hasLoadedOnce.current && (eagerLoad || activeSport === 'shl')) {
+        if (!hasLoadedOnce.current && (eagerLoad || activeSport === 'hockey')) {
             hasLoadedOnce.current = true;
             loadGames();
         }
@@ -96,14 +96,14 @@ export function useShlData(activeSport, selectedTeams, options = {}) {
 
     // Load standings when view mode changes
     useEffect(() => {
-        if (activeSport !== 'shl') return;
+        if (activeSport !== 'hockey') return;
         if (viewMode !== 'standings') return;
         loadStandings();
     }, [activeSport, viewMode, loadStandings]);
 
     // Auto-refresh for live games (also when viewing 'all' sports)
     useEffect(() => {
-        if (activeSport !== 'shl' && activeSport !== 'all') return;
+        if (activeSport !== 'hockey' && activeSport !== 'all') return;
         const shouldAutoRefresh = shouldAutoRefreshGames(games);
         if (!shouldAutoRefresh) return;
 
@@ -117,7 +117,7 @@ export function useShlData(activeSport, selectedTeams, options = {}) {
 
     // Restore scroll position when switching back to SHL
     useEffect(() => {
-        if (activeSport === 'shl' && hasUserScrolled.current && savedScrollOffset.current !== null) {
+        if (activeSport === 'hockey' && hasUserScrolled.current && savedScrollOffset.current !== null) {
             // Small delay to ensure FlatList is mounted
             const timeoutId = setTimeout(() => {
                 listRef.current?.scrollToOffset({
@@ -297,7 +297,7 @@ export function useShlData(activeSport, selectedTeams, options = {}) {
     // Only scroll when this sport is active to avoid scrolling before the list is visible
     useEffect(() => {
         if (
-            activeSport === 'shl' &&
+            activeSport === 'hockey' &&
             !hasInitialScrolled.current &&
             !hasUserScrolled.current &&
             targetGameIndex > 0 &&
