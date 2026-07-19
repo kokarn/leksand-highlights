@@ -40,13 +40,20 @@ const {
     setCachedEuropaLeagueQualDetails,
     getCachedEuropaLeagueQualStandings,
     setCachedEuropaLeagueQualStandings,
+    getCachedConferenceLeagueQualGames,
+    setCachedConferenceLeagueQualGames,
+    getCachedConferenceLeagueQualDetails,
+    setCachedConferenceLeagueQualDetails,
+    getCachedConferenceLeagueQualStandings,
+    setCachedConferenceLeagueQualStandings,
     clearAllCaches,
     getCacheStatus,
     setGamesLiveFlag,
     setAllsvenskanLiveFlag,
     setSvenskaCupenLiveFlag,
     setHockeyAllsvenskanLiveFlag,
-    setEuropaLeagueQualLiveFlag
+    setEuropaLeagueQualLiveFlag,
+    setConferenceLeagueQualLiveFlag
 } = require('./modules/cache');
 const { getProvider, getAvailableSports } = require('./modules/providers');
 const { formatSwedishTimestamp } = require('./modules/utils');
@@ -235,6 +242,7 @@ app.get('/api/sports', (req, res) => {
         allsvenskan: 'soccer-ball',
         'svenska-cupen': 'trophy',
         'europa-league-qual': 'soccer-ball',
+        'conference-league-qual': 'soccer-ball',
         biathlon: 'target'
     };
 
@@ -1012,6 +1020,164 @@ app.get('/api/europa-league-qual/standings', async (req, res) => {
     }
 });
 
+// ============ CONFERENCE LEAGUE QUALIFYING ENDPOINTS ============
+// UEFA Conference League Qualifying runs on the SAME ESPN API contract as Allsvenskan
+// (league slug uefa.europa.conf_qual — this is where GAIS plays, NOT the Europa
+// League qualifiers), so these mirror the Europa League Qual endpoints with their own
+// cache slots. No clip source (FotbollPlay is Allsvenskan-only) → videos always [];
+// standings return an empty table (knockout).
+
+/**
+ * GET /api/conference-league-qual/games
+ * Get Conference League Qualifying fixtures. Supports ?team, ?state, ?upcoming, ?limit.
+ */
+app.get('/api/conference-league-qual/games', async (req, res) => {
+    try {
+        let games = getCachedConferenceLeagueQualGames();
+        let usedCache = true;
+
+        if (games) {
+            console.log('[Cache HIT] /api/conference-league-qual/games');
+        } else {
+            usedCache = false;
+            console.log('[Cache MISS] /api/conference-league-qual/games - fetching fresh data...');
+            const provider = getProvider('conference-league-qual');
+            games = await provider.fetchAllGames();
+        }
+
+        if (!Array.isArray(games)) {
+            games = [];
+        }
+
+        const getTimeValue = (value) => {
+            const time = new Date(value).getTime();
+            return Number.isNaN(time) ? 0 : time;
+        };
+        games = games.sort((a, b) => getTimeValue(b.startDateTime) - getTimeValue(a.startDateTime));
+
+        const now = new Date();
+        const shouldUseFastCache = shouldUseFastGamesCache(games, now);
+
+        if (!usedCache) {
+            setCachedConferenceLeagueQualGames(games, shouldUseFastCache);
+        } else {
+            setConferenceLeagueQualLiveFlag(shouldUseFastCache);
+        }
+
+        let result = games;
+
+        if (req.query.team) {
+            const teamQuery = String(req.query.team).trim().toLowerCase();
+            const matchesTeam = (teamInfo) => {
+                if (!teamInfo) return false;
+                const candidates = [teamInfo.code, teamInfo.uuid, teamInfo.names?.short, teamInfo.names?.long];
+                return candidates.some(value => value && String(value).toLowerCase() === teamQuery);
+            };
+            result = result.filter(game => matchesTeam(game.homeTeamInfo) || matchesTeam(game.awayTeamInfo));
+        }
+
+        if (req.query.state) {
+            const stateQuery = String(req.query.state).trim().toLowerCase();
+            result = result.filter(game => game.state === stateQuery);
+        }
+
+        if (req.query.upcoming === 'true') {
+            result = result.filter(game => {
+                const startTime = new Date(game.startDateTime);
+                return !Number.isNaN(startTime.getTime()) && startTime >= now;
+            });
+        }
+
+        if (req.query.limit) {
+            const limit = parseInt(req.query.limit);
+            if (limit > 0) {
+                result = result.slice(0, limit);
+            }
+        }
+
+        res.json(result);
+    } catch (error) {
+        console.error('Error fetching Conference League Qualifying schedule:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/conference-league-qual/game/:id/videos
+ * No clip source exists for this competition — always returns [].
+ */
+app.get('/api/conference-league-qual/game/:id/videos', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const provider = getProvider('conference-league-qual');
+        const videos = await provider.fetchGameVideos(id);
+        res.json(Array.isArray(videos) ? videos : []);
+    } catch (error) {
+        console.error(`Error fetching Conference League Qualifying videos for ${id}:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/conference-league-qual/game/:id/details
+ * Get details for a specific Conference League Qualifying match
+ */
+app.get('/api/conference-league-qual/game/:id/details', async (req, res) => {
+    const { id } = req.params;
+
+    const cached = getCachedConferenceLeagueQualDetails(id);
+    if (cached) {
+        console.log(`[Cache HIT] /api/conference-league-qual/game/${id}/details`);
+        return res.json(cached);
+    }
+
+    console.log(`[Cache MISS] /api/conference-league-qual/game/${id}/details - fetching...`);
+
+    try {
+        const provider = getProvider('conference-league-qual');
+        const details = await provider.fetchGameDetails(id);
+
+        if (!details) {
+            return res.status(404).json({ error: 'Game not found' });
+        }
+
+        setCachedConferenceLeagueQualDetails(id, details);
+        res.json(details);
+    } catch (error) {
+        console.error(`Error fetching Conference League Qualifying details for ${id}:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/conference-league-qual/standings
+ * Conference League Qualifying is knockout format — returns an empty-but-valid table.
+ */
+app.get('/api/conference-league-qual/standings', async (req, res) => {
+    try {
+        const seasonQuery = req.query.season ? String(req.query.season).trim() : null;
+        let standings = getCachedConferenceLeagueQualStandings(seasonQuery);
+
+        if (standings) {
+            console.log('[Cache HIT] /api/conference-league-qual/standings');
+        } else {
+            console.log('[Cache MISS] /api/conference-league-qual/standings - fetching fresh data...');
+            const provider = getProvider('conference-league-qual');
+            standings = await provider.fetchStandings({ season: seasonQuery });
+            const resolvedSeason = standings?.season ? String(standings.season) : null;
+            setCachedConferenceLeagueQualStandings(seasonQuery, standings);
+            if (resolvedSeason && resolvedSeason !== seasonQuery) {
+                setCachedConferenceLeagueQualStandings(resolvedSeason, standings);
+            }
+        }
+
+        res.json(standings);
+    } catch (error) {
+        console.error('Error fetching Conference League Qualifying standings:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ============ HOCKEYALLSVENSKAN ENDPOINTS ============
 // HockeyAllsvenskan runs on the same platform as the SHL (identical API shapes), so
 // these mirror the SHL /api/games, /videos, /details, /standings endpoints, pointed
@@ -1654,7 +1820,7 @@ app.post('/api/notifications/goal-test', async (req, res) => {
             });
         }
 
-        const validSports = ['shl', 'hockeyallsvenskan', 'allsvenskan', 'svenska-cupen', 'europa-league-qual'];
+        const validSports = ['shl', 'hockeyallsvenskan', 'allsvenskan', 'svenska-cupen', 'europa-league-qual', 'conference-league-qual'];
         const sport = validSports.includes(payload.sport) ? payload.sport : 'shl';
         const isHockeyTest = sport === 'shl' || sport === 'hockeyallsvenskan';
         const scoringIsHome = parseOptionalBoolean(payload.scoringIsHome, true);

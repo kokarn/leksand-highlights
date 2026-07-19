@@ -323,7 +323,7 @@ async function runCheck() {
     // Fetch all three sports' active games in parallel, then check each sport's live
     // games concurrently. Previously this was fully sequential (await per sport, then
     // await per game), so on a busy multi-league night detection lag stacked up.
-    const SPORTS = ['shl', 'hockeyallsvenskan', 'allsvenskan', 'svenska-cupen', 'europa-league-qual'];
+    const SPORTS = ['shl', 'hockeyallsvenskan', 'allsvenskan', 'svenska-cupen', 'europa-league-qual', 'conference-league-qual'];
 
     const perSportGoals = await Promise.all(SPORTS.map(async (sport) => {
         try {

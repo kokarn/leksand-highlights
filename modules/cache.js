@@ -25,13 +25,17 @@ const cache = {
     hockeyAllsvenskanStandings: { data: null, timestamp: 0 },
     europaLeagueQualGames: { data: null, timestamp: 0, hasLive: false },
     europaLeagueQualDetails: new Map(),
-    europaLeagueQualStandings: new Map()
+    europaLeagueQualStandings: new Map(),
+    conferenceLeagueQualGames: { data: null, timestamp: 0, hasLive: false },
+    conferenceLeagueQualDetails: new Map(),
+    conferenceLeagueQualStandings: new Map()
 };
 
 // ============ CACHE HELPERS ============
 const DEFAULT_ALLSVENSKAN_STANDINGS_KEY = 'current';
 const DEFAULT_SVENSKA_CUPEN_STANDINGS_KEY = 'current';
 const DEFAULT_EUROPA_LEAGUE_QUAL_STANDINGS_KEY = 'current';
+const DEFAULT_CONFERENCE_LEAGUE_QUAL_STANDINGS_KEY = 'current';
 
 function isCacheValid(cacheEntry, duration) {
     return cacheEntry && cacheEntry.data && (Date.now() - cacheEntry.timestamp) < duration;
@@ -75,6 +79,14 @@ function getEuropaLeagueQualGamesCacheDuration() {
 
 function setEuropaLeagueQualLiveFlag(hasLive) {
     cache.europaLeagueQualGames.hasLive = Boolean(hasLive);
+}
+
+function getConferenceLeagueQualGamesCacheDuration() {
+    return cache.conferenceLeagueQualGames.hasLive ? CACHE_DURATION_LIVE : CACHE_DURATION_NORMAL;
+}
+
+function setConferenceLeagueQualLiveFlag(hasLive) {
+    cache.conferenceLeagueQualGames.hasLive = Boolean(hasLive);
 }
 
 function getCachedGames() {
@@ -157,6 +169,22 @@ function setCachedEuropaLeagueQualGames(data, hasLive = false) {
     };
 }
 
+function getCachedConferenceLeagueQualGames() {
+    const duration = getConferenceLeagueQualGamesCacheDuration();
+    if (isCacheValid(cache.conferenceLeagueQualGames, duration)) {
+        return cache.conferenceLeagueQualGames.data;
+    }
+    return null;
+}
+
+function setCachedConferenceLeagueQualGames(data, hasLive = false) {
+    cache.conferenceLeagueQualGames = {
+        data,
+        timestamp: Date.now(),
+        hasLive
+    };
+}
+
 function getCachedDetails(uuid) {
     const cached = cache.details.get(uuid);
     if (isCacheValid(cached, CACHE_DURATION_DETAILS)) {
@@ -215,6 +243,18 @@ function getCachedEuropaLeagueQualDetails(uuid) {
 
 function setCachedEuropaLeagueQualDetails(uuid, data) {
     cache.europaLeagueQualDetails.set(uuid, { data, timestamp: Date.now() });
+}
+
+function getCachedConferenceLeagueQualDetails(uuid) {
+    const cached = cache.conferenceLeagueQualDetails.get(uuid);
+    if (isCacheValid(cached, CACHE_DURATION_DETAILS)) {
+        return cached.data;
+    }
+    return null;
+}
+
+function setCachedConferenceLeagueQualDetails(uuid, data) {
+    cache.conferenceLeagueQualDetails.set(uuid, { data, timestamp: Date.now() });
 }
 
 function getCachedVideos(uuid) {
@@ -318,6 +358,28 @@ function setCachedEuropaLeagueQualStandings(season, data) {
     cache.europaLeagueQualStandings.set(key, { data, timestamp: Date.now() });
 }
 
+function normalizeConferenceLeagueQualStandingsKey(season) {
+    if (!season) {
+        return DEFAULT_CONFERENCE_LEAGUE_QUAL_STANDINGS_KEY;
+    }
+    const normalized = String(season).trim();
+    return normalized || DEFAULT_CONFERENCE_LEAGUE_QUAL_STANDINGS_KEY;
+}
+
+function getCachedConferenceLeagueQualStandings(season) {
+    const key = normalizeConferenceLeagueQualStandingsKey(season);
+    const cached = cache.conferenceLeagueQualStandings.get(key);
+    if (isCacheValid(cached, CACHE_DURATION_STANDINGS)) {
+        return cached.data;
+    }
+    return null;
+}
+
+function setCachedConferenceLeagueQualStandings(season, data) {
+    const key = normalizeConferenceLeagueQualStandingsKey(season);
+    cache.conferenceLeagueQualStandings.set(key, { data, timestamp: Date.now() });
+}
+
 // ============ BIATHLON CACHE ============
 function getCachedBiathlon() {
     if (isCacheValid(cache.biathlon, CACHE_DURATION_BIATHLON)) {
@@ -356,6 +418,9 @@ function clearAllCaches() {
     cache.europaLeagueQualGames = { data: null, timestamp: 0, hasLive: false };
     cache.europaLeagueQualDetails.clear();
     cache.europaLeagueQualStandings.clear();
+    cache.conferenceLeagueQualGames = { data: null, timestamp: 0, hasLive: false };
+    cache.conferenceLeagueQualDetails.clear();
+    cache.conferenceLeagueQualStandings.clear();
 }
 
 function getCacheStatus() {
@@ -487,6 +552,12 @@ module.exports = {
     setCachedEuropaLeagueQualDetails,
     getCachedEuropaLeagueQualStandings,
     setCachedEuropaLeagueQualStandings,
+    getCachedConferenceLeagueQualGames,
+    setCachedConferenceLeagueQualGames,
+    getCachedConferenceLeagueQualDetails,
+    setCachedConferenceLeagueQualDetails,
+    getCachedConferenceLeagueQualStandings,
+    setCachedConferenceLeagueQualStandings,
     clearAllCaches,
     getCacheStatus,
     getGamesCacheDuration,
@@ -494,5 +565,6 @@ module.exports = {
     setAllsvenskanLiveFlag,
     setSvenskaCupenLiveFlag,
     setHockeyAllsvenskanLiveFlag,
-    setEuropaLeagueQualLiveFlag
+    setEuropaLeagueQualLiveFlag,
+    setConferenceLeagueQualLiveFlag
 };

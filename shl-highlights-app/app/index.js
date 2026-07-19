@@ -61,6 +61,7 @@ import {
     useFootballData,
     useSvenskaCupenData,
     useEuropaLeagueQualData,
+    useConferenceLeagueQualData,
     useBiathlonData,
     useUnifiedData,
     usePushNotifications,
@@ -115,6 +116,7 @@ export default function App() {
     const football = useFootballData(activeSport, selectedFootballTeams, { eagerLoad: true });
     const svenskaCupen = useSvenskaCupenData(activeSport, selectedFootballTeams, { eagerLoad: true });
     const europaLeagueQual = useEuropaLeagueQualData(activeSport, selectedFootballTeams, { eagerLoad: true });
+    const conferenceLeagueQual = useConferenceLeagueQualData(activeSport, selectedFootballTeams, { eagerLoad: true });
     const biathlon = useBiathlonData(activeSport, selectedNations, selectedGenders, { eagerLoad: true });
 
     // Combined football games (Allsvenskan + Svenska Cupen + Europa League Qual) for single list
@@ -122,12 +124,13 @@ export default function App() {
         const allsvenskan = (football.games || []).map(g => ({ ...g, sport: g.sport || 'allsvenskan' }));
         const cupen = (svenskaCupen.games || []).map(g => ({ ...g, sport: g.sport || 'svenska-cupen' }));
         const europaQual = (europaLeagueQual.games || []).map(g => ({ ...g, sport: g.sport || 'europa-league-qual' }));
-        return [...allsvenskan, ...cupen, ...europaQual].sort((a, b) => {
+        const conferenceQual = (conferenceLeagueQual.games || []).map(g => ({ ...g, sport: g.sport || 'conference-league-qual' }));
+        return [...allsvenskan, ...cupen, ...europaQual, ...conferenceQual].sort((a, b) => {
             const timeA = new Date(a.startDateTime).getTime();
             const timeB = new Date(b.startDateTime).getTime();
             return timeA - timeB;
         });
-    }, [football.games, svenskaCupen.games, europaLeagueQual.games]);
+    }, [football.games, svenskaCupen.games, europaLeagueQual.games, conferenceLeagueQual.games]);
 
     const combinedFootballTargetGameIndex = useMemo(() => {
         if (!combinedFootballGames.length) {
@@ -221,8 +224,9 @@ export default function App() {
         (football.teams || []).forEach(t => byKey.set(t.key, t));
         (svenskaCupen.teams || []).forEach(t => byKey.set(t.key, t));
         (europaLeagueQual.teams || []).forEach(t => byKey.set(t.key, t));
+        (conferenceLeagueQual.teams || []).forEach(t => byKey.set(t.key, t));
         return Array.from(byKey.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    }, [football.teams, svenskaCupen.teams, europaLeagueQual.teams]);
+    }, [football.teams, svenskaCupen.teams, europaLeagueQual.teams, conferenceLeagueQual.teams]);
 
     // Merged hockey teams (SHL + HockeyAllsvenskan) for filter in Settings/Onboarding.
     // Both use { code }; merge by code so a team shared across leagues isn't duplicated.
@@ -234,7 +238,7 @@ export default function App() {
     }, [shl.teams, hockeyAllsvenskan.teams]);
 
     // Unified data combining all sports
-    const unified = useUnifiedData(shl, hockeyAllsvenskan, football, svenskaCupen, europaLeagueQual, biathlon);
+    const unified = useUnifiedData(shl, hockeyAllsvenskan, football, svenskaCupen, europaLeagueQual, conferenceLeagueQual, biathlon);
 
     // Push notifications
     const {
@@ -459,6 +463,14 @@ export default function App() {
                 } else {
                     europaLeagueQual.handleGamePress({ uuid: gameId });
                 }
+            } else if (normalizedSport === 'conference-league-qual') {
+                handleSportChange('football');
+                const game = conferenceLeagueQual.games.find(g => g.uuid === gameId);
+                if (game) {
+                    conferenceLeagueQual.handleGamePress(game);
+                } else {
+                    conferenceLeagueQual.handleGamePress({ uuid: gameId });
+                }
             } else {
                 console.warn('[DeepLink] Unsupported sport in deep link:', normalizedSport);
             }
@@ -540,11 +552,13 @@ export default function App() {
         football.games,
         svenskaCupen.games,
         europaLeagueQual.games,
+        conferenceLeagueQual.games,
         shl.handleGamePress,
         hockeyAllsvenskan.handleGamePress,
         football.handleGamePress,
         svenskaCupen.handleGamePress,
         europaLeagueQual.handleGamePress,
+        conferenceLeagueQual.handleGamePress,
         handleSportChange,
         deepLinkParams
     ]);
@@ -560,10 +574,11 @@ export default function App() {
             football.onRefresh();
             svenskaCupen.onRefresh();
             europaLeagueQual.onRefresh();
+            conferenceLeagueQual.onRefresh();
         } else if (activeSport === 'biathlon') {
             biathlon.onRefresh();
         }
-    }, [activeSport, shl, hockeyAllsvenskan, football, svenskaCupen, europaLeagueQual, biathlon, unified]);
+    }, [activeSport, shl, hockeyAllsvenskan, football, svenskaCupen, europaLeagueQual, conferenceLeagueQual, biathlon, unified]);
 
     // getItemLayout functions for consistent scroll behavior
     const getShlItemLayout = useCallback((data, index) => ({
@@ -610,7 +625,7 @@ export default function App() {
         : activeSport === 'hockey'
             ? (shl.refreshing || hockeyAllsvenskan.refreshing)
             : activeSport === 'football'
-                ? (football.refreshing || svenskaCupen.refreshing || europaLeagueQual.refreshing)
+                ? (football.refreshing || svenskaCupen.refreshing || europaLeagueQual.refreshing || conferenceLeagueQual.refreshing)
                 : biathlon.refreshing;
 
 
@@ -672,11 +687,13 @@ export default function App() {
                             svenskaCupen.handleGamePress(item);
                         } else if (item.sport === 'europa-league-qual') {
                             europaLeagueQual.handleGamePress(item);
+                        } else if (item.sport === 'conference-league-qual') {
+                            conferenceLeagueQual.handleGamePress(item);
                         } else {
                             football.handleGamePress(item);
                         }
                     }}
-                    leagueLabel={item.sport === 'svenska-cupen' ? 'Svenska Cupen' : (item.sport === 'europa-league-qual' ? 'Europa League Qualifying' : 'Allsvenskan')}
+                    leagueLabel={item.sport === 'svenska-cupen' ? 'Svenska Cupen' : (item.sport === 'europa-league-qual' ? 'Europa League Qualifying' : (item.sport === 'conference-league-qual' ? 'Conference League Qualifying' : 'Allsvenskan'))}
                 />
             )}
             keyExtractor={item => `${item.sport}-${item.uuid}`}
@@ -930,7 +947,7 @@ export default function App() {
                 </View>
             ) : activeSport === 'football' ? (
                 <View style={styles.scheduleContainer}>
-                    {(football.loading || svenskaCupen.loading || europaLeagueQual.loading) ? (
+                    {(football.loading || svenskaCupen.loading || europaLeagueQual.loading || conferenceLeagueQual.loading) ? (
                         <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
                     ) : (
                         renderFootballSchedule()
@@ -1029,6 +1046,20 @@ export default function App() {
                 onRefresh={europaLeagueQual.refreshModalDetails}
                 refreshing={europaLeagueQual.refreshingModal}
                 sport="europa-league-qual"
+                showStandingsTab={false}
+            />
+
+            {/* Conference League Qualifying Match Modal */}
+            <FootballMatchModal
+                match={conferenceLeagueQual.selectedGame}
+                details={conferenceLeagueQual.gameDetails}
+                videos={[]}
+                visible={!!conferenceLeagueQual.selectedGame}
+                loading={conferenceLeagueQual.loadingDetails}
+                onClose={conferenceLeagueQual.closeModal}
+                onRefresh={conferenceLeagueQual.refreshModalDetails}
+                refreshing={conferenceLeagueQual.refreshingModal}
+                sport="conference-league-qual"
                 showStandingsTab={false}
             />
 

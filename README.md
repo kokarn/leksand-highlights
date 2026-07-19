@@ -1,6 +1,6 @@
 # 🏒 GamePulse API Server
 
-**Version: 3.11.0**
+**Version: 3.12.0**
 
 A multi-sport API server that provides real-time game data, notifications, and highlights for Swedish sports leagues.
 
@@ -11,6 +11,7 @@ A multi-sport API server that provides real-time game data, notifications, and h
 - **Allsvenskan (Football)**: Match schedule, detailed game events (goals, cards, substitutions), team statistics, lineups, and FotbollPlay highlights clips
 - **Svenska Cupen (Football Cup)**: Live match schedule, match details, and group standings
 - **Europa League Qualifying (Football)**: UEFA Europa League qualifying-round fixtures, scores, live goal alerts, and pre-game reminders (via ESPN; no highlight clips)
+- **Conference League Qualifying (Football)**: UEFA Conference League qualifying-round fixtures (where GAIS plays), scores, live goal alerts, and pre-game reminders (via ESPN; no highlight clips)
 - **Biathlon**: World Cup races, results, and standings
 
 ### Core Features

@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.15.0
+- Add Conference League Qualifying as a sub-league merged into the "Football" tab (alongside Allsvenskan, Svenska Cupen, and Europa League Qualifying) — combined schedule with per-game "Conference League Qualifying" labels, shared football team filter, and match modal (knockout format, so no standings table or clips)
+
 ### 2.14.0
 - Add Europa League Qualifying as a sub-league merged into the "Football" tab (alongside Allsvenskan and Svenska Cupen) — combined schedule with per-game "Europa League Qualifying" labels, shared football team filter, and match modal (knockout format, so no standings table or clips)
 

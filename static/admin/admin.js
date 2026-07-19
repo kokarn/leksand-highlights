@@ -702,7 +702,7 @@ function updateGoalTestTeamDropdowns() {
     const sport = document.getElementById('goal-test-sport').value;
     const scoringSelect = document.getElementById('goal-test-scoring-team');
     const opposingSelect = document.getElementById('goal-test-opposing-team');
-    const isFootballStyleSport = sport === 'allsvenskan' || sport === 'svenska-cupen' || sport === 'europa-league-qual';
+    const isFootballStyleSport = sport === 'allsvenskan' || sport === 'svenska-cupen' || sport === 'europa-league-qual' || sport === 'conference-league-qual';
 
     const teamList = sport === 'allsvenskan'
             ? footballTeams
@@ -710,7 +710,9 @@ function updateGoalTestTeamDropdowns() {
                 ? svenskaCupenTeams
                 : sport === 'europa-league-qual'
                     ? footballTeams
-                    : teams;
+                    : sport === 'conference-league-qual'
+                        ? footballTeams
+                        : teams;
 
     const buildOptions = (list) => {
         if (isFootballStyleSport) {
@@ -1141,14 +1143,16 @@ function updatePregameTestTeamDropdowns() {
     const sport = document.getElementById('pregame-test-sport').value;
     const homeSelect = document.getElementById('pregame-test-home-team');
     const awaySelect = document.getElementById('pregame-test-away-team');
-    const isFootballStyleSport = sport === 'allsvenskan' || sport === 'svenska-cupen' || sport === 'europa-league-qual';
+    const isFootballStyleSport = sport === 'allsvenskan' || sport === 'svenska-cupen' || sport === 'europa-league-qual' || sport === 'conference-league-qual';
     const teamList = sport === 'allsvenskan'
         ? footballTeams
         : sport === 'svenska-cupen'
             ? svenskaCupenTeams
             : sport === 'europa-league-qual'
                 ? footballTeams
-                : teams;
+                : sport === 'conference-league-qual'
+                    ? footballTeams
+                    : teams;
 
     const buildOptions = (list) => {
         if (isFootballStyleSport) {
@@ -1206,6 +1210,7 @@ async function sendPregameTest() {
             allsvenskan: 'Allsvenskan',
             'svenska-cupen': 'Svenska Cupen',
             'europa-league-qual': 'Europa League Qualifying',
+            'conference-league-qual': 'Conference League Qualifying',
             biathlon: 'Biathlon'
         };
         const sportLabel = sportLabels[sport] || sport;
