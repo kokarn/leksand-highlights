@@ -514,13 +514,27 @@ class SHLProvider extends BaseProvider {
 
         let gameInfo = null;
         if (gameInfoResponse.ok) {
-            gameInfo = await gameInfoResponse.json();
+            const rawText = await gameInfoResponse.text();
+            if (rawText && rawText.trim()) {
+                try {
+                    gameInfo = JSON.parse(rawText);
+                } catch (e) {
+                    console.warn(`[${this.name}] Invalid game-info JSON for ${gameId}:`, e.message);
+                }
+            }
         }
 
         let events = [];
         if (playByPlayResponse.ok) {
-            const rawEvents = await playByPlayResponse.json();
-            events = Array.isArray(rawEvents) ? rawEvents : [];
+            const rawText = await playByPlayResponse.text();
+            if (rawText && rawText.trim()) {
+                try {
+                    const rawEvents = JSON.parse(rawText);
+                    events = Array.isArray(rawEvents) ? rawEvents : [];
+                } catch (e) {
+                    console.warn(`[${this.name}] Invalid play-by-play JSON for ${gameId}:`, e.message);
+                }
+            }
         }
 
         let teamStats = null;

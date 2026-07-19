@@ -13,6 +13,9 @@ export function usePreferences() {
     // SHL team filters
     const [selectedTeams, setSelectedTeams] = useState([]);
 
+    // HockeyAllsvenskan team filters
+    const [selectedHaTeams, setSelectedHaTeams] = useState([]);
+
     // Football team filters
     const [selectedFootballTeams, setSelectedFootballTeams] = useState([]);
 
@@ -43,6 +46,7 @@ export function usePreferences() {
                 const [
                     savedSport,
                     savedTeams,
+                    savedHaTeams,
                     savedNations,
                     savedGenders,
                     savedFootballTeams,
@@ -50,6 +54,7 @@ export function usePreferences() {
                 ] = await Promise.all([
                     AsyncStorage.getItem(STORAGE_KEYS.SELECTED_SPORT),
                     AsyncStorage.getItem(STORAGE_KEYS.SELECTED_TEAMS),
+                    AsyncStorage.getItem(STORAGE_KEYS.SELECTED_HA_TEAMS),
                     AsyncStorage.getItem(STORAGE_KEYS.SELECTED_NATIONS),
                     AsyncStorage.getItem(STORAGE_KEYS.SELECTED_GENDERS),
                     AsyncStorage.getItem(STORAGE_KEYS.SELECTED_FOOTBALL_TEAMS),
@@ -58,6 +63,7 @@ export function usePreferences() {
 
                 if (savedSport) setActiveSport(savedSport);
                 if (savedTeams) setSelectedTeams(JSON.parse(savedTeams));
+                if (savedHaTeams) setSelectedHaTeams(JSON.parse(savedHaTeams));
                 if (savedNations) setSelectedNations(JSON.parse(savedNations));
                 if (savedGenders) setSelectedGenders(JSON.parse(savedGenders));
                 if (savedFootballTeams) setSelectedFootballTeams(JSON.parse(savedFootballTeams));
@@ -95,6 +101,22 @@ export function usePreferences() {
     const clearTeamFilter = useCallback(() => {
         setSelectedTeams([]);
         savePreference(STORAGE_KEYS.SELECTED_TEAMS, []);
+    }, [savePreference]);
+
+    // HockeyAllsvenskan team filter handlers
+    const toggleHaTeamFilter = useCallback((teamCode) => {
+        setSelectedHaTeams(prev => {
+            const newSelected = prev.includes(teamCode)
+                ? prev.filter(t => t !== teamCode)
+                : [...prev, teamCode];
+            savePreference(STORAGE_KEYS.SELECTED_HA_TEAMS, newSelected);
+            return newSelected;
+        });
+    }, [savePreference]);
+
+    const clearHaTeamFilter = useCallback(() => {
+        setSelectedHaTeams([]);
+        savePreference(STORAGE_KEYS.SELECTED_HA_TEAMS, []);
     }, [savePreference]);
 
     // Football team filter handlers
@@ -162,6 +184,7 @@ export function usePreferences() {
         // State
         activeSport,
         selectedTeams,
+        selectedHaTeams,
         selectedFootballTeams,
         selectedNations,
         selectedGenders,
@@ -177,6 +200,8 @@ export function usePreferences() {
         handleSportChange,
         toggleTeamFilter,
         clearTeamFilter,
+        toggleHaTeamFilter,
+        clearHaTeamFilter,
         toggleFootballTeamFilter,
         clearFootballTeamFilter,
         toggleNationFilter,

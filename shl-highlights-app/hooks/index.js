@@ -1,6 +1,7 @@
 // Export all custom hooks
 export { usePreferences } from './usePreferences';
 export { useShlData } from './useShlData';
+export { useHockeyAllsvenskanData } from './useHockeyAllsvenskanData';
 export { useFootballData } from './useFootballData';
 export { useSvenskaCupenData } from './useSvenskaCupenData';
 export { useBiathlonData } from './useBiathlonData';

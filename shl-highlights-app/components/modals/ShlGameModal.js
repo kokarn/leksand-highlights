@@ -84,7 +84,9 @@ export const ShlGameModal = ({
     onTabChange,
     onRefresh,
     refreshing = false,
-    selectedTeams = []
+    selectedTeams = [],
+    standingsFetcher = fetchStandings,
+    standingsSport = 'shl'
 }) => {
     const { colors } = useTheme();
     const { width: windowWidth } = useWindowDimensions();
@@ -109,7 +111,7 @@ export const ShlGameModal = ({
             setRefreshingStandings(true);
         }
         try {
-            const data = await fetchStandings();
+            const data = await standingsFetcher();
             setStandingsData(data);
         } catch (e) {
             console.error('Failed to load standings', e);
@@ -117,7 +119,7 @@ export const ShlGameModal = ({
             setLoadingStandings(false);
             setRefreshingStandings(false);
         }
-    }, []);
+    }, [standingsFetcher]);
 
     useEffect(() => {
         if (visible && activeTab === 'standings' && !standingsData) {
@@ -457,7 +459,7 @@ export const ShlGameModal = ({
                 <View style={[themedStyles.sectionCard, { marginBottom: 16 }]}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                         <Ionicons name="stats-chart" size={20} color={colors.accent} />
-                        <Text style={[themedStyles.sectionTitle, { marginBottom: 0 }]}>SHL Table</Text>
+                        <Text style={[themedStyles.sectionTitle, { marginBottom: 0 }]}>{standingsSport === 'hockeyallsvenskan' ? 'HockeyAllsvenskan Table' : 'SHL Table'}</Text>
                         <Text style={{ color: colors.textMuted, fontSize: 13, fontWeight: '600' }}>{standingsRows.length} teams</Text>
                     </View>
                     {lastUpdatedLabel && (

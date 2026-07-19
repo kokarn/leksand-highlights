@@ -24,6 +24,10 @@ export const SettingsModal = ({
     selectedTeams,
     onToggleTeam,
     onClearTeams,
+    haTeams = [],
+    selectedHaTeams = [],
+    onToggleHaTeam,
+    onClearHaTeams,
     footballTeams = [],
     selectedFootballTeams = [],
     onToggleFootballTeam,
@@ -292,6 +296,40 @@ export const SettingsModal = ({
                     </View>
                     {selectedTeams.length > 0 && (
                         <TouchableOpacity style={styles.clearButton} onPress={onClearTeams}>
+                            <Text style={themedStyles.clearButtonText}>Clear selection</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                {/* HockeyAllsvenskan Teams */}
+                <View style={themedStyles.settingsCard}>
+                    <View style={styles.settingsCardHeader}>
+                        <Ionicons name="snow-outline" size={22} color={colors.accent} />
+                        <Text style={themedStyles.settingsCardTitle}>HockeyAllsvenskan Teams</Text>
+                        <Text style={[styles.settingsCardCount, { color: colors.textMuted }]}>
+                            {selectedHaTeams.length > 0 ? `${selectedHaTeams.length} selected` : ''}
+                        </Text>
+                    </View>
+                    {haTeams.length > 0 ? (
+                        <View style={styles.chipGrid}>
+                            {haTeams.map(team => (
+                                <TouchableOpacity
+                                    key={team.code}
+                                    style={[themedStyles.teamChip, selectedHaTeams.includes(team.code) && themedStyles.chipActive]}
+                                    onPress={() => onToggleHaTeam(team.code)}
+                                >
+                                    <Image source={{ uri: getTeamLogoUrl(team.code) }} style={styles.chipLogo} resizeMode="contain" />
+                                    <Text style={[themedStyles.chipText, selectedHaTeams.includes(team.code) && themedStyles.chipTextActive]} numberOfLines={1}>
+                                        {team.code}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    ) : (
+                        <Text style={[styles.settingsEmptyText, { color: colors.textMuted }]}>No HockeyAllsvenskan teams available yet.</Text>
+                    )}
+                    {selectedHaTeams.length > 0 && (
+                        <TouchableOpacity style={styles.clearButton} onPress={onClearHaTeams}>
                             <Text style={themedStyles.clearButtonText}>Clear selection</Text>
                         </TouchableOpacity>
                     )}

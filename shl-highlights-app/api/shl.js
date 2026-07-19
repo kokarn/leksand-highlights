@@ -169,6 +169,66 @@ export async function fetchVideoDetails(videoId) {
     }
 }
 
+// ============ HOCKEYALLSVENSKAN API ============
+// HockeyAllsvenskan uses namespaced routes (/api/hockeyallsvenskan/*) but the
+// exact same payload shape as SHL (shl.se-clone API), so it reuses the SHL cards,
+// modal, and game-details pipeline.
+
+export async function fetchHockeyAllsvenskanGames() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/hockeyallsvenskan/games`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching HockeyAllsvenskan schedule:', error.message);
+        return [];
+    }
+}
+
+export async function fetchHockeyAllsvenskanStandings(options = {}) {
+    try {
+        const params = new URLSearchParams();
+        if (options.team) params.append('team', options.team);
+        if (options.top) params.append('top', options.top);
+
+        const url = `${API_BASE_URL}/api/hockeyallsvenskan/standings${params.toString() ? '?' + params.toString() : ''}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching HockeyAllsvenskan standings:', error.message);
+        return { season: null, standings: [] };
+    }
+}
+
+export async function fetchHockeyAllsvenskanVideosForGame(gameUuid) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/hockeyallsvenskan/game/${gameUuid}/videos`);
+        if (!response.ok) return [];
+        return await response.json();
+    } catch (e) {
+        console.error(`Error processing HockeyAllsvenskan videos for ${gameUuid}: ${e.message}`);
+        return [];
+    }
+}
+
+export async function fetchHockeyAllsvenskanGameDetails(gameUuid) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/hockeyallsvenskan/game/${gameUuid}/details`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching HockeyAllsvenskan game details for ${gameUuid}:`, error.message);
+        return null;
+    }
+}
+
 // ============ FOOTBALL/ALLSVENSKAN API ============
 
 /**

@@ -4,6 +4,11 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.11.0
+- Add HockeyAllsvenskan as a selectable league in the app (own sport tab, schedule, standings, and game modal)
+- Add HockeyAllsvenskan team selection in Settings and onboarding, wired into goal-notification topics
+- Include HockeyAllsvenskan games in the unified "All" feed with a distinct league indicator
+
 ### 2.9.0
 - Add Allsvenskan highlights integration via FotbollPlay clips
 - Add football match modal Highlights tab with in-modal clip playback

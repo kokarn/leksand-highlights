@@ -5,7 +5,7 @@ import { getTeamLogoUrl } from '../../api/shl';
 import { extractScore, formatRelativeDateEnglish, formatTime } from '../../utils';
 import { useTheme } from '../../contexts';
 
-export const GameCard = memo(function GameCard({ game, onPress }) {
+export const GameCard = memo(function GameCard({ game, onPress, leagueLabel = 'SHL' }) {
     const { colors, isDark } = useTheme();
     const { width: windowWidth } = useWindowDimensions();
     const isCompactLayout = windowWidth <= 430;
@@ -18,7 +18,6 @@ export const GameCard = memo(function GameCard({ game, onPress }) {
     const awayName = awayTeam?.names?.short ?? awayCode ?? 'Away';
     const homeLogo = getTeamLogoUrl(homeCode);
     const awayLogo = getTeamLogoUrl(awayCode);
-    const leagueLabel = 'SHL';
     const isLive = game?.state === 'live';
     const isFinished = game?.state === 'post-game';
     const rawDate = formatRelativeDateEnglish(game?.startDateTime);

@@ -9,6 +9,7 @@ import { BiathlonRaceCard } from './BiathlonRaceCard';
  */
 const SPORT_COLORS = {
     shl: '#6C5CE7',              // Purple (matches app icon)
+    hockeyallsvenskan: '#0A84FF', // Blue (distinct from SHL purple)
     football: '#30D158',          // Green
     allsvenskan: '#30D158',       // Green
     'svenska-cupen': '#30D158',   // Green
@@ -26,6 +27,9 @@ export const UnifiedEventCard = memo(function UnifiedEventCard({ event, onPress,
     const renderCard = () => {
         if (sport === 'shl') {
             return <GameCard game={event} onPress={() => onPress(event)} />;
+        }
+        if (sport === 'hockeyallsvenskan') {
+            return <GameCard game={event} onPress={() => onPress(event)} leagueLabel="HockeyAllsvenskan" />;
         }
         if (sport === 'football' || sport === 'allsvenskan' || sport === 'svenska-cupen') {
             const leagueLabel = sport === 'svenska-cupen' ? 'Svenska Cupen' : 'Allsvenskan';
