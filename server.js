@@ -34,12 +34,19 @@ const {
     setCachedHockeyAllsvenskanDetails,
     getCachedHockeyAllsvenskanStandings,
     setCachedHockeyAllsvenskanStandings,
+    getCachedEuropaLeagueQualGames,
+    setCachedEuropaLeagueQualGames,
+    getCachedEuropaLeagueQualDetails,
+    setCachedEuropaLeagueQualDetails,
+    getCachedEuropaLeagueQualStandings,
+    setCachedEuropaLeagueQualStandings,
     clearAllCaches,
     getCacheStatus,
     setGamesLiveFlag,
     setAllsvenskanLiveFlag,
     setSvenskaCupenLiveFlag,
-    setHockeyAllsvenskanLiveFlag
+    setHockeyAllsvenskanLiveFlag,
+    setEuropaLeagueQualLiveFlag
 } = require('./modules/cache');
 const { getProvider, getAvailableSports } = require('./modules/providers');
 const { formatSwedishTimestamp } = require('./modules/utils');
@@ -227,6 +234,7 @@ app.get('/api/sports', (req, res) => {
         'hockeyallsvenskan': 'hockey-puck',
         allsvenskan: 'soccer-ball',
         'svenska-cupen': 'trophy',
+        'europa-league-qual': 'soccer-ball',
         biathlon: 'target'
     };
 
@@ -842,6 +850,164 @@ app.get('/api/svenska-cupen/standings', async (req, res) => {
         res.json(result);
     } catch (error) {
         console.error('Error fetching Svenska Cupen standings:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ============ EUROPA LEAGUE QUALIFYING ENDPOINTS ============
+// UEFA Europa League Qualifying runs on the SAME ESPN API contract as Allsvenskan
+// (league slug uefa.europa_qual), so these mirror the /api/football/* endpoints,
+// pointed at the 'europa-league-qual' provider with its own cache slots. NOTE: there
+// is no clip source for this competition (FotbollPlay is Allsvenskan-only), so the
+// videos route always returns [], and standings return an empty table (knockout).
+
+/**
+ * GET /api/europa-league-qual/games
+ * Get Europa League Qualifying fixtures. Supports ?team, ?state, ?upcoming, ?limit.
+ */
+app.get('/api/europa-league-qual/games', async (req, res) => {
+    try {
+        let games = getCachedEuropaLeagueQualGames();
+        let usedCache = true;
+
+        if (games) {
+            console.log('[Cache HIT] /api/europa-league-qual/games');
+        } else {
+            usedCache = false;
+            console.log('[Cache MISS] /api/europa-league-qual/games - fetching fresh data...');
+            const provider = getProvider('europa-league-qual');
+            games = await provider.fetchAllGames();
+        }
+
+        if (!Array.isArray(games)) {
+            games = [];
+        }
+
+        const getTimeValue = (value) => {
+            const time = new Date(value).getTime();
+            return Number.isNaN(time) ? 0 : time;
+        };
+        games = games.sort((a, b) => getTimeValue(b.startDateTime) - getTimeValue(a.startDateTime));
+
+        const now = new Date();
+        const shouldUseFastCache = shouldUseFastGamesCache(games, now);
+
+        if (!usedCache) {
+            setCachedEuropaLeagueQualGames(games, shouldUseFastCache);
+        } else {
+            setEuropaLeagueQualLiveFlag(shouldUseFastCache);
+        }
+
+        let result = games;
+
+        if (req.query.team) {
+            const teamQuery = String(req.query.team).trim().toLowerCase();
+            const matchesTeam = (teamInfo) => {
+                if (!teamInfo) return false;
+                const candidates = [teamInfo.code, teamInfo.uuid, teamInfo.names?.short, teamInfo.names?.long];
+                return candidates.some(value => value && String(value).toLowerCase() === teamQuery);
+            };
+            result = result.filter(game => matchesTeam(game.homeTeamInfo) || matchesTeam(game.awayTeamInfo));
+        }
+
+        if (req.query.state) {
+            const stateQuery = String(req.query.state).trim().toLowerCase();
+            result = result.filter(game => game.state === stateQuery);
+        }
+
+        if (req.query.upcoming === 'true') {
+            result = result.filter(game => {
+                const startTime = new Date(game.startDateTime);
+                return !Number.isNaN(startTime.getTime()) && startTime >= now;
+            });
+        }
+
+        if (req.query.limit) {
+            const limit = parseInt(req.query.limit);
+            if (limit > 0) {
+                result = result.slice(0, limit);
+            }
+        }
+
+        res.json(result);
+    } catch (error) {
+        console.error('Error fetching Europa League Qualifying schedule:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/europa-league-qual/game/:id/videos
+ * No clip source exists for this competition — always returns [].
+ */
+app.get('/api/europa-league-qual/game/:id/videos', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const provider = getProvider('europa-league-qual');
+        const videos = await provider.fetchGameVideos(id);
+        res.json(Array.isArray(videos) ? videos : []);
+    } catch (error) {
+        console.error(`Error fetching Europa League Qualifying videos for ${id}:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/europa-league-qual/game/:id/details
+ * Get details for a specific Europa League Qualifying match
+ */
+app.get('/api/europa-league-qual/game/:id/details', async (req, res) => {
+    const { id } = req.params;
+
+    const cached = getCachedEuropaLeagueQualDetails(id);
+    if (cached) {
+        console.log(`[Cache HIT] /api/europa-league-qual/game/${id}/details`);
+        return res.json(cached);
+    }
+
+    console.log(`[Cache MISS] /api/europa-league-qual/game/${id}/details - fetching...`);
+
+    try {
+        const provider = getProvider('europa-league-qual');
+        const details = await provider.fetchGameDetails(id);
+
+        if (!details) {
+            return res.status(404).json({ error: 'Game not found' });
+        }
+
+        setCachedEuropaLeagueQualDetails(id, details);
+        res.json(details);
+    } catch (error) {
+        console.error(`Error fetching Europa League Qualifying details for ${id}:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/europa-league-qual/standings
+ * Europa League Qualifying is knockout format — returns an empty-but-valid table.
+ */
+app.get('/api/europa-league-qual/standings', async (req, res) => {
+    try {
+        const seasonQuery = req.query.season ? String(req.query.season).trim() : null;
+        let standings = getCachedEuropaLeagueQualStandings(seasonQuery);
+
+        if (standings) {
+            console.log('[Cache HIT] /api/europa-league-qual/standings');
+        } else {
+            console.log('[Cache MISS] /api/europa-league-qual/standings - fetching fresh data...');
+            const provider = getProvider('europa-league-qual');
+            standings = await provider.fetchStandings({ season: seasonQuery });
+            const resolvedSeason = standings?.season ? String(standings.season) : null;
+            setCachedEuropaLeagueQualStandings(seasonQuery, standings);
+            if (resolvedSeason && resolvedSeason !== seasonQuery) {
+                setCachedEuropaLeagueQualStandings(resolvedSeason, standings);
+            }
+        }
+
+        res.json(standings);
+    } catch (error) {
+        console.error('Error fetching Europa League Qualifying standings:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -1488,7 +1654,7 @@ app.post('/api/notifications/goal-test', async (req, res) => {
             });
         }
 
-        const validSports = ['shl', 'hockeyallsvenskan', 'allsvenskan', 'svenska-cupen'];
+        const validSports = ['shl', 'hockeyallsvenskan', 'allsvenskan', 'svenska-cupen', 'europa-league-qual'];
         const sport = validSports.includes(payload.sport) ? payload.sport : 'shl';
         const isHockeyTest = sport === 'shl' || sport === 'hockeyallsvenskan';
         const scoringIsHome = parseOptionalBoolean(payload.scoringIsHome, true);

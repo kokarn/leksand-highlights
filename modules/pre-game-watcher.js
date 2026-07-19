@@ -155,6 +155,22 @@ function extractSvenskaCupenGameInfo(game) {
 }
 
 /**
+ * Extract game info for notification from a Europa League Qualifying game
+ */
+function extractEuropaLeagueQualGameInfo(game) {
+    return {
+        sport: 'europa-league-qual',
+        gameId: game.uuid,
+        homeTeamName: game.homeTeamInfo?.names?.long || game.homeTeamInfo?.names?.short || 'Home',
+        awayTeamName: game.awayTeamInfo?.names?.long || game.awayTeamInfo?.names?.short || 'Away',
+        homeTeamCode: game.homeTeamInfo?.code || game.homeTeamInfo?.names?.short || '',
+        awayTeamCode: game.awayTeamInfo?.code || game.awayTeamInfo?.names?.short || '',
+        startDateTime: game.rawStartDateTime || game.startDateTime,
+        venue: game.venueInfo?.name || game.venue || null
+    };
+}
+
+/**
  * Extract game info for notification from a Biathlon race
  */
 function extractBiathlonGameInfo(race) {
@@ -405,6 +421,31 @@ async function runDailySchedule() {
         addEntry('pre-game-watcher', 'error', `Error fetching Svenska Cupen games: ${error.message}`);
     }
 
+    // Fetch and schedule Europa League Qualifying games
+    try {
+        const elqProvider = getProvider('europa-league-qual');
+        const elqGames = await elqProvider.fetchAllGames();
+
+        let elqScheduled = 0;
+        for (const game of elqGames) {
+            if (game.state === 'post-game') {
+                continue;
+            }
+            const startTime = new Date(game.rawStartDateTime || game.startDateTime);
+            if (startTime >= now && startTime <= next24Hours) {
+                const gameInfo = extractEuropaLeagueQualGameInfo(game);
+                if (scheduleNotification(gameInfo)) {
+                    elqScheduled++;
+                }
+            }
+        }
+        console.log(`[PreGameWatcher] Scheduled ${elqScheduled} Europa League Qualifying notifications`);
+        totalScheduled += elqScheduled;
+    } catch (error) {
+        console.error('[PreGameWatcher] Error fetching Europa League Qualifying games:', error.message);
+        addEntry('pre-game-watcher', 'error', `Error fetching Europa League Qualifying games: ${error.message}`);
+    }
+
     // Fetch and schedule Biathlon races
     try {
         const biathlonProvider = getProvider('biathlon');
@@ -458,7 +499,7 @@ async function runDailySchedule() {
             const notifyTimeStr = notifyTime.toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm', hour: '2-digit', minute: '2-digit' });
             const sportEmoji = (notification.sport === 'shl' || notification.sport === 'hockeyallsvenskan')
                 ? '🏒'
-                : notification.sport === 'allsvenskan'
+                : (notification.sport === 'allsvenskan' || notification.sport === 'europa-league-qual')
                     ? '⚽'
                     : notification.sport === 'svenska-cupen'
                         ? '🏆'

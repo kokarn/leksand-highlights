@@ -60,6 +60,7 @@ import {
     useHockeyAllsvenskanData,
     useFootballData,
     useSvenskaCupenData,
+    useEuropaLeagueQualData,
     useBiathlonData,
     useUnifiedData,
     usePushNotifications,
@@ -113,18 +114,20 @@ export default function App() {
     const hockeyAllsvenskan = useHockeyAllsvenskanData(activeSport, selectedTeams, { eagerLoad: true });
     const football = useFootballData(activeSport, selectedFootballTeams, { eagerLoad: true });
     const svenskaCupen = useSvenskaCupenData(activeSport, selectedFootballTeams, { eagerLoad: true });
+    const europaLeagueQual = useEuropaLeagueQualData(activeSport, selectedFootballTeams, { eagerLoad: true });
     const biathlon = useBiathlonData(activeSport, selectedNations, selectedGenders, { eagerLoad: true });
 
-    // Combined football games (Allsvenskan + Svenska Cupen) for single list
+    // Combined football games (Allsvenskan + Svenska Cupen + Europa League Qual) for single list
     const combinedFootballGames = useMemo(() => {
         const allsvenskan = (football.games || []).map(g => ({ ...g, sport: g.sport || 'allsvenskan' }));
         const cupen = (svenskaCupen.games || []).map(g => ({ ...g, sport: g.sport || 'svenska-cupen' }));
-        return [...allsvenskan, ...cupen].sort((a, b) => {
+        const europaQual = (europaLeagueQual.games || []).map(g => ({ ...g, sport: g.sport || 'europa-league-qual' }));
+        return [...allsvenskan, ...cupen, ...europaQual].sort((a, b) => {
             const timeA = new Date(a.startDateTime).getTime();
             const timeB = new Date(b.startDateTime).getTime();
             return timeA - timeB;
         });
-    }, [football.games, svenskaCupen.games]);
+    }, [football.games, svenskaCupen.games, europaLeagueQual.games]);
 
     const combinedFootballTargetGameIndex = useMemo(() => {
         if (!combinedFootballGames.length) {
@@ -217,8 +220,9 @@ export default function App() {
         const byKey = new Map();
         (football.teams || []).forEach(t => byKey.set(t.key, t));
         (svenskaCupen.teams || []).forEach(t => byKey.set(t.key, t));
+        (europaLeagueQual.teams || []).forEach(t => byKey.set(t.key, t));
         return Array.from(byKey.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    }, [football.teams, svenskaCupen.teams]);
+    }, [football.teams, svenskaCupen.teams, europaLeagueQual.teams]);
 
     // Merged hockey teams (SHL + HockeyAllsvenskan) for filter in Settings/Onboarding.
     // Both use { code }; merge by code so a team shared across leagues isn't duplicated.
@@ -230,7 +234,7 @@ export default function App() {
     }, [shl.teams, hockeyAllsvenskan.teams]);
 
     // Unified data combining all sports
-    const unified = useUnifiedData(shl, hockeyAllsvenskan, football, svenskaCupen, biathlon);
+    const unified = useUnifiedData(shl, hockeyAllsvenskan, football, svenskaCupen, europaLeagueQual, biathlon);
 
     // Push notifications
     const {
@@ -447,6 +451,14 @@ export default function App() {
                 } else {
                     svenskaCupen.handleGamePress({ uuid: gameId });
                 }
+            } else if (normalizedSport === 'europa-league-qual') {
+                handleSportChange('football');
+                const game = europaLeagueQual.games.find(g => g.uuid === gameId);
+                if (game) {
+                    europaLeagueQual.handleGamePress(game);
+                } else {
+                    europaLeagueQual.handleGamePress({ uuid: gameId });
+                }
             } else {
                 console.warn('[DeepLink] Unsupported sport in deep link:', normalizedSport);
             }
@@ -527,10 +539,12 @@ export default function App() {
         hockeyAllsvenskan.games,
         football.games,
         svenskaCupen.games,
+        europaLeagueQual.games,
         shl.handleGamePress,
         hockeyAllsvenskan.handleGamePress,
         football.handleGamePress,
         svenskaCupen.handleGamePress,
+        europaLeagueQual.handleGamePress,
         handleSportChange,
         deepLinkParams
     ]);
@@ -545,10 +559,11 @@ export default function App() {
         } else if (activeSport === 'football') {
             football.onRefresh();
             svenskaCupen.onRefresh();
+            europaLeagueQual.onRefresh();
         } else if (activeSport === 'biathlon') {
             biathlon.onRefresh();
         }
-    }, [activeSport, shl, hockeyAllsvenskan, football, svenskaCupen, biathlon, unified]);
+    }, [activeSport, shl, hockeyAllsvenskan, football, svenskaCupen, europaLeagueQual, biathlon, unified]);
 
     // getItemLayout functions for consistent scroll behavior
     const getShlItemLayout = useCallback((data, index) => ({
@@ -595,7 +610,7 @@ export default function App() {
         : activeSport === 'hockey'
             ? (shl.refreshing || hockeyAllsvenskan.refreshing)
             : activeSport === 'football'
-                ? (football.refreshing || svenskaCupen.refreshing)
+                ? (football.refreshing || svenskaCupen.refreshing || europaLeagueQual.refreshing)
                 : biathlon.refreshing;
 
 
@@ -652,8 +667,16 @@ export default function App() {
             renderItem={({ item }) => (
                 <FootballGameCard
                     game={item}
-                    onPress={() => (item.sport === 'svenska-cupen' ? svenskaCupen.handleGamePress(item) : football.handleGamePress(item))}
-                    leagueLabel={item.sport === 'svenska-cupen' ? 'Svenska Cupen' : 'Allsvenskan'}
+                    onPress={() => {
+                        if (item.sport === 'svenska-cupen') {
+                            svenskaCupen.handleGamePress(item);
+                        } else if (item.sport === 'europa-league-qual') {
+                            europaLeagueQual.handleGamePress(item);
+                        } else {
+                            football.handleGamePress(item);
+                        }
+                    }}
+                    leagueLabel={item.sport === 'svenska-cupen' ? 'Svenska Cupen' : (item.sport === 'europa-league-qual' ? 'Europa League Qualifying' : 'Allsvenskan')}
                 />
             )}
             keyExtractor={item => `${item.sport}-${item.uuid}`}
@@ -907,7 +930,7 @@ export default function App() {
                 </View>
             ) : activeSport === 'football' ? (
                 <View style={styles.scheduleContainer}>
-                    {(football.loading || svenskaCupen.loading) ? (
+                    {(football.loading || svenskaCupen.loading || europaLeagueQual.loading) ? (
                         <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
                     ) : (
                         renderFootballSchedule()
@@ -993,6 +1016,20 @@ export default function App() {
                 refreshing={svenskaCupen.refreshingModal}
                 sport="svenska-cupen"
                 showStandingsTab={true}
+            />
+
+            {/* Europa League Qualifying Match Modal */}
+            <FootballMatchModal
+                match={europaLeagueQual.selectedGame}
+                details={europaLeagueQual.gameDetails}
+                videos={[]}
+                visible={!!europaLeagueQual.selectedGame}
+                loading={europaLeagueQual.loadingDetails}
+                onClose={europaLeagueQual.closeModal}
+                onRefresh={europaLeagueQual.refreshModalDetails}
+                refreshing={europaLeagueQual.refreshingModal}
+                sport="europa-league-qual"
+                showStandingsTab={false}
             />
 
             {/* Biathlon Race Modal */}

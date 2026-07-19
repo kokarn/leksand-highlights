@@ -4,6 +4,7 @@ export { useShlData } from './useShlData';
 export { useHockeyAllsvenskanData } from './useHockeyAllsvenskanData';
 export { useFootballData } from './useFootballData';
 export { useSvenskaCupenData } from './useSvenskaCupenData';
+export { useEuropaLeagueQualData } from './useEuropaLeagueQualData';
 export { useBiathlonData } from './useBiathlonData';
 export { useUnifiedData } from './useUnifiedData';
 export { useGameDetails } from './useGameDetails';

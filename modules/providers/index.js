@@ -3,6 +3,7 @@ const HockeyAllsvenskanProvider = require('./hockeyallsvenskan');
 const BiathlonProvider = require('./biathlon');
 const AllsvenskanProvider = require('./allsvenskan');
 const SvenskaCupenProvider = require('./svenska-cupen');
+const EuropaLeagueQualProvider = require('./europa-league-qual');
 
 // Available providers by sport
 const providers = {
@@ -10,6 +11,7 @@ const providers = {
     'hockeyallsvenskan': HockeyAllsvenskanProvider,
     allsvenskan: AllsvenskanProvider,
     'svenska-cupen': SvenskaCupenProvider,
+    'europa-league-qual': EuropaLeagueQualProvider,
     biathlon: BiathlonProvider
 };
 

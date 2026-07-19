@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.14.0
+- Add Europa League Qualifying as a sub-league merged into the "Football" tab (alongside Allsvenskan and Svenska Cupen) — combined schedule with per-game "Europa League Qualifying" labels, shared football team filter, and match modal (knockout format, so no standings table or clips)
+
 ### 2.13.0
 - Use a proper hockey puck icon for the Hockey tab (was a snowflake)
 - Add HockeyAllsvenskan team logos (aik, ais, bik, iko, khc, mik, modo, nyb, osik, ssk, vhc, vik, vis)

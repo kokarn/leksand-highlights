@@ -134,7 +134,7 @@ const buildFlatListData = (sections) => {
  * @param {Object} biathlon - Biathlon data hook return value
  * @param {Object} options - Filter options
  */
-export function useUnifiedData(shl, hockeyAllsvenskan, football, svenskaCupen, biathlon, options = {}) {
+export function useUnifiedData(shl, hockeyAllsvenskan, football, svenskaCupen, europaLeagueQual, biathlon, options = {}) {
     const { sportFilters = ['shl', 'hockeyallsvenskan', 'football', 'biathlon'] } = options;
 
     // List scroll ref
@@ -171,6 +171,9 @@ export function useUnifiedData(shl, hockeyAllsvenskan, football, svenskaCupen, b
             svenskaCupen.games.forEach(game => {
                 events.push(normalizeEvent(game, 'svenska-cupen'));
             });
+            europaLeagueQual.games.forEach(game => {
+                events.push(normalizeEvent(game, 'europa-league-qual'));
+            });
         }
 
         // Add Biathlon races
@@ -182,7 +185,7 @@ export function useUnifiedData(shl, hockeyAllsvenskan, football, svenskaCupen, b
 
         // Sort all events by start time
         return events.sort((a, b) => a.startTime - b.startTime);
-    }, [shl.games, hockeyAllsvenskan.games, football.games, svenskaCupen.games, biathlon.races, sportFilters]);
+    }, [shl.games, hockeyAllsvenskan.games, football.games, svenskaCupen.games, europaLeagueQual.games, biathlon.races, sportFilters]);
 
     // Group events into sections
     const sections = useMemo(() => {
@@ -232,10 +235,10 @@ export function useUnifiedData(shl, hockeyAllsvenskan, football, svenskaCupen, b
     }, [flatListData]);
 
     // Combined loading state
-    const loading = shl.loading || hockeyAllsvenskan.loading || football.loading || svenskaCupen.loading || biathlon.loading;
+    const loading = shl.loading || hockeyAllsvenskan.loading || football.loading || svenskaCupen.loading || europaLeagueQual.loading || biathlon.loading;
 
     // Combined refreshing state
-    const refreshing = shl.refreshing || hockeyAllsvenskan.refreshing || football.refreshing || svenskaCupen.refreshing || biathlon.refreshing;
+    const refreshing = shl.refreshing || hockeyAllsvenskan.refreshing || football.refreshing || svenskaCupen.refreshing || europaLeagueQual.refreshing || biathlon.refreshing;
 
     // Unified refresh handler
     const onRefresh = useCallback(() => {
@@ -243,8 +246,9 @@ export function useUnifiedData(shl, hockeyAllsvenskan, football, svenskaCupen, b
         hockeyAllsvenskan.onRefresh();
         football.onRefresh();
         svenskaCupen.onRefresh();
+        europaLeagueQual.onRefresh();
         biathlon.onRefresh();
-    }, [shl, hockeyAllsvenskan, football, svenskaCupen, biathlon]);
+    }, [shl, hockeyAllsvenskan, football, svenskaCupen, europaLeagueQual, biathlon]);
 
     // Handle scroll event to save position
     const handleScroll = useCallback((event) => {
@@ -263,10 +267,12 @@ export function useUnifiedData(shl, hockeyAllsvenskan, football, svenskaCupen, b
             football.handleGamePress(event);
         } else if (event.sport === 'svenska-cupen') {
             svenskaCupen.handleGamePress(event);
+        } else if (event.sport === 'europa-league-qual') {
+            europaLeagueQual.handleGamePress(event);
         } else if (event.sport === 'biathlon') {
             biathlon.handleRacePress(event);
         }
-    }, [shl, hockeyAllsvenskan, football, svenskaCupen, biathlon]);
+    }, [shl, hockeyAllsvenskan, football, svenskaCupen, europaLeagueQual, biathlon]);
 
     // Stats for header display
     const stats = useMemo(() => ({
@@ -275,7 +281,7 @@ export function useUnifiedData(shl, hockeyAllsvenskan, football, svenskaCupen, b
         today: sections.today.length,
         shlCount: allEvents.filter(e => e.sport === 'shl').length,
         hockeyAllsvenskanCount: allEvents.filter(e => e.sport === 'hockeyallsvenskan').length,
-        footballCount: allEvents.filter(e => e.sport === 'allsvenskan' || e.sport === 'svenska-cupen' || e.sport === 'football').length,
+        footballCount: allEvents.filter(e => e.sport === 'allsvenskan' || e.sport === 'svenska-cupen' || e.sport === 'europa-league-qual' || e.sport === 'football').length,
         biathlonCount: allEvents.filter(e => e.sport === 'biathlon').length
     }), [allEvents, sections]);
 

@@ -13,6 +13,7 @@ const SPORT_COLORS = {
     football: '#30D158',          // Green
     allsvenskan: '#30D158',       // Green
     'svenska-cupen': '#30D158',   // Green
+    'europa-league-qual': '#30D158', // Green
     biathlon: '#FF9500'           // Orange
 };
 
@@ -31,8 +32,10 @@ export const UnifiedEventCard = memo(function UnifiedEventCard({ event, onPress,
         if (sport === 'hockeyallsvenskan') {
             return <GameCard game={event} onPress={() => onPress(event)} leagueLabel="HockeyAllsvenskan" />;
         }
-        if (sport === 'football' || sport === 'allsvenskan' || sport === 'svenska-cupen') {
-            const leagueLabel = sport === 'svenska-cupen' ? 'Svenska Cupen' : 'Allsvenskan';
+        if (sport === 'football' || sport === 'allsvenskan' || sport === 'svenska-cupen' || sport === 'europa-league-qual') {
+            const leagueLabel = sport === 'svenska-cupen'
+                ? 'Svenska Cupen'
+                : (sport === 'europa-league-qual' ? 'Europa League Qualifying' : 'Allsvenskan');
             return <FootballGameCard game={event} onPress={() => onPress(event)} leagueLabel={leagueLabel} />;
         }
         if (sport === 'biathlon') {

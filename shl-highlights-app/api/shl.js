@@ -380,6 +380,99 @@ export async function fetchSvenskaCupenStandings(options = {}) {
     }
 }
 
+// ============ EUROPA LEAGUE QUALIFYING API ============
+// Europa League Qualifying is an ESPN/foreign-league that shares the Football
+// tab. Same payload shape as /api/football/* and /api/svenska-cupen/*, so it
+// reuses the football cards, modal, and game-details pipeline. Knockout format,
+// so standings returns an empty table and videos are always empty (no clips).
+
+/**
+ * Fetch Europa League Qualifying fixtures with optional filters
+ * @param {Object} filters - Optional filters (team, state, upcoming, limit, season)
+ * @returns {Promise<Array>} Array of match objects
+ */
+export async function fetchEuropaLeagueQualGames(filters = {}) {
+    try {
+        const params = new URLSearchParams();
+        if (filters.team) params.append('team', filters.team);
+        if (filters.state) params.append('state', filters.state);
+        if (filters.upcoming) params.append('upcoming', 'true');
+        if (filters.limit) params.append('limit', filters.limit);
+        if (filters.season) params.append('season', filters.season);
+
+        const url = `${API_BASE_URL}/api/europa-league-qual/games${params.toString() ? '?' + params.toString() : ''}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching Europa League Qualifying games:', error.message);
+        return [];
+    }
+}
+
+/**
+ * Fetch details for a specific Europa League Qualifying match
+ * @param {string} gameId - Match identifier
+ * @returns {Promise<Object|null>} Match details or null
+ */
+export async function fetchEuropaLeagueQualGameDetails(gameId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/europa-league-qual/game/${gameId}/details`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching Europa League Qualifying match details for ${gameId}:`, error.message);
+        return null;
+    }
+}
+
+/**
+ * Fetch clips for a specific Europa League Qualifying match.
+ * No clip source exists for this league, so this always resolves to [];
+ * exposed for parity with the other football fetchers.
+ * @param {string} gameId - Match identifier
+ * @returns {Promise<Array>} Array of video clip objects (always empty)
+ */
+export async function fetchEuropaLeagueQualVideosForGame(gameId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/europa-league-qual/game/${gameId}/videos`);
+        if (!response.ok) {
+            return [];
+        }
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching Europa League Qualifying match clips for ${gameId}:`, error.message);
+        return [];
+    }
+}
+
+/**
+ * Fetch Europa League Qualifying standings.
+ * Knockout format has no league table, so this returns { standings: [] }.
+ * @param {Object} options - Optional filters
+ * @param {string|number} options.season - Season year
+ * @returns {Promise<Object>} Standings payload
+ */
+export async function fetchEuropaLeagueQualStandings(options = {}) {
+    try {
+        const params = new URLSearchParams();
+        if (options.season) params.append('season', options.season);
+        const url = `${API_BASE_URL}/api/europa-league-qual/standings${params.toString() ? '?' + params.toString() : ''}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching Europa League Qualifying standings:', error.message);
+        return { standings: [] };
+    }
+}
+
 // ============ BIATHLON API ============
 
 /**
