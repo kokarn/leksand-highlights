@@ -317,56 +317,38 @@ async function runCheck() {
         notificationsSent: 0
     };
 
-    // Check SHL games
-    try {
-        const shlProvider = getProvider('shl');
-        const shlGames = await shlProvider.fetchActiveGames();
-        const liveGames = shlGames.filter(g => g.state === 'live');
+    // Fetch all three sports' active games in parallel, then check each sport's live
+    // games concurrently. Previously this was fully sequential (await per sport, then
+    // await per game), so on a busy multi-league night detection lag stacked up.
+    const SPORTS = ['shl', 'allsvenskan', 'svenska-cupen'];
 
-        for (const game of liveGames) {
-            results.gamesChecked++;
-            const newGoals = await checkGameForNewGoals(game, 'shl');
-            results.newGoals.push(...newGoals);
+    const perSportGoals = await Promise.all(SPORTS.map(async (sport) => {
+        try {
+            const provider = getProvider(sport);
+            const games = await provider.fetchActiveGames();
+            const liveGames = games.filter(g => g.state === 'live');
+
+            // Check this sport's live games concurrently.
+            const goalsPerGame = await Promise.all(
+                liveGames.map(game => checkGameForNewGoals(game, sport))
+            );
+
+            return { liveCount: liveGames.length, goals: goalsPerGame.flat() };
+        } catch (error) {
+            console.error(`[GoalWatcher] Error checking ${sport} games:`, error.message);
+            addEntry('goal-watcher', 'error', `Error checking ${sport} games: ${error.message}`);
+            return { liveCount: 0, goals: [] };
         }
-    } catch (error) {
-        console.error('[GoalWatcher] Error checking SHL games:', error.message);
-        addEntry('goal-watcher', 'error', `Error checking SHL games: ${error.message}`);
+    }));
+
+    for (const sportResult of perSportGoals) {
+        results.gamesChecked += sportResult.liveCount;
+        results.newGoals.push(...sportResult.goals);
     }
 
-    // Check Allsvenskan games
-    try {
-        const footballProvider = getProvider('allsvenskan');
-        const footballGames = await footballProvider.fetchActiveGames();
-        const liveGames = footballGames.filter(g => g.state === 'live');
-
-        for (const game of liveGames) {
-            results.gamesChecked++;
-            const newGoals = await checkGameForNewGoals(game, 'allsvenskan');
-            results.newGoals.push(...newGoals);
-        }
-    } catch (error) {
-        console.error('[GoalWatcher] Error checking Allsvenskan games:', error.message);
-        addEntry('goal-watcher', 'error', `Error checking Allsvenskan games: ${error.message}`);
-    }
-
-    // Check Svenska Cupen games
-    try {
-        const cupProvider = getProvider('svenska-cupen');
-        const cupGames = await cupProvider.fetchActiveGames();
-        const liveGames = cupGames.filter(g => g.state === 'live');
-
-        for (const game of liveGames) {
-            results.gamesChecked++;
-            const newGoals = await checkGameForNewGoals(game, 'svenska-cupen');
-            results.newGoals.push(...newGoals);
-        }
-    } catch (error) {
-        console.error('[GoalWatcher] Error checking Svenska Cupen games:', error.message);
-        addEntry('goal-watcher', 'error', `Error checking Svenska Cupen games: ${error.message}`);
-    }
-
-    // Send notifications for new goals
-    for (const goal of results.newGoals) {
+    // Send notifications for new goals concurrently. Each send independently marks its
+    // goal seen ONLY on success, so a failed send retries next tick (order-independent).
+    await Promise.all(results.newGoals.map(async (goal) => {
         console.log(`[GoalWatcher] New goal detected: ${goal.scorerName} for ${goal.scoringTeamName} (${goal.homeScore}-${goal.awayScore})`);
         addEntry('goal-watcher', 'goal', `Goal: ${goal.scorerName} for ${goal.scoringTeamName} (${goal.homeScore}-${goal.awayScore})`, { sport: goal.sport, gameId: goal.gameId });
 
@@ -386,7 +368,7 @@ async function runCheck() {
             console.error('[GoalWatcher] Error sending notification:', error.message);
             addEntry('goal-watcher', 'error', `Goal notification failed (will retry): ${error.message}`);
         }
-    }
+    }));
 
     // Update stats
     stats.lastCheck = timestamp;
@@ -455,10 +437,10 @@ function startLoop() {
             const results = await runCheck();
 
             // Check more frequently if there are live games
-            const delay = results.gamesChecked > 0 ? 15 * 1000 : 60 * 1000;
+            const delay = results.gamesChecked > 0 ? 10 * 1000 : 60 * 1000;
 
             if (results.gamesChecked > 0) {
-                console.log(`[GoalWatcher] ${results.gamesChecked} live games. Next check in 15 seconds.`);
+                console.log(`[GoalWatcher] ${results.gamesChecked} live games. Next check in 10 seconds.`);
             }
 
             setTimeout(checkLoop, delay);

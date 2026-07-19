@@ -271,6 +271,55 @@ function isConfigured() {
 }
 
 /**
+ * Build the platform delivery config for a push so it arrives as fast as possible.
+ *
+ * Android: priority 'high' wakes the device immediately (heads-up on the 'goals' channel).
+ * APNs: apns-priority '10' + apns-push-type 'alert' tell Apple to deliver NOW instead of
+ *   throttling/coalescing — without these iPhones can lag a real-time goal alert by
+ *   seconds to minutes. (Previously the apns block only carried sound/badge, so iOS
+ *   delivery was effectively best-effort.)
+ *
+ * @param {Object} [opts]
+ * @param {boolean} [opts.urgent=false] - Time-critical, drop-if-late (goals). Sets TTL 0 /
+ *   apns-expiration 0 so a push that can't be delivered right away is discarded rather than
+ *   arriving stale. Do NOT use for pre-game reminders or highlights, which should still land
+ *   after a brief offline blip.
+ * @returns {{android: Object, apns: Object}}
+ */
+function buildDeliveryConfig({ urgent = false } = {}) {
+    const android = {
+        priority: 'high',
+        notification: {
+            channelId: 'goals',
+            priority: 'high',
+            defaultSound: true
+        }
+    };
+
+    const apns = {
+        headers: {
+            'apns-priority': '10',
+            'apns-push-type': 'alert'
+        },
+        payload: {
+            aps: {
+                sound: 'default',
+                badge: 1
+            }
+        }
+    };
+
+    if (urgent) {
+        // Deliver-now-or-drop: a stale goal alert is worse than none.
+        android.ttl = 0;
+        apns.headers['apns-expiration'] = '0';
+    }
+
+    return { android, apns };
+}
+
+
+/**
  * Register a device token and subscribe to topics
  * @param {string} token - FCM device token
  * @param {string[]} topics - Topics to subscribe to
@@ -376,7 +425,7 @@ async function unregisterDevice(token) {
  * @param {string} options.body - Notification body
  * @param {Object} options.data - Additional data payload
  */
-async function sendToTopic({ topic, title, body, data = {} }) {
+async function sendToTopic({ topic, title, body, data = {}, urgent = false }) {
     if (!isConfigured()) {
         console.warn('[FCM] Not configured. Cannot send notification.');
         return { success: false, error: 'Not configured' };
@@ -391,22 +440,7 @@ async function sendToTopic({ topic, title, body, data = {} }) {
         data: Object.fromEntries(
             Object.entries(data).map(([k, v]) => [k, String(v)])
         ),
-        android: {
-            priority: 'high',
-            notification: {
-                channelId: 'goals',
-                priority: 'high',
-                defaultSound: true
-            }
-        },
-        apns: {
-            payload: {
-                aps: {
-                    sound: 'default',
-                    badge: 1
-                }
-            }
-        }
+        ...buildDeliveryConfig({ urgent })
     };
 
     try {
@@ -431,7 +465,7 @@ async function sendToTopic({ topic, title, body, data = {} }) {
  * @param {string} options.body - Notification body
  * @param {Object} options.data - Additional data payload
  */
-async function sendToTopics({ topics, title, body, data = {} }) {
+async function sendToTopics({ topics, title, body, data = {}, urgent = false }) {
     if (!isConfigured()) {
         console.warn('[FCM] Not configured. Cannot send notification.');
         return { success: false, error: 'Not configured' };
@@ -443,7 +477,7 @@ async function sendToTopics({ topics, title, body, data = {} }) {
 
     // For a single topic, use simple topic messaging
     if (topics.length === 1) {
-        return sendToTopic({ topic: topics[0], title, body, data });
+        return sendToTopic({ topic: topics[0], title, body, data, urgent });
     }
 
     // For multiple topics, use condition (OR logic)
@@ -459,22 +493,7 @@ async function sendToTopics({ topics, title, body, data = {} }) {
         data: Object.fromEntries(
             Object.entries(data).map(([k, v]) => [k, String(v)])
         ),
-        android: {
-            priority: 'high',
-            notification: {
-                channelId: 'goals',
-                priority: 'high',
-                defaultSound: true
-            }
-        },
-        apns: {
-            payload: {
-                aps: {
-                    sound: 'default',
-                    badge: 1
-                }
-            }
-        }
+        ...buildDeliveryConfig({ urgent })
     };
 
     try {
@@ -499,7 +518,7 @@ async function sendToTopics({ topics, title, body, data = {} }) {
  * @param {string} options.body - Notification body
  * @param {Object} options.data - Additional data payload
  */
-async function sendToDevice({ token, title, body, data = {} }) {
+async function sendToDevice({ token, title, body, data = {}, urgent = false }) {
     if (!isConfigured()) {
         console.warn('[FCM] Not configured. Cannot send notification.');
         return { success: false, error: 'Not configured' };
@@ -514,22 +533,7 @@ async function sendToDevice({ token, title, body, data = {} }) {
         data: Object.fromEntries(
             Object.entries(data).map(([k, v]) => [k, String(v)])
         ),
-        android: {
-            priority: 'high',
-            notification: {
-                channelId: 'goals',
-                priority: 'high',
-                defaultSound: true
-            }
-        },
-        apns: {
-            payload: {
-                aps: {
-                    sound: 'default',
-                    badge: 1
-                }
-            }
-        }
+        ...buildDeliveryConfig({ urgent })
     };
 
     try {
@@ -677,7 +681,7 @@ async function sendGoalNotification(goal, options = {}) {
 
     if (token) {
         // Send to specific device
-        result = await sendToDevice({ token, title, body: message, data });
+        result = await sendToDevice({ token, title, body: message, data, urgent: true });
     } else {
         // Goal alerts should reach users following either team in this game.
         // When sendOpposing is disabled (e.g. in certain tests), only target the scoring team.
@@ -708,7 +712,8 @@ async function sendGoalNotification(goal, options = {}) {
             condition,
             title,
             body: message,
-            data
+            data,
+            urgent: true
         });
     }
 
@@ -791,7 +796,7 @@ async function sendHighlightNotification(highlight, options = {}) {
  * @param {string} options.body - Notification body
  * @param {Object} options.data - Additional data payload
  */
-async function sendWithCondition({ condition, title, body, data = {} }) {
+async function sendWithCondition({ condition, title, body, data = {}, urgent = false }) {
     if (!isConfigured()) {
         console.warn('[FCM] Not configured. Cannot send notification.');
         return { success: false, error: 'Not configured' };
@@ -806,22 +811,7 @@ async function sendWithCondition({ condition, title, body, data = {} }) {
         data: Object.fromEntries(
             Object.entries(data).map(([k, v]) => [k, String(v)])
         ),
-        android: {
-            priority: 'high',
-            notification: {
-                channelId: 'goals',
-                priority: 'high',
-                defaultSound: true
-            }
-        },
-        apns: {
-            payload: {
-                aps: {
-                    sound: 'default',
-                    badge: 1
-                }
-            }
-        }
+        ...buildDeliveryConfig({ urgent })
     };
 
     try {
