@@ -443,37 +443,48 @@ class SHLProvider extends BaseProvider {
         console.log(`[${this.name}] Fetching active games...`);
         try {
             const games = await this.fetchAllGames();
-            const now = new Date();
-
-            const activeGames = games.filter(game => {
-                const startTime = new Date(game.startDateTime);
-                const hoursSinceStart = (now - startTime) / (1000 * 60 * 60);
-
-                if (game.state === 'post-game') {
-                    return hoursSinceStart >= -1 && hoursSinceStart <= this.maxHoursSinceGame;
-                }
-                if (game.state === 'live') {
-                    return true;
-                }
-                if (game.state === 'pre-game' && hoursSinceStart >= 0) {
-                    return hoursSinceStart <= 6;
-                }
-                return false;
-            });
-
-            if (activeGames.length > 0) {
-                const details = activeGames.map(g => {
-                    const info = this.getGameDisplayInfo(g);
-                    return `${info.homeTeam} vs ${info.awayTeam} (${g.state})`;
-                }).join(', ');
-                console.log(`[${this.name}] Found ${activeGames.length} active/recent games: ${details}`);
-            }
-
-            return activeGames;
+            return this.filterActiveGames(games);
         } catch (error) {
             console.error(`[${this.name}] Error fetching schedule:`, error.message);
             return [];
         }
+    }
+
+    /**
+     * Pure filter: given a full games list, return active/recent games.
+     * Separated from fetchActiveGames so a shared cached games list (see
+     * modules/games-cache.js) can be filtered without re-fetching the season.
+     */
+    filterActiveGames(games, now = new Date()) {
+        if (!Array.isArray(games)) {
+            return [];
+        }
+
+        const activeGames = games.filter(game => {
+            const startTime = new Date(game.startDateTime);
+            const hoursSinceStart = (now - startTime) / (1000 * 60 * 60);
+
+            if (game.state === 'post-game') {
+                return hoursSinceStart >= -1 && hoursSinceStart <= this.maxHoursSinceGame;
+            }
+            if (game.state === 'live') {
+                return true;
+            }
+            if (game.state === 'pre-game' && hoursSinceStart >= 0) {
+                return hoursSinceStart <= 6;
+            }
+            return false;
+        });
+
+        if (activeGames.length > 0) {
+            const details = activeGames.map(g => {
+                const info = this.getGameDisplayInfo(g);
+                return `${info.homeTeam} vs ${info.awayTeam} (${g.state})`;
+            }).join(', ');
+            console.log(`[${this.name}] Found ${activeGames.length} active/recent games: ${details}`);
+        }
+
+        return activeGames;
     }
 
     async fetchGameVideos(gameId) {

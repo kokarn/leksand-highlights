@@ -314,7 +314,18 @@ class SvenskaCupenProvider extends BaseProvider {
 
     async fetchActiveGames() {
         const games = await this.fetchAllGames();
-        const now = Date.now();
+        return this.filterActiveGames(games);
+    }
+
+    /**
+     * Pure filter: given a full games list, return active/recent games.
+     * Separated so a shared cached games list (modules/games-cache.js) can be
+     * filtered without re-fetching the league.
+     */
+    filterActiveGames(games, now = Date.now()) {
+        if (!Array.isArray(games)) {
+            return [];
+        }
 
         return games.filter(game => {
             if (game.state === 'live') {

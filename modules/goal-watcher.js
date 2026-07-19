@@ -1,5 +1,6 @@
 const { formatSwedishTimestamp } = require('./utils');
 const { getProvider } = require('./providers');
+const { getActiveGames } = require('./games-cache');
 const pushNotifications = require('./fcm-notifications');
 const { addEntry } = require('./activity-log');
 
@@ -324,8 +325,7 @@ async function runCheck() {
 
     const perSportGoals = await Promise.all(SPORTS.map(async (sport) => {
         try {
-            const provider = getProvider(sport);
-            const games = await provider.fetchActiveGames();
+            const games = await getActiveGames(sport);
             const liveGames = games.filter(g => g.state === 'live');
 
             // Check this sport's live games concurrently.

@@ -452,7 +452,18 @@ class AllsvenskanProvider extends BaseProvider {
 
     async fetchActiveGames() {
         const games = await this.fetchAllGames();
-        const now = new Date();
+        return this.filterActiveGames(games);
+    }
+
+    /**
+     * Pure filter: given a full games list, return active/recent games.
+     * Separated so a shared cached games list (modules/games-cache.js) can be
+     * filtered without re-fetching the season.
+     */
+    filterActiveGames(games, now = new Date()) {
+        if (!Array.isArray(games)) {
+            return [];
+        }
 
         return games.filter(game => {
             const startTime = new Date(game.startDateTime);

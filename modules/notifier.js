@@ -10,6 +10,7 @@ const {
     NOTIFIER_INTERVAL_LIVE
 } = require('./config');
 const { getProvider } = require('./providers');
+const { getActiveGames } = require('./games-cache');
 const { formatSwedishTimestamp } = require('./utils');
 const { addEntry } = require('./activity-log');
 const pushNotifications = require('./fcm-notifications');
@@ -257,7 +258,7 @@ async function runCheck() {
     console.log(`\n--- [Notifier] Running check at ${formatSwedishTimestamp()} ---`);
     loadData();
 
-    const games = await provider.fetchActiveGames();
+    const games = await getActiveGames('shl');
 
     // Skip all notifications on first check after server start
     const skipNotifications = isFirstCheck;
@@ -279,7 +280,7 @@ async function runCheck() {
     let footballGames = [];
     try {
         const footballProvider = getProvider('allsvenskan');
-        footballGames = await footballProvider.fetchActiveGames();
+        footballGames = await getActiveGames('allsvenskan');
         for (const game of footballGames) {
             const gameInfo = footballProvider.getGameDisplayInfo(game);
             if (seenGames.includes(gameInfo.gameId)) continue;
