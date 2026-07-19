@@ -1,14 +1,23 @@
 import { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, Pressable } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts';
 
+// Hockey uses a MaterialCommunityIcons puck (Ionicons has no hockey glyph);
+// everything else uses Ionicons.
 const SPORTS = [
     { key: 'all', name: 'All', icon: 'grid-outline' },
-    { key: 'hockey', name: 'Hockey', icon: 'snow-outline' },
+    { key: 'hockey', name: 'Hockey', icon: 'hockey-puck', iconSet: 'mci' },
     { key: 'football', name: 'Football', icon: 'football-outline' },
     { key: 'biathlon', name: 'Biathlon', icon: 'locate-outline' }
 ];
+
+const SportIcon = ({ sport, size, color }) => {
+    if (sport.iconSet === 'mci') {
+        return <MaterialCommunityIcons name={sport.icon} size={size} color={color} />;
+    }
+    return <Ionicons name={sport.icon} size={size} color={color} />;
+};
 
 export const SportPicker = ({ activeSport, onSportChange }) => {
     const { colors, isDark } = useTheme();
@@ -27,7 +36,7 @@ export const SportPicker = ({ activeSport, onSportChange }) => {
                 onPress={() => setIsOpen(true)}
                 activeOpacity={0.7}
             >
-                <Ionicons name={currentSport.icon} size={16} color={colors.accent} />
+                <SportIcon sport={currentSport} size={16} color={colors.accent} />
                 <Text style={[styles.pickerText, { color: colors.text }]}>{currentSport.name}</Text>
                 <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
             </TouchableOpacity>
@@ -51,8 +60,8 @@ export const SportPicker = ({ activeSport, onSportChange }) => {
                                 onPress={() => handleSelect(sport.key)}
                                 activeOpacity={0.7}
                             >
-                                <Ionicons
-                                    name={sport.icon}
+                                <SportIcon
+                                    sport={sport}
                                     size={18}
                                     color={activeSport === sport.key ? colors.accent : colors.textSecondary}
                                 />

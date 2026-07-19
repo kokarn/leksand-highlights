@@ -1,6 +1,6 @@
 # 🏒 GamePulse API Server
 
-**Version: 3.9.0**
+**Version: 3.10.0**
 
 A multi-sport API server that provides real-time game data, notifications, and highlights for Swedish sports leagues.
 

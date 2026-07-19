@@ -10,11 +10,11 @@ class SHLProvider extends BaseProvider {
         super('SHL');
 
         this.baseUrl = 'https://www.shl.se/api';
-        // Current season identifiers (2025-26 season)
-        this.seasonUuid = 'xs4m9qupsi';
+        // Current season identifiers (2026-27 season)
+        this.seasonUuid = 'ndcf81nlb3';
         this.seriesUuid = 'qQ9-bb0bzEWUk';
         this.gameTypeUuid = 'qQ9-af37Ti40B';
-        this.seasonLabel = '2025-26';
+        this.seasonLabel = '2026-27';
 
         this.scheduleUrl = `${this.baseUrl}/sports-v2/game-schedule?seasonUuid=${this.seasonUuid}&seriesUuid=${this.seriesUuid}&gameTypeUuid=${this.gameTypeUuid}&gamePlace=all&played=all`;
 

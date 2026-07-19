@@ -4,6 +4,10 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.13.0
+- Use a proper hockey puck icon for the Hockey tab (was a snowflake)
+- Add HockeyAllsvenskan team logos (aik, ais, bik, iko, khc, mik, modo, nyb, osik, ssk, vhc, vik, vis)
+
 ### 2.12.0
 - Merge SHL and HockeyAllsvenskan into a single "Hockey" tab (mirrors how Football combines Allsvenskan + Svenska Cupen) — one combined schedule with per-game league labels, one merged hockey team list in Settings/onboarding
 

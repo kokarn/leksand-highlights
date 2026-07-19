@@ -1,35 +1,44 @@
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 const SPORT_NAMES = {
     all: 'All',
     shl: 'Hockey',
+    hockey: 'Hockey',
     biathlon: 'Biathlon',
     football: 'Football'
 };
 
-export const SportTab = ({ sport, isActive, onPress }) => (
-    <TouchableOpacity
-        style={[styles.sportTab, isActive && styles.sportTabActive]}
-        onPress={onPress}
-        activeOpacity={0.7}
-    >
-        <Ionicons
-            name={sport === 'all'
-                ? 'grid-outline'
-                : sport === 'biathlon'
-                    ? 'locate-outline'
-                    : sport === 'football'
-                        ? 'football-outline'
-                        : 'snow-outline'}
-            size={14}
-            color={isActive ? '#6C5CE7' : '#666'}
-        />
-        <Text style={[styles.sportTabText, isActive && styles.sportTabTextActive]}>
-            {SPORT_NAMES[sport] || sport}
-        </Text>
-    </TouchableOpacity>
-);
+export const SportTab = ({ sport, isActive, onPress }) => {
+    const color = isActive ? '#6C5CE7' : '#666';
+    const isHockey = sport === 'shl' || sport === 'hockey' || sport === 'hockeyallsvenskan';
+    return (
+        <TouchableOpacity
+            style={[styles.sportTab, isActive && styles.sportTabActive]}
+            onPress={onPress}
+            activeOpacity={0.7}
+        >
+            {isHockey ? (
+                <MaterialCommunityIcons name="hockey-puck" size={14} color={color} />
+            ) : (
+                <Ionicons
+                    name={sport === 'all'
+                        ? 'grid-outline'
+                        : sport === 'biathlon'
+                            ? 'locate-outline'
+                            : sport === 'football'
+                                ? 'football-outline'
+                                : 'ellipse-outline'}
+                    size={14}
+                    color={color}
+                />
+            )}
+            <Text style={[styles.sportTabText, isActive && styles.sportTabTextActive]}>
+                {SPORT_NAMES[sport] || sport}
+            </Text>
+        </TouchableOpacity>
+    );
+};
 
 const styles = StyleSheet.create({
     sportTab: {
