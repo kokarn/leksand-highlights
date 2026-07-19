@@ -106,6 +106,23 @@ function extractShlGameInfo(game) {
 }
 
 /**
+ * Extract game info for notification from a HockeyAllsvenskan game
+ * (same shape as SHL — shl.se-style API)
+ */
+function extractHockeyAllsvenskanGameInfo(game) {
+    return {
+        sport: 'hockeyallsvenskan',
+        gameId: game.uuid,
+        homeTeamName: game.homeTeamInfo?.names?.long || game.homeTeamInfo?.names?.short || 'Home',
+        awayTeamName: game.awayTeamInfo?.names?.long || game.awayTeamInfo?.names?.short || 'Away',
+        homeTeamCode: game.homeTeamInfo?.code || game.homeTeamInfo?.names?.short || '',
+        awayTeamCode: game.awayTeamInfo?.code || game.awayTeamInfo?.names?.short || '',
+        startDateTime: game.rawStartDateTime || game.startDateTime,
+        venue: game.venueInfo?.name || game.venue || null
+    };
+}
+
+/**
  * Extract game info for notification from an Allsvenskan game
  */
 function extractFootballGameInfo(game) {
@@ -313,6 +330,31 @@ async function runDailySchedule() {
         addEntry('pre-game-watcher', 'error', `Error fetching SHL games: ${error.message}`);
     }
 
+    // Fetch and schedule HockeyAllsvenskan games
+    try {
+        const haProvider = getProvider('hockeyallsvenskan');
+        const haGames = await haProvider.fetchAllGames();
+
+        let haScheduled = 0;
+        for (const game of haGames) {
+            if (game.state === 'post-game') {
+                continue;
+            }
+            const startTime = new Date(game.rawStartDateTime || game.startDateTime);
+            if (startTime >= now && startTime <= next24Hours) {
+                const gameInfo = extractHockeyAllsvenskanGameInfo(game);
+                if (scheduleNotification(gameInfo)) {
+                    haScheduled++;
+                }
+            }
+        }
+        console.log(`[PreGameWatcher] Scheduled ${haScheduled} HockeyAllsvenskan notifications`);
+        totalScheduled += haScheduled;
+    } catch (error) {
+        console.error('[PreGameWatcher] Error fetching HockeyAllsvenskan games:', error.message);
+        addEntry('pre-game-watcher', 'error', `Error fetching HockeyAllsvenskan games: ${error.message}`);
+    }
+
     // Fetch and schedule Allsvenskan games
     try {
         const footballProvider = getProvider('allsvenskan');
@@ -414,7 +456,7 @@ async function runDailySchedule() {
             const notifyTime = new Date(notification.notifyAt);
             const gameTimeStr = gameTime.toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm', hour: '2-digit', minute: '2-digit' });
             const notifyTimeStr = notifyTime.toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm', hour: '2-digit', minute: '2-digit' });
-            const sportEmoji = notification.sport === 'shl'
+            const sportEmoji = (notification.sport === 'shl' || notification.sport === 'hockeyallsvenskan')
                 ? '🏒'
                 : notification.sport === 'allsvenskan'
                     ? '⚽'

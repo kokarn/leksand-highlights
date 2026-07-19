@@ -146,7 +146,9 @@ function resolveGoalScore(...candidates) {
  * @returns {Object} Goal details for notification
  */
 function extractGoalDetails(goal, gameInfo, sport, computedScore = null) {
-    const isShl = sport === 'shl';
+    // Hockey sports (SHL + HockeyAllsvenskan) share the same play-by-play shape and
+    // use period (P1/P2/P3) formatting; football uses halves.
+    const isHockey = sport === 'shl' || sport === 'hockeyallsvenskan';
 
     // Goal payloads differ between sports/providers, so we support several scorer field shapes.
     const scorerName = resolveGoalScorerName(goal);
@@ -183,7 +185,7 @@ function extractGoalDetails(goal, gameInfo, sport, computedScore = null) {
 
     // Get period/half info
     let periodText = '';
-    if (isShl) {
+    if (isHockey) {
         periodText = goal.period ? `P${goal.period}` : '';
     } else {
         periodText = goal.period === 1 ? '1st half' : goal.period === 2 ? '2nd half' : '';
@@ -321,7 +323,7 @@ async function runCheck() {
     // Fetch all three sports' active games in parallel, then check each sport's live
     // games concurrently. Previously this was fully sequential (await per sport, then
     // await per game), so on a busy multi-league night detection lag stacked up.
-    const SPORTS = ['shl', 'allsvenskan', 'svenska-cupen'];
+    const SPORTS = ['shl', 'hockeyallsvenskan', 'allsvenskan', 'svenska-cupen'];
 
     const perSportGoals = await Promise.all(SPORTS.map(async (sport) => {
         try {

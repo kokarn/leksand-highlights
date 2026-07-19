@@ -28,11 +28,18 @@ const {
     setCachedSvenskaCupenDetails,
     getCachedSvenskaCupenStandings,
     setCachedSvenskaCupenStandings,
+    getCachedHockeyAllsvenskanGames,
+    setCachedHockeyAllsvenskanGames,
+    getCachedHockeyAllsvenskanDetails,
+    setCachedHockeyAllsvenskanDetails,
+    getCachedHockeyAllsvenskanStandings,
+    setCachedHockeyAllsvenskanStandings,
     clearAllCaches,
     getCacheStatus,
     setGamesLiveFlag,
     setAllsvenskanLiveFlag,
-    setSvenskaCupenLiveFlag
+    setSvenskaCupenLiveFlag,
+    setHockeyAllsvenskanLiveFlag
 } = require('./modules/cache');
 const { getProvider, getAvailableSports } = require('./modules/providers');
 const { formatSwedishTimestamp } = require('./modules/utils');
@@ -217,6 +224,7 @@ app.get('/admin/:section', (req, res) => {
 app.get('/api/sports', (req, res) => {
     const sportIcons = {
         shl: 'hockey-puck',
+        'hockeyallsvenskan': 'hockey-puck',
         allsvenskan: 'soccer-ball',
         'svenska-cupen': 'trophy',
         biathlon: 'target'
@@ -838,6 +846,176 @@ app.get('/api/svenska-cupen/standings', async (req, res) => {
     }
 });
 
+// ============ HOCKEYALLSVENSKAN ENDPOINTS ============
+// HockeyAllsvenskan runs on the same platform as the SHL (identical API shapes), so
+// these mirror the SHL /api/games, /videos, /details, /standings endpoints, pointed
+// at the 'hockeyallsvenskan' provider with its own cache slots.
+
+/**
+ * GET /api/hockeyallsvenskan/games
+ * Get HockeyAllsvenskan schedule/games. Supports ?team, ?state, ?upcoming, ?limit.
+ */
+app.get('/api/hockeyallsvenskan/games', async (req, res) => {
+    try {
+        let games = getCachedHockeyAllsvenskanGames();
+        let usedCache = true;
+        const provider = getProvider('hockeyallsvenskan');
+
+        if (games) {
+            console.log('[Cache HIT] /api/hockeyallsvenskan/games');
+        } else {
+            usedCache = false;
+            console.log('[Cache MISS] /api/hockeyallsvenskan/games - fetching fresh data...');
+            games = await provider.fetchAllGames();
+        }
+
+        if (!Array.isArray(games)) {
+            games = [];
+        }
+
+        const now = new Date();
+        const shouldUseFastCache = shouldUseFastGamesCache(games, now);
+        if (!usedCache) {
+            setCachedHockeyAllsvenskanGames(games, shouldUseFastCache);
+        } else {
+            setHockeyAllsvenskanLiveFlag(shouldUseFastCache);
+        }
+
+        let result = games;
+
+        if (req.query.team) {
+            const teamQuery = String(req.query.team).trim().toLowerCase();
+            const matchesTeam = (teamInfo) => {
+                if (!teamInfo) return false;
+                const candidates = [teamInfo.code, teamInfo.uuid, teamInfo.names?.short, teamInfo.names?.long];
+                return candidates.some(value => value && String(value).toLowerCase() === teamQuery);
+            };
+            result = result.filter(game => matchesTeam(game.homeTeamInfo) || matchesTeam(game.awayTeamInfo));
+        }
+
+        if (req.query.state) {
+            const stateQuery = String(req.query.state).trim().toLowerCase();
+            result = result.filter(game => game.state === stateQuery);
+        }
+
+        if (req.query.upcoming === 'true') {
+            result = result.filter(game => {
+                const startTime = new Date(game.startDateTime);
+                return !Number.isNaN(startTime.getTime()) && startTime >= now;
+            });
+        }
+
+        if (req.query.limit) {
+            const limit = parseInt(req.query.limit);
+            if (limit > 0) {
+                result = result.slice(0, limit);
+            }
+        }
+
+        res.json(result);
+    } catch (error) {
+        console.error('Error fetching HockeyAllsvenskan schedule:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/hockeyallsvenskan/game/:id/videos
+ * Get videos/highlights for a specific HockeyAllsvenskan game
+ */
+app.get('/api/hockeyallsvenskan/game/:id/videos', async (req, res) => {
+    const { id } = req.params;
+    const cacheKey = `ha-${id}`;
+
+    const cached = getCachedVideos(cacheKey);
+    if (cached) {
+        console.log(`[Cache HIT] /api/hockeyallsvenskan/game/${id}/videos`);
+        return res.json(cached);
+    }
+
+    console.log(`[Cache MISS] /api/hockeyallsvenskan/game/${id}/videos - fetching...`);
+
+    try {
+        const provider = getProvider('hockeyallsvenskan');
+        const videos = await provider.fetchGameVideos(id);
+        setCachedVideos(cacheKey, videos);
+        res.json(videos);
+    } catch (error) {
+        console.error(`Error fetching HockeyAllsvenskan videos for ${id}:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/hockeyallsvenskan/game/:id/details
+ * Get details for a specific HockeyAllsvenskan game
+ */
+app.get('/api/hockeyallsvenskan/game/:id/details', async (req, res) => {
+    const { id } = req.params;
+
+    const cached = getCachedHockeyAllsvenskanDetails(id);
+    if (cached) {
+        console.log(`[Cache HIT] /api/hockeyallsvenskan/game/${id}/details`);
+        return res.json(cached);
+    }
+
+    console.log(`[Cache MISS] /api/hockeyallsvenskan/game/${id}/details - fetching...`);
+
+    try {
+        const provider = getProvider('hockeyallsvenskan');
+        const details = await provider.fetchGameDetails(id);
+
+        if (!details) {
+            return res.status(404).json({ error: 'Game not found' });
+        }
+
+        setCachedHockeyAllsvenskanDetails(id, details);
+        res.json(details);
+    } catch (error) {
+        console.error(`Error fetching HockeyAllsvenskan details for ${id}:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/hockeyallsvenskan/standings
+ * Get HockeyAllsvenskan league standings (computed from completed games).
+ * Query params: ?team, ?top
+ */
+app.get('/api/hockeyallsvenskan/standings', async (req, res) => {
+    try {
+        let standings = getCachedHockeyAllsvenskanStandings();
+
+        if (standings) {
+            console.log('[Cache HIT] /api/hockeyallsvenskan/standings');
+        } else {
+            console.log('[Cache MISS] /api/hockeyallsvenskan/standings - fetching fresh data...');
+            const provider = getProvider('hockeyallsvenskan');
+            standings = await provider.fetchStandings();
+            setCachedHockeyAllsvenskanStandings(standings);
+        }
+
+        let result = { ...standings };
+
+        if (req.query.team) {
+            const teamCode = req.query.team.toUpperCase();
+            result.standings = standings.standings.filter(t => t.teamCode?.toUpperCase() === teamCode);
+        }
+
+        if (req.query.top) {
+            const topN = parseInt(req.query.top);
+            if (topN > 0) {
+                result.standings = result.standings.slice(0, topN);
+            }
+        }
+
+        res.json(result);
+    } catch (error) {
+        console.error('Error fetching HockeyAllsvenskan standings:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ============ SHL/HOCKEY ENDPOINTS ============
 
 /**
@@ -1310,8 +1488,9 @@ app.post('/api/notifications/goal-test', async (req, res) => {
             });
         }
 
-        const validSports = ['shl', 'allsvenskan', 'svenska-cupen'];
+        const validSports = ['shl', 'hockeyallsvenskan', 'allsvenskan', 'svenska-cupen'];
         const sport = validSports.includes(payload.sport) ? payload.sport : 'shl';
+        const isHockeyTest = sport === 'shl' || sport === 'hockeyallsvenskan';
         const scoringIsHome = parseOptionalBoolean(payload.scoringIsHome, true);
         const homeTeamCode = normalizeTeamCode(payload.homeTeamCode)
             || (scoringIsHome ? scoringTeamCode : opposingTeamCode);
@@ -1332,8 +1511,8 @@ app.post('/api/notifications/goal-test', async (req, res) => {
         }
 
         const scorerName = payload.scorerName ? String(payload.scorerName).trim() : 'Test Scorer';
-        const time = payload.time ? String(payload.time).trim() : (sport === 'shl' ? '12:34' : '54:21');
-        const period = payload.period ? String(payload.period).trim() : (sport === 'shl' ? 'P1' : '1st half');
+        const time = payload.time ? String(payload.time).trim() : (isHockeyTest ? '12:34' : '54:21');
+        const period = payload.period ? String(payload.period).trim() : (isHockeyTest ? 'P1' : '1st half');
         const token = payload.token || null;
         const sendOpposing = parseOptionalBoolean(payload.sendOpposing, !token);
 

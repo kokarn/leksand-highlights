@@ -59,8 +59,8 @@ function saveSeenVideo(videoId) {
 }
 
 // ============ NOTIFICATIONS ============
-async function sendNotification(topic, video, gameInfo, isHighlight) {
-    const provider = getProvider();
+async function sendNotification(topic, video, gameInfo, isHighlight, sport = 'shl') {
+    const provider = getProvider(sport);
     const videoUrl = provider.getVideoUrl(video);
     const imageUrl = provider.getVideoThumbnail(video);
 
@@ -106,12 +106,12 @@ async function sendNotification(topic, video, gameInfo, isHighlight) {
     }
 }
 
-async function processGameVideos(game, skipNotifications = false) {
-    const provider = getProvider();
+async function processGameVideos(game, skipNotifications = false, sport = 'shl') {
+    const provider = getProvider(sport);
     const gameInfo = provider.getGameDisplayInfo(game);
     const timestamp = formatSwedishTimestamp();
 
-    console.log(`[${timestamp}] Checking videos for ${gameInfo.homeTeam} vs ${gameInfo.awayTeam} (${gameInfo.gameId})...`);
+    console.log(`[${timestamp}] [${sport}] Checking videos for ${gameInfo.homeTeam} vs ${gameInfo.awayTeam} (${gameInfo.gameId})...`);
 
     try {
         const videos = await provider.fetchGameVideos(gameInfo.gameId);
@@ -124,16 +124,16 @@ async function processGameVideos(game, skipNotifications = false) {
 
             if (!skipNotifications) {
                 // 1. Global topic
-                await sendNotification(GLOBAL_ALL_TOPIC, video, gameInfo, isHighlight);
+                await sendNotification(GLOBAL_ALL_TOPIC, video, gameInfo, isHighlight, sport);
 
                 // 2. Per-team "all" topics
-                await sendNotification(`${TEAM_ALL_TOPIC_PREFIX}${gameInfo.homeTeamCode}`, video, gameInfo, isHighlight);
-                await sendNotification(`${TEAM_ALL_TOPIC_PREFIX}${gameInfo.awayTeamCode}`, video, gameInfo, isHighlight);
+                await sendNotification(`${TEAM_ALL_TOPIC_PREFIX}${gameInfo.homeTeamCode}`, video, gameInfo, isHighlight, sport);
+                await sendNotification(`${TEAM_ALL_TOPIC_PREFIX}${gameInfo.awayTeamCode}`, video, gameInfo, isHighlight, sport);
 
                 // 3. Per-team highlights (if applicable)
                 if (isHighlight) {
-                    await sendNotification(`${HIGHLIGHTS_TOPIC_PREFIX}${gameInfo.homeTeamCode}`, video, gameInfo, isHighlight);
-                    await sendNotification(`${HIGHLIGHTS_TOPIC_PREFIX}${gameInfo.awayTeamCode}`, video, gameInfo, isHighlight);
+                    await sendNotification(`${HIGHLIGHTS_TOPIC_PREFIX}${gameInfo.homeTeamCode}`, video, gameInfo, isHighlight, sport);
+                    await sendNotification(`${HIGHLIGHTS_TOPIC_PREFIX}${gameInfo.awayTeamCode}`, video, gameInfo, isHighlight, sport);
 
                     // 4. FCM push notification for app users following either team
                     const clipTitle = video.title
@@ -141,7 +141,7 @@ async function processGameVideos(game, skipNotifications = false) {
                         || video.description
                         || 'A new highlight clip is available';
                     const pushResult = await pushNotifications.sendHighlightNotification({
-                        sport: 'shl',
+                        sport,
                         gameId: gameInfo.gameId,
                         videoId: video.id,
                         clipTitle,
@@ -154,7 +154,7 @@ async function processGameVideos(game, skipNotifications = false) {
                     if (pushResult.success) {
                         console.log(`[Notifier] FCM highlight notification sent for game ${gameInfo.gameId}`);
                         addEntry('notifier', 'notification', `Highlight push sent: ${gameInfo.homeTeam} vs ${gameInfo.awayTeam}`, {
-                            sport: 'shl',
+                            sport,
                             gameId: gameInfo.gameId,
                             videoId: video.id
                         });
@@ -272,7 +272,24 @@ async function runCheck() {
     for (const game of games) {
         const gameInfo = provider.getGameDisplayInfo(game);
         if (seenGames.includes(gameInfo.gameId)) continue;
-        await processGameVideos(game, skipNotifications);
+        await processGameVideos(game, skipNotifications, 'shl');
+    }
+
+    // HockeyAllsvenskan shares SHL's video/highlights pipeline (same shl.se-style API,
+    // StayLive CDN, custom.highlights tag). Reuse the exact SHL flow, just pointed at
+    // the HA provider.
+    let hockeyAllsvenskanGames = [];
+    try {
+        const haProvider = getProvider('hockeyallsvenskan');
+        hockeyAllsvenskanGames = await getActiveGames('hockeyallsvenskan');
+        for (const game of hockeyAllsvenskanGames) {
+            const gameInfo = haProvider.getGameDisplayInfo(game);
+            if (seenGames.includes(gameInfo.gameId)) continue;
+            await processGameVideos(game, skipNotifications, 'hockeyallsvenskan');
+        }
+    } catch (e) {
+        console.error(`[Notifier] Error checking HockeyAllsvenskan videos: ${e.message}`);
+        addEntry('notifier', 'error', `Error checking HockeyAllsvenskan videos: ${e.message}`);
     }
 
     // Football goal clips (Allsvenskan): FotbollPlay publishes per-event clips; we push
@@ -291,12 +308,12 @@ async function runCheck() {
         addEntry('notifier', 'error', `Error checking Allsvenskan goal clips: ${e.message}`);
     }
 
-    stats.gamesChecked = games.length + footballGames.length;
+    stats.gamesChecked = games.length + hockeyAllsvenskanGames.length + footballGames.length;
     stats.lastCheck = formatSwedishTimestamp();
 
     // Return the combined game list so the loop's live-interval decision also speeds up
-    // (30s polling) while a football match is live, not just hockey.
-    return [...games, ...footballGames];
+    // (30s polling) while ANY match is live, across all leagues.
+    return [...games, ...hockeyAllsvenskanGames, ...footballGames];
 }
 
 function startLoop() {

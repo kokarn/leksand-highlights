@@ -25,7 +25,10 @@ const {
     setAllsvenskanLiveFlag,
     getCachedSvenskaCupenGames,
     setCachedSvenskaCupenGames,
-    setSvenskaCupenLiveFlag
+    setSvenskaCupenLiveFlag,
+    getCachedHockeyAllsvenskanGames,
+    setCachedHockeyAllsvenskanGames,
+    setHockeyAllsvenskanLiveFlag
 } = require('./cache');
 
 // How close to kickoff a pre-game counts as "starting soon" for fast-cache purposes.
@@ -68,6 +71,11 @@ const CACHE_ADAPTERS = {
         get: getCachedSvenskaCupenGames,
         set: setCachedSvenskaCupenGames,
         setLiveFlag: setSvenskaCupenLiveFlag
+    },
+    hockeyallsvenskan: {
+        get: getCachedHockeyAllsvenskanGames,
+        set: setCachedHockeyAllsvenskanGames,
+        setLiveFlag: setHockeyAllsvenskanLiveFlag
     }
 };
 

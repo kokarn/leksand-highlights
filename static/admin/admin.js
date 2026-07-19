@@ -1198,6 +1198,7 @@ async function sendPregameTest() {
 
         const sportLabels = {
             shl: 'SHL',
+            'hockeyallsvenskan': 'HockeyAllsvenskan',
             allsvenskan: 'Allsvenskan',
             'svenska-cupen': 'Svenska Cupen',
             biathlon: 'Biathlon'
