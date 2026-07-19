@@ -104,6 +104,45 @@ class BaseProvider {
     async fetchVideoDetails(videoId) {
         return null; // Default: not implemented
     }
+
+    /**
+     * Resolve a team logo URL, falling back to a curated static badge map when the
+     * upstream source (e.g. ESPN) returns no logo for a club. Keyed by the team id
+     * used upstream (ESPN team id). Used to fill logo gaps for minor European clubs.
+     * @param {string|null} upstreamIcon - Logo URL from the upstream feed (may be empty)
+     * @param {string|number|null} teamId - The upstream team id (ESPN id)
+     * @returns {string|null}
+     */
+    resolveTeamIcon(upstreamIcon, teamId) {
+        if (upstreamIcon) {
+            return upstreamIcon;
+        }
+        if (teamId === undefined || teamId === null) {
+            return upstreamIcon || null;
+        }
+        const fallbacks = BaseProvider.getTeamLogoFallbacks();
+        return fallbacks[String(teamId)] || upstreamIcon || null;
+    }
+
+    /**
+     * Lazily load + cache the static fallback badge map (ESPN team id -> logo URL).
+     * @returns {Object<string,string>}
+     */
+    static getTeamLogoFallbacks() {
+        if (BaseProvider._teamLogoFallbacks) {
+            return BaseProvider._teamLogoFallbacks;
+        }
+        let badges = {};
+        try {
+            const path = require('path');
+            const data = require(path.join(__dirname, '..', '..', 'data', 'team-logo-fallbacks.json'));
+            badges = (data && data.badges) || {};
+        } catch (err) {
+            badges = {};
+        }
+        BaseProvider._teamLogoFallbacks = badges;
+        return badges;
+    }
 }
 
 module.exports = BaseProvider;

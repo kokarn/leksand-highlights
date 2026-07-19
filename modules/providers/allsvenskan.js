@@ -360,13 +360,14 @@ class AllsvenskanProvider extends BaseProvider {
 
         const team = competitor.team || {};
         const names = this.getTeamNames(team);
+        const teamId = team.id || competitor.id || null;
 
         return {
             code: team.abbreviation || names.short,
-            uuid: team.id || competitor.id || null,
+            uuid: teamId,
             names,
             score: this.parseScore(competitor.score, state),
-            icon: this.getTeamLogo(team)
+            icon: this.resolveTeamIcon(this.getTeamLogo(team), teamId)
         };
     }
 
