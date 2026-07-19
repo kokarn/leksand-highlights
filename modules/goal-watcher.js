@@ -6,6 +6,7 @@ const { addEntry } = require('./activity-log');
 // ============ GOAL WATCHER STATE ============
 // Track previously seen goals to detect new ones
 const seenGoals = new Map(); // gameId -> Set of goalIds
+const gameLastSeen = new Map(); // gameId -> timestamp (ms) of last live check, for cleanup
 let isRunning = false;
 let stats = {
     lastCheck: null,
@@ -21,15 +22,21 @@ let stats = {
  * @returns {string} Unique goal identifier
  */
 function getGoalId(goal, gameId) {
-    // Create a unique ID from available goal properties
+    // Create a unique ID from available goal properties.
+    // goal.id is the provider's own stable per-event id (ESPN keyEvents/plays always
+    // carry it). It MUST come first: football (ESPN) goals expose `clock`/`isHome`/
+    // `.scorer` and null scores — NOT `time`/`teamUuid`/`.player`/homeGoals — so every
+    // football goal in the same period used to collapse to the identical key
+    // (`gameId-1-----`), making the 2nd+ goal of a half look already-seen and never push.
     const parts = [
+        goal.id || goal.eventId || '',
         gameId,
         goal.period || '',
-        goal.time || '',
-        goal.teamUuid || goal.team?.uuid || goal.eventTeam?.teamId || '',
-        goal.player?.uuid || goal.player?.playerId || goal.scorerPlayer?.uuid || '',
-        goal.homeGoals ?? goal.homeTeam?.score ?? '',
-        goal.awayGoals ?? goal.awayTeam?.score ?? ''
+        goal.time || goal.clock?.displayValue || goal.clock || '',
+        goal.teamUuid || goal.team?.uuid || goal.eventTeam?.teamId || goal.teamCode || (goal.isHome === true ? 'home' : goal.isHome === false ? 'away' : ''),
+        goal.player?.uuid || goal.player?.playerId || goal.scorerPlayer?.uuid || goal.scorer?.id || goal.scorer?.name || '',
+        goal.homeGoals ?? goal.homeTeam?.score ?? goal.score?.home ?? '',
+        goal.awayGoals ?? goal.awayTeam?.score ?? goal.score?.away ?? ''
     ];
     return parts.join('-');
 }
@@ -214,6 +221,9 @@ async function checkGameForNewGoals(game, sport) {
         return [];
     }
 
+    // Record activity so cleanupOldGames can evict games that stopped being live.
+    gameLastSeen.set(gameId, Date.now());
+
     try {
         const details = await provider.fetchGameDetails(gameId);
         if (!details || !details.events) {
@@ -276,10 +286,12 @@ async function checkGameForNewGoals(game, sport) {
 
             const goalId = getGoalId(goal, gameId);
             if (!previousGoalIds.has(goalId)) {
-                previousGoalIds.add(goalId);
-
+                // NOTE: do NOT mark this goal seen here. It is marked in runCheck ONLY
+                // after its push notification succeeds, so a transient FCM/network
+                // failure retries on the next tick instead of silently losing the goal.
                 const computedScore = { home: homeTally, away: awayTally };
                 const goalDetails = extractGoalDetails(goal, gameInfo, sport, computedScore);
+                goalDetails.goalId = goalId;
                 newGoals.push(goalDetails);
             }
         }
@@ -360,12 +372,19 @@ async function runCheck() {
 
         try {
             await pushNotifications.sendGoalNotification(goal);
+            // Mark seen ONLY after a successful push, so a failed send retries next tick.
+            if (goal.goalId) {
+                const gameGoalIds = seenGoals.get(goal.gameId);
+                if (gameGoalIds) {
+                    gameGoalIds.add(goal.goalId);
+                }
+            }
             results.notificationsSent++;
             stats.notificationsSent++;
             addEntry('goal-watcher', 'notification', `Goal notification sent: ${goal.scoringTeamName} (${goal.homeScore}-${goal.awayScore})`);
         } catch (error) {
             console.error('[GoalWatcher] Error sending notification:', error.message);
-            addEntry('goal-watcher', 'error', `Goal notification failed: ${error.message}`);
+            addEntry('goal-watcher', 'error', `Goal notification failed (will retry): ${error.message}`);
         }
     }
 
@@ -387,12 +406,31 @@ async function runCheck() {
  */
 function cleanupOldGames() {
     const now = Date.now();
-    const maxAge = 6 * 60 * 60 * 1000; // 6 hours
+    const maxAge = 6 * 60 * 60 * 1000; // 6 hours since a game was last seen live
 
-    // Note: Since we don't track timestamps per game,
-    // we rely on the game state checks to skip non-live games
-    // This is a placeholder for future enhancement
-    console.log(`[GoalWatcher] Tracking goals for ${seenGoals.size} games`);
+    let evicted = 0;
+    for (const [gameId, lastSeen] of gameLastSeen) {
+        if (now - lastSeen > maxAge) {
+            seenGoals.delete(gameId);
+            gameLastSeen.delete(gameId);
+            evicted++;
+        }
+    }
+
+    // Safety net: drop any seenGoals entry with no activity record at all
+    // (e.g. a game initialized then never live again).
+    for (const gameId of seenGoals.keys()) {
+        if (!gameLastSeen.has(gameId)) {
+            seenGoals.delete(gameId);
+            evicted++;
+        }
+    }
+
+    if (evicted > 0) {
+        console.log(`[GoalWatcher] Cleanup evicted ${evicted} stale games. Now tracking ${seenGoals.size}.`);
+    } else {
+        console.log(`[GoalWatcher] Tracking goals for ${seenGoals.size} games`);
+    }
 }
 
 /**
