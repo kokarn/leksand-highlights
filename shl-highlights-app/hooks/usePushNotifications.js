@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { Platform, PermissionsAndroid } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { STORAGE_KEYS, FCM_TOPICS } from '../constants';
+import { STORAGE_KEYS, FCM_TOPICS, PRE_GAME_LEAGUES, LEGACY_FOOTBALL_LEAGUE_IDS } from '../constants';
 
 // Silence Firebase modular API deprecation warnings (namespaced API still works in v23)
 // TODO: Migrate to modular API in a future release
@@ -18,6 +18,12 @@ if (Platform.OS !== 'web') {
     }
 }
 
+// Build a default { [leagueId]: false } map from the league config
+const buildEmptyLeagueState = () =>
+    PRE_GAME_LEAGUES.reduce((acc, l) => { acc[l.id] = false; return acc; }, {});
+
+const LEAGUE_BY_ID = PRE_GAME_LEAGUES.reduce((acc, l) => { acc[l.id] = l; return acc; }, {});
+
 /**
  * Hook for managing Firebase Cloud Messaging push notifications
  * Handles initialization, permission requests, and topic subscriptions
@@ -25,9 +31,8 @@ if (Platform.OS !== 'web') {
  * Topic structure:
  * - goal_notifications - enables goal notification targeting
  * - team_{code} - individual team subscription (e.g., team_lif, team_aik)
- * - pre_game_shl - enables pre-game notifications for SHL
- * - pre_game_football - enables pre-game notifications for Allsvenskan
- * - pre_game_biathlon - enables pre-game notifications for Biathlon
+ * - pre_game_{league} - one topic per league for pre-game reminders
+ *   (see PRE_GAME_LEAGUES in constants). Each league is toggled independently.
  */
 export function usePushNotifications() {
     const [isInitialized, setIsInitialized] = useState(false);
@@ -38,10 +43,8 @@ export function usePushNotifications() {
     const [notificationsEnabled, setNotificationsEnabled] = useState(false);
     const [goalNotificationsEnabled, setGoalNotificationsEnabled] = useState(true);
 
-    // Pre-game notification preferences per sport
-    const [preGameShlEnabled, setPreGameShlEnabled] = useState(false);
-    const [preGameFootballEnabled, setPreGameFootballEnabled] = useState(false);
-    const [preGameBiathlonEnabled, setPreGameBiathlonEnabled] = useState(false);
+    // Per-league pre-game reminder preferences: { [leagueId]: boolean }
+    const [preGameLeagues, setPreGameLeagues] = useState(buildEmptyLeagueState);
 
     // Track all current team topics
     const currentTeamsRef = useRef(new Set());
@@ -169,19 +172,12 @@ export function usePushNotifications() {
             topics.push(FCM_TOPICS.GOAL_NOTIFICATIONS);
         }
 
-        const savedPreGameShl = await AsyncStorage.getItem(STORAGE_KEYS.PRE_GAME_SHL_ENABLED);
-        if (savedPreGameShl === 'true') {
-            topics.push(FCM_TOPICS.PRE_GAME_SHL);
-        }
-
-        const savedPreGameFootball = await AsyncStorage.getItem(STORAGE_KEYS.PRE_GAME_FOOTBALL_ENABLED);
-        if (savedPreGameFootball === 'true') {
-            topics.push(FCM_TOPICS.PRE_GAME_FOOTBALL);
-        }
-
-        const savedPreGameBiathlon = await AsyncStorage.getItem(STORAGE_KEYS.PRE_GAME_BIATHLON_ENABLED);
-        if (savedPreGameBiathlon === 'true') {
-            topics.push(FCM_TOPICS.PRE_GAME_BIATHLON);
+        // Per-league pre-game topics
+        for (const league of PRE_GAME_LEAGUES) {
+            const saved = await AsyncStorage.getItem(league.storageKey);
+            if (saved === 'true') {
+                topics.push(league.topic);
+            }
         }
 
         // Add team topics
@@ -219,6 +215,49 @@ export function usePushNotifications() {
             await registerWithServer(fcmToken, allTopics);
         }
     }, [subscribeToTopic, unsubscribeFromTopic, fcmToken, registerWithServer, buildCurrentTopicList]);
+
+    /**
+     * One-time migration: an older app version stored a single grouped
+     * "football" reminder flag (preGameFootballEnabled) covering all football
+     * leagues. If the per-league keys have not been written yet, seed each
+     * football league's key from the legacy flag so users keep their reminders.
+     * Returns the resolved { [leagueId]: boolean } map.
+     */
+    const loadLeaguePreferences = useCallback(async () => {
+        const legacyFootball = await AsyncStorage.getItem(STORAGE_KEYS.LEGACY_PRE_GAME_FOOTBALL_ENABLED);
+        const state = buildEmptyLeagueState();
+
+        for (const league of PRE_GAME_LEAGUES) {
+            let saved = await AsyncStorage.getItem(league.storageKey);
+
+            // Migration: if this football league has no per-league value yet but
+            // the legacy grouped flag exists, inherit it and persist.
+            if (saved === null && LEGACY_FOOTBALL_LEAGUE_IDS.includes(league.id) && legacyFootball !== null) {
+                saved = legacyFootball;
+                await AsyncStorage.setItem(league.storageKey, saved);
+                console.log(`[FCM] Migrated legacy football reminder → ${league.id} = ${saved}`);
+            }
+
+            state[league.id] = saved === 'true';
+        }
+
+        // Clean up the now-dead grouped football topic. The backend no longer
+        // publishes to 'pre_game_football'; unsubscribe migrated devices once so
+        // they don't hold a stale subscription. Guarded to run a single time.
+        if (legacyFootball !== null) {
+            if (messaging) {
+                try {
+                    await messaging().unsubscribeFromTopic('pre_game_football');
+                    console.log('[FCM] Unsubscribed from legacy pre_game_football topic');
+                } catch (e) {
+                    console.warn('[FCM] Failed to unsubscribe legacy football topic:', e.message);
+                }
+            }
+            await AsyncStorage.removeItem(STORAGE_KEYS.LEGACY_PRE_GAME_FOOTBALL_ENABLED);
+        }
+
+        return state;
+    }, []);
 
     /**
      * Initialize Firebase Cloud Messaging
@@ -267,34 +306,23 @@ export function usePushNotifications() {
                 // Load saved notification preferences
                 const savedEnabled = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATIONS_ENABLED);
                 const savedGoalNotifications = await AsyncStorage.getItem(STORAGE_KEYS.GOAL_NOTIFICATIONS_ENABLED);
-                const savedPreGameShl = await AsyncStorage.getItem(STORAGE_KEYS.PRE_GAME_SHL_ENABLED);
-                const savedPreGameFootball = await AsyncStorage.getItem(STORAGE_KEYS.PRE_GAME_FOOTBALL_ENABLED);
-                const savedPreGameBiathlon = await AsyncStorage.getItem(STORAGE_KEYS.PRE_GAME_BIATHLON_ENABLED);
+                const leagueState = await loadLeaguePreferences();
 
                 const isEnabled = savedEnabled === 'true';
                 const goalEnabled = savedGoalNotifications !== 'false';
-                const preGameShl = savedPreGameShl === 'true';
-                const preGameFootball = savedPreGameFootball === 'true';
-                const preGameBiathlon = savedPreGameBiathlon === 'true';
 
                 setNotificationsEnabled(isEnabled);
                 setGoalNotificationsEnabled(goalEnabled);
-                setPreGameShlEnabled(preGameShl);
-                setPreGameFootballEnabled(preGameFootball);
-                setPreGameBiathlonEnabled(preGameBiathlon);
+                setPreGameLeagues(leagueState);
 
                 // Subscribe to topics
                 if (goalEnabled) {
                     await subscribeToTopic(FCM_TOPICS.GOAL_NOTIFICATIONS);
                 }
-                if (preGameShl) {
-                    await subscribeToTopic(FCM_TOPICS.PRE_GAME_SHL);
-                }
-                if (preGameFootball) {
-                    await subscribeToTopic(FCM_TOPICS.PRE_GAME_FOOTBALL);
-                }
-                if (preGameBiathlon) {
-                    await subscribeToTopic(FCM_TOPICS.PRE_GAME_BIATHLON);
+                for (const league of PRE_GAME_LEAGUES) {
+                    if (leagueState[league.id]) {
+                        await subscribeToTopic(league.topic);
+                    }
                 }
 
                 // Load and sync saved team preferences
@@ -389,7 +417,7 @@ export function usePushNotifications() {
         };
 
         initFCM();
-    }, [subscribeToTopic, unsubscribeFromTopic, registerWithServer, buildCurrentTopicList, applyTeamTopics]);
+    }, [subscribeToTopic, unsubscribeFromTopic, registerWithServer, buildCurrentTopicList, applyTeamTopics, loadLeaguePreferences]);
 
     /**
      * Request notification permission
@@ -469,33 +497,20 @@ export function usePushNotifications() {
     }, [syncTopic]);
 
     /**
-     * Toggle pre-game notifications for SHL
+     * Toggle pre-game reminders for a single league.
+     * @param {string} leagueId - one of PRE_GAME_LEAGUES[].id
+     * @param {boolean} enabled
      */
-    const togglePreGameShl = useCallback(async (enabled) => {
-        setPreGameShlEnabled(enabled);
-        await AsyncStorage.setItem(STORAGE_KEYS.PRE_GAME_SHL_ENABLED, enabled ? 'true' : 'false');
-        await syncTopic(FCM_TOPICS.PRE_GAME_SHL, enabled);
-        console.log('[FCM] Pre-game SHL notifications:', enabled ? 'enabled' : 'disabled');
-    }, [syncTopic]);
-
-    /**
-     * Toggle pre-game notifications for Allsvenskan/Football
-     */
-    const togglePreGameFootball = useCallback(async (enabled) => {
-        setPreGameFootballEnabled(enabled);
-        await AsyncStorage.setItem(STORAGE_KEYS.PRE_GAME_FOOTBALL_ENABLED, enabled ? 'true' : 'false');
-        await syncTopic(FCM_TOPICS.PRE_GAME_FOOTBALL, enabled);
-        console.log('[FCM] Pre-game Football notifications:', enabled ? 'enabled' : 'disabled');
-    }, [syncTopic]);
-
-    /**
-     * Toggle pre-game notifications for Biathlon
-     */
-    const togglePreGameBiathlon = useCallback(async (enabled) => {
-        setPreGameBiathlonEnabled(enabled);
-        await AsyncStorage.setItem(STORAGE_KEYS.PRE_GAME_BIATHLON_ENABLED, enabled ? 'true' : 'false');
-        await syncTopic(FCM_TOPICS.PRE_GAME_BIATHLON, enabled);
-        console.log('[FCM] Pre-game Biathlon notifications:', enabled ? 'enabled' : 'disabled');
+    const togglePreGameLeague = useCallback(async (leagueId, enabled) => {
+        const league = LEAGUE_BY_ID[leagueId];
+        if (!league) {
+            console.warn('[FCM] Unknown pre-game league:', leagueId);
+            return;
+        }
+        setPreGameLeagues(prev => ({ ...prev, [leagueId]: enabled }));
+        await AsyncStorage.setItem(league.storageKey, enabled ? 'true' : 'false');
+        await syncTopic(league.topic, enabled);
+        console.log(`[FCM] Pre-game ${leagueId} notifications:`, enabled ? 'enabled' : 'disabled');
     }, [syncTopic]);
 
     /**
@@ -570,19 +585,15 @@ export function usePushNotifications() {
         fcmToken,
         notificationsEnabled,
         goalNotificationsEnabled,
-        // Pre-game notification state per sport
-        preGameShlEnabled,
-        preGameFootballEnabled,
-        preGameBiathlonEnabled,
+        // Per-league pre-game reminder state: { [leagueId]: boolean }
+        preGameLeagues,
 
         // Actions
         requestPermission,
         toggleNotifications,
         toggleGoalNotifications,
-        // Pre-game notification toggles
-        togglePreGameShl,
-        togglePreGameFootball,
-        togglePreGameBiathlon,
+        // Per-league pre-game reminder toggle: togglePreGameLeague(leagueId, enabled)
+        togglePreGameLeague,
         setTeamTags,
         getTags,
         syncTeamTags

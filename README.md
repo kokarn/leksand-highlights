@@ -1,6 +1,6 @@
 # 🏒 GamePulse API Server
 
-**Version: 3.12.0**
+**Version: 3.13.0**
 
 A multi-sport API server that provides real-time game data, notifications, and highlights for Swedish sports leagues.
 
@@ -76,7 +76,11 @@ The notification system uses FCM topics for targeting:
 |-------|-------------|
 | `goal_notifications` | Enables goal and highlight alerts for followed teams |
 | `pre_game_shl` | Pre-game reminders for SHL |
-| `pre_game_football` | Pre-game reminders for Allsvenskan and Svenska Cupen |
+| `pre_game_hockeyallsvenskan` | Pre-game reminders for HockeyAllsvenskan |
+| `pre_game_allsvenskan` | Pre-game reminders for Allsvenskan |
+| `pre_game_svenska_cupen` | Pre-game reminders for Svenska Cupen |
+| `pre_game_europa_qual` | Pre-game reminders for Europa League Qualifying |
+| `pre_game_conference_qual` | Pre-game reminders for Conference League Qualifying |
 | `pre_game_biathlon` | Pre-game reminders for Biathlon |
 | `team_{code}` | Team-specific notifications (e.g., `team_lif`, `team_dif`) |
 

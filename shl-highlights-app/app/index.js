@@ -250,13 +250,9 @@ export default function App() {
         requestPermission: requestNotificationPermission,
         setTeamTags,
         fcmToken,
-        // Pre-game notification state and toggles
-        preGameShlEnabled,
-        preGameFootballEnabled,
-        preGameBiathlonEnabled,
-        togglePreGameShl,
-        togglePreGameFootball,
-        togglePreGameBiathlon
+        // Per-league pre-game reminder state + toggle
+        preGameLeagues,
+        togglePreGameLeague
     } = usePushNotifications();
 
     // App self-update (Android sideload) — check GitHub Releases on launch
@@ -1123,13 +1119,9 @@ export default function App() {
                 onToggleNotifications={toggleNotifications}
                 onToggleGoalNotifications={toggleGoalNotifications}
                 onRequestNotificationPermission={requestNotificationPermission}
-                // Pre-game notification props
-                preGameShlEnabled={preGameShlEnabled}
-                preGameFootballEnabled={preGameFootballEnabled}
-                preGameBiathlonEnabled={preGameBiathlonEnabled}
-                onTogglePreGameShl={togglePreGameShl}
-                onTogglePreGameFootball={togglePreGameFootball}
-                onTogglePreGameBiathlon={togglePreGameBiathlon}
+                // Pre-game reminder props (per-league)
+                preGameLeagues={preGameLeagues}
+                onTogglePreGameLeague={togglePreGameLeague}
                 fcmToken={fcmToken}
                 updateStatus={appUpdate.status}
                 updateInfo={appUpdate.updateInfo}

@@ -856,9 +856,18 @@ async function sendPreGameNotification(gameInfo) {
             message += ` at ${venue}`;
         }
         message += ` - starts in ${minutesUntilStart} minutes!`;
+    } else if (sport === 'hockeyallsvenskan') {
+        sportEmoji = '🏒';
+        preGameTopic = 'pre_game_hockeyallsvenskan';
+        title = `${sportEmoji} HockeyAllsvenskan Starting Soon`;
+        message = `${homeTeamName} vs ${awayTeamName}`;
+        if (venue) {
+            message += ` at ${venue}`;
+        }
+        message += ` - starts in ${minutesUntilStart} minutes!`;
     } else if (sport === 'allsvenskan') {
         sportEmoji = '⚽';
-        preGameTopic = 'pre_game_football';
+        preGameTopic = 'pre_game_allsvenskan';
         title = `${sportEmoji} Allsvenskan Starting Soon`;
         message = `${homeTeamName} vs ${awayTeamName}`;
         if (venue) {
@@ -867,8 +876,26 @@ async function sendPreGameNotification(gameInfo) {
         message += ` - kicks off in ${minutesUntilStart} minutes!`;
     } else if (sport === 'svenska-cupen') {
         sportEmoji = '🏆';
-        preGameTopic = 'pre_game_football';
+        preGameTopic = 'pre_game_svenska_cupen';
         title = `${sportEmoji} Svenska Cupen Starting Soon`;
+        message = `${homeTeamName} vs ${awayTeamName}`;
+        if (venue) {
+            message += ` at ${venue}`;
+        }
+        message += ` - kicks off in ${minutesUntilStart} minutes!`;
+    } else if (sport === 'europa-league-qual') {
+        sportEmoji = '⚽';
+        preGameTopic = 'pre_game_europa_qual';
+        title = `${sportEmoji} Europa League Qualifier Starting Soon`;
+        message = `${homeTeamName} vs ${awayTeamName}`;
+        if (venue) {
+            message += ` at ${venue}`;
+        }
+        message += ` - kicks off in ${minutesUntilStart} minutes!`;
+    } else if (sport === 'conference-league-qual') {
+        sportEmoji = '⚽';
+        preGameTopic = 'pre_game_conference_qual';
+        title = `${sportEmoji} Conference League Qualifier Starting Soon`;
         message = `${homeTeamName} vs ${awayTeamName}`;
         if (venue) {
             message += ` at ${venue}`;
@@ -900,18 +927,20 @@ async function sendPreGameNotification(gameInfo) {
         url: deepLinkUrl
     };
 
-    // For team sports, send to users following either team with pre-game enabled
-    if ((sport === 'shl' || sport === 'allsvenskan' || sport === 'svenska-cupen') && homeTeamCode && awayTeamCode) {
+    // For team sports, send to users following either team with pre-game enabled.
+    // Biathlon has no team codes, so it targets the pre-game topic directly.
+    const TEAM_SPORTS = ['shl', 'hockeyallsvenskan', 'allsvenskan', 'svenska-cupen', 'europa-league-qual', 'conference-league-qual'];
+    if (TEAM_SPORTS.includes(sport) && homeTeamCode && awayTeamCode) {
         const homeTeamTopic = `team_${sanitizeTopicName(homeTeamCode)}`;
         const awayTeamTopic = `team_${sanitizeTopicName(awayTeamCode)}`;
-        
+
         // Condition: pre_game AND (home_team OR away_team)
         const condition = `'${preGameTopic}' in topics && ('${homeTeamTopic}' in topics || '${awayTeamTopic}' in topics)`;
-        
+
         console.log(`[FCM] Sending pre-game notification for ${sport}: ${message}`);
         return sendWithCondition({ condition, title, body: message, data });
     } else {
-        // For biathlon, just use the pre-game topic
+        // For biathlon (or any sport without team codes), just use the pre-game topic
         console.log(`[FCM] Sending pre-game notification for ${sport}: ${message}`);
         return sendToTopic({ topic: preGameTopic, title, body: message, data });
     }

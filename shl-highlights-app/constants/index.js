@@ -33,13 +33,31 @@ export const STORAGE_KEYS = {
     ENABLED_SPORTS: 'enabledSports',
     NOTIFICATIONS_ENABLED: 'notificationsEnabled',
     GOAL_NOTIFICATIONS_ENABLED: 'goalNotificationsEnabled',
-    // Pre-game notification settings per sport
-    PRE_GAME_SHL_ENABLED: 'preGameShlEnabled',
-    PRE_GAME_FOOTBALL_ENABLED: 'preGameFootballEnabled',
-    PRE_GAME_BIATHLON_ENABLED: 'preGameBiathlonEnabled',
+    // Legacy grouped football flag (migrated to per-league keys, see PRE_GAME_LEAGUES)
+    LEGACY_PRE_GAME_FOOTBALL_ENABLED: 'preGameFootballEnabled',
     // Theme preference
     THEME_MODE: 'themeMode'
 };
+
+// Pre-game reminder leagues. One toggle per league so reminders can be
+// controlled individually. Adding a new league = add one entry here (plus
+// the matching backend case in modules/fcm-notifications.js) and the app UI,
+// storage, and topic subscription all follow automatically.
+// `sportGroup` is used purely to group the toggles visually in Settings.
+// `topic` must match the FCM topic the backend publishes to for that league.
+export const PRE_GAME_LEAGUES = [
+    { id: 'shl', label: 'SHL', sportGroup: 'Hockey', icon: 'snow-outline', topic: 'pre_game_shl', storageKey: 'preGameShlEnabled', description: 'Remind me before SHL games' },
+    { id: 'hockeyallsvenskan', label: 'HockeyAllsvenskan', sportGroup: 'Hockey', icon: 'snow-outline', topic: 'pre_game_hockeyallsvenskan', storageKey: 'preGameHockeyAllsvenskanEnabled', description: 'Remind me before HockeyAllsvenskan games' },
+    { id: 'allsvenskan', label: 'Allsvenskan', sportGroup: 'Football', icon: 'football-outline', topic: 'pre_game_allsvenskan', storageKey: 'preGameAllsvenskanEnabled', description: 'Remind me before Allsvenskan matches' },
+    { id: 'svenska-cupen', label: 'Svenska Cupen', sportGroup: 'Football', icon: 'football-outline', topic: 'pre_game_svenska_cupen', storageKey: 'preGameSvenskaCupenEnabled', description: 'Remind me before Svenska Cupen matches' },
+    { id: 'europa-league-qual', label: 'Europa League Qual', sportGroup: 'Football', icon: 'football-outline', topic: 'pre_game_europa_qual', storageKey: 'preGameEuropaQualEnabled', description: 'Remind me before Europa League qualifiers' },
+    { id: 'conference-league-qual', label: 'Conference League Qual', sportGroup: 'Football', icon: 'football-outline', topic: 'pre_game_conference_qual', storageKey: 'preGameConferenceQualEnabled', description: 'Remind me before Conference League qualifiers' },
+    { id: 'biathlon', label: 'Biathlon', sportGroup: 'Biathlon', icon: 'locate-outline', topic: 'pre_game_biathlon', storageKey: 'preGameBiathlonEnabled', description: 'Remind me before biathlon races' }
+];
+
+// Football leagues previously grouped under the single legacy pre_game_football
+// topic. Used to migrate an existing grouped preference into per-league flags.
+export const LEGACY_FOOTBALL_LEAGUE_IDS = ['allsvenskan', 'svenska-cupen', 'europa-league-qual', 'conference-league-qual'];
 
 // Theme mode options
 export const THEME_MODES = {
@@ -55,12 +73,10 @@ export const THEME_OPTIONS = [
     { id: 'dark', label: 'Dark', icon: 'moon-outline' }
 ];
 
-// FCM Topic names for push notifications
+// FCM Topic names for push notifications.
+// Per-league pre-game topics live on PRE_GAME_LEAGUES[].topic above.
 export const FCM_TOPICS = {
-    GOAL_NOTIFICATIONS: 'goal_notifications',
-    PRE_GAME_SHL: 'pre_game_shl',
-    PRE_GAME_FOOTBALL: 'pre_game_football',
-    PRE_GAME_BIATHLON: 'pre_game_biathlon'
+    GOAL_NOTIFICATIONS: 'goal_notifications'
 };
 
 // Legacy alias for backward compatibility

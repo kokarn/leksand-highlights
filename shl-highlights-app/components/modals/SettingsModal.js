@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import * as Clipboard from 'expo-clipboard';
 import { getTeamLogoUrl } from '../../api/shl';
-import { GENDER_OPTIONS, THEME_OPTIONS } from '../../constants';
+import { GENDER_OPTIONS, THEME_OPTIONS, PRE_GAME_LEAGUES } from '../../constants';
 import { useTheme } from '../../contexts';
 
 const APP_VERSION = Constants.expoConfig?.version || '1.0.0';
@@ -42,13 +42,9 @@ export const SettingsModal = ({
     onToggleNotifications,
     onToggleGoalNotifications,
     onRequestNotificationPermission,
-    // Pre-game notification props
-    preGameShlEnabled = false,
-    preGameFootballEnabled = false,
-    preGameBiathlonEnabled = false,
-    onTogglePreGameShl,
-    onTogglePreGameFootball,
-    onTogglePreGameBiathlon,
+    // Pre-game reminder props (per-league)
+    preGameLeagues = {},
+    onTogglePreGameLeague,
     // Debug props
     fcmToken = null,
     // App update props (from useAppUpdate)
@@ -198,61 +194,63 @@ export const SettingsModal = ({
                             Get notified 5 minutes before games start
                         </Text>
 
-                        <View style={themedStyles.notificationRow}>
-                            <View style={styles.notificationTextContainer}>
-                                <View style={styles.sportLabelRow}>
-                                    <Ionicons name="snow-outline" size={16} color={colors.accent} />
-                                    <Text style={themedStyles.notificationLabel}>Hockey (SHL)</Text>
-                                </View>
-                                <Text style={themedStyles.notificationDescription}>
-                                    Remind me before hockey games
-                                </Text>
-                            </View>
-                            <Switch
-                                value={preGameShlEnabled}
-                                onValueChange={onTogglePreGameShl}
-                                trackColor={{ false: colors.switchTrackOff, true: colors.accentPurple }}
-                                thumbColor="#fff"
-                            />
-                        </View>
+                        {(() => {
+                            // Group per-league toggles by their sport for display.
+                            const groupColors = {
+                                Hockey: colors.accent,
+                                Football: colors.accentGreen,
+                                Biathlon: colors.accentPink
+                            };
+                            const groupOrder = [];
+                            const grouped = {};
+                            for (const league of PRE_GAME_LEAGUES) {
+                                if (!grouped[league.sportGroup]) {
+                                    grouped[league.sportGroup] = [];
+                                    groupOrder.push(league.sportGroup);
+                                }
+                                grouped[league.sportGroup].push(league);
+                            }
 
-                        <View style={themedStyles.notificationRow}>
-                            <View style={styles.notificationTextContainer}>
-                                <View style={styles.sportLabelRow}>
-                                    <Ionicons name="football-outline" size={16} color={colors.accentGreen} />
-                                    <Text style={themedStyles.notificationLabel}>Football (Allsvenskan)</Text>
-                                </View>
-                                <Text style={themedStyles.notificationDescription}>
-                                    Remind me before football matches
-                                </Text>
-                            </View>
-                            <Switch
-                                value={preGameFootballEnabled}
-                                onValueChange={onTogglePreGameFootball}
-                                trackColor={{ false: colors.switchTrackOff, true: colors.accentPurple }}
-                                thumbColor="#fff"
-                            />
-                        </View>
+                            const rows = [];
+                            groupOrder.forEach((group, groupIdx) => {
+                                const isLastGroup = groupIdx === groupOrder.length - 1;
+                                rows.push(
+                                    <Text key={`hdr-${group}`} style={themedStyles.preGameGroupHeader}>
+                                        {group}
+                                    </Text>
+                                );
+                                grouped[group].forEach((league, idx) => {
+                                    const isLastLeagueInLastGroup = isLastGroup && idx === grouped[group].length - 1;
+                                    rows.push(
+                                        <View
+                                            key={league.id}
+                                            style={isLastLeagueInLastGroup
+                                                ? [themedStyles.notificationRow, styles.notificationRowLast]
+                                                : themedStyles.notificationRow}
+                                        >
+                                            <View style={styles.notificationTextContainer}>
+                                                <View style={styles.sportLabelRow}>
+                                                    <Ionicons name={league.icon} size={16} color={groupColors[group] || colors.accent} />
+                                                    <Text style={themedStyles.notificationLabel}>{league.label}</Text>
+                                                </View>
+                                                <Text style={themedStyles.notificationDescription}>
+                                                    {league.description}
+                                                </Text>
+                                            </View>
+                                            <Switch
+                                                value={!!preGameLeagues[league.id]}
+                                                onValueChange={(value) => onTogglePreGameLeague?.(league.id, value)}
+                                                trackColor={{ false: colors.switchTrackOff, true: colors.accentPurple }}
+                                                thumbColor="#fff"
+                                            />
+                                        </View>
+                                    );
+                                });
+                            });
+                            return rows;
+                        })()}
 
-                        <View style={[themedStyles.notificationRow, styles.notificationRowLast]}>
-                            <View style={styles.notificationTextContainer}>
-                                <View style={styles.sportLabelRow}>
-                                    <Ionicons name="locate-outline" size={16} color={colors.accentPink} />
-                                    <Text style={themedStyles.notificationLabel}>Biathlon</Text>
-                                </View>
-                                <Text style={themedStyles.notificationDescription}>
-                                    Remind me before biathlon races
-                                </Text>
-                            </View>
-                            <Switch
-                                value={preGameBiathlonEnabled}
-                                onValueChange={onTogglePreGameBiathlon}
-                                trackColor={{ false: colors.switchTrackOff, true: colors.accentPurple }}
-                                thumbColor="#fff"
-                            />
-                        </View>
-
-                        {(preGameShlEnabled || preGameFootballEnabled || preGameBiathlonEnabled) &&
+                        {Object.values(preGameLeagues).some(Boolean) &&
                          (selectedTeams.length > 0 || selectedFootballTeams.length > 0 || selectedNations.length > 0) && (
                             <View style={themedStyles.notificationInfo}>
                                 <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
@@ -985,6 +983,15 @@ const getThemedStyles = (colors, isDark) => ({
         fontSize: 13,
         marginBottom: 12,
         marginTop: -8
+    },
+    preGameGroupHeader: {
+        color: colors.textSecondary,
+        fontSize: 12,
+        fontWeight: '700',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginTop: 10,
+        marginBottom: 2
     },
     notificationRow: {
         flexDirection: 'row',
