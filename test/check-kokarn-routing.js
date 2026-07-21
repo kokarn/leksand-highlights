@@ -22,11 +22,15 @@ const path = require('path');
 const APP_DIR = path.join(__dirname, '..', 'shl-highlights-app', 'components');
 
 // Fields that carry raw upstream image URLs from the API payload.
-const RAW_IMAGE_HINT = /(team\??\.?icon|teamIcon|renderedMedia|\.thumbnail\b|homeTeam\.logo|awayTeam\.logo)/;
+// Case-insensitive so `homeTeam.icon` / `awayTeam.logo` (capital T) are caught too.
+const RAW_IMAGE_HINT = /(\.icon\b|teamIcon\b|renderedMedia\b|\.thumbnail\b|\.logo\b|logos?\[)/i;
+// A raw third-party URL literal handed straight to <Image> without proxying.
+const RAW_URL_LITERAL = /https?:\/\//i;
 // The sanctioned proxying helpers.
 const SAFE_HELPER = /(resolveMediaUrl|getTeamLogoUrl)/;
 // Image source uri expression, captured up to the closing brace.
-const IMAGE_URI = /source=\{\{\s*uri:\s*([^}]+)\}\}/g;
+// Tolerates one level of `${...}` interpolation inside the expression.
+const IMAGE_URI = /source=\{\{\s*uri:\s*((?:[^{}]|\$\{[^}]*\})+?)\s*\}\}/g;
 
 function walk(dir, out = []) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -47,7 +51,9 @@ for (const file of walk(APP_DIR)) {
     let m;
     while ((m = IMAGE_URI.exec(src)) !== null) {
         const expr = m[1];
-        if (RAW_IMAGE_HINT.test(expr) && !SAFE_HELPER.test(expr)) {
+        const hasRawField = RAW_IMAGE_HINT.test(expr);
+        const hasRawUrl = RAW_URL_LITERAL.test(expr);
+        if ((hasRawField || hasRawUrl) && !SAFE_HELPER.test(expr)) {
             const line = src.slice(0, m.index).split('\n').length;
             violations.push(`${path.relative(process.cwd(), file)}:${line}  ${m[0].trim()}`);
         }
