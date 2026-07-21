@@ -5,8 +5,9 @@ import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import * as Clipboard from 'expo-clipboard';
 import { getTeamLogoUrl, resolveMediaUrl } from '../../api/shl';
-import { GENDER_OPTIONS, THEME_OPTIONS, PRE_GAME_LEAGUES } from '../../constants';
+import { GENDER_OPTIONS, THEME_OPTIONS, PRE_GAME_LEAGUES, HOCKEY_LEAGUE_FACETS, FOOTBALL_LEAGUE_FACETS } from '../../constants';
 import { useTheme } from '../../contexts';
+import { TeamFilterGrid } from '../TeamFilterGrid';
 
 const APP_VERSION = Constants.expoConfig?.version || '1.0.0';
 const DEBUG_TAP_COUNT = 5; // Number of taps to show debug menu
@@ -274,20 +275,34 @@ export const SettingsModal = ({
                             {selectedTeams.length > 0 ? `${selectedTeams.length} selected` : ''}
                         </Text>
                     </View>
-                    <View style={styles.chipGrid}>
-                        {teams.map(team => (
+                    <TeamFilterGrid
+                        teams={teams}
+                        selectedKeys={selectedTeams}
+                        getKey={(team) => team.code}
+                        getSearchText={(team) =>
+                            [team.code, team.names?.short, team.names?.long, team.names?.full, team.city]
+                                .filter(Boolean)
+                                .join(' ')
+                        }
+                        leagueOptions={HOCKEY_LEAGUE_FACETS}
+                        accentColor={colors.accent}
+                        placeholder="Search hockey teams"
+                        colors={colors}
+                        isDark={isDark}
+                        gridStyle={styles.chipGrid}
+                        renderChip={(team, isSelected) => (
                             <TouchableOpacity
                                 key={team.code}
-                                style={[themedStyles.teamChip, selectedTeams.includes(team.code) && themedStyles.chipActive]}
+                                style={[themedStyles.teamChip, isSelected && themedStyles.chipActive]}
                                 onPress={() => onToggleTeam(team.code)}
                             >
                                 <Image source={{ uri: getTeamLogoUrl(team.code) }} style={styles.chipLogo} resizeMode="contain" />
-                                <Text style={[themedStyles.chipText, selectedTeams.includes(team.code) && themedStyles.chipTextActive]} numberOfLines={1}>
+                                <Text style={[themedStyles.chipText, isSelected && themedStyles.chipTextActive]} numberOfLines={1}>
                                     {team.code}
                                 </Text>
                             </TouchableOpacity>
-                        ))}
-                    </View>
+                        )}
+                    />
                     {selectedTeams.length > 0 && (
                         <TouchableOpacity style={styles.clearButton} onPress={onClearTeams}>
                             <Text style={themedStyles.clearButtonText}>Clear selection</Text>
@@ -305,11 +320,21 @@ export const SettingsModal = ({
                         </Text>
                     </View>
                     {footballTeams.length > 0 ? (
-                        <View style={styles.chipGrid}>
-                            {footballTeams.map(team => (
+                        <TeamFilterGrid
+                            teams={footballTeams}
+                            selectedKeys={selectedFootballTeams}
+                            getKey={(team) => team.key}
+                            getSearchText={(team) => [team.key, team.name, team.shortName].filter(Boolean).join(' ')}
+                            leagueOptions={FOOTBALL_LEAGUE_FACETS}
+                            accentColor={colors.accentGreen}
+                            placeholder="Search football teams"
+                            colors={colors}
+                            isDark={isDark}
+                            gridStyle={styles.chipGrid}
+                            renderChip={(team, isSelected) => (
                                 <TouchableOpacity
                                     key={team.key}
-                                    style={[themedStyles.teamChip, selectedFootballTeams.includes(team.key) && themedStyles.chipActiveGreen]}
+                                    style={[themedStyles.teamChip, isSelected && themedStyles.chipActiveGreen]}
                                     onPress={() => onToggleFootballTeam(team.key)}
                                 >
                                     {team.icon ? (
@@ -317,12 +342,12 @@ export const SettingsModal = ({
                                     ) : (
                                         <View style={[styles.chipLogoPlaceholder, { backgroundColor: colors.separator }]} />
                                     )}
-                                    <Text style={[themedStyles.chipText, selectedFootballTeams.includes(team.key) && themedStyles.chipTextActive]} numberOfLines={1}>
+                                    <Text style={[themedStyles.chipText, isSelected && themedStyles.chipTextActive]} numberOfLines={1}>
                                         {team.shortName || team.name}
                                     </Text>
                                 </TouchableOpacity>
-                            ))}
-                        </View>
+                            )}
+                        />
                     ) : (
                         <Text style={[styles.settingsEmptyText, { color: colors.textMuted }]}>No football teams available yet.</Text>
                     )}

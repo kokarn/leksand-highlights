@@ -59,6 +59,20 @@ export const PRE_GAME_LEAGUES = [
 // topic. Used to migrate an existing grouped preference into per-league flags.
 export const LEGACY_FOOTBALL_LEAGUE_IDS = ['allsvenskan', 'svenska-cupen', 'europa-league-qual', 'conference-league-qual'];
 
+// League facet options for the team picker filter (Settings + Onboarding).
+// `id` matches the `leagues[]` tags applied when merging team lists in app/index.js.
+// A facet chip only renders if it actually has teams (count computed live).
+export const HOCKEY_LEAGUE_FACETS = [
+    { id: 'shl', label: 'SHL' },
+    { id: 'hockeyallsvenskan', label: 'HockeyAllsvenskan' }
+];
+export const FOOTBALL_LEAGUE_FACETS = [
+    { id: 'allsvenskan', label: 'Allsvenskan' },
+    { id: 'svenska-cupen', label: 'Svenska Cupen' },
+    { id: 'europa-league-qual', label: 'Europa Qual' },
+    { id: 'conference-league-qual', label: 'Conference Qual' }
+];
+
 // Theme mode options
 export const THEME_MODES = {
     SYSTEM: 'system',

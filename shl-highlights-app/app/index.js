@@ -219,22 +219,52 @@ export default function App() {
 
     // Merged hockey teams (SHL + HockeyAllsvenskan) for filter in Settings/Onboarding
     // Merged football teams (Allsvenskan + Svenska Cupen) for filter in Settings/Onboarding
-    const combinedFootballTeams = useMemo(() => {
+    // Merge team lists across leagues, tagging each team with a `leagues` array
+    // (a team can appear in several leagues, e.g. an Allsvenskan club also in
+    // Svenska Cupen). This drives the league-facet chips in the team picker
+    // without depending on the enriched backend endpoint — the source league is
+    // known here at merge time. See team-filtering-spec.md §5/§6.
+    const mergeWithLeagues = (sources, keyOf) => {
         const byKey = new Map();
-        (football.teams || []).forEach(t => byKey.set(t.key, t));
-        (svenskaCupen.teams || []).forEach(t => byKey.set(t.key, t));
-        (europaLeagueQual.teams || []).forEach(t => byKey.set(t.key, t));
-        (conferenceLeagueQual.teams || []).forEach(t => byKey.set(t.key, t));
-        return Array.from(byKey.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        sources.forEach(({ league, teams }) => {
+            (teams || []).forEach((t) => {
+                const k = keyOf(t);
+                if (!k) return;
+                const existing = byKey.get(k);
+                if (existing) {
+                    if (!existing.leagues.includes(league)) existing.leagues.push(league);
+                } else {
+                    byKey.set(k, { ...t, leagues: [league] });
+                }
+            });
+        });
+        return Array.from(byKey.values());
+    };
+
+    const combinedFootballTeams = useMemo(() => {
+        return mergeWithLeagues(
+            [
+                { league: 'allsvenskan', teams: football.teams },
+                { league: 'svenska-cupen', teams: svenskaCupen.teams },
+                { league: 'europa-league-qual', teams: europaLeagueQual.teams },
+                { league: 'conference-league-qual', teams: conferenceLeagueQual.teams }
+            ],
+            (t) => t.key
+        ).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'sv'));
     }, [football.teams, svenskaCupen.teams, europaLeagueQual.teams, conferenceLeagueQual.teams]);
 
     // Merged hockey teams (SHL + HockeyAllsvenskan) for filter in Settings/Onboarding.
     // Both use { code }; merge by code so a team shared across leagues isn't duplicated.
     const combinedHockeyTeams = useMemo(() => {
-        const byCode = new Map();
-        (shl.teams || []).forEach(t => byCode.set(t.code, t));
-        (hockeyAllsvenskan.teams || []).forEach(t => byCode.set(t.code, t));
-        return Array.from(byCode.values()).sort((a, b) => (a.code || '').localeCompare(b.code || ''));
+        return mergeWithLeagues(
+            [
+                { league: 'shl', teams: shl.teams },
+                { league: 'hockeyallsvenskan', teams: hockeyAllsvenskan.teams }
+            ],
+            (t) => t.code
+        ).sort((a, b) =>
+            ((a.names?.short || a.code) || '').localeCompare((b.names?.short || b.code) || '', 'sv')
+        );
     }, [shl.teams, hockeyAllsvenskan.teams]);
 
     // Unified data combining all sports

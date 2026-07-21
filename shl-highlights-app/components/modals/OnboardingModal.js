@@ -3,9 +3,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { getTeamLogoUrl, resolveMediaUrl } from '../../api/shl';
-import { APP_NAME, GENDER_OPTIONS } from '../../constants';
+import { APP_NAME, GENDER_OPTIONS, HOCKEY_LEAGUE_FACETS, FOOTBALL_LEAGUE_FACETS } from '../../constants';
 import { LogoMark } from '../LogoMark';
 import { useTheme } from '../../contexts';
+import { TeamFilterGrid } from '../TeamFilterGrid';
 
 const CHIP_GAP = 8;
 const CONTENT_PADDING = 24;
@@ -66,23 +67,37 @@ export const OnboardingModal = ({
                         <Text style={themedStyles.onboardingStepSubtitle}>Select the SHL and HockeyAllsvenskan teams you want to follow</Text>
                     </View>
                     <ScrollView style={styles.onboardingScrollContent} showsVerticalScrollIndicator={false}>
-                        <View style={styles.chipGrid}>
-                            {teams.map(team => (
+                        <TeamFilterGrid
+                            teams={teams}
+                            selectedKeys={selectedTeams}
+                            getKey={(team) => team.code}
+                            getSearchText={(team) =>
+                                [team.code, team.names?.short, team.names?.long, team.names?.full, team.city]
+                                    .filter(Boolean)
+                                    .join(' ')
+                            }
+                            leagueOptions={HOCKEY_LEAGUE_FACETS}
+                            accentColor={colors.accent}
+                            placeholder="Search hockey teams"
+                            colors={colors}
+                            isDark={isDark}
+                            gridStyle={styles.chipGrid}
+                            renderChip={(team, isSelected) => (
                                 <TouchableOpacity
                                     key={team.code}
-                                    style={[themedStyles.teamChip, selectedTeams.includes(team.code) && themedStyles.chipActive]}
+                                    style={[themedStyles.teamChip, isSelected && themedStyles.chipActive]}
                                     onPress={() => onToggleTeam(team.code)}
                                 >
                                     <Image source={{ uri: getTeamLogoUrl(team.code) }} style={styles.chipLogo} resizeMode="contain" />
-                                    <Text style={[themedStyles.chipText, selectedTeams.includes(team.code) && themedStyles.chipTextActive]} numberOfLines={1}>
+                                    <Text style={[themedStyles.chipText, isSelected && themedStyles.chipTextActive]} numberOfLines={1}>
                                         {team.code}
                                     </Text>
-                                    {selectedTeams.includes(team.code) && (
+                                    {isSelected && (
                                         <Ionicons name="checkmark-circle" size={16} color={colors.accent} style={styles.chipCheck} />
                                     )}
                                 </TouchableOpacity>
-                            ))}
-                        </View>
+                            )}
+                        />
                     </ScrollView>
                     <View style={styles.onboardingNav}>
                         <TouchableOpacity style={styles.onboardingNavButton} onPress={() => onStepChange(0)}>
@@ -107,11 +122,21 @@ export const OnboardingModal = ({
                     </View>
                     <ScrollView style={styles.onboardingScrollContent} showsVerticalScrollIndicator={false}>
                         {footballTeams.length > 0 ? (
-                            <View style={styles.chipGrid}>
-                                {footballTeams.map(team => (
+                            <TeamFilterGrid
+                                teams={footballTeams}
+                                selectedKeys={selectedFootballTeams}
+                                getKey={(team) => team.key}
+                                getSearchText={(team) => [team.key, team.name, team.shortName].filter(Boolean).join(' ')}
+                                leagueOptions={FOOTBALL_LEAGUE_FACETS}
+                                accentColor={colors.accentGreen}
+                                placeholder="Search football teams"
+                                colors={colors}
+                                isDark={isDark}
+                                gridStyle={styles.chipGrid}
+                                renderChip={(team, isSelected) => (
                                     <TouchableOpacity
                                         key={team.key}
-                                        style={[themedStyles.teamChip, selectedFootballTeams.includes(team.key) && themedStyles.chipActiveGreen]}
+                                        style={[themedStyles.teamChip, isSelected && themedStyles.chipActiveGreen]}
                                         onPress={() => onToggleFootballTeam(team.key)}
                                     >
                                         {team.icon ? (
@@ -119,15 +144,15 @@ export const OnboardingModal = ({
                                         ) : (
                                             <View style={[styles.chipLogoPlaceholder, { backgroundColor: colors.separator }]} />
                                         )}
-                                        <Text style={[themedStyles.chipText, selectedFootballTeams.includes(team.key) && themedStyles.chipTextActive]} numberOfLines={1}>
+                                        <Text style={[themedStyles.chipText, isSelected && themedStyles.chipTextActive]} numberOfLines={1}>
                                             {team.shortName || team.name}
                                         </Text>
-                                        {selectedFootballTeams.includes(team.key) && (
+                                        {isSelected && (
                                             <Ionicons name="checkmark-circle" size={16} color={colors.accentGreen} style={styles.chipCheck} />
                                         )}
                                     </TouchableOpacity>
-                                ))}
-                            </View>
+                                )}
+                            />
                         ) : (
                             <View style={styles.emptyState}>
                                 <Ionicons name="cloud-offline-outline" size={48} color={colors.textMuted} />
