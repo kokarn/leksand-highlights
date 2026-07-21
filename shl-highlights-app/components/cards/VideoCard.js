@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { getVideoDisplayTitle } from '../../utils';
 import { useTheme } from '../../contexts/ThemeContext';
+import { resolveMediaUrl } from '../../api/shl';
 
 const { width } = Dimensions.get('window');
 
@@ -20,7 +21,7 @@ export const VideoCard = ({ video, isPlaying, onPress }) => {
         >
             <View style={themedStyles.videoGridThumbnailContainer}>
                 <Image
-                    source={{ uri: video.renderedMedia?.url || video.thumbnail }}
+                    source={{ uri: resolveMediaUrl(video.renderedMedia?.url || video.thumbnail) }}
                     style={themedStyles.thumbnail}
                     resizeMode="cover"
                 />

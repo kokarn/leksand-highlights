@@ -12,7 +12,7 @@ import { VideoPlayer } from '../VideoPlayer';
 import { FootballGoalItem, CardItem, SubstitutionItem, HalfMarker } from '../events';
 import { GameModalHeader } from './GameModalHeader';
 import { MatchTabBar } from './MatchTabBar';
-import { fetchFootballStandings, fetchSvenskaCupenStandings } from '../../api/shl';
+import { fetchFootballStandings, fetchSvenskaCupenStandings, resolveMediaUrl } from '../../api/shl';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = 50;
@@ -23,7 +23,7 @@ const getTeamName = (team, fallback) => {
 };
 
 const getTeamLogo = (team) => {
-    return team?.icon || null;
+    return resolveMediaUrl(team?.icon);
 };
 
 const parseFootballClockToSortValue = (clock) => {
@@ -639,7 +639,7 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
                                 selectedTeams={selectedTeams}
                                 sport="football"
                                 getTeamKey={(team) => team?.teamCode || team?.teamName}
-                                getTeamLogo={(team) => team?.teamIcon || null}
+                                getTeamLogo={(team) => resolveMediaUrl(team?.teamIcon)}
                             />
                         </View>
                     ))
@@ -649,7 +649,7 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
                         selectedTeams={selectedTeams}
                         sport="football"
                         getTeamKey={(team) => team?.key || team?.code || team?.teamCode}
-                        getTeamLogo={(team) => team?.teamIcon || team?.icon || null}
+                        getTeamLogo={(team) => resolveMediaUrl(team?.teamIcon || team?.icon)}
                     />
                 )}
             </ScrollView>

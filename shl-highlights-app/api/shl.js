@@ -13,6 +13,45 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
+/**
+ * Route a remote image URL through the Kokarn API image proxy.
+ *
+ * The app must never fetch third-party CDNs (ESPN, FotMob, TheSportsDB,
+ * StayLive/FotbollPlay thumbnails) directly — every image goes through the
+ * Kokarn API. Pass any team logo / video thumbnail URL through this helper
+ * before handing it to an <Image source={{ uri }}>.
+ *
+ * - Already-local URLs (our own API host / static logos / relative paths) pass
+ *   through unchanged.
+ * - data:/file: URIs pass through unchanged (nothing to proxy).
+ * - Everything else is rewritten to `${API_BASE_URL}/api/img?url=<encoded>`.
+ *
+ * @param {string|null|undefined} url
+ * @returns {string|null}
+ */
+export function resolveMediaUrl(url) {
+    if (typeof url !== 'string') {
+        return null;
+    }
+    const trimmed = url.trim();
+    if (!trimmed) {
+        return null;
+    }
+    // Non-http schemes (data:, file:, content:) — nothing to proxy.
+    if (!/^https?:\/\//i.test(trimmed)) {
+        // Relative path served by our own API (e.g. /static/logos/x.png).
+        if (trimmed.startsWith('/')) {
+            return `${API_BASE_URL}${trimmed}`;
+        }
+        return trimmed;
+    }
+    // Already pointing at the Kokarn API host — leave it alone.
+    if (trimmed.startsWith(API_BASE_URL)) {
+        return trimmed;
+    }
+    return `${API_BASE_URL}/api/img?url=${encodeURIComponent(trimmed)}`;
+}
+
 // Team data cache
 let teamsCache = null;
 let nationsCache = null;

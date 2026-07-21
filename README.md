@@ -1,8 +1,15 @@
 # 🏒 GamePulse API Server
 
-**Version: 3.13.0**
+**Version: 3.14.0**
 
 A multi-sport API server that provides real-time game data, notifications, and highlights for Swedish sports leagues.
+
+> **3.14.0** — Added `/api/img` image proxy so the client app routes all
+> third-party team logos and video thumbnails (ESPN, FotMob, TheSportsDB,
+> StayLive, FotbollPlay) through the Kokarn API instead of fetching CDNs
+> directly. Host-allowlisted for SSRF safety. App version 2.17.0 adds a shared
+> `resolveMediaUrl()` client helper + a CI guard (`test/check-kokarn-routing.js`)
+> that fails the build if any `<Image>` renders a raw upstream URL.
 
 ## ✨ Features
 

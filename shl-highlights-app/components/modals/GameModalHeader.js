@@ -2,6 +2,7 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions } 
 import { Ionicons } from '@expo/vector-icons';
 import { formatSwedishDate } from '../../utils';
 import { useTheme } from '../../contexts/ThemeContext';
+import { resolveMediaUrl } from '../../api/shl';
 
 /**
  * Shared header component for game modals (SHL, Football, etc.)
@@ -45,7 +46,7 @@ export const GameModalHeader = ({
                 <View style={[themedStyles.scoreTeam, isCompactHeader && themedStyles.scoreTeamCompact]}>
                     {homeTeam.logo ? (
                         <Image
-                            source={{ uri: homeTeam.logo }}
+                            source={{ uri: resolveMediaUrl(homeTeam.logo) }}
                             style={[themedStyles.scoreTeamLogo, isCompactHeader && themedStyles.scoreTeamLogoCompact]}
                             resizeMode="contain"
                         />
@@ -78,7 +79,7 @@ export const GameModalHeader = ({
                 <View style={[themedStyles.scoreTeam, isCompactHeader && themedStyles.scoreTeamCompact]}>
                     {awayTeam.logo ? (
                         <Image
-                            source={{ uri: awayTeam.logo }}
+                            source={{ uri: resolveMediaUrl(awayTeam.logo) }}
                             style={[themedStyles.scoreTeamLogo, isCompactHeader && themedStyles.scoreTeamLogoCompact]}
                             resizeMode="contain"
                         />

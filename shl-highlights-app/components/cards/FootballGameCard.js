@@ -3,13 +3,14 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions } 
 import { LinearGradient } from 'expo-linear-gradient';
 import { extractScore, formatRelativeDateEnglish, formatTime } from '../../utils';
 import { useTheme } from '../../contexts';
+import { resolveMediaUrl } from '../../api/shl';
 
 const getTeamName = (team, fallback) => {
     return team?.names?.short || team?.names?.long || team?.code || fallback;
 };
 
 const getTeamLogo = (team) => {
-    return team?.icon || null;
+    return resolveMediaUrl(team?.icon);
 };
 
 export const FootballGameCard = memo(function FootballGameCard({ game, onPress, leagueLabel = 'Allsvenskan' }) {

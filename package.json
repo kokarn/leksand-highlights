@@ -1,13 +1,13 @@
 {
   "name": "shl-highlights-notify",
-  "version": "3.13.0",
+  "version": "3.14.0",
   "description": "GamePulse API server with push notifications for goals and highlights",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch --env-file=.env server.js",
     "build": "echo 'Build complete'",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test test/*.test.js && node test/check-kokarn-routing.js"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",

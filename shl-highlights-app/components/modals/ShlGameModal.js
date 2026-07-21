@@ -3,7 +3,7 @@ import { View, Text, Modal, ScrollView, ActivityIndicator, StyleSheet, Animated,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import { getTeamLogoUrl, fetchStandings } from '../../api/shl';
+import { getTeamLogoUrl, fetchStandings, resolveMediaUrl } from '../../api/shl';
 import { getTeamColor } from '../../constants';
 import { getVideoDisplayTitle, formatSwedishDate } from '../../utils';
 import { useGameDetails } from '../../hooks/useGameDetails';
@@ -224,8 +224,8 @@ export const ShlGameModal = ({
         'Away'
     );
 
-    const homeLogo = homeCode ? getTeamLogoUrl(homeCode) : detailsHomeTeam?.icon || null;
-    const awayLogo = awayCode ? getTeamLogoUrl(awayCode) : detailsAwayTeam?.icon || null;
+    const homeLogo = homeCode ? getTeamLogoUrl(homeCode) : resolveMediaUrl(detailsHomeTeam?.icon);
+    const awayLogo = awayCode ? getTeamLogoUrl(awayCode) : resolveMediaUrl(detailsAwayTeam?.icon);
     const gameState = normalizeGameState(game?.state || gameDetails?.info?.gameInfo?.state);
     const startDateTime = game?.startDateTime || gameDetails?.info?.gameInfo?.startDateTime || null;
 
@@ -476,7 +476,7 @@ export const ShlGameModal = ({
                         getTeamKey={(team) => team.teamCode || team.teamShortName}
                         getTeamLogo={(team) => {
                             const teamCode = team.teamCode || team.teamShortName;
-                            return teamCode ? getTeamLogoUrl(teamCode) : team.teamIcon || null;
+                            return teamCode ? getTeamLogoUrl(teamCode) : resolveMediaUrl(team.teamIcon);
                         }}
                     />
                 )}

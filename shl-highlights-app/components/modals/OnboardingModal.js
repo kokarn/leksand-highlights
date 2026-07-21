@@ -2,7 +2,7 @@ import { View, Text, Modal, ScrollView, TouchableOpacity, Image, StyleSheet } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { getTeamLogoUrl } from '../../api/shl';
+import { getTeamLogoUrl, resolveMediaUrl } from '../../api/shl';
 import { APP_NAME, GENDER_OPTIONS } from '../../constants';
 import { LogoMark } from '../LogoMark';
 import { useTheme } from '../../contexts';
@@ -115,7 +115,7 @@ export const OnboardingModal = ({
                                         onPress={() => onToggleFootballTeam(team.key)}
                                     >
                                         {team.icon ? (
-                                            <Image source={{ uri: team.icon }} style={styles.chipLogo} resizeMode="contain" />
+                                            <Image source={{ uri: resolveMediaUrl(team.icon) }} style={styles.chipLogo} resizeMode="contain" />
                                         ) : (
                                             <View style={[styles.chipLogoPlaceholder, { backgroundColor: colors.separator }]} />
                                         )}

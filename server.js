@@ -80,6 +80,11 @@ app.use(express.json({ limit: '1mb' }));
 // Serve static files (logos, etc.)
 app.use('/static', express.static(path.join(__dirname, 'static')));
 
+// Image proxy: routes third-party team logos / video thumbnails through the
+// Kokarn API so the client never fetches external CDNs directly.
+const { handleImageProxy } = require('./modules/image-proxy');
+app.get('/api/img', handleImageProxy);
+
 // Load teams data for SHL
 const teamsDataPath = path.join(__dirname, 'static', 'teams.json');
 let teamsData = { teams: [] };

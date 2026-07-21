@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import * as Clipboard from 'expo-clipboard';
-import { getTeamLogoUrl } from '../../api/shl';
+import { getTeamLogoUrl, resolveMediaUrl } from '../../api/shl';
 import { GENDER_OPTIONS, THEME_OPTIONS, PRE_GAME_LEAGUES } from '../../constants';
 import { useTheme } from '../../contexts';
 
@@ -313,7 +313,7 @@ export const SettingsModal = ({
                                     onPress={() => onToggleFootballTeam(team.key)}
                                 >
                                     {team.icon ? (
-                                        <Image source={{ uri: team.icon }} style={styles.chipLogo} resizeMode="contain" />
+                                        <Image source={{ uri: resolveMediaUrl(team.icon) }} style={styles.chipLogo} resizeMode="contain" />
                                     ) : (
                                         <View style={[styles.chipLogoPlaceholder, { backgroundColor: colors.separator }]} />
                                     )}
