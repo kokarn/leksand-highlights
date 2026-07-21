@@ -133,5 +133,26 @@ Access the admin dashboard at `/admin` with URL-based routing:
 
 > **Note:** FCM does not provide an API to query topic subscribers. The backend runs stateless - topic subscriptions are managed entirely by Firebase.
 
+## 🔎 Teams API — server-side filtering (v3.21.0)
+
+`GET /api/teams` has two response shapes:
+
+- **Legacy** (no query params): returns the bare array of static SHL teams, unchanged, so existing callers keep working.
+- **Envelope** (any filter param present): returns `{ total, teams[] }` aggregated across all leagues (SHL, HockeyAllsvenskan, Allsvenskan, Svenska Cupen, Europa/Conference League Qual) with server-side search, league facet, region, sort and pagination.
+
+Query params (envelope mode):
+
+| Param | Description |
+|-------|-------------|
+| `sport` | `hockey` \| `football` \| `all` (default `all`; `shl` aliases to hockey) |
+| `q` | diacritic-insensitive substring over code/key/names |
+| `league` | repeatable / comma list: `shl,hockeyallsvenskan,allsvenskan,svenska-cupen,europa-league-qual,conference-league-qual` (OR across values) |
+| `region` | hockey only, matched against derived region/city |
+| `selected` | comma list of ids to mark `selected:true` (not force-included) |
+| `sort` | `name` \| `code` (default `name`, sv locale by display name) |
+| `limit`, `offset` | pagination; `total` is always the full filtered count |
+
+Each team carries a **`leagues[]` array** because a team can belong to multiple leagues (e.g. an Allsvenskan club also in Svenska Cupen). Filters combine as: search **AND** league **AND** region; **OR** within the league facet.
+
 ---
 *Powered by SHL Media API & Firebase Cloud Messaging*
