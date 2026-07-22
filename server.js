@@ -56,6 +56,8 @@ const {
     setConferenceLeagueQualLiveFlag
 } = require('./modules/cache');
 const { getProvider, getAvailableSports } = require('./modules/providers');
+const { getAllGamesCached } = require('./modules/games-cache');
+const { buildTeamsIndex, queryTeams, usesEnvelopeApi, FOOTBALL_LEAGUES } = require('./modules/teams-index');
 const { formatSwedishTimestamp } = require('./modules/utils');
 const notifier = require('./modules/notifier');
 const scheduler = require('./modules/scheduler');
@@ -264,10 +266,56 @@ app.get('/api/sports', (req, res) => {
 
 /**
  * GET /api/teams
- * Get all SHL teams with their logos and info
+ *
+ * Two response shapes:
+ *  - LEGACY (no query params): returns the bare array of static SHL teams, exactly
+ *    as before, so existing callers (app fetchTeams, /api/teams/:code lookups) keep
+ *    working unchanged.
+ *  - ENVELOPE (any of sport|q|league|region|selected|sort|limit|offset present):
+ *    returns { total, teams[] } aggregated across ALL leagues (SHL,
+ *    HockeyAllsvenskan, Allsvenskan, Svenska Cupen, Europa/Conference League Qual)
+ *    with server-side search, league facet (OR), region, sort and pagination.
+ *
+ * Query params (envelope mode):
+ *   - sport   hockey | football | all (default all)
+ *   - q       diacritic-insensitive substring over code/key/names
+ *   - league  repeatable / comma list: shl, hockeyallsvenskan, allsvenskan,
+ *             svenska-cupen, europa-league-qual, conference-league-qual (OR)
+ *   - region  hockey only, matched against derived region/city
+ *   - selected comma list of ids to mark selected:true (never force-included)
+ *   - sort    name | code (default name, sv locale by display name)
+ *   - limit, offset  pagination; response always includes total
  */
-app.get('/api/teams', (req, res) => {
-    res.json(teamsData.teams);
+app.get('/api/teams', async (req, res) => {
+    // Back-compat: no query params -> original bare SHL array.
+    if (!usesEnvelopeApi(req.query)) {
+        return res.json(teamsData.teams);
+    }
+
+    try {
+        // Aggregate the non-SHL leagues from the shared game caches (network-free when
+        // warm; getAllGamesCached fetches at most once per TTL and coalesces misses).
+        const leaguesToLoad = ['hockeyallsvenskan', ...FOOTBALL_LEAGUES];
+        const gameLists = await Promise.all(
+            leaguesToLoad.map(async (league) => {
+                try {
+                    const games = await getAllGamesCached(league);
+                    return [league, Array.isArray(games) ? games : []];
+                } catch (error) {
+                    console.error(`[teams] failed to load ${league} games:`, error.message);
+                    return [league, []];
+                }
+            })
+        );
+
+        const gamesByLeague = Object.fromEntries(gameLists);
+        const index = buildTeamsIndex({ shlTeams: teamsData.teams, gamesByLeague });
+        const result = queryTeams(index, req.query);
+        res.json(result);
+    } catch (error) {
+        console.error('Error building teams index:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 /**
