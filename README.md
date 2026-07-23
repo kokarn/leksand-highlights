@@ -1,8 +1,15 @@
 # 🏒 GamePulse API Server
 
-**Version: 3.14.0**
+**Version: 3.14.1**
 
 A multi-sport API server that provides real-time game data, notifications, and highlights for Swedish sports leagues.
+
+> **3.14.1** — Fixed goal push notifications showing the wrong league. The
+> goal-notification title only mapped 3 sports (SHL, Allsvenskan, Svenska Cupen)
+> and silently defaulted every other tracked sport to "🏒 SHL Goal" — so
+> HockeyAllsvenskan, Europa League Qualifier and Conference League Qualifier
+> goals were all mislabelled as SHL. Replaced the partial if-chain with a
+> complete `SPORT_LABELS` map covering all tracked sports.
 
 > **3.14.0** — Added `/api/img` image proxy so the client app routes all
 > third-party team logos and video thumbnails (ESPN, FotMob, TheSportsDB,

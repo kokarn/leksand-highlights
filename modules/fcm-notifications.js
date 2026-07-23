@@ -638,16 +638,20 @@ async function sendGoalNotification(goal, options = {}) {
 
     const normalizedSport = normalizeSportForDeepLink(sport);
 
-    // Build notification content
-    let sportEmoji = '🏒';
-    let sportLabel = 'SHL';
-    if (normalizedSport === 'allsvenskan') {
-        sportEmoji = '⚽';
-        sportLabel = 'Allsvenskan';
-    } else if (normalizedSport === 'svenska-cupen') {
-        sportEmoji = '🏆';
-        sportLabel = 'Svenska Cupen';
-    }
+    // Build notification content.
+    // Map EVERY tracked sport to its own emoji + league label. This must stay in
+    // sync with the goal-watcher SPORTS list — a sport missing here silently falls
+    // back to the SHL default and goals get labelled with the wrong league.
+    const SPORT_LABELS = {
+        'shl': { emoji: '🏒', label: 'SHL' },
+        'hockeyallsvenskan': { emoji: '🏒', label: 'HockeyAllsvenskan' },
+        'allsvenskan': { emoji: '⚽', label: 'Allsvenskan' },
+        'svenska-cupen': { emoji: '🏆', label: 'Svenska Cupen' },
+        'europa-league-qual': { emoji: '⚽', label: 'Europa League Qualifier' },
+        'conference-league-qual': { emoji: '⚽', label: 'Conference League Qualifier' },
+        'biathlon': { emoji: '🎯', label: 'Biathlon' }
+    };
+    const { emoji: sportEmoji, label: sportLabel } = SPORT_LABELS[normalizedSport] || SPORT_LABELS.shl;
     const title = `${sportEmoji} ${sportLabel} Goal: ${scoringTeamName}`;
 
     const message = buildGoalNotificationMessage({
