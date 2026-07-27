@@ -322,6 +322,10 @@ export default function App() {
     // HockeyAllsvenskan game modal tab state
     const [haActiveTab, setHaActiveTab] = useState('summary');
 
+    // Allsvenskan modal tab state (controlled so notification deep links can
+    // open the Highlights tab instead of always landing on Summary).
+    const [footballActiveTab, setFootballActiveTab] = useState('summary');
+
     // Track if we've processed a pending deep link
     const processedDeepLinkRef = useRef(null);
     const processedRouteDeepLinkRef = useRef(null);
@@ -465,12 +469,12 @@ export default function App() {
                 }
             } else if (normalizedSport === 'allsvenskan') {
                 const game = football.games.find(g => g.uuid === gameId);
+                handleSportChange('football');
+                setFootballActiveTab(normalizedTab);
                 if (game) {
-                    handleSportChange('football');
                     football.handleGamePress(game);
                 } else {
                     console.log('[DeepLink] Football game not found in list');
-                    handleSportChange('football');
                     football.handleGamePress({ uuid: gameId });
                 }
             } else if (normalizedSport === 'svenska-cupen') {
@@ -716,6 +720,7 @@ export default function App() {
                         } else if (item.sport === 'conference-league-qual') {
                             conferenceLeagueQual.handleGamePress(item);
                         } else {
+                            setFootballActiveTab('summary');
                             football.handleGamePress(item);
                         }
                     }}
@@ -1045,6 +1050,8 @@ export default function App() {
                 refreshing={football.refreshingModal}
                 selectedTeams={selectedFootballTeams}
                 showStandingsTab={true}
+                activeTab={footballActiveTab}
+                onTabChange={setFootballActiveTab}
             />
 
             {/* Svenska Cupen Match Modal */}

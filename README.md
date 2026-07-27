@@ -4,6 +4,9 @@
 
 A multi-sport API server that provides real-time game data, notifications, and highlights for Swedish sports leagues.
 
+> **App 2.17.1** — Fixed Allsvenskan highlight notification deep links so
+> tapping one opens the match directly on the Highlights tab instead of Summary.
+
 > **3.14.1** — Fixed goal push notifications showing the wrong league. The
 > goal-notification title only mapped 3 sports (SHL, Allsvenskan, Svenska Cupen)
 > and silently defaulted every other tracked sport to "🏒 SHL Goal" — so

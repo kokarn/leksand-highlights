@@ -105,11 +105,12 @@ const FOOTBALL_BASE_TABS = [
 ];
 const FOOTBALL_STANDINGS_TAB = { key: 'standings', title: 'Standings', icon: 'podium-outline' };
 
-export const FootballMatchModal = ({ match, details, videos = [], visible, onClose, loading, onRefresh, refreshing = false, selectedTeams = [], showStandingsTab = false, sport = 'allsvenskan' }) => {
+export const FootballMatchModal = ({ match, details, videos = [], visible, onClose, loading, onRefresh, refreshing = false, selectedTeams = [], showStandingsTab = false, sport = 'allsvenskan', activeTab: controlledActiveTab, onTabChange }) => {
     const { colors } = useTheme();
     const { width: windowWidth } = useWindowDimensions();
     const useCompactTabs = windowWidth <= 430;
-    const [activeTab, setActiveTab] = useState('summary');
+    const [internalActiveTab, setInternalActiveTab] = useState('summary');
+    const activeTab = controlledActiveTab ?? internalActiveTab;
     const [standingsData, setStandingsData] = useState(null);
     const [loadingStandings, setLoadingStandings] = useState(false);
     const [refreshingStandings, setRefreshingStandings] = useState(false);
@@ -191,8 +192,12 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
         if (activeTab === 'highlights' && nextTab !== 'highlights') {
             stopVideo();
         }
-        setActiveTab(nextTab);
-    }, [activeTab, stopVideo]);
+        if (onTabChange) {
+            onTabChange(nextTab);
+        } else {
+            setInternalActiveTab(nextTab);
+        }
+    }, [activeTab, onTabChange, stopVideo]);
 
     const handleGestureEvent = Animated.event(
         [{ nativeEvent: { translationX: translateX } }],
