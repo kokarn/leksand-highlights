@@ -105,7 +105,7 @@ const FOOTBALL_BASE_TABS = [
 ];
 const FOOTBALL_STANDINGS_TAB = { key: 'standings', title: 'Standings', icon: 'podium-outline' };
 
-export const FootballMatchModal = ({ match, details, videos = [], visible, onClose, loading, onRefresh, refreshing = false, selectedTeams = [], showStandingsTab = false, sport = 'allsvenskan', activeTab: controlledActiveTab, onTabChange }) => {
+export const FootballMatchModal = ({ match, details, videos = [], visible, onClose, loading, onRefresh, refreshing = false, selectedTeams = [], showStandingsTab = false, sport = 'allsvenskan', activeTab: controlledActiveTab, onTabChange, targetVideoId = null }) => {
     const { colors } = useTheme();
     const { width: windowWidth } = useWindowDimensions();
     const useCompactTabs = windowWidth <= 430;
@@ -166,6 +166,23 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
         setPlayingVideoId(video.id);
         setPlayingVideo(video);
     }, []);
+
+    const consumedTargetVideoIdRef = useRef(null);
+    useEffect(() => {
+        if (!visible) {
+            consumedTargetVideoIdRef.current = null;
+            return;
+        }
+        if (!targetVideoId || activeTab !== 'highlights' || consumedTargetVideoIdRef.current === String(targetVideoId)) {
+            return;
+        }
+        const targetVideo = videos.find(video => String(video.id) === String(targetVideoId));
+        if (!targetVideo) {
+            return;
+        }
+        consumedTargetVideoIdRef.current = String(targetVideoId);
+        playVideo(targetVideo);
+    }, [visible, activeTab, targetVideoId, videos, playVideo]);
 
     useEffect(() => {
         if (!visible) {

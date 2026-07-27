@@ -48,11 +48,20 @@ function normalizeSportForDeepLink(sport) {
  * @param {string|null} tab - Optional tab name
  * @returns {string} Deep link URL
  */
-function buildGameDeepLink(sport, gameId, tab = null) {
+function buildGameDeepLink(sport, gameId, tab = null, query = {}) {
     const safeSport = encodeURIComponent(normalizeSportForDeepLink(sport));
     const safeGameId = encodeURIComponent(String(gameId || ''));
-    const tabQuery = tab ? `?tab=${encodeURIComponent(String(tab))}` : '';
-    return `gamepulse://game/${safeSport}/${safeGameId}${tabQuery}`;
+    const queryParams = new URLSearchParams();
+    if (tab) {
+        queryParams.set('tab', String(tab));
+    }
+    for (const [key, value] of Object.entries(query)) {
+        if (value !== null && value !== undefined && String(value) !== '') {
+            queryParams.set(key, String(value));
+        }
+    }
+    const queryString = queryParams.toString();
+    return `gamepulse://game/${safeSport}/${safeGameId}${queryString ? `?${queryString}` : ''}`;
 }
 
 // ============ FIREBASE CONFIGURATION ============
@@ -752,7 +761,7 @@ async function sendHighlightNotification(highlight, options = {}) {
     const body = safeClipTitle
         ? safeClipTitle
         : `A new highlight clip is available from ${homeTeamName} vs ${awayTeamName}`;
-    const deepLinkUrl = buildGameDeepLink(normalizedSport, gameId, 'highlights');
+    const deepLinkUrl = buildGameDeepLink(normalizedSport, gameId, 'highlights', { videoId });
 
     const data = {
         type: 'highlight',
@@ -1057,6 +1066,7 @@ module.exports = {
     getErrorLog,
     clearErrorLog,
     __test: {
-        buildGoalNotificationMessage
+        buildGoalNotificationMessage,
+        buildGameDeepLink
     }
 };

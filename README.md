@@ -1,8 +1,12 @@
 # 🏒 GamePulse API Server
 
-**Version: 3.14.1**
+**Version: 3.15.0**
 
 A multi-sport API server that provides real-time game data, notifications, and highlights for Swedish sports leagues.
+
+> **3.15.0 / App 2.18.0** — Highlight notifications now deep-link directly to
+> the specific clip and start it automatically for SHL, HockeyAllsvenskan, and
+> Allsvenskan (the sports with notification-backed clips).
 
 > **App 2.17.1** — Fixed Allsvenskan highlight notification deep links so
 > tapping one opens the match directly on the Highlights tab instead of Summary.

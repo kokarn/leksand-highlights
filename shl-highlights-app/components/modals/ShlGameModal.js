@@ -86,7 +86,8 @@ export const ShlGameModal = ({
     refreshing = false,
     selectedTeams = [],
     standingsFetcher = fetchStandings,
-    standingsSport = 'shl'
+    standingsSport = 'shl',
+    targetVideoId = null
 }) => {
     const { colors } = useTheme();
     const { width: windowWidth } = useWindowDimensions();
@@ -103,6 +104,23 @@ export const ShlGameModal = ({
     const [standingsData, setStandingsData] = useState(null);
     const [loadingStandings, setLoadingStandings] = useState(false);
     const [refreshingStandings, setRefreshingStandings] = useState(false);
+    const consumedTargetVideoIdRef = useRef(null);
+
+    useEffect(() => {
+        if (!visible) {
+            consumedTargetVideoIdRef.current = null;
+            return;
+        }
+        if (!targetVideoId || activeTab !== 'highlights' || consumedTargetVideoIdRef.current === String(targetVideoId)) {
+            return;
+        }
+        const targetVideo = videos.find(video => String(video.id) === String(targetVideoId));
+        if (!targetVideo) {
+            return;
+        }
+        consumedTargetVideoIdRef.current = String(targetVideoId);
+        playVideo(targetVideo);
+    }, [visible, activeTab, targetVideoId, videos, playVideo]);
 
     const loadStandings = useCallback(async (silent = false) => {
         if (!silent) {

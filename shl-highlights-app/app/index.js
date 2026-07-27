@@ -300,18 +300,19 @@ export default function App() {
     // Theme
     const { colors } = useTheme();
 
-    const { sport: routeSport, gameId: routeGameId, tab: routeTab } = useLocalSearchParams();
+    const { sport: routeSport, gameId: routeGameId, tab: routeTab, videoId: routeVideoId } = useLocalSearchParams();
     const deepLinkParams = useMemo(() => {
         const sportParam = normalizeRouteParam(routeSport);
         const gameIdParam = normalizeRouteParam(routeGameId);
         const tabParam = normalizeDeepLinkTab(routeTab);
+        const videoIdParam = normalizeRouteParam(routeVideoId);
 
         if (!sportParam || !gameIdParam) {
             return null;
         }
 
-        return { sport: sportParam, gameId: gameIdParam, tab: tabParam };
-    }, [routeSport, routeGameId, routeTab]);
+        return { sport: sportParam, gameId: gameIdParam, tab: tabParam, videoId: videoIdParam };
+    }, [routeSport, routeGameId, routeTab, routeVideoId]);
 
     // Settings modal
     const [showSettings, setShowSettings] = useState(false);
@@ -325,6 +326,9 @@ export default function App() {
     // Allsvenskan modal tab state (controlled so notification deep links can
     // open the Highlights tab instead of always landing on Summary).
     const [footballActiveTab, setFootballActiveTab] = useState('summary');
+    const [shlTargetVideoId, setShlTargetVideoId] = useState(null);
+    const [haTargetVideoId, setHaTargetVideoId] = useState(null);
+    const [footballTargetVideoId, setFootballTargetVideoId] = useState(null);
 
     // Track if we've processed a pending deep link
     const processedDeepLinkRef = useRef(null);
@@ -365,7 +369,8 @@ export default function App() {
             return {
                 sport: normalizeSport(safeDecode(match[1])),
                 gameId: safeDecode(match[2]),
-                tab: normalizeDeepLinkTab(parsed?.queryParams?.tab)
+                tab: normalizeDeepLinkTab(parsed?.queryParams?.tab),
+                videoId: normalizeRouteParam(parsed?.queryParams?.videoId) || null
             };
         };
 
@@ -378,6 +383,7 @@ export default function App() {
                 }
                 return {
                     ...fromUrl,
+                    videoId: safeDecode(String(normalizeRouteParam(data.videoId) || fromUrl.videoId || '')) || null,
                     homeTeamCode: safeDecode(String(normalizeRouteParam(data.homeTeam || data.homeTeamCode) || '')) || null,
                     awayTeamCode: safeDecode(String(normalizeRouteParam(data.awayTeam || data.awayTeamCode) || '')) || null
                 };
@@ -393,6 +399,7 @@ export default function App() {
                 sport,
                 gameId: safeDecode(String(gameId)),
                 tab: normalizeDeepLinkTab(data.tab),
+                videoId: safeDecode(String(normalizeRouteParam(data.videoId) || '')) || null,
                 homeTeamCode: safeDecode(String(normalizeRouteParam(data.homeTeam || data.homeTeamCode) || '')) || null,
                 awayTeamCode: safeDecode(String(normalizeRouteParam(data.awayTeam || data.awayTeamCode) || '')) || null
             };
@@ -404,9 +411,10 @@ export default function App() {
             const normalizedTab = normalizeDeepLinkTab(tab) || 'summary';
             const homeTeamCode = normalizeRouteParam(options?.homeTeamCode);
             const awayTeamCode = normalizeRouteParam(options?.awayTeamCode);
+            const targetVideoId = normalizeRouteParam(options?.videoId);
 
             // Prevent processing the same deep link twice
-            const linkKey = `${normalizedSport}:${gameId}:${normalizedTab}`;
+            const linkKey = `${normalizedSport}:${gameId}:${normalizedTab}:${targetVideoId || ''}`;
             if (processedDeepLinkRef.current === linkKey) {
                 return;
             }
@@ -425,12 +433,14 @@ export default function App() {
                 if (game) {
                     handleSportChange('hockey');
                     setShlActiveTab(normalizedTab);
+                    setShlTargetVideoId(targetVideoId || null);
                     shl.handleGamePress(game);
                 } else {
                     // Game not in list yet, try to open anyway with minimal data
                     console.log('[DeepLink] SHL game not found in list, opening with ID');
                     handleSportChange('hockey');
                     setShlActiveTab(normalizedTab);
+                    setShlTargetVideoId(targetVideoId || null);
                     const fallbackGame = {
                         uuid: gameId,
                         homeTeamInfo: homeTeamCode
@@ -452,6 +462,7 @@ export default function App() {
                 const game = hockeyAllsvenskan.games.find(g => g.uuid === gameId);
                 handleSportChange('hockey');
                 setHaActiveTab(normalizedTab);
+                setHaTargetVideoId(targetVideoId || null);
                 if (game) {
                     hockeyAllsvenskan.handleGamePress(game);
                 } else {
@@ -471,6 +482,7 @@ export default function App() {
                 const game = football.games.find(g => g.uuid === gameId);
                 handleSportChange('football');
                 setFootballActiveTab(normalizedTab);
+                setFootballTargetVideoId(targetVideoId || null);
                 if (game) {
                     football.handleGamePress(game);
                 } else {
@@ -520,14 +532,14 @@ export default function App() {
         };
 
         if (deepLinkParams) {
-            const routeLinkKey = `${normalizeSport(deepLinkParams.sport)}:${deepLinkParams.gameId}:${normalizeDeepLinkTab(deepLinkParams.tab) || 'summary'}`;
+            const routeLinkKey = `${normalizeSport(deepLinkParams.sport)}:${deepLinkParams.gameId}:${normalizeDeepLinkTab(deepLinkParams.tab) || 'summary'}:${deepLinkParams.videoId || ''}`;
             if (processedRouteDeepLinkRef.current === routeLinkKey) {
                 return;
             }
             processedRouteDeepLinkRef.current = routeLinkKey;
 
             const timeoutId = setTimeout(() => {
-                openGameById(deepLinkParams.sport, deepLinkParams.gameId, deepLinkParams.tab);
+                openGameById(deepLinkParams.sport, deepLinkParams.gameId, deepLinkParams.tab, deepLinkParams);
             }, 0);
 
             return () => {
@@ -663,9 +675,11 @@ export default function App() {
     const handleHockeyGamePress = useCallback((game) => {
         if (game.sport === 'hockeyallsvenskan') {
             setHaActiveTab('summary');
+            setHaTargetVideoId(null);
             hockeyAllsvenskan.handleGamePress(game);
         } else {
             setShlActiveTab('summary');
+            setShlTargetVideoId(null);
             shl.handleGamePress(game);
         }
     }, [shl, hockeyAllsvenskan]);
@@ -721,6 +735,7 @@ export default function App() {
                             conferenceLeagueQual.handleGamePress(item);
                         } else {
                             setFootballActiveTab('summary');
+                            setFootballTargetVideoId(null);
                             football.handleGamePress(item);
                         }
                     }}
@@ -1019,6 +1034,7 @@ export default function App() {
                 onRefresh={shl.refreshModalDetails}
                 refreshing={shl.refreshingModal}
                 selectedTeams={selectedTeams}
+                targetVideoId={shlTargetVideoId}
             />
 
             {/* HockeyAllsvenskan Game Modal (reuses SHL modal — identical data shape) */}
@@ -1036,6 +1052,7 @@ export default function App() {
                 selectedTeams={selectedTeams}
                 standingsFetcher={fetchHockeyAllsvenskanStandings}
                 standingsSport="hockeyallsvenskan"
+                targetVideoId={haTargetVideoId}
             />
 
             {/* Football Match Modal */}
@@ -1052,6 +1069,7 @@ export default function App() {
                 showStandingsTab={true}
                 activeTab={footballActiveTab}
                 onTabChange={setFootballActiveTab}
+                targetVideoId={footballTargetVideoId}
             />
 
             {/* Svenska Cupen Match Modal */}
