@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,9 +9,15 @@ import { useTheme } from '../contexts';
 import { fetchBracket, resolveMediaUrl } from '../api/shl';
 
 const COL_WIDTH = 240;
-const CARD_HEIGHT = 78;
 const CARD_GAP = 20;
 const ROUND_HEADER_H = 40;
+
+const shortDate = (value) => {
+    if (!value) {
+        return null;
+    }
+    return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'Europe/Stockholm' }).format(new Date(value));
+};
 
 const legLine = (legs) => {
     if (!legs || legs.length === 0) {
@@ -21,7 +27,8 @@ const legLine = (legs) => {
         .map((l) => {
             const played = l.homeScore != null && l.awayScore != null;
             if (!played) {
-                return `Leg ${l.leg || '?'} · upcoming`;
+                const date = shortDate(l.date);
+                return `Leg ${l.leg || '?'} · ${date || 'upcoming'}`;
             }
             return `${l.homeScore}–${l.awayScore}`;
         })
@@ -93,7 +100,10 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
     }, [tieIndex]);
 
     const renderTeamRow = (team, tie, roundTitle, top) => {
-        const isHi = team.code && team.code.toUpperCase() === highlight;
+        const isHi = highlight && (
+            (team.code && team.code.toUpperCase() === highlight)
+            || String(team.name || '').toUpperCase().includes(highlight)
+        );
         return (
             <Pressable
                 key={team.id}
@@ -118,6 +128,9 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
                 )}
                 {team.origin === 'advanced' && (
                     <Ionicons name="arrow-up" size={12} color={colors.accent} style={styles.advIcon} />
+                )}
+                {team.origin === 'pending' && (
+                    <Ionicons name="git-merge-outline" size={12} color={colors.accentOrange} style={styles.advIcon} />
                 )}
                 <Text style={[styles.agg, { color: team.isWinner ? colors.text : colors.textMuted }]}>
                     {team.aggregate != null ? team.aggregate : '–'}
@@ -169,11 +182,20 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
                                 <View style={styles.roundHeader}>
                                     <Text style={[styles.roundTitle, { color: colors.accent }]}>{round.title}</Text>
                                     <Text style={[styles.roundMeta, { color: colors.textMuted }]}>
-                                        {round.ties.length} ties{round.seededCount ? ` · ${round.seededCount} seeded in` : ''}
+                                        {round.ties.length > 0
+                                            ? `${round.ties.length} ties${round.seededCount ? ` · ${round.seededCount} seeded in` : ''}`
+                                            : round.status || 'Draw pending'}
                                     </Text>
                                 </View>
                                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.vScroll}>
                                     {round.ties.map((tie) => renderTie(tie, round.title))}
+                                    {round.ties.length === 0 && (
+                                        <View style={[styles.futureCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                                            <Ionicons name="calendar-outline" size={22} color={colors.accent} />
+                                            <Text style={[styles.futureTitle, { color: colors.text }]}>Draw not completed yet</Text>
+                                            <Text style={[styles.futureDates, { color: colors.textMuted }]}>20 & 27 August 2026</Text>
+                                        </View>
+                                    )}
                                 </ScrollView>
                             </View>
                         ))}
@@ -195,6 +217,13 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
                         </View>
 
                         {(() => {
+                            if (selected.team.origin === 'pending') {
+                                return (
+                                    <Text style={[styles.popLine, { color: colors.textSecondary }]}>
+                                        This third-round place is already drawn, but the team depends on the second-round winner.
+                                    </Text>
+                                );
+                            }
                             const feeder = feederFor(selected.team);
                             if (selected.team.origin === 'advanced' && feeder) {
                                 const beaten = feeder.tie.teams.find((t) => !t.isWinner);
@@ -222,9 +251,12 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
                         <TouchableOpacity
                             style={[styles.popBtn, { backgroundColor: colors.chipActive, borderColor: colors.chipActiveBorder }]}
                             onPress={() => { const t = selected.team; setSelected(null); openTeam(t); }}
+                            disabled={!selected.team.code}
                         >
                             <Ionicons name="person-outline" size={16} color={colors.accent} />
-                            <Text style={[styles.popBtnText, { color: colors.chipTextActive }]}>View team page</Text>
+                            <Text style={[styles.popBtnText, { color: colors.chipTextActive }]}>
+                                {selected.team.code ? 'View team page' : 'Team decided after previous round'}
+                            </Text>
                         </TouchableOpacity>
                     </Pressable>
                 </Pressable>
@@ -246,6 +278,9 @@ const styles = StyleSheet.create({
     roundTitle: { fontSize: 12, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase' },
     roundMeta: { fontSize: 10, fontWeight: '600', marginTop: 2 },
     vScroll: { paddingBottom: 40 },
+    futureCard: { minHeight: 122, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center', padding: 16, gap: 7 },
+    futureTitle: { fontSize: 13, fontWeight: '700', textAlign: 'center' },
+    futureDates: { fontSize: 11, fontWeight: '600', textAlign: 'center' },
     tieCard: { borderRadius: 12, borderWidth: 1, marginBottom: CARD_GAP, overflow: 'hidden', paddingBottom: 6 },
     tieEdge: { position: 'absolute', left: 0, top: 10, bottom: 10, width: 3, borderRadius: 2 },
     teamRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 7, gap: 8 },

@@ -1,5 +1,6 @@
 const AllsvenskanProvider = require('./allsvenskan');
 const { buildBracket } = require('../bracket-builder');
+const { fetchConferenceFutureRounds, mergeFutureRounds } = require('../future-bracket-rounds');
 
 /**
  * UEFA Conference League Qualifying Data Provider
@@ -117,7 +118,10 @@ class ConferenceLeagueQualProvider extends AllsvenskanProvider {
         }
 
         const allEvents = [...events, ...extra.flat()];
-        const bracket = buildBracket(allEvents);
+        const bracket = mergeFutureRounds(
+            buildBracket(allEvents),
+            await fetchConferenceFutureRounds()
+        );
         return {
             league: this.name,
             sport: 'conference-league-qual',

@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.22.0
+- Extend the qualifying bracket beyond ESPN's currently published fixtures: Conference League now includes the already-drawn **Third Round** with honest unresolved winner slots (including GAIS/Nordsjælland's path), plus the upcoming **Play-off Round** and its draw date. Future slots resolve automatically to real ESPN teams and scores once those fixtures become available
+
 ### 2.21.0
 - Add a knockout **Bracket** view for the qualifying leagues (Conference League Qualifying, Europa League Qualifying), reachable via a "View bracket" button on a team's page. Rounds scroll horizontally; two-legged ties show aggregate + both legs + winner. Teams that advanced from a prior round are marked with an up-arrow, and teams seeded in fresh (byes) get an amber marker — so the growing qualifying draw reads honestly instead of faking a clean tree. Tap any team to trace its path: an advanced team shows the earlier-round tie it won (and whom it beat), a seeded team shows it entered at that round, with a link to the full team page. Backend builds the bracket from ESPN series/leg/aggregate data (`/api/<league>/bracket`)
 
