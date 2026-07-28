@@ -1,4 +1,5 @@
 const AllsvenskanProvider = require('./allsvenskan');
+const { buildBracket } = require('../bracket-builder');
 
 /**
  * UEFA Conference League Qualifying Data Provider
@@ -91,6 +92,39 @@ class ConferenceLeagueQualProvider extends AllsvenskanProvider {
                 availableSeasons: []
             };
         }
+    }
+
+    /**
+     * Build the knockout bracket (two-legged ties grouped by round, with feeder
+     * origins for arrows). Uses the RAW ESPN leg-events — which carry the
+     * series/leg/aggregate fields that normalizeEvent() strips — across the same
+     * multi-year window fetchAllGames() uses, so we catch both the season that
+     * just finished and the one ramping up.
+     */
+    async fetchBracket() {
+        const year = this.getSeasonYear();
+        const now = new Date();
+        const events = await this.fetchSeasonEventsSafe(year);
+        const hasFuture = events.some(e => e?.date && new Date(e.date) >= now);
+        const hasPast = events.some(e => e?.date && new Date(e.date) < now);
+
+        const extra = [];
+        if (!hasFuture) {
+            extra.push(await this.fetchSeasonEventsSafe(year + 1));
+        }
+        if (!hasPast) {
+            extra.push(await this.fetchSeasonEventsSafe(year - 1));
+        }
+
+        const allEvents = [...events, ...extra.flat()];
+        const bracket = buildBracket(allEvents);
+        return {
+            league: this.name,
+            sport: 'conference-league-qual',
+            season: String(year),
+            source: 'espn',
+            ...bracket
+        };
     }
 }
 

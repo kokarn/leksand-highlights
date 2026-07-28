@@ -605,6 +605,25 @@ export async function fetchConferenceLeagueQualStandings(options = {}) {
     }
 }
 
+/**
+ * Fetch a knockout bracket (two-legged ties grouped by round, with feeder
+ * origins) for a qualifying league. `sport` is 'conference-league-qual' or
+ * 'europa-league-qual'.
+ * @returns {Promise<Object>} { league, rounds: [{ title, seededCount, ties }] }
+ */
+export async function fetchBracket(sport) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/${sport}/bracket`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching bracket for ${sport}:`, error.message);
+        return { league: null, rounds: [] };
+    }
+}
+
 // ============ BIATHLON API ============
 
 /**

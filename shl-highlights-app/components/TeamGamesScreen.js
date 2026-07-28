@@ -115,6 +115,12 @@ export function TeamGamesScreen({ family, teamCode }) {
         [games, family]
     );
 
+    // Knockout leagues the team is in that have a bracket instead of a table.
+    const bracketLeagues = useMemo(
+        () => leaguesForTeam(games, family.leagues).filter((league) => league.hasBracket),
+        [games, family]
+    );
+
     // Open the match modal via the main screen's deep-link route.
     const openGame = useCallback((game) => {
         const sport = game.sport || family.leagues[0].slug;
@@ -123,6 +129,10 @@ export function TeamGamesScreen({ family, teamCode }) {
 
     const openStandings = useCallback((leagueSlug) => {
         router.push(`/standings/${leagueSlug}?team=${encodeURIComponent(normalizedCode)}`);
+    }, [router, normalizedCode]);
+
+    const openBracket = useCallback((leagueSlug) => {
+        router.push(`/bracket/${leagueSlug}?team=${encodeURIComponent(normalizedCode)}`);
     }, [router, normalizedCode]);
 
     const listData = view === 'latest' ? completedGames : upcomingGames;
@@ -189,6 +199,25 @@ export function TeamGamesScreen({ family, teamCode }) {
                             <Ionicons name="podium-outline" size={16} color={colors.accent} />
                             <Text style={[styles.standingsButtonText, { color: colors.text }]} numberOfLines={1}>
                                 {standingsLeagues.length > 1 ? `${league.label} table` : 'View standings'}
+                            </Text>
+                            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            )}
+
+            {bracketLeagues.length > 0 && (
+                <View style={styles.standingsButtons}>
+                    {bracketLeagues.map((league) => (
+                        <TouchableOpacity
+                            key={league.slug}
+                            style={[styles.standingsButton, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+                            onPress={() => openBracket(league.slug)}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="git-network-outline" size={16} color={colors.accent} />
+                            <Text style={[styles.standingsButtonText, { color: colors.text }]} numberOfLines={1}>
+                                {bracketLeagues.length > 1 ? `${league.label} bracket` : 'View bracket'}
                             </Text>
                             <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
                         </TouchableOpacity>

@@ -46,6 +46,8 @@ const {
     setCachedConferenceLeagueQualDetails,
     getCachedConferenceLeagueQualStandings,
     setCachedConferenceLeagueQualStandings,
+    getCachedBracket,
+    setCachedBracket,
     clearAllCaches,
     getCacheStatus,
     setGamesLiveFlag,
@@ -1179,6 +1181,51 @@ app.get('/api/conference-league-qual/standings', async (req, res) => {
         res.json(standings);
     } catch (error) {
         console.error('Error fetching Conference League Qualifying standings:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/conference-league-qual/bracket
+ * Knockout bracket: two-legged ties grouped by round, with feeder origins
+ * ('advanced' -> fromTieKey, or 'seeded') for the app's bracket view.
+ */
+app.get('/api/conference-league-qual/bracket', async (req, res) => {
+    try {
+        let bracket = getCachedBracket('conference-league-qual');
+        if (bracket) {
+            console.log('[Cache HIT] /api/conference-league-qual/bracket');
+        } else {
+            console.log('[Cache MISS] /api/conference-league-qual/bracket - building...');
+            const provider = getProvider('conference-league-qual');
+            bracket = await provider.fetchBracket();
+            setCachedBracket('conference-league-qual', bracket);
+        }
+        res.json(bracket);
+    } catch (error) {
+        console.error('Error building Conference League Qualifying bracket:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/europa-league-qual/bracket
+ * Knockout bracket for Europa League Qualifying (see conference-league-qual/bracket).
+ */
+app.get('/api/europa-league-qual/bracket', async (req, res) => {
+    try {
+        let bracket = getCachedBracket('europa-league-qual');
+        if (bracket) {
+            console.log('[Cache HIT] /api/europa-league-qual/bracket');
+        } else {
+            console.log('[Cache MISS] /api/europa-league-qual/bracket - building...');
+            const provider = getProvider('europa-league-qual');
+            bracket = await provider.fetchBracket();
+            setCachedBracket('europa-league-qual', bracket);
+        }
+        res.json(bracket);
+    } catch (error) {
+        console.error('Error building Europa League Qualifying bracket:', error);
         res.status(500).json({ error: error.message });
     }
 });

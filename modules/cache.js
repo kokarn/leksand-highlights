@@ -28,7 +28,9 @@ const cache = {
     europaLeagueQualStandings: new Map(),
     conferenceLeagueQualGames: { data: null, timestamp: 0, hasLive: false },
     conferenceLeagueQualDetails: new Map(),
-    conferenceLeagueQualStandings: new Map()
+    conferenceLeagueQualStandings: new Map(),
+    // Knockout brackets keyed by sport slug (e.g. 'conference-league-qual').
+    brackets: new Map()
 };
 
 // ============ CACHE HELPERS ============
@@ -380,6 +382,20 @@ function setCachedConferenceLeagueQualStandings(season, data) {
     cache.conferenceLeagueQualStandings.set(key, { data, timestamp: Date.now() });
 }
 
+// ============ KNOCKOUT BRACKET CACHE ============
+// Brackets change about as often as standings, so reuse that TTL.
+function getCachedBracket(sport) {
+    const cached = cache.brackets.get(String(sport));
+    if (isCacheValid(cached, CACHE_DURATION_STANDINGS)) {
+        return cached.data;
+    }
+    return null;
+}
+
+function setCachedBracket(sport, data) {
+    cache.brackets.set(String(sport), { data, timestamp: Date.now() });
+}
+
 // ============ BIATHLON CACHE ============
 function getCachedBiathlon() {
     if (isCacheValid(cache.biathlon, CACHE_DURATION_BIATHLON)) {
@@ -421,6 +437,7 @@ function clearAllCaches() {
     cache.conferenceLeagueQualGames = { data: null, timestamp: 0, hasLive: false };
     cache.conferenceLeagueQualDetails.clear();
     cache.conferenceLeagueQualStandings.clear();
+    cache.brackets.clear();
 }
 
 function getCacheStatus() {
@@ -558,6 +575,8 @@ module.exports = {
     setCachedConferenceLeagueQualDetails,
     getCachedConferenceLeagueQualStandings,
     setCachedConferenceLeagueQualStandings,
+    getCachedBracket,
+    setCachedBracket,
     clearAllCaches,
     getCacheStatus,
     getGamesCacheDuration,

@@ -68,8 +68,8 @@ export const TEAM_FAMILIES = {
             { slug: 'allsvenskan', label: 'Allsvenskan', fetchGames: (filters) => fetchFootballGames(filters), hasStandings: true, standingsFormat: 'table', standingsSport: 'football', fetchStandings: (opts) => fetchFootballStandings(opts) },
             { slug: 'svenska-cupen', label: 'Svenska Cupen', fetchGames: (filters) => fetchSvenskaCupenGames(filters), hasStandings: true, standingsFormat: 'groups', standingsSport: 'football', fetchStandings: (opts) => fetchSvenskaCupenStandings(opts) },
             // Europa/Conference qualifying are knockout — no league table.
-            { slug: 'europa-league-qual', label: 'Europa League Qualifying', fetchGames: (filters) => fetchEuropaLeagueQualGames(filters), hasStandings: false },
-            { slug: 'conference-league-qual', label: 'Conference League Qualifying', fetchGames: (filters) => fetchConferenceLeagueQualGames(filters), hasStandings: false }
+            { slug: 'europa-league-qual', label: 'Europa League Qualifying', fetchGames: (filters) => fetchEuropaLeagueQualGames(filters), hasStandings: false, hasBracket: true },
+            { slug: 'conference-league-qual', label: 'Conference League Qualifying', fetchGames: (filters) => fetchConferenceLeagueQualGames(filters), hasStandings: false, hasBracket: true }
         ],
         getTeamCode: footballTeamCode,
         getTeamName: (team) => team?.names?.short || team?.names?.long || footballTeamCode(team) || 'Team',

@@ -1,0 +1,8552 @@
+[
+{
+"id": "401877789",
+"date": "2026-07-07T17:15Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "22291",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "8594",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "22291",
+"homeAway": "home",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "UNA",
+"shortDisplayName": "Strassen",
+"displayName": "UNA Strassen",
+"logo": ""
+}
+},
+{
+"id": "8594",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "FIO",
+"shortDisplayName": "Fiorita",
+"displayName": "Fiorita",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/8594.png"
+}
+}
+]
+},
+{
+"id": "401877984",
+"date": "2026-07-07T18:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "131797",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "497",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "131797",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "AFE",
+"shortDisplayName": "AF Elbasani",
+"displayName": "AF Elbasani",
+"logo": ""
+}
+},
+{
+"id": "497",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "BATE",
+"shortDisplayName": "BATE",
+"displayName": "BATE Borisov",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/497.png"
+}
+}
+]
+},
+{
+"id": "401877805",
+"date": "2026-07-08T16:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "18754",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "612",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "18754",
+"homeAway": "home",
+"score": "3",
+"winner": true,
+"team": {
+"abbreviation": "ZIR",
+"shortDisplayName": "Zira",
+"displayName": "Zira FK",
+"logo": ""
+}
+},
+{
+"id": "612",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "TORP",
+"shortDisplayName": "Torpedo Kuta",
+"displayName": "Torpedo Kutaisi",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/612.png"
+}
+}
+]
+},
+{
+"id": "401877810",
+"date": "2026-07-08T17:30Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "7591",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "21526",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "7591",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "COQ",
+"shortDisplayName": "Connah's Quay",
+"displayName": "Connah's Quay",
+"logo": ""
+}
+},
+{
+"id": "21526",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "BAL",
+"shortDisplayName": "Ballkani",
+"displayName": "Ballkani",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/21526.png"
+}
+}
+]
+},
+{
+"id": "401877804",
+"date": "2026-07-08T17:30Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "7759",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "19248",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "7759",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "DIF",
+"shortDisplayName": "Differdange 03",
+"displayName": "FC Differdange 03",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/7759.png"
+}
+},
+{
+"id": "19248",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "FCI",
+"shortDisplayName": "FC Ilves",
+"displayName": "FC Ilves",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877779",
+"date": "2026-07-09T14:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "21528",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "22290",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "21528",
+"homeAway": "home",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "ESC",
+"shortDisplayName": "Escaldes",
+"displayName": "Atlètic Club d'Escaldes",
+"logo": ""
+}
+},
+{
+"id": "22290",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "MOR",
+"shortDisplayName": "Mornar",
+"displayName": "Mornar",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877983",
+"date": "2026-07-09T16:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "17858",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "131792",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "17858",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "ALA",
+"shortDisplayName": "Alashkert",
+"displayName": "Alashkert FC",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/17858.png"
+}
+},
+{
+"id": "131792",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "YEL",
+"shortDisplayName": "Yelimay",
+"displayName": "Yelimay",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877795",
+"date": "2026-07-09T16:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "8284",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "22292",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "8284",
+"homeAway": "home",
+"score": "3",
+"winner": true,
+"team": {
+"abbreviation": "DGO",
+"shortDisplayName": "Dila Gori",
+"displayName": "Dila Gori",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/8284.png"
+}
+},
+{
+"id": "22292",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "VIR",
+"shortDisplayName": "AC Virtus",
+"displayName": "AC Virtus",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877780",
+"date": "2026-07-09T16:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "18283",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "21001",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "18283",
+"homeAway": "home",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "FKL",
+"shortDisplayName": "FK Liepaja",
+"displayName": "FK Liepaja",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/18283.png"
+}
+},
+{
+"id": "21001",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "DEC",
+"shortDisplayName": "Decic",
+"displayName": "Decic",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877797",
+"date": "2026-07-09T16:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "21945",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "20718",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "21945",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "HEG",
+"shortDisplayName": "Hegelmann",
+"displayName": "Hegelmann",
+"logo": ""
+}
+},
+{
+"id": "20718",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "PLI",
+"shortDisplayName": "Paide",
+"displayName": "Paide Linnameeskond",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877792",
+"date": "2026-07-09T16:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "10376",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "2555",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "10376",
+"homeAway": "home",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "KALJ",
+"shortDisplayName": "Nomme Kalju",
+"displayName": "Nomme Kalju",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/10376.png"
+}
+},
+{
+"id": "2555",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "LIN",
+"shortDisplayName": "Linfield",
+"displayName": "Linfield",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2555.png"
+}
+}
+]
+},
+{
+"id": "401877809",
+"date": "2026-07-09T17:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "615",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "18751",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "615",
+"homeAway": "home",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "BOH",
+"shortDisplayName": "Bohemians",
+"displayName": "Bohemians",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/615.png"
+}
+},
+{
+"id": "18751",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "STJ",
+"shortDisplayName": "St. Joseph's",
+"displayName": "St. Joseph's",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877806",
+"date": "2026-07-09T17:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "2539",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "2940",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "2539",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "MNSK",
+"shortDisplayName": "Dinamo Minsk",
+"displayName": "Dinamo Minsk",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2539.png"
+}
+},
+{
+"id": "2940",
+"homeAway": "away",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "FKS",
+"shortDisplayName": "FK Sileks",
+"displayName": "FK Sileks ",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877799",
+"date": "2026-07-09T17:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "2948",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "2493",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "2948",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "MAR",
+"shortDisplayName": "Marsaxlokk",
+"displayName": "Marsaxlokk FC",
+"logo": ""
+}
+},
+{
+"id": "2493",
+"homeAway": "away",
+"score": "3",
+"winner": true,
+"team": {
+"abbreviation": "PYU",
+"shortDisplayName": "Pyunik",
+"displayName": "Pyunik",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2493.png"
+}
+}
+]
+},
+{
+"id": "401877807",
+"date": "2026-07-09T17:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "8070",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "11440",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "8070",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "MOS",
+"shortDisplayName": "Velez Mostar",
+"displayName": "Velez Mostar",
+"logo": ""
+}
+},
+{
+"id": "11440",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "MIL",
+"shortDisplayName": "FC Milsami",
+"displayName": "FC Milsami",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877985",
+"date": "2026-07-09T17:15Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "131793",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "498",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "131793",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "MON",
+"shortDisplayName": "Mondorf",
+"displayName": "Mondorf-les-Bains",
+"logo": ""
+}
+},
+{
+"id": "498",
+"homeAway": "away",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "TBIL",
+"shortDisplayName": "Dinamo Tbilisi",
+"displayName": "Dinamo Tbilisi",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/498.png"
+}
+}
+]
+},
+{
+"id": "401877798",
+"date": "2026-07-09T17:30Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "7590",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "2540",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "7590",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "CAE",
+"shortDisplayName": "Caernarfon",
+"displayName": "Caernarfon",
+"logo": ""
+}
+},
+{
+"id": "2540",
+"homeAway": "away",
+"score": "5",
+"winner": true,
+"team": {
+"abbreviation": "LVT",
+"shortDisplayName": "Levadia Tallinn",
+"displayName": "FC Levadia Tallinn",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2540.png"
+}
+}
+]
+},
+{
+"id": "401877793",
+"date": "2026-07-09T17:30Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "17503",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "8151",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "17503",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "EUR",
+"shortDisplayName": "Europa FC",
+"displayName": "Europa FC",
+"logo": ""
+}
+},
+{
+"id": "8151",
+"homeAway": "away",
+"score": "5",
+"winner": true,
+"team": {
+"abbreviation": "SHK",
+"shortDisplayName": "KF Shkëndija",
+"displayName": "KF Shkëndija",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/8151.png"
+}
+}
+]
+},
+{
+"id": "401877788",
+"date": "2026-07-09T18:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "2716",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "22287",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "2716",
+"homeAway": "home",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "VLL",
+"shortDisplayName": "V Shkoder",
+"displayName": "Vllaznia Shkoder",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2716.png"
+}
+},
+{
+"id": "22287",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "KFM",
+"shortDisplayName": "Malisheva",
+"displayName": "KF Malisheva",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877801",
+"date": "2026-07-09T18:30Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "571",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "12030",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "571",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "GLT",
+"shortDisplayName": "Glentoran",
+"displayName": "Glentoran",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/571.png"
+}
+},
+{
+"id": "12030",
+"homeAway": "away",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "RFS",
+"shortDisplayName": "RFS",
+"displayName": "Rigas Futbola Skola",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/12030.png"
+}
+}
+]
+},
+{
+"id": "401877790",
+"date": "2026-07-09T18:45Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "2710",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "7858",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "2710",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "NSIR",
+"shortDisplayName": "NSI Runavik",
+"displayName": "NSI Runavik",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2710.png"
+}
+},
+{
+"id": "7858",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "HAM",
+"shortDisplayName": "Hamrun",
+"displayName": "Hamrun Spartans",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/7858.png"
+}
+}
+]
+},
+{
+"id": "401877800",
+"date": "2026-07-09T18:45Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "131798",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "523",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "131798",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "PET",
+"shortDisplayName": "OFK Petrovac",
+"displayName": "OFK Petrovac",
+"logo": ""
+}
+},
+{
+"id": "523",
+"homeAway": "away",
+"score": "3",
+"winner": true,
+"team": {
+"abbreviation": "FKZ",
+"shortDisplayName": "Zalgiris Vilnius",
+"displayName": "Zalgiris Vilnius",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/523.png"
+}
+}
+]
+},
+{
+"id": "401877791",
+"date": "2026-07-09T18:45Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "20038",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "542",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "20038",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "PEN",
+"shortDisplayName": "Penybont",
+"displayName": "Penybont FC",
+"logo": ""
+}
+},
+{
+"id": "542",
+"homeAway": "away",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "SCO",
+"shortDisplayName": "Santa Coloma",
+"displayName": "Santa Coloma",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/542.png"
+}
+}
+]
+},
+{
+"id": "401877808",
+"date": "2026-07-09T19:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "515",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "12124",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "515",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "DIN",
+"shortDisplayName": "Dinamo City",
+"displayName": "Dinamo City",
+"logo": ""
+}
+},
+{
+"id": "12124",
+"homeAway": "away",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "AST",
+"shortDisplayName": "FC Astana",
+"displayName": "FC Astana",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/12124.png"
+}
+}
+]
+},
+{
+"id": "401877794",
+"date": "2026-07-09T19:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "551",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "3726",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "551",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "SAR",
+"shortDisplayName": "FK Sarajevo",
+"displayName": "FK Sarajevo",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/551.png"
+}
+},
+{
+"id": "3726",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "ITU",
+"shortDisplayName": "Inter Turku",
+"displayName": "FC Inter Turku",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877753",
+"date": "2026-07-09T19:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "First Round",
+"completed": false,
+"competitors": [
+{
+"id": "7949",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "13238",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "7949",
+"homeAway": "home",
+"score": "3",
+"winner": true,
+"team": {
+"abbreviation": "STJ",
+"shortDisplayName": "Stjarnan",
+"displayName": "Stjarnan",
+"logo": ""
+}
+},
+{
+"id": "13238",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "VIK",
+"shortDisplayName": "Víkingur",
+"displayName": "Víkingur",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/13238.png"
+}
+}
+]
+},
+{
+"id": "401877746",
+"date": "2026-07-14T19:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "8594",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "22291",
+"aggregateScore": 3.0,
+"winner": true
+}
+]
+},
+"competitors": [
+{
+"id": "8594",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "FIO",
+"shortDisplayName": "Fiorita",
+"displayName": "Fiorita",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/8594.png"
+}
+},
+{
+"id": "22291",
+"homeAway": "away",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "UNA",
+"shortDisplayName": "Strassen",
+"displayName": "UNA Strassen",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877745",
+"date": "2026-07-15T14:30Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "22287",
+"aggregateScore": 6.0,
+"winner": true
+},
+{
+"id": "2716",
+"aggregateScore": 2.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "22287",
+"homeAway": "home",
+"score": "5",
+"winner": true,
+"team": {
+"abbreviation": "KFM",
+"shortDisplayName": "Malisheva",
+"displayName": "KF Malisheva",
+"logo": ""
+}
+},
+{
+"id": "2716",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "VLL",
+"shortDisplayName": "V Shkoder",
+"displayName": "Vllaznia Shkoder",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2716.png"
+}
+}
+]
+},
+{
+"id": "401877803",
+"date": "2026-07-15T18:30Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "21001",
+"aggregateScore": 1.0,
+"winner": false
+},
+{
+"id": "18283",
+"aggregateScore": 3.0,
+"winner": true
+}
+]
+},
+"competitors": [
+{
+"id": "21001",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "DEC",
+"shortDisplayName": "Decic",
+"displayName": "Decic",
+"logo": ""
+}
+},
+{
+"id": "18283",
+"homeAway": "away",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "FKL",
+"shortDisplayName": "FK Liepaja",
+"displayName": "FK Liepaja",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/18283.png"
+}
+}
+]
+},
+{
+"id": "401877785",
+"date": "2026-07-16T15:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "AET",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "12124",
+"aggregateScore": 2.0,
+"winner": false
+},
+{
+"id": "515",
+"aggregateScore": 4.0,
+"winner": true
+}
+]
+},
+"competitors": [
+{
+"id": "12124",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "AST",
+"shortDisplayName": "FC Astana",
+"displayName": "FC Astana",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/12124.png"
+}
+},
+{
+"id": "515",
+"homeAway": "away",
+"score": "4",
+"winner": true,
+"team": {
+"abbreviation": "DIN",
+"shortDisplayName": "Dinamo City",
+"displayName": "Dinamo City",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877751",
+"date": "2026-07-16T15:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "3726",
+"aggregateScore": 3.0,
+"winner": true
+},
+{
+"id": "551",
+"aggregateScore": 2.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "3726",
+"homeAway": "home",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "ITU",
+"shortDisplayName": "Inter Turku",
+"displayName": "FC Inter Turku",
+"logo": ""
+}
+},
+{
+"id": "551",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "SAR",
+"shortDisplayName": "FK Sarajevo",
+"displayName": "FK Sarajevo",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/551.png"
+}
+}
+]
+},
+{
+"id": "401877980",
+"date": "2026-07-16T15:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT-Pens",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "131792",
+"aggregateScore": 3.0,
+"winner": false
+},
+{
+"id": "17858",
+"aggregateScore": 3.0,
+"winner": true
+}
+]
+},
+"competitors": [
+{
+"id": "131792",
+"homeAway": "home",
+"score": "2",
+"winner": false,
+"team": {
+"abbreviation": "YEL",
+"shortDisplayName": "Yelimay",
+"displayName": "Yelimay",
+"logo": ""
+}
+},
+{
+"id": "17858",
+"homeAway": "away",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "ALA",
+"shortDisplayName": "Alashkert",
+"displayName": "Alashkert FC",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/17858.png"
+}
+}
+]
+},
+{
+"id": "401877781",
+"date": "2026-07-16T16:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "19248",
+"aggregateScore": 3.0,
+"winner": true
+},
+{
+"id": "7759",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "19248",
+"homeAway": "home",
+"score": "3",
+"winner": true,
+"team": {
+"abbreviation": "FCI",
+"shortDisplayName": "FC Ilves",
+"displayName": "FC Ilves",
+"logo": ""
+}
+},
+{
+"id": "7759",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "DIF",
+"shortDisplayName": "Differdange 03",
+"displayName": "FC Differdange 03",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/7759.png"
+}
+}
+]
+},
+{
+"id": "401877754",
+"date": "2026-07-16T16:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "20718",
+"aggregateScore": 4.0,
+"winner": true
+},
+{
+"id": "21945",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "20718",
+"homeAway": "home",
+"score": "3",
+"winner": true,
+"team": {
+"abbreviation": "PLI",
+"shortDisplayName": "Paide",
+"displayName": "Paide Linnameeskond",
+"logo": ""
+}
+},
+{
+"id": "21945",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "HEG",
+"shortDisplayName": "Hegelmann",
+"displayName": "Hegelmann",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877756",
+"date": "2026-07-16T16:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "2493",
+"aggregateScore": 4.0,
+"winner": true
+},
+{
+"id": "2948",
+"aggregateScore": 0.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "2493",
+"homeAway": "home",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "PYU",
+"shortDisplayName": "Pyunik",
+"displayName": "Pyunik",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2493.png"
+}
+},
+{
+"id": "2948",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "MAR",
+"shortDisplayName": "Marsaxlokk",
+"displayName": "Marsaxlokk FC",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877786",
+"date": "2026-07-16T16:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "18751",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "615",
+"aggregateScore": 2.0,
+"winner": true
+}
+]
+},
+"competitors": [
+{
+"id": "18751",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "STJ",
+"shortDisplayName": "St. Joseph's",
+"displayName": "St. Joseph's",
+"logo": ""
+}
+},
+{
+"id": "615",
+"homeAway": "away",
+"score": "0",
+"winner": true,
+"team": {
+"abbreviation": "BOH",
+"shortDisplayName": "Bohemians",
+"displayName": "Bohemians",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/615.png"
+}
+}
+]
+},
+{
+"id": "401877782",
+"date": "2026-07-16T16:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "612",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "18754",
+"aggregateScore": 6.0,
+"winner": true
+}
+]
+},
+"competitors": [
+{
+"id": "612",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "TORP",
+"shortDisplayName": "Torpedo Kuta",
+"displayName": "Torpedo Kutaisi",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/612.png"
+}
+},
+{
+"id": "18754",
+"homeAway": "away",
+"score": "3",
+"winner": true,
+"team": {
+"abbreviation": "ZIR",
+"shortDisplayName": "Zira",
+"displayName": "Zira FK",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877755",
+"date": "2026-07-16T16:30Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "2540",
+"aggregateScore": 10.0,
+"winner": true
+},
+{
+"id": "7590",
+"aggregateScore": 0.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "2540",
+"homeAway": "home",
+"score": "5",
+"winner": true,
+"team": {
+"abbreviation": "LVT",
+"shortDisplayName": "Levadia Tallinn",
+"displayName": "FC Levadia Tallinn",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2540.png"
+}
+},
+{
+"id": "7590",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "CAE",
+"shortDisplayName": "Caernarfon",
+"displayName": "Caernarfon",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877778",
+"date": "2026-07-16T16:30Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "12030",
+"aggregateScore": 4.0,
+"winner": true
+},
+{
+"id": "571",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "12030",
+"homeAway": "home",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "RFS",
+"shortDisplayName": "RFS",
+"displayName": "Rigas Futbola Skola",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/12030.png"
+}
+},
+{
+"id": "571",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "GLT",
+"shortDisplayName": "Glentoran",
+"displayName": "Glentoran",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/571.png"
+}
+}
+]
+},
+{
+"id": "401877981",
+"date": "2026-07-16T17:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT-Pens",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "497",
+"aggregateScore": 1.0,
+"winner": true
+},
+{
+"id": "131797",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "497",
+"homeAway": "home",
+"score": "0",
+"winner": true,
+"team": {
+"abbreviation": "BATE",
+"shortDisplayName": "BATE",
+"displayName": "BATE Borisov",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/497.png"
+}
+},
+{
+"id": "131797",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "AFE",
+"shortDisplayName": "AF Elbasani",
+"displayName": "AF Elbasani",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877982",
+"date": "2026-07-16T17:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "AET",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "498",
+"aggregateScore": 3.0,
+"winner": true
+},
+{
+"id": "131793",
+"aggregateScore": 2.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "498",
+"homeAway": "home",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "TBIL",
+"shortDisplayName": "Dinamo Tbilisi",
+"displayName": "Dinamo Tbilisi",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/498.png"
+}
+},
+{
+"id": "131793",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "MON",
+"shortDisplayName": "Mondorf",
+"displayName": "Mondorf-les-Bains",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877784",
+"date": "2026-07-16T17:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "11440",
+"aggregateScore": 1.0,
+"winner": false
+},
+{
+"id": "8070",
+"aggregateScore": 2.0,
+"winner": true
+}
+]
+},
+"competitors": [
+{
+"id": "11440",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "MIL",
+"shortDisplayName": "FC Milsami",
+"displayName": "FC Milsami",
+"logo": ""
+}
+},
+{
+"id": "8070",
+"homeAway": "away",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "MOS",
+"shortDisplayName": "Velez Mostar",
+"displayName": "Velez Mostar",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877748",
+"date": "2026-07-16T17:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "542",
+"aggregateScore": 4.0,
+"winner": true
+},
+{
+"id": "20038",
+"aggregateScore": 0.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "542",
+"homeAway": "home",
+"score": "3",
+"winner": true,
+"team": {
+"abbreviation": "SCO",
+"shortDisplayName": "Santa Coloma",
+"displayName": "Santa Coloma",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/542.png"
+}
+},
+{
+"id": "20038",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "PEN",
+"shortDisplayName": "Penybont",
+"displayName": "Penybont FC",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877796",
+"date": "2026-07-16T17:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "13238",
+"aggregateScore": 3.0,
+"winner": false
+},
+{
+"id": "7949",
+"aggregateScore": 5.0,
+"winner": true
+}
+]
+},
+"competitors": [
+{
+"id": "13238",
+"homeAway": "home",
+"score": "2",
+"winner": false,
+"team": {
+"abbreviation": "VIK",
+"shortDisplayName": "Víkingur",
+"displayName": "Víkingur",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/13238.png"
+}
+},
+{
+"id": "7949",
+"homeAway": "away",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "STJ",
+"shortDisplayName": "Stjarnan",
+"displayName": "Stjarnan",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877757",
+"date": "2026-07-16T17:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "523",
+"aggregateScore": 5.0,
+"winner": true
+},
+{
+"id": "131798",
+"aggregateScore": 2.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "523",
+"homeAway": "home",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "FKZ",
+"shortDisplayName": "Zalgiris Vilnius",
+"displayName": "Zalgiris Vilnius",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/523.png"
+}
+},
+{
+"id": "131798",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "PET",
+"shortDisplayName": "OFK Petrovac",
+"displayName": "OFK Petrovac",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877747",
+"date": "2026-07-16T17:30Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "7858",
+"aggregateScore": 2.0,
+"winner": false
+},
+{
+"id": "2710",
+"aggregateScore": 3.0,
+"winner": true
+}
+]
+},
+"competitors": [
+{
+"id": "7858",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "HAM",
+"shortDisplayName": "Hamrun",
+"displayName": "Hamrun Spartans",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/7858.png"
+}
+},
+{
+"id": "2710",
+"homeAway": "away",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "NSIR",
+"shortDisplayName": "NSI Runavik",
+"displayName": "NSI Runavik",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2710.png"
+}
+}
+]
+},
+{
+"id": "401877787",
+"date": "2026-07-16T18:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "21526",
+"aggregateScore": 3.0,
+"winner": true
+},
+{
+"id": "7591",
+"aggregateScore": 2.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "21526",
+"homeAway": "home",
+"score": "3",
+"winner": true,
+"team": {
+"abbreviation": "BAL",
+"shortDisplayName": "Ballkani",
+"displayName": "Ballkani",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/21526.png"
+}
+},
+{
+"id": "7591",
+"homeAway": "away",
+"score": "2",
+"winner": false,
+"team": {
+"abbreviation": "COQ",
+"shortDisplayName": "Connah's Quay",
+"displayName": "Connah's Quay",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877783",
+"date": "2026-07-16T18:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT-Pens",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "2940",
+"aggregateScore": 1.0,
+"winner": false
+},
+{
+"id": "2539",
+"aggregateScore": 1.0,
+"winner": true
+}
+]
+},
+"competitors": [
+{
+"id": "2940",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "FKS",
+"shortDisplayName": "FK Sileks",
+"displayName": "FK Sileks ",
+"logo": ""
+}
+},
+{
+"id": "2539",
+"homeAway": "away",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "MNSK",
+"shortDisplayName": "Dinamo Minsk",
+"displayName": "Dinamo Minsk",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2539.png"
+}
+}
+]
+},
+{
+"id": "401877750",
+"date": "2026-07-16T18:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "8151",
+"aggregateScore": 6.0,
+"winner": true
+},
+{
+"id": "17503",
+"aggregateScore": 0.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "8151",
+"homeAway": "home",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "SHK",
+"shortDisplayName": "KF Shkëndija",
+"displayName": "KF Shkëndija",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/8151.png"
+}
+},
+{
+"id": "17503",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "EUR",
+"shortDisplayName": "Europa FC",
+"displayName": "Europa FC",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877749",
+"date": "2026-07-16T18:45Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "2555",
+"aggregateScore": 2.0,
+"winner": false
+},
+{
+"id": "10376",
+"aggregateScore": 3.0,
+"winner": true
+}
+]
+},
+"competitors": [
+{
+"id": "2555",
+"homeAway": "home",
+"score": "2",
+"winner": false,
+"team": {
+"abbreviation": "LIN",
+"shortDisplayName": "Linfield",
+"displayName": "Linfield",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2555.png"
+}
+},
+{
+"id": "10376",
+"homeAway": "away",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "KALJ",
+"shortDisplayName": "Nomme Kalju",
+"displayName": "Nomme Kalju",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/10376.png"
+}
+}
+]
+},
+{
+"id": "401877802",
+"date": "2026-07-16T18:45Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "22290",
+"aggregateScore": 2.0,
+"winner": false
+},
+{
+"id": "21528",
+"aggregateScore": 4.0,
+"winner": true
+}
+]
+},
+"competitors": [
+{
+"id": "22290",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "MOR",
+"shortDisplayName": "Mornar",
+"displayName": "Mornar",
+"logo": ""
+}
+},
+{
+"id": "21528",
+"homeAway": "away",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "ESC",
+"shortDisplayName": "Escaldes",
+"displayName": "Atlètic Club d'Escaldes",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877752",
+"date": "2026-07-16T19:00Z",
+"season": {
+"year": 2026,
+"type": 14295,
+"slug": "first-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "First Round",
+"completed": true,
+"competitors": [
+{
+"id": "22292",
+"aggregateScore": 2.0,
+"winner": false
+},
+{
+"id": "8284",
+"aggregateScore": 3.0,
+"winner": true
+}
+]
+},
+"competitors": [
+{
+"id": "22292",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "VIR",
+"shortDisplayName": "AC Virtus",
+"displayName": "AC Virtus",
+"logo": ""
+}
+},
+{
+"id": "8284",
+"homeAway": "away",
+"score": "0",
+"winner": true,
+"team": {
+"abbreviation": "DGO",
+"shortDisplayName": "Dila Gori",
+"displayName": "Dila Gori",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/8284.png"
+}
+}
+]
+},
+{
+"id": "401896207",
+"date": "2026-07-21T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "2556",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "2540",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "2556",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "GOT",
+"shortDisplayName": "Göteborg",
+"displayName": "IFK Göteborg",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2556.png"
+}
+},
+{
+"id": "2540",
+"homeAway": "away",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "LVT",
+"shortDisplayName": "Levadia Tallinn",
+"displayName": "FC Levadia Tallinn",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2540.png"
+}
+}
+]
+},
+{
+"id": "401891785",
+"date": "2026-07-21T17:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "7857",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "19243",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "7857",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "FLO",
+"shortDisplayName": "Floriana",
+"displayName": "Floriana FC",
+"logo": ""
+}
+},
+{
+"id": "19243",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "DRI",
+"shortDisplayName": "Drita Gjilan",
+"displayName": "Drita Gjilan",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/19243.png"
+}
+}
+]
+},
+{
+"id": "401892010",
+"date": "2026-07-21T18:15Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "131796",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "12367",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "131796",
+"homeAway": "home",
+"score": "2",
+"winner": false,
+"team": {
+"abbreviation": "ATB",
+"shortDisplayName": "Atert",
+"displayName": "FC Atert Bissen",
+"logo": ""
+}
+},
+{
+"id": "12367",
+"homeAway": "away",
+"score": "6",
+"winner": true,
+"team": {
+"abbreviation": "GYR",
+"shortDisplayName": "Györi ETO",
+"displayName": "Györi ETO FC",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401896222",
+"date": "2026-07-22T16:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "504",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "2539",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "504",
+"homeAway": "home",
+"score": "2",
+"winner": false,
+"team": {
+"abbreviation": "NEF",
+"shortDisplayName": "Neftchi",
+"displayName": "Neftchi",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/504.png"
+}
+},
+{
+"id": "2539",
+"homeAway": "away",
+"score": "4",
+"winner": true,
+"team": {
+"abbreviation": "MNSK",
+"shortDisplayName": "Dinamo Minsk",
+"displayName": "Dinamo Minsk",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2539.png"
+}
+}
+]
+},
+{
+"id": "401896215",
+"date": "2026-07-22T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "615",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "21526",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "615",
+"homeAway": "home",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "BOH",
+"shortDisplayName": "Bohemians",
+"displayName": "Bohemians",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/615.png"
+}
+},
+{
+"id": "21526",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "BAL",
+"shortDisplayName": "Ballkani",
+"displayName": "Ballkani",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/21526.png"
+}
+}
+]
+},
+{
+"id": "401893763",
+"date": "2026-07-22T17:45Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "7914",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "3726",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "7914",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "IBFK",
+"shortDisplayName": "Istanbul BB",
+"displayName": "Istanbul Basaksehir",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/7914.png"
+}
+},
+{
+"id": "3726",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "ITU",
+"shortDisplayName": "Inter Turku",
+"displayName": "FC Inter Turku",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401891772",
+"date": "2026-07-22T18:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "560",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "19246",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "560",
+"homeAway": "home",
+"score": "2",
+"winner": false,
+"team": {
+"abbreviation": "VAR",
+"shortDisplayName": "Vardar",
+"displayName": "Vardar",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/560.png"
+}
+},
+{
+"id": "19246",
+"homeAway": "away",
+"score": "3",
+"winner": true,
+"team": {
+"abbreviation": "RIG",
+"shortDisplayName": "Riga FC",
+"displayName": "Riga FC",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/19246.png"
+}
+}
+]
+},
+{
+"id": "401878141",
+"date": "2026-07-22T18:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "3929",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "21947",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "3929",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "FCSP",
+"shortDisplayName": "Spartak Trnava",
+"displayName": "FC Spartak Trnava",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/3929.png"
+}
+},
+{
+"id": "21947",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "UCKA",
+"shortDisplayName": "CSKA 1948",
+"displayName": "CSKA 1948 Sofia",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401878133",
+"date": "2026-07-22T19:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "22298",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "2994",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "22298",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "PAN",
+"shortDisplayName": "Pancevo",
+"displayName": "Zeleznicar Pancevo",
+"logo": ""
+}
+},
+{
+"id": "2994",
+"homeAway": "away",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "SCB",
+"shortDisplayName": "Braga",
+"displayName": "Braga",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2994.png"
+}
+}
+]
+},
+{
+"id": "401891786",
+"date": "2026-07-23T14:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "22287",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "258",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "22287",
+"homeAway": "home",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "KFM",
+"shortDisplayName": "Malisheva",
+"displayName": "KF Malisheva",
+"logo": ""
+}
+},
+{
+"id": "258",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "HIBS",
+"shortDisplayName": "Hibernian",
+"displayName": "Hibernian",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/258.png"
+}
+}
+]
+},
+{
+"id": "401893764",
+"date": "2026-07-23T15:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "17858",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "5260",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "17858",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "ALA",
+"shortDisplayName": "Alashkert",
+"displayName": "Alashkert FC",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/17858.png"
+}
+},
+{
+"id": "5260",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "CLUJ",
+"shortDisplayName": "CFR Cluj",
+"displayName": "CFR Cluj-Napoca",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/5260.png"
+}
+}
+]
+},
+{
+"id": "401891933",
+"date": "2026-07-23T15:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "18283",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "1382",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "18283",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "FKL",
+"shortDisplayName": "FK Liepaja",
+"displayName": "FK Liepaja",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/18283.png"
+}
+},
+{
+"id": "1382",
+"homeAway": "away",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "VIE",
+"shortDisplayName": "Vienna",
+"displayName": "Austria Vienna",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/1382.png"
+}
+}
+]
+},
+{
+"id": "401878131",
+"date": "2026-07-23T15:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "21004",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "6748",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "21004",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "PAN",
+"shortDisplayName": "Panevezys",
+"displayName": "Panevezys",
+"logo": ""
+}
+},
+{
+"id": "6748",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "TOB",
+"shortDisplayName": "Tobol Kostanay",
+"displayName": "Tobol Kostanay",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/6748.png"
+}
+}
+]
+},
+{
+"id": "401893762",
+"date": "2026-07-23T16:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "532",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "2493",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "532",
+"homeAway": "home",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "DEBR",
+"shortDisplayName": "Debrecen",
+"displayName": "Debrecen",
+"logo": ""
+}
+},
+{
+"id": "2493",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "PYU",
+"shortDisplayName": "Pyunik",
+"displayName": "Pyunik",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2493.png"
+}
+}
+]
+},
+{
+"id": "401896223",
+"date": "2026-07-23T16:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "8284",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "525",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "8284",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "DGO",
+"shortDisplayName": "Dila Gori",
+"displayName": "Dila Gori",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/8284.png"
+}
+},
+{
+"id": "525",
+"homeAway": "away",
+"score": "4",
+"winner": true,
+"team": {
+"abbreviation": "APL",
+"shortDisplayName": "Apollon Limassol",
+"displayName": "Apollon Limassol",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/525.png"
+}
+}
+]
+},
+{
+"id": "401891771",
+"date": "2026-07-23T16:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "12146",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "576",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "12146",
+"homeAway": "home",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "FLO",
+"shortDisplayName": "Flora",
+"displayName": "Flora",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/12146.png"
+}
+},
+{
+"id": "576",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "TNS",
+"shortDisplayName": "The New Saints",
+"displayName": "The New Saints",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/576.png"
+}
+}
+]
+},
+{
+"id": "401877937",
+"date": "2026-07-23T16:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "502",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "2723",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "502",
+"homeAway": "home",
+"score": "5",
+"winner": true,
+"team": {
+"abbreviation": "HJKH",
+"shortDisplayName": "HJK Helsinki",
+"displayName": "HJK Helsinki",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/502.png"
+}
+},
+{
+"id": "2723",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "COL",
+"shortDisplayName": "Coleraine",
+"displayName": "Coleraine",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2723.png"
+}
+}
+]
+},
+{
+"id": "401893761",
+"date": "2026-07-23T16:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "20718",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "18754",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "20718",
+"homeAway": "home",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "PLI",
+"shortDisplayName": "Paide",
+"displayName": "Paide Linnameeskond",
+"logo": ""
+}
+},
+{
+"id": "18754",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "ZIR",
+"shortDisplayName": "Zira",
+"displayName": "Zira FK",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401878135",
+"date": "2026-07-23T16:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "4039",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "5218",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "4039",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "AEK",
+"shortDisplayName": "AEK Larnaca",
+"displayName": "AEK Larnaca",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/4039.png"
+}
+},
+{
+"id": "5218",
+"homeAway": "away",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "BJE",
+"shortDisplayName": "Beitar",
+"displayName": "Beitar Jerusalem",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/5218.png"
+}
+}
+]
+},
+{
+"id": "401896205",
+"date": "2026-07-23T16:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "19247",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "8070",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "19247",
+"homeAway": "home",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "DUN",
+"shortDisplayName": "Dunajska ",
+"displayName": "Dunajska Streda",
+"logo": ""
+}
+},
+{
+"id": "8070",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "MOS",
+"shortDisplayName": "Velez Mostar",
+"displayName": "Velez Mostar",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401878139",
+"date": "2026-07-23T16:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "21005",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "2698",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "21005",
+"homeAway": "home",
+"score": "3",
+"winner": true,
+"team": {
+"abbreviation": "RAK",
+"shortDisplayName": "Raków",
+"displayName": "Raków Czestochowa",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/21005.png"
+}
+},
+{
+"id": "2698",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "VAL",
+"shortDisplayName": "Valletta",
+"displayName": "Valletta",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2698.png"
+}
+}
+]
+},
+{
+"id": "401896232",
+"date": "2026-07-23T16:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "12030",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "131799",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "12030",
+"homeAway": "home",
+"score": "4",
+"winner": true,
+"team": {
+"abbreviation": "RFS",
+"shortDisplayName": "RFS",
+"displayName": "Rigas Futbola Skola",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/12030.png"
+}
+},
+{
+"id": "131799",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "VES",
+"shortDisplayName": "Vestri",
+"displayName": "Vestri",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401896204",
+"date": "2026-07-23T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "497",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "3076",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "497",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "BATE",
+"shortDisplayName": "BATE",
+"displayName": "BATE Borisov",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/497.png"
+}
+},
+{
+"id": "3076",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "SION",
+"shortDisplayName": "FC Sion ",
+"displayName": "FC Sion",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/3076.png"
+}
+}
+]
+},
+{
+"id": "401896206",
+"date": "2026-07-23T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "498",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "523",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "498",
+"homeAway": "home",
+"score": "3",
+"winner": true,
+"team": {
+"abbreviation": "TBIL",
+"shortDisplayName": "Dinamo Tbilisi",
+"displayName": "Dinamo Tbilisi",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/498.png"
+}
+},
+{
+"id": "523",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "FKZ",
+"shortDisplayName": "Zalgiris Vilnius",
+"displayName": "Zalgiris Vilnius",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/523.png"
+}
+}
+]
+},
+{
+"id": "401878137",
+"date": "2026-07-23T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "8222",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "3101",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "8222",
+"homeAway": "home",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "GAIS",
+"shortDisplayName": "GAIS",
+"displayName": "GAIS",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/8222.png"
+}
+},
+{
+"id": "3101",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "FCN",
+"shortDisplayName": "Nordsjælland",
+"displayName": "FC Nordsjælland",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/3101.png"
+}
+}
+]
+},
+{
+"id": "401892012",
+"date": "2026-07-23T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "131794",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "8281",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "131794",
+"homeAway": "home",
+"score": "3",
+"winner": true,
+"team": {
+"abbreviation": "MLV",
+"shortDisplayName": "ML Vitebsk",
+"displayName": "ML Vitebsk",
+"logo": ""
+}
+},
+{
+"id": "8281",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "SUT",
+"shortDisplayName": "FK Sutjeska",
+"displayName": "FK Sutjeska",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/8281.png"
+}
+}
+]
+},
+{
+"id": "401896208",
+"date": "2026-07-23T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "542",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "519",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "542",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "SCO",
+"shortDisplayName": "Santa Coloma",
+"displayName": "Santa Coloma",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/542.png"
+}
+},
+{
+"id": "519",
+"homeAway": "away",
+"score": "3",
+"winner": true,
+"team": {
+"abbreviation": "VIE",
+"shortDisplayName": "Rapid Vienna",
+"displayName": "Rapid Vienna",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/519.png"
+}
+}
+]
+},
+{
+"id": "401892167",
+"date": "2026-07-23T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "8091",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "620",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "8091",
+"homeAway": "home",
+"score": "2",
+"winner": false,
+"team": {
+"abbreviation": "UNCL",
+"shortDisplayName": "U. Cluj",
+"displayName": "Universitatea Cluj",
+"logo": ""
+}
+},
+{
+"id": "620",
+"homeAway": "away",
+"score": "2",
+"winner": false,
+"team": {
+"abbreviation": "SKBR",
+"shortDisplayName": "SK Brann",
+"displayName": "SK Brann",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/620.png"
+}
+}
+]
+},
+{
+"id": "401878136",
+"date": "2026-07-23T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "540",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "20712",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "540",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "ZIM",
+"shortDisplayName": "Zimbru",
+"displayName": "Zimbru Chisinau",
+"logo": ""
+}
+},
+{
+"id": "20712",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "NOA",
+"shortDisplayName": "FC Noah",
+"displayName": "FC Noah",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/20712.png"
+}
+}
+]
+},
+{
+"id": "401896213",
+"date": "2026-07-23T17:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "562",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "21528",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "562",
+"homeAway": "home",
+"score": "4",
+"winner": true,
+"team": {
+"abbreviation": "FCVA",
+"shortDisplayName": "FC Vaduz",
+"displayName": "FC Vaduz",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/562.png"
+}
+},
+{
+"id": "21528",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "ESC",
+"shortDisplayName": "Escaldes",
+"displayName": "Atlètic Club d'Escaldes",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877936",
+"date": "2026-07-23T17:45Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "484",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "21948",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "484",
+"homeAway": "home",
+"score": "2",
+"winner": false,
+"team": {
+"abbreviation": "FCSB",
+"shortDisplayName": "FCSB",
+"displayName": "FCSB",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/484.png"
+}
+},
+{
+"id": "21948",
+"homeAway": "away",
+"score": "3",
+"winner": true,
+"team": {
+"abbreviation": "AUD",
+"shortDisplayName": "Auda",
+"displayName": "FK Auda",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401896224",
+"date": "2026-07-23T18:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "131800",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "515",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "131800",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "ALU",
+"shortDisplayName": "Aluminij",
+"displayName": "Aluminij",
+"logo": ""
+}
+},
+{
+"id": "515",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "DIN",
+"shortDisplayName": "Dinamo City",
+"displayName": "Dinamo City",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401878134",
+"date": "2026-07-23T18:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "11523",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "443",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "11523",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "PAK",
+"shortDisplayName": "Paksi SE",
+"displayName": "Paksi SE",
+"logo": ""
+}
+},
+{
+"id": "443",
+"homeAway": "away",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "PAO",
+"shortDisplayName": "Panathinaikos",
+"displayName": "Panathinaikos",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/443.png"
+}
+}
+]
+},
+{
+"id": "401878142",
+"date": "2026-07-23T18:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "22294",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "909",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "22294",
+"homeAway": "home",
+"score": "3",
+"winner": false,
+"team": {
+"abbreviation": "POZ",
+"shortDisplayName": "Polissya",
+"displayName": "Polissya Zhitomir",
+"logo": ""
+}
+},
+{
+"id": "909",
+"homeAway": "away",
+"score": "3",
+"winner": false,
+"team": {
+"abbreviation": "KBH",
+"shortDisplayName": "København",
+"displayName": "F.C. København",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/909.png"
+}
+}
+]
+},
+{
+"id": "401883597",
+"date": "2026-07-23T18:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "561",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "7922",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "561",
+"homeAway": "home",
+"score": "3",
+"winner": true,
+"team": {
+"abbreviation": "VAR",
+"shortDisplayName": "Varteks",
+"displayName": "Varteks",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/561.png"
+}
+},
+{
+"id": "7922",
+"homeAway": "away",
+"score": "2",
+"winner": false,
+"team": {
+"abbreviation": "JABL",
+"shortDisplayName": "Jablonec",
+"displayName": "Jablonec",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/7922.png"
+}
+}
+]
+},
+{
+"id": "401896225",
+"date": "2026-07-23T18:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "7825",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "139",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "7825",
+"homeAway": "home",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "VOJ",
+"shortDisplayName": "Vojvodina",
+"displayName": "Vojvodina",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/7825.png"
+}
+},
+{
+"id": "139",
+"homeAway": "away",
+"score": "4",
+"winner": true,
+"team": {
+"abbreviation": "AJA",
+"shortDisplayName": "Ajax",
+"displayName": "Ajax Amsterdam",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/139.png"
+}
+}
+]
+},
+{
+"id": "401892011",
+"date": "2026-07-23T18:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "20710",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "19250",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "20710",
+"homeAway": "home",
+"score": "3",
+"winner": true,
+"team": {
+"abbreviation": "BBL",
+"shortDisplayName": "Banja Luka",
+"displayName": "Borac Banja Luka",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/20710.png"
+}
+},
+{
+"id": "19250",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "PET",
+"shortDisplayName": "Petrocub",
+"displayName": "Petrocub",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/19250.png"
+}
+}
+]
+},
+{
+"id": "401878140",
+"date": "2026-07-23T18:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "7672",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "21944",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "7672",
+"homeAway": "home",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "LUG",
+"shortDisplayName": "FC Lugano",
+"displayName": "FC Lugano",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/7672.png"
+}
+},
+{
+"id": "21944",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "DUK",
+"shortDisplayName": "Dukagjini",
+"displayName": "Dukagjini",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877938",
+"date": "2026-07-23T18:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "1037",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "13018",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "1037",
+"homeAway": "home",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "HTA",
+"shortDisplayName": "Hap Tel Aviv",
+"displayName": "Hapoel Tel Aviv",
+"logo": ""
+}
+},
+{
+"id": "13018",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "LUD",
+"shortDisplayName": "Ludogorets",
+"displayName": "Ludogorets Razgrad",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/13018.png"
+}
+}
+]
+},
+{
+"id": "401879336",
+"date": "2026-07-23T18:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "131795",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "3611",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "131795",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "LNZ",
+"shortDisplayName": "LNZ Cherkasy",
+"displayName": "LNZ Cherkasy",
+"logo": ""
+}
+},
+{
+"id": "3611",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "GENT",
+"shortDisplayName": "KAA Gent",
+"displayName": "KAA Gent",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/3611.png"
+}
+}
+]
+},
+{
+"id": "401896567",
+"date": "2026-07-23T18:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "2491",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "132427",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "2491",
+"homeAway": "home",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "ZIL",
+"shortDisplayName": "MSK Zilina",
+"displayName": "MSK Zilina",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2491.png"
+}
+},
+{
+"id": "132427",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "GKS Katowice",
+"shortDisplayName": "GKS Katowice",
+"displayName": "GKS Katowice",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401878132",
+"date": "2026-07-23T18:45Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "266",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "566",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "266",
+"homeAway": "home",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "MOT",
+"shortDisplayName": "Motherwell",
+"displayName": "Motherwell",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/266.png"
+}
+},
+{
+"id": "566",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "HBTO",
+"shortDisplayName": "HB Torshavn",
+"displayName": "HB Torshavn",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/566.png"
+}
+}
+]
+},
+{
+"id": "401892166",
+"date": "2026-07-23T18:45Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "22288",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "8151",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "22288",
+"homeAway": "home",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "NKB",
+"shortDisplayName": "Bravo",
+"displayName": "NK Bravo",
+"logo": ""
+}
+},
+{
+"id": "8151",
+"homeAway": "away",
+"score": "1",
+"winner": false,
+"team": {
+"abbreviation": "SHK",
+"shortDisplayName": "KF Shkëndija",
+"displayName": "KF Shkëndija",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/8151.png"
+}
+}
+]
+},
+{
+"id": "401896209",
+"date": "2026-07-23T18:45Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "2710",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "3364",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "2710",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "NSIR",
+"shortDisplayName": "NSI Runavik",
+"displayName": "NSI Runavik",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2710.png"
+}
+},
+{
+"id": "3364",
+"homeAway": "away",
+"score": "2",
+"winner": true,
+"team": {
+"abbreviation": "KOP",
+"shortDisplayName": "Koper",
+"displayName": "FC Koper",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401896226",
+"date": "2026-07-23T18:45Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": true,
+"competitors": [
+{
+"id": "2988",
+"aggregateScore": 2.0,
+"winner": true
+},
+{
+"id": "2712",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "2988",
+"homeAway": "home",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "RIJE",
+"shortDisplayName": "Rijeka",
+"displayName": "Rijeka",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2988.png"
+}
+},
+{
+"id": "2712",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "DER",
+"shortDisplayName": "Derry City",
+"displayName": "Derry City",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2712.png"
+}
+}
+]
+},
+{
+"id": "401896214",
+"date": "2026-07-23T18:45Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "20297",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "10376",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "20297",
+"homeAway": "home",
+"score": "5",
+"winner": true,
+"team": {
+"abbreviation": "SHE",
+"shortDisplayName": "Shelbourne",
+"displayName": "Shelbourne",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/20297.png"
+}
+},
+{
+"id": "10376",
+"homeAway": "away",
+"score": "2",
+"winner": false,
+"team": {
+"abbreviation": "KALJ",
+"shortDisplayName": "Nomme Kalju",
+"displayName": "Nomme Kalju",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/10376.png"
+}
+}
+]
+},
+{
+"id": "401891669",
+"date": "2026-07-23T19:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "541",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "22291",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "541",
+"homeAway": "home",
+"score": "4",
+"winner": true,
+"team": {
+"abbreviation": "PART",
+"shortDisplayName": "FK Partizan",
+"displayName": "Partizan Belgrade",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/541.png"
+}
+},
+{
+"id": "22291",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "UNA",
+"shortDisplayName": "Strassen",
+"displayName": "UNA Strassen",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401896203",
+"date": "2026-07-23T19:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "7949",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "19248",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "7949",
+"homeAway": "home",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "STJ",
+"shortDisplayName": "Stjarnan",
+"displayName": "Stjarnan",
+"logo": ""
+}
+},
+{
+"id": "19248",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "FCI",
+"shortDisplayName": "FC Ilves",
+"displayName": "FC Ilves",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401878138",
+"date": "2026-07-23T19:15Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "FT",
+"completed": true,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "6742",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "5239",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "6742",
+"homeAway": "home",
+"score": "1",
+"winner": true,
+"team": {
+"abbreviation": "VAL",
+"shortDisplayName": "V Reykjavik",
+"displayName": "Valur Reykjavik",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/6742.png"
+}
+},
+{
+"id": "5239",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "ZRIN",
+"shortDisplayName": "Zrinjski",
+"displayName": "Zrinjski Mostar",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/5239.png"
+}
+}
+]
+},
+{
+"id": "401896216",
+"date": "2026-07-28T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "525",
+"aggregateScore": 4.0,
+"winner": false
+},
+{
+"id": "8284",
+"aggregateScore": 0.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "525",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "APL",
+"shortDisplayName": "Apollon Limassol",
+"displayName": "Apollon Limassol",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/525.png"
+}
+},
+{
+"id": "8284",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "DGO",
+"shortDisplayName": "Dila Gori",
+"displayName": "Dila Gori",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/8284.png"
+}
+}
+]
+},
+{
+"id": "401891722",
+"date": "2026-07-28T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "19246",
+"aggregateScore": 3.0,
+"winner": false
+},
+{
+"id": "560",
+"aggregateScore": 2.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "19246",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "RIG",
+"shortDisplayName": "Riga FC",
+"displayName": "Riga FC",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/19246.png"
+}
+},
+{
+"id": "560",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "VAR",
+"shortDisplayName": "Vardar",
+"displayName": "Vardar",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/560.png"
+}
+}
+]
+},
+{
+"id": "401878129",
+"date": "2026-07-28T17:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "21947",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "3929",
+"aggregateScore": 0.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "21947",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "UCKA",
+"shortDisplayName": "CSKA 1948",
+"displayName": "CSKA 1948 Sofia",
+"logo": ""
+}
+},
+{
+"id": "3929",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "FCSP",
+"shortDisplayName": "Spartak Trnava",
+"displayName": "FC Spartak Trnava",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/3929.png"
+}
+}
+]
+},
+{
+"id": "401891783",
+"date": "2026-07-28T18:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 3,
+"displayValue": "3rd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "19243",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "7857",
+"aggregateScore": 0.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "19243",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "DRI",
+"shortDisplayName": "Drita Gjilan",
+"displayName": "Drita Gjilan",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/19243.png"
+}
+},
+{
+"id": "7857",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "FLO",
+"shortDisplayName": "Floriana",
+"displayName": "Floriana FC",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401878124",
+"date": "2026-07-29T14:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "21944",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "7672",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "21944",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "DUK",
+"shortDisplayName": "Dukagjini",
+"displayName": "Dukagjini",
+"logo": ""
+}
+},
+{
+"id": "7672",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "LUG",
+"shortDisplayName": "FC Lugano",
+"displayName": "FC Lugano",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/7672.png"
+}
+}
+]
+},
+{
+"id": "401877935",
+"date": "2026-07-29T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "909",
+"aggregateScore": 3.0,
+"winner": false
+},
+{
+"id": "22294",
+"aggregateScore": 3.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "909",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "KBH",
+"shortDisplayName": "København",
+"displayName": "F.C. København",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/909.png"
+}
+},
+{
+"id": "22294",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "POZ",
+"shortDisplayName": "Polissya",
+"displayName": "Polissya Zhitomir",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401896201",
+"date": "2026-07-29T18:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "519",
+"aggregateScore": 3.0,
+"winner": false
+},
+{
+"id": "542",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "519",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "VIE",
+"shortDisplayName": "Rapid Vienna",
+"displayName": "Rapid Vienna",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/519.png"
+}
+},
+{
+"id": "542",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "SCO",
+"shortDisplayName": "Santa Coloma",
+"displayName": "Santa Coloma",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/542.png"
+}
+}
+]
+},
+{
+"id": "401896211",
+"date": "2026-07-30T14:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "21528",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "562",
+"aggregateScore": 4.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "21528",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "ESC",
+"shortDisplayName": "Escaldes",
+"displayName": "Atlètic Club d'Escaldes",
+"logo": ""
+}
+},
+{
+"id": "562",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "FCVA",
+"shortDisplayName": "FC Vaduz",
+"displayName": "FC Vaduz",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/562.png"
+}
+}
+]
+},
+{
+"id": "401878126",
+"date": "2026-07-30T14:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "6748",
+"aggregateScore": 1.0,
+"winner": false
+},
+{
+"id": "21004",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "6748",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "TOB",
+"shortDisplayName": "Tobol Kostanay",
+"displayName": "Tobol Kostanay",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/6748.png"
+}
+},
+{
+"id": "21004",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "PAN",
+"shortDisplayName": "Panevezys",
+"displayName": "Panevezys",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401896198",
+"date": "2026-07-30T16:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "19248",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "7949",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "19248",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "FCI",
+"shortDisplayName": "FC Ilves",
+"displayName": "FC Ilves",
+"logo": ""
+}
+},
+{
+"id": "7949",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "STJ",
+"shortDisplayName": "Stjarnan",
+"displayName": "Stjarnan",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401893758",
+"date": "2026-07-30T16:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "3726",
+"aggregateScore": 1.0,
+"winner": false
+},
+{
+"id": "7914",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "3726",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "ITU",
+"shortDisplayName": "Inter Turku",
+"displayName": "FC Inter Turku",
+"logo": ""
+}
+},
+{
+"id": "7914",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "IBFK",
+"shortDisplayName": "Istanbul BB",
+"displayName": "Istanbul Basaksehir",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/7914.png"
+}
+}
+]
+},
+{
+"id": "401877932",
+"date": "2026-07-30T16:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "20712",
+"aggregateScore": 1.0,
+"winner": false
+},
+{
+"id": "540",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "20712",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "NOA",
+"shortDisplayName": "FC Noah",
+"displayName": "FC Noah",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/20712.png"
+}
+},
+{
+"id": "540",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "ZIM",
+"shortDisplayName": "Zimbru",
+"displayName": "Zimbru Chisinau",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401878122",
+"date": "2026-07-30T16:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "21948",
+"aggregateScore": 3.0,
+"winner": false
+},
+{
+"id": "484",
+"aggregateScore": 2.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "21948",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "AUD",
+"shortDisplayName": "Auda",
+"displayName": "FK Auda",
+"logo": ""
+}
+},
+{
+"id": "484",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "FCSB",
+"shortDisplayName": "FCSB",
+"displayName": "FCSB",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/484.png"
+}
+}
+]
+},
+{
+"id": "401883598",
+"date": "2026-07-30T16:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "7922",
+"aggregateScore": 2.0,
+"winner": false
+},
+{
+"id": "561",
+"aggregateScore": 3.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "7922",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "JABL",
+"shortDisplayName": "Jablonec",
+"displayName": "Jablonec",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/7922.png"
+}
+},
+{
+"id": "561",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "VAR",
+"shortDisplayName": "Varteks",
+"displayName": "Varteks",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/561.png"
+}
+}
+]
+},
+{
+"id": "401896210",
+"date": "2026-07-30T16:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "10376",
+"aggregateScore": 2.0,
+"winner": false
+},
+{
+"id": "20297",
+"aggregateScore": 5.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "10376",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "KALJ",
+"shortDisplayName": "Nomme Kalju",
+"displayName": "Nomme Kalju",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/10376.png"
+}
+},
+{
+"id": "20297",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "SHE",
+"shortDisplayName": "Shelbourne",
+"displayName": "Shelbourne",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/20297.png"
+}
+}
+]
+},
+{
+"id": "401893759",
+"date": "2026-07-30T16:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "2493",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "532",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "2493",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "PYU",
+"shortDisplayName": "Pyunik",
+"displayName": "Pyunik",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2493.png"
+}
+},
+{
+"id": "532",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "DEBR",
+"shortDisplayName": "Debrecen",
+"displayName": "Debrecen",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401893757",
+"date": "2026-07-30T16:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "18754",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "20718",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "18754",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "ZIR",
+"shortDisplayName": "Zira",
+"displayName": "Zira FK",
+"logo": ""
+}
+},
+{
+"id": "20718",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "PLI",
+"shortDisplayName": "Paide",
+"displayName": "Paide Linnameeskond",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401896197",
+"date": "2026-07-30T16:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "2540",
+"aggregateScore": 2.0,
+"winner": false
+},
+{
+"id": "2556",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "2540",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "LVT",
+"shortDisplayName": "Levadia Tallinn",
+"displayName": "FC Levadia Tallinn",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2540.png"
+}
+},
+{
+"id": "2556",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "GOT",
+"shortDisplayName": "Göteborg",
+"displayName": "IFK Göteborg",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2556.png"
+}
+}
+]
+},
+{
+"id": "401896220",
+"date": "2026-07-30T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "2539",
+"aggregateScore": 4.0,
+"winner": false
+},
+{
+"id": "504",
+"aggregateScore": 2.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "2539",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "MNSK",
+"shortDisplayName": "Dinamo Minsk",
+"displayName": "Dinamo Minsk",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2539.png"
+}
+},
+{
+"id": "504",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "NEF",
+"shortDisplayName": "Neftchi",
+"displayName": "Neftchi",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/504.png"
+}
+}
+]
+},
+{
+"id": "401878127",
+"date": "2026-07-30T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "3101",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "8222",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "3101",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "FCN",
+"shortDisplayName": "Nordsjælland",
+"displayName": "FC Nordsjælland",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/3101.png"
+}
+},
+{
+"id": "8222",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "GAIS",
+"shortDisplayName": "GAIS",
+"displayName": "GAIS",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/8222.png"
+}
+}
+]
+},
+{
+"id": "401891986",
+"date": "2026-07-30T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "12367",
+"aggregateScore": 6.0,
+"winner": false
+},
+{
+"id": "131796",
+"aggregateScore": 2.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "12367",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "GYR",
+"shortDisplayName": "Györi ETO",
+"displayName": "Györi ETO FC",
+"logo": ""
+}
+},
+{
+"id": "131796",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "ATB",
+"shortDisplayName": "Atert",
+"displayName": "FC Atert Bissen",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401877934",
+"date": "2026-07-30T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "566",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "266",
+"aggregateScore": 2.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "566",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "HBTO",
+"shortDisplayName": "HB Torshavn",
+"displayName": "HB Torshavn",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/566.png"
+}
+},
+{
+"id": "266",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "MOT",
+"shortDisplayName": "Motherwell",
+"displayName": "Motherwell",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/266.png"
+}
+}
+]
+},
+{
+"id": "401891985",
+"date": "2026-07-30T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "19250",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "20710",
+"aggregateScore": 3.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "19250",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "PET",
+"shortDisplayName": "Petrocub",
+"displayName": "Petrocub",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/19250.png"
+}
+},
+{
+"id": "20710",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "BBL",
+"shortDisplayName": "Banja Luka",
+"displayName": "Borac Banja Luka",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/20710.png"
+}
+}
+]
+},
+{
+"id": "401896221",
+"date": "2026-07-30T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "620",
+"aggregateScore": 2.0,
+"winner": false
+},
+{
+"id": "8091",
+"aggregateScore": 2.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "620",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "SKBR",
+"shortDisplayName": "SK Brann",
+"displayName": "SK Brann",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/620.png"
+}
+},
+{
+"id": "8091",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "UNCL",
+"shortDisplayName": "U. Cluj",
+"displayName": "Universitatea Cluj",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401896200",
+"date": "2026-07-30T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "8070",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "19247",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "8070",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "MOS",
+"shortDisplayName": "Velez Mostar",
+"displayName": "Velez Mostar",
+"logo": ""
+}
+},
+{
+"id": "19247",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "DUN",
+"shortDisplayName": "Dunajska ",
+"displayName": "Dunajska Streda",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401896196",
+"date": "2026-07-30T17:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "523",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "498",
+"aggregateScore": 3.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "523",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "FKZ",
+"shortDisplayName": "Zalgiris Vilnius",
+"displayName": "Zalgiris Vilnius",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/523.png"
+}
+},
+{
+"id": "498",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "TBIL",
+"shortDisplayName": "Dinamo Tbilisi",
+"displayName": "Dinamo Tbilisi",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/498.png"
+}
+}
+]
+},
+{
+"id": "401877933",
+"date": "2026-07-30T17:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "5218",
+"aggregateScore": 1.0,
+"winner": false
+},
+{
+"id": "4039",
+"aggregateScore": 0.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "5218",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "BJE",
+"shortDisplayName": "Beitar",
+"displayName": "Beitar Jerusalem",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/5218.png"
+}
+},
+{
+"id": "4039",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "AEK",
+"shortDisplayName": "AEK Larnaca",
+"displayName": "AEK Larnaca",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/4039.png"
+}
+}
+]
+},
+{
+"id": "401896218",
+"date": "2026-07-30T17:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 4,
+"displayValue": "4th Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "2712",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "2988",
+"aggregateScore": 0.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "2712",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "DER",
+"shortDisplayName": "Derry City",
+"displayName": "Derry City",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2712.png"
+}
+},
+{
+"id": "2988",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "RIJE",
+"shortDisplayName": "Rijeka",
+"displayName": "Rijeka",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2988.png"
+}
+}
+]
+},
+{
+"id": "401891784",
+"date": "2026-07-30T17:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "576",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "12146",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "576",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "TNS",
+"shortDisplayName": "The New Saints",
+"displayName": "The New Saints",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/576.png"
+}
+},
+{
+"id": "12146",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "FLO",
+"shortDisplayName": "Flora",
+"displayName": "Flora",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/12146.png"
+}
+}
+]
+},
+{
+"id": "401878121",
+"date": "2026-07-30T17:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "2698",
+"aggregateScore": 1.0,
+"winner": false
+},
+{
+"id": "21005",
+"aggregateScore": 3.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "2698",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "VAL",
+"shortDisplayName": "Valletta",
+"displayName": "Valletta",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2698.png"
+}
+},
+{
+"id": "21005",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "RAK",
+"shortDisplayName": "Raków",
+"displayName": "Raków Czestochowa",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/21005.png"
+}
+}
+]
+},
+{
+"id": "401896219",
+"date": "2026-07-30T18:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "139",
+"aggregateScore": 4.0,
+"winner": false
+},
+{
+"id": "7825",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "139",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "AJA",
+"shortDisplayName": "Ajax",
+"displayName": "Ajax Amsterdam",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/139.png"
+}
+},
+{
+"id": "7825",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "VOJ",
+"shortDisplayName": "Vojvodina",
+"displayName": "Vojvodina",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/7825.png"
+}
+}
+]
+},
+{
+"id": "401896212",
+"date": "2026-07-30T18:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "21526",
+"aggregateScore": 1.0,
+"winner": false
+},
+{
+"id": "615",
+"aggregateScore": 2.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "21526",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "BAL",
+"shortDisplayName": "Ballkani",
+"displayName": "Ballkani",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/21526.png"
+}
+},
+{
+"id": "615",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "BOH",
+"shortDisplayName": "Bohemians",
+"displayName": "Bohemians",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/615.png"
+}
+}
+]
+},
+{
+"id": "401892165",
+"date": "2026-07-30T18:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "8151",
+"aggregateScore": 1.0,
+"winner": false
+},
+{
+"id": "22288",
+"aggregateScore": 2.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "8151",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "SHK",
+"shortDisplayName": "KF Shkëndija",
+"displayName": "KF Shkëndija",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/8151.png"
+}
+},
+{
+"id": "22288",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "NKB",
+"shortDisplayName": "Bravo",
+"displayName": "NK Bravo",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401878130",
+"date": "2026-07-30T18:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "13018",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "1037",
+"aggregateScore": 2.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "13018",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "LUD",
+"shortDisplayName": "Ludogorets",
+"displayName": "Ludogorets Razgrad",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/13018.png"
+}
+},
+{
+"id": "1037",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "HTA",
+"shortDisplayName": "Hap Tel Aviv",
+"displayName": "Hapoel Tel Aviv",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401892168",
+"date": "2026-07-30T18:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "131799",
+"aggregateScore": 1.0,
+"winner": false
+},
+{
+"id": "12030",
+"aggregateScore": 4.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "131799",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "VES",
+"shortDisplayName": "Vestri",
+"displayName": "Vestri",
+"logo": ""
+}
+},
+{
+"id": "12030",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "RFS",
+"shortDisplayName": "RFS",
+"displayName": "Rigas Futbola Skola",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/12030.png"
+}
+}
+]
+},
+{
+"id": "401896199",
+"date": "2026-07-30T18:15Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "3076",
+"aggregateScore": 1.0,
+"winner": false
+},
+{
+"id": "497",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "3076",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "SION",
+"shortDisplayName": "FC Sion ",
+"displayName": "FC Sion",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/3076.png"
+}
+},
+{
+"id": "497",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "BATE",
+"shortDisplayName": "BATE",
+"displayName": "BATE Borisov",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/497.png"
+}
+}
+]
+},
+{
+"id": "401891666",
+"date": "2026-07-30T18:15Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "22291",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "541",
+"aggregateScore": 4.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "22291",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "UNA",
+"shortDisplayName": "Strassen",
+"displayName": "UNA Strassen",
+"logo": ""
+}
+},
+{
+"id": "541",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "PART",
+"shortDisplayName": "FK Partizan",
+"displayName": "Partizan Belgrade",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/541.png"
+}
+}
+]
+},
+{
+"id": "401891918",
+"date": "2026-07-30T18:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "1382",
+"aggregateScore": 2.0,
+"winner": false
+},
+{
+"id": "18283",
+"aggregateScore": 0.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "1382",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "VIE",
+"shortDisplayName": "Vienna",
+"displayName": "Austria Vienna",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/1382.png"
+}
+},
+{
+"id": "18283",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "FKL",
+"shortDisplayName": "FK Liepaja",
+"displayName": "FK Liepaja",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/18283.png"
+}
+}
+]
+},
+{
+"id": "401893760",
+"date": "2026-07-30T18:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "5260",
+"aggregateScore": 1.0,
+"winner": false
+},
+{
+"id": "17858",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "5260",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "CLUJ",
+"shortDisplayName": "CFR Cluj",
+"displayName": "CFR Cluj-Napoca",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/5260.png"
+}
+},
+{
+"id": "17858",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "ALA",
+"shortDisplayName": "Alashkert",
+"displayName": "Alashkert FC",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/17858.png"
+}
+}
+]
+},
+{
+"id": "401896566",
+"date": "2026-07-30T18:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "132427",
+"aggregateScore": 1.0,
+"winner": false
+},
+{
+"id": "2491",
+"aggregateScore": 2.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "132427",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "GKS Katowice",
+"shortDisplayName": "GKS Katowice",
+"displayName": "GKS Katowice",
+"logo": ""
+}
+},
+{
+"id": "2491",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "ZIL",
+"shortDisplayName": "MSK Zilina",
+"displayName": "MSK Zilina",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2491.png"
+}
+}
+]
+},
+{
+"id": "401879335",
+"date": "2026-07-30T18:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "3611",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "131795",
+"aggregateScore": 0.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "3611",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "GENT",
+"shortDisplayName": "KAA Gent",
+"displayName": "KAA Gent",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/3611.png"
+}
+},
+{
+"id": "131795",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "LNZ",
+"shortDisplayName": "LNZ Cherkasy",
+"displayName": "LNZ Cherkasy",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401878125",
+"date": "2026-07-30T18:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "443",
+"aggregateScore": 2.0,
+"winner": false
+},
+{
+"id": "11523",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "443",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "PAO",
+"shortDisplayName": "Panathinaikos",
+"displayName": "Panathinaikos",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/443.png"
+}
+},
+{
+"id": "11523",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "PAK",
+"shortDisplayName": "Paksi SE",
+"displayName": "Paksi SE",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401878128",
+"date": "2026-07-30T18:30Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "5239",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "6742",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "5239",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "ZRIN",
+"shortDisplayName": "Zrinjski",
+"displayName": "Zrinjski Mostar",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/5239.png"
+}
+},
+{
+"id": "6742",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "VAL",
+"shortDisplayName": "V Reykjavik",
+"displayName": "Valur Reykjavik",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/6742.png"
+}
+}
+]
+},
+{
+"id": "401878123",
+"date": "2026-07-30T18:45Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "2723",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "502",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "2723",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "COL",
+"shortDisplayName": "Coleraine",
+"displayName": "Coleraine",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2723.png"
+}
+},
+{
+"id": "502",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "HJKH",
+"shortDisplayName": "HJK Helsinki",
+"displayName": "HJK Helsinki",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/502.png"
+}
+}
+]
+},
+{
+"id": "401896202",
+"date": "2026-07-30T18:45Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "3364",
+"aggregateScore": 2.0,
+"winner": false
+},
+{
+"id": "2710",
+"aggregateScore": 0.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "3364",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "KOP",
+"shortDisplayName": "Koper",
+"displayName": "FC Koper",
+"logo": ""
+}
+},
+{
+"id": "2710",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "NSIR",
+"shortDisplayName": "NSI Runavik",
+"displayName": "NSI Runavik",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2710.png"
+}
+}
+]
+},
+{
+"id": "401878120",
+"date": "2026-07-30T19:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 1,
+"displayValue": "1st Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "2994",
+"aggregateScore": null,
+"winner": false
+},
+{
+"id": "22298",
+"aggregateScore": null,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "2994",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "SCB",
+"shortDisplayName": "Braga",
+"displayName": "Braga",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2994.png"
+}
+},
+{
+"id": "22298",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "PAN",
+"shortDisplayName": "Pancevo",
+"displayName": "Zeleznicar Pancevo",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401896217",
+"date": "2026-07-30T19:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "515",
+"aggregateScore": 1.0,
+"winner": false
+},
+{
+"id": "131800",
+"aggregateScore": 1.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "515",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "DIN",
+"shortDisplayName": "Dinamo City",
+"displayName": "Dinamo City",
+"logo": ""
+}
+},
+{
+"id": "131800",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "ALU",
+"shortDisplayName": "Aluminij",
+"displayName": "Aluminij",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401892009",
+"date": "2026-07-30T19:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "8281",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "131794",
+"aggregateScore": 3.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "8281",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "SUT",
+"shortDisplayName": "FK Sutjeska",
+"displayName": "FK Sutjeska",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/8281.png"
+}
+},
+{
+"id": "131794",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "MLV",
+"shortDisplayName": "ML Vitebsk",
+"displayName": "ML Vitebsk",
+"logo": ""
+}
+}
+]
+},
+{
+"id": "401891834",
+"date": "2026-07-30T19:00Z",
+"season": {
+"year": 2026,
+"type": 14294,
+"slug": "second-round"
+},
+"status": "Scheduled",
+"completed": false,
+"leg": {
+"value": 2,
+"displayValue": "2nd Leg"
+},
+"series": {
+"title": "Second Round",
+"completed": false,
+"competitors": [
+{
+"id": "258",
+"aggregateScore": 0.0,
+"winner": false
+},
+{
+"id": "22287",
+"aggregateScore": 2.0,
+"winner": false
+}
+]
+},
+"competitors": [
+{
+"id": "258",
+"homeAway": "home",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "HIBS",
+"shortDisplayName": "Hibernian",
+"displayName": "Hibernian",
+"logo": "https://a.espncdn.com/i/teamlogos/soccer/500/258.png"
+}
+},
+{
+"id": "22287",
+"homeAway": "away",
+"score": "0",
+"winner": false,
+"team": {
+"abbreviation": "KFM",
+"shortDisplayName": "Malisheva",
+"displayName": "KF Malisheva",
+"logo": ""
+}
+}
+]
+}
+]

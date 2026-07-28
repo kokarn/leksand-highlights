@@ -190,3 +190,32 @@ test('standings route exists and reuses StandingsTable + league config', () => {
     assert.match(teamScreen, /leaguesForTeam/);
     assert.match(teamScreen, /\/standings\//);
 });
+
+test('knockout leagues expose a bracket, not a standings table', async () => {
+    const { getLeagueBySlug } = await importApp('constants/teamFamilies.js');
+    for (const slug of ['europa-league-qual', 'conference-league-qual']) {
+        const league = getLeagueBySlug(slug);
+        assert.equal(league.hasStandings, false, `${slug} has no table`);
+        assert.equal(league.hasBracket, true, `${slug} has a bracket`);
+    }
+    // Round-robin leagues do not advertise a bracket.
+    for (const slug of ['allsvenskan', 'shl', 'hockeyallsvenskan']) {
+        assert.notEqual(getLeagueBySlug(slug).hasBracket, true, `${slug} is not a bracket`);
+    }
+});
+
+test('bracket route + screen exist and team page links to them', () => {
+    const routePath = path.join(appDir, 'app', 'bracket', '[league].js');
+    assert.equal(fs.existsSync(routePath), true, 'expected /bracket/[league] route to exist');
+    const screenPath = path.join(appDir, 'components', 'LeagueBracketScreen.js');
+    assert.equal(fs.existsSync(screenPath), true, 'expected LeagueBracketScreen to exist');
+    const screen = fs.readFileSync(screenPath, 'utf8');
+    assert.match(screen, /fetchBracket/);
+    // tap-to-trace: seeded vs advanced origin handling
+    assert.match(screen, /Seeded into/);
+    assert.match(screen, /Advanced from/);
+    // Team page renders a "View bracket" link to the route.
+    const teamScreen = fs.readFileSync(path.join(appDir, 'components', 'TeamGamesScreen.js'), 'utf8');
+    assert.match(teamScreen, /bracketLeagues/);
+    assert.match(teamScreen, /\/bracket\//);
+});
