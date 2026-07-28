@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { useTheme } from '../contexts';
-import { fetchBracket } from '../api/shl';
+import { fetchBracket, resolveMediaUrl } from '../api/shl';
 
 const COL_WIDTH = 240;
 const CARD_HEIGHT = 78;
@@ -101,7 +101,7 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
                 style={[styles.teamRow, top && styles.teamRowTop, isHi && { backgroundColor: colors.chipActive }]}
             >
                 {team.logo ? (
-                    <Image source={{ uri: team.logo }} style={styles.logo} resizeMode="contain" />
+                    <Image source={{ uri: resolveMediaUrl(team.logo) }} style={styles.logo} resizeMode="contain" />
                 ) : (
                     <View style={[styles.logo, styles.logoPlaceholder, { backgroundColor: colors.separator }]} />
                 )}
@@ -187,7 +187,7 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
                     <Pressable style={[styles.popover, { backgroundColor: colors.card, borderColor: colors.cardBorder }]} onPress={() => {}}>
                         <View style={styles.popHeader}>
                             {selected.team.logo ? (
-                                <Image source={{ uri: selected.team.logo }} style={styles.popLogo} resizeMode="contain" />
+                                <Image source={{ uri: resolveMediaUrl(selected.team.logo) }} style={styles.popLogo} resizeMode="contain" />
                             ) : (
                                 <View style={[styles.popLogo, styles.logoPlaceholder, { backgroundColor: colors.separator }]} />
                             )}
