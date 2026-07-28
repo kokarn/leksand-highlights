@@ -134,6 +134,11 @@ const pendingTeam = (name, tieNumber, side) => ({
     fromTieKey: null
 });
 
+const slotCandidates = (name) => {
+    const match = String(name || '').match(/^(?:Winner|Loser):\s*(.+)$/i);
+    return match ? match[1].split(' / ').map((candidate) => candidate.trim()).filter(Boolean) : [];
+};
+
 function parseSportsSeriesRound(wikitext, sectionCode, title) {
     const sectionPattern = new RegExp(`<section begin=["']?${sectionCode}["']?\\s*\\/>([\\s\\S]*?)<section end=["']?${sectionCode}["']?\\s*\\/>`, 'i');
     const section = String(wikitext || '').match(sectionPattern)?.[1] || '';
@@ -158,16 +163,15 @@ function parseSportsSeriesRound(wikitext, sectionCode, title) {
         const tieNumber = fields[2].match(/\d+/)?.[0] || String(ties.length + 1);
         const firstDate = isoDate(fields[5]);
         const secondDate = isoDate(fields[6]);
+        const teamNames = [describeSlot(fields[0]), describeSlot(fields[3])];
         ties.push({
             key: `draw-${sectionCode.toLowerCase()}-${tieNumber}`,
             round: title,
             completed: false,
             pending: true,
             winnerId: null,
-            teams: [
-                pendingTeam(describeSlot(fields[0]), tieNumber, 'a'),
-                pendingTeam(describeSlot(fields[3]), tieNumber, 'b')
-            ],
+            teams: [pendingTeam(teamNames[0], tieNumber, 'a'), pendingTeam(teamNames[1], tieNumber, 'b')],
+            feederCandidates: teamNames.map(slotCandidates),
             legs: [
                 { leg: 1, homeId: null, awayId: null, homeScore: null, awayScore: null, status: 'Scheduled', date: firstDate },
                 { leg: 2, homeId: null, awayId: null, homeScore: null, awayScore: null, status: 'Scheduled', date: secondDate }
@@ -236,10 +240,35 @@ async function fetchConferenceFutureRounds() {
 
 function mergeFutureRounds(bracket, futureRounds) {
     const existing = new Set((bracket?.rounds || []).map((round) => round.title));
-    return {
-        ...bracket,
-        rounds: [...(bracket?.rounds || []), ...(futureRounds || []).filter((round) => !existing.has(round.title))]
+    const rounds = [...(bracket?.rounds || []), ...(futureRounds || []).filter((round) => !existing.has(round.title))];
+    const aliases = new Map([
+        ['valur', 'v reykjavik'],
+        ['fc nordsjælland', 'nordsjælland'],
+        ['zrinjski mostar', 'zrinjski']
+    ]);
+    const normalize = (value) => {
+        const normalized = String(value || '').toLowerCase().replace(/[^a-z0-9æøåäöü]+/g, ' ').trim();
+        return aliases.get(normalized) || normalized;
     };
+
+    for (let roundIndex = 1; roundIndex < rounds.length; roundIndex += 1) {
+        const previousTies = rounds[roundIndex - 1]?.ties || [];
+        for (const tie of rounds[roundIndex]?.ties || []) {
+            if (!Array.isArray(tie.feederCandidates)) {
+                continue;
+            }
+            tie.feederTieKeys = tie.feederCandidates.map((candidateNames) => {
+                const wanted = candidateNames.map(normalize);
+                const feeder = previousTies.find((previousTie) => {
+                    const actual = (previousTie.teams || []).map((team) => normalize(team.name));
+                    return wanted.every((name) => actual.includes(name));
+                });
+                return feeder?.key || null;
+            }).filter(Boolean);
+        }
+    }
+
+    return { ...bracket, rounds };
 }
 
 module.exports = {

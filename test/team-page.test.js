@@ -216,8 +216,9 @@ test('bracket route + screen exist and team page links to them', () => {
     assert.match(screen, /Advanced from/);
     // Round lanes must be visually distinct and connectors must show progression.
     assert.match(screen, /roundLane/);
-    assert.match(screen, /progressionConnector/);
-    assert.match(screen, /connectorArrow/);
+    assert.match(screen, /feederTieKeys/);
+    assert.match(screen, /buildTraditionalBracketLayout/);
+    assert.match(screen, /tieConnector/);
     // Team page renders a "View bracket" link to the route.
     const teamScreen = fs.readFileSync(path.join(appDir, 'components', 'TeamGamesScreen.js'), 'utf8');
     assert.match(teamScreen, /bracketLeagues/);

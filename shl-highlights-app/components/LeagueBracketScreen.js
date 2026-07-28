@@ -9,7 +9,42 @@ import { useTheme } from '../contexts';
 import { fetchBracket, resolveMediaUrl } from '../api/shl';
 
 const COL_WIDTH = 240;
-const CARD_GAP = 20;
+const CARD_HEIGHT = 94;
+const CARD_GAP = 18;
+const LANE_PADDING = 10;
+
+const tieFeeders = (tie) => {
+    const explicit = tie?.feederTieKeys || [];
+    const resolved = (tie?.teams || []).map((team) => team.fromTieKey).filter(Boolean);
+    return [...new Set([...explicit, ...resolved])];
+};
+
+export const buildTraditionalBracketLayout = (rounds) => {
+    const positions = new Map();
+    const roundLayouts = [];
+
+    for (let roundIndex = 0; roundIndex < (rounds || []).length; roundIndex += 1) {
+        const round = rounds[roundIndex];
+        let nextFreeTop = 0;
+        const ties = (round.ties || []).map((tie) => {
+            const feederCenters = tieFeeders(tie)
+                .map((key) => positions.get(key))
+                .filter((value) => Number.isFinite(value));
+            const idealCenter = feederCenters.length > 0
+                ? feederCenters.reduce((sum, value) => sum + value, 0) / feederCenters.length
+                : nextFreeTop + CARD_HEIGHT / 2;
+            const top = Math.max(nextFreeTop, idealCenter - CARD_HEIGHT / 2);
+            const center = top + CARD_HEIGHT / 2;
+            positions.set(tie.key, center);
+            nextFreeTop = top + CARD_HEIGHT + CARD_GAP;
+            return { tie, top, center };
+        });
+        roundLayouts.push({ ...round, ties, height: Math.max(nextFreeTop, CARD_HEIGHT + CARD_GAP) });
+    }
+
+    const height = Math.max(420, ...roundLayouts.map((round) => round.height));
+    return { rounds: roundLayouts, positions, height };
+};
 
 const shortDate = (value) => {
     if (!value) {
@@ -82,6 +117,8 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
         return map;
     }, [data]);
 
+    const bracketLayout = useMemo(() => buildTraditionalBracketLayout(data?.rounds || []), [data]);
+
     const highlight = String(highlightTeamCode || '').toUpperCase();
 
     const teamMatchesHighlight = useCallback((team) => Boolean(highlight) && (
@@ -90,7 +127,7 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
     ), [highlight]);
 
     const roundContainsHighlight = useCallback((round) => {
-        return (round?.ties || []).some((tie) => tie.teams.some(teamMatchesHighlight));
+        return (round?.ties || []).some((entry) => (entry.tie || entry).teams.some(teamMatchesHighlight));
     }, [teamMatchesHighlight]);
 
     const openTeam = useCallback((team) => {
@@ -187,10 +224,9 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
                 <>
                     <Text style={[styles.hint, { color: colors.textMuted }]}>Scroll sideways through the rounds · tap a team to trace its path</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
-                        {data.rounds.map((round, roundIndex) => {
+                        {bracketLayout.rounds.map((round, roundIndex) => {
                             const laneIsHighlighted = roundContainsHighlight(round);
-                            const nextRound = data.rounds[roundIndex + 1];
-                            const connectorIsHighlighted = laneIsHighlighted || roundContainsHighlight(nextRound);
+                            const nextRound = bracketLayout.rounds[roundIndex + 1];
                             return (
                             <View
                                 key={round.title}
@@ -220,8 +256,36 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
                                     </Text>
                                     </View>
                                 </View>
-                                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.vScroll}>
-                                    {round.ties.map((tie) => renderTie(tie, round.title))}
+                                <View style={[styles.bracketCanvas, { height: bracketLayout.height + LANE_PADDING * 2 }]}>
+                                    {round.ties.map(({ tie, top, center }) => (
+                                        <View key={tie.key} style={[styles.positionedTie, { top: top + LANE_PADDING }]}>
+                                            {renderTie(tie, round.title)}
+                                            {nextRound && (
+                                                <>
+                                                    {nextRound.ties
+                                                        .filter(({ tie: nextTie }) => tieFeeders(nextTie).includes(tie.key))
+                                                        .map(({ tie: nextTie, center: nextCenter }) => {
+                                                            const targetY = nextCenter + LANE_PADDING;
+                                                            const sourceY = center + LANE_PADDING;
+                                                            const delta = targetY - sourceY;
+                                                            const isPath = tie.teams.some(teamMatchesHighlight) || nextTie.teams.some(teamMatchesHighlight);
+                                                            const lineColor = isPath ? colors.accent : colors.cardBorder;
+                                                            return (
+                                                                <View key={`${tie.key}-${nextTie.key}`} style={styles.tieConnector} pointerEvents="none">
+                                                                    <View style={[styles.tieConnectorHorizontal, { backgroundColor: lineColor }]} />
+                                                                    <View style={[
+                                                                        styles.tieConnectorVertical,
+                                                                        { backgroundColor: lineColor, top: Math.min(0, delta), height: Math.max(3, Math.abs(delta)) }
+                                                                    ]} />
+                                                                    <View style={[styles.tieConnectorTarget, { backgroundColor: lineColor, top: delta }]} />
+                                                                    <View style={[styles.tieConnectorArrow, { borderLeftColor: lineColor, top: delta - 5 }]} />
+                                                                </View>
+                                                            );
+                                                        })}
+                                                </>
+                                            )}
+                                        </View>
+                                    ))}
                                     {round.ties.length === 0 && (
                                         <View style={[styles.futureCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
                                             <Ionicons name="calendar-outline" size={22} color={colors.accent} />
@@ -229,20 +293,7 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
                                             <Text style={[styles.futureDates, { color: colors.textMuted }]}>20 & 27 August 2026</Text>
                                         </View>
                                     )}
-                                </ScrollView>
-                                {nextRound && (
-                                    <View style={styles.progressionConnector} pointerEvents="none">
-                                        <View style={[
-                                            styles.connectorLine,
-                                            { backgroundColor: connectorIsHighlighted ? colors.accent : colors.cardBorder },
-                                            !connectorIsHighlighted && styles.connectorLineMuted
-                                        ]} />
-                                        <View style={[
-                                            styles.connectorArrow,
-                                            { borderLeftColor: connectorIsHighlighted ? colors.accent : colors.cardBorder }
-                                        ]} />
-                                    </View>
-                                )}
+                                </View>
                             </View>
                             );
                         })}
@@ -328,15 +379,17 @@ const styles = StyleSheet.create({
     roundHeaderText: { flex: 1, minWidth: 0 },
     roundTitle: { fontSize: 12, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase' },
     roundMeta: { fontSize: 10, fontWeight: '600', marginTop: 2 },
-    vScroll: { padding: 10, paddingBottom: 40 },
-    progressionConnector: { position: 'absolute', right: -28, top: 86, width: 28, height: 18, alignItems: 'center', justifyContent: 'center', overflow: 'visible', zIndex: 5 },
-    connectorLine: { width: 20, height: 3, borderRadius: 2 },
-    connectorLineMuted: { opacity: 0.7 },
-    connectorArrow: { position: 'absolute', right: 1, width: 0, height: 0, borderTopWidth: 6, borderBottomWidth: 6, borderLeftWidth: 8, borderTopColor: 'transparent', borderBottomColor: 'transparent' },
+    bracketCanvas: { position: 'relative', paddingHorizontal: LANE_PADDING, overflow: 'visible' },
+    positionedTie: { position: 'absolute', left: LANE_PADDING, right: LANE_PADDING, height: CARD_HEIGHT, overflow: 'visible' },
+    tieConnector: { position: 'absolute', right: -38, top: CARD_HEIGHT / 2, width: 38, height: 1, overflow: 'visible', zIndex: 10 },
+    tieConnectorHorizontal: { position: 'absolute', left: 0, top: 0, width: 18, height: 3, borderRadius: 2 },
+    tieConnectorVertical: { position: 'absolute', left: 17, width: 3, borderRadius: 2 },
+    tieConnectorTarget: { position: 'absolute', left: 17, width: 17, height: 3, borderRadius: 2 },
+    tieConnectorArrow: { position: 'absolute', right: 0, width: 0, height: 0, borderTopWidth: 6, borderBottomWidth: 6, borderLeftWidth: 8, borderTopColor: 'transparent', borderBottomColor: 'transparent' },
     futureCard: { minHeight: 122, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center', padding: 16, gap: 7 },
     futureTitle: { fontSize: 13, fontWeight: '700', textAlign: 'center' },
     futureDates: { fontSize: 11, fontWeight: '600', textAlign: 'center' },
-    tieCard: { borderRadius: 12, borderWidth: 1, marginBottom: CARD_GAP, overflow: 'hidden', paddingBottom: 6 },
+    tieCard: { height: CARD_HEIGHT, borderRadius: 12, borderWidth: 1, overflow: 'hidden', paddingBottom: 6 },
     tieEdge: { position: 'absolute', left: 0, top: 10, bottom: 10, width: 3, borderRadius: 2 },
     teamRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 7, gap: 8 },
     teamRowTop: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(128,128,128,0.2)' },

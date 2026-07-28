@@ -36,6 +36,10 @@ test('parseSportsSeriesRound creates unresolved third-round ties with scheduled 
     ]);
     assert.equal(round.ties[0].legs[0].date, '2026-08-06T00:00:00.000Z');
     assert.equal(round.ties[0].legs[1].date, '2026-08-13T00:00:00.000Z');
+    assert.deepEqual(round.ties[0].feederCandidates, [
+        ['GAIS', 'Nordsjælland'],
+        ['Valur', 'Zrinjski Mostar']
+    ]);
 });
 
 test('mergeFutureRounds appends missing rounds without replacing ESPN rounds', () => {
@@ -49,4 +53,20 @@ test('mergeFutureRounds appends missing rounds without replacing ESPN rounds', (
     const noDuplicate = mergeFutureRounds({ rounds: [first, espnThird] }, [third]);
     assert.equal(noDuplicate.rounds.filter((round) => round.title === 'Third Round').length, 1);
     assert.equal(noDuplicate.rounds[1].ties[0].key, 'espn-third');
+});
+
+test('mergeFutureRounds resolves drawn candidate slots to real previous-round tie keys', () => {
+    const second = {
+        title: 'Second Round',
+        ties: [
+            { key: 'Second Round:3101-8222', teams: [{ name: 'GAIS' }, { name: 'Nordsjælland' }] },
+            { key: 'Second Round:18-19', teams: [{ name: 'Valur' }, { name: 'Zrinjski Mostar' }] }
+        ]
+    };
+    const third = {
+        title: 'Third Round',
+        ties: [{ key: 'draw-q3-9', feederCandidates: [['GAIS', 'Nordsjælland'], ['Valur', 'Zrinjski Mostar']], teams: [] }]
+    };
+    const merged = mergeFutureRounds({ rounds: [second] }, [third]);
+    assert.deepEqual(merged.rounds[1].ties[0].feederTieKeys, ['Second Round:3101-8222', 'Second Round:18-19']);
 });

@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.24.0
+- Render the qualifying view as a traditional bracket: each real feeder tie now connects directly to the exact tie it feeds in the following round using horizontal/vertical bracket lines and arrowheads. Future draw slots carry explicit feeder links, so GAIS/Nordsjælland visibly joins Valur/Zrinjski in their third-round matchup
+
 ### 2.23.0
 - Make qualifying rounds visually distinct with bordered round lanes, numbered headers, and directional connector arrows between stages. The selected team's route receives purple lane, tie, and connector highlighting so its possible progression remains visible across unresolved future rounds
 
