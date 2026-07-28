@@ -23,7 +23,8 @@ export const GameModalHeader = ({
     awayScore,
     state,
     startDateTime,
-    onClose
+    onClose,
+    onTeamPress
 }) => {
     const { colors } = useTheme();
     const { width: windowWidth } = useWindowDimensions();
@@ -37,13 +38,18 @@ export const GameModalHeader = ({
 
     const themedStyles = createStyles(colors);
 
+    const HomeTeamContainer = onTeamPress ? TouchableOpacity : View;
+    const homeTeamProps = onTeamPress ? { activeOpacity: 0.6, onPress: () => onTeamPress('home') } : {};
+    const AwayTeamContainer = onTeamPress ? TouchableOpacity : View;
+    const awayTeamProps = onTeamPress ? { activeOpacity: 0.6, onPress: () => onTeamPress('away') } : {};
+
     return (
         <View style={themedStyles.modalHeader}>
             <TouchableOpacity onPress={onClose} style={themedStyles.closeButton}>
                 <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
             <View style={[themedStyles.scoreHeader, isCompactHeader && themedStyles.scoreHeaderCompact]}>
-                <View style={[themedStyles.scoreTeam, isCompactHeader && themedStyles.scoreTeamCompact]}>
+                <HomeTeamContainer {...homeTeamProps} style={[themedStyles.scoreTeam, isCompactHeader && themedStyles.scoreTeamCompact]}>
                     {homeTeam.logo ? (
                         <Image
                             source={{ uri: resolveMediaUrl(homeTeam.logo) }}
@@ -62,7 +68,7 @@ export const GameModalHeader = ({
                     >
                         {homeTeam.name}
                     </Text>
-                </View>
+                </HomeTeamContainer>
                 <View style={[themedStyles.scoreCenterBlock, isCompactHeader && themedStyles.scoreCenterBlockCompact]}>
                     <Text style={[themedStyles.scoreLarge, isCompactHeader && themedStyles.scoreLargeCompact]}>
                         {homeScore} - {awayScore}
@@ -76,7 +82,7 @@ export const GameModalHeader = ({
                         </Text>
                     )}
                 </View>
-                <View style={[themedStyles.scoreTeam, isCompactHeader && themedStyles.scoreTeamCompact]}>
+                <AwayTeamContainer {...awayTeamProps} style={[themedStyles.scoreTeam, isCompactHeader && themedStyles.scoreTeamCompact]}>
                     {awayTeam.logo ? (
                         <Image
                             source={{ uri: resolveMediaUrl(awayTeam.logo) }}
@@ -95,7 +101,7 @@ export const GameModalHeader = ({
                     >
                         {awayTeam.name}
                     </Text>
-                </View>
+                </AwayTeamContainer>
             </View>
         </View>
     );

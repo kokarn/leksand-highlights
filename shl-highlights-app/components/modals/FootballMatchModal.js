@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { View, Text, Modal, ScrollView, ActivityIndicator, StyleSheet, Animated, Dimensions, Platform, RefreshControl, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { extractScore, formatSwedishDate } from '../../utils';
@@ -107,6 +108,7 @@ const FOOTBALL_STANDINGS_TAB = { key: 'standings', title: 'Standings', icon: 'po
 
 export const FootballMatchModal = ({ match, details, videos = [], visible, onClose, loading, onRefresh, refreshing = false, selectedTeams = [], showStandingsTab = false, sport = 'allsvenskan', activeTab: controlledActiveTab, onTabChange, targetVideoId = null }) => {
     const { colors } = useTheme();
+    const router = useRouter();
     const { width: windowWidth } = useWindowDimensions();
     const useCompactTabs = windowWidth <= 430;
     const [internalActiveTab, setInternalActiveTab] = useState('summary');
@@ -204,6 +206,15 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
         stopVideo();
         onClose();
     }, [onClose, stopVideo]);
+
+    // Navigate to a team page (close the modal first so back returns to schedule).
+    const navigateToTeam = useCallback((code) => {
+        if (!code) {
+            return;
+        }
+        handleClose();
+        router.push(`/team/${sport}/${encodeURIComponent(String(code).toUpperCase())}`);
+    }, [router, sport, handleClose]);
 
     const handleTabChange = useCallback((nextTab) => {
         if (activeTab === 'highlights' && nextTab !== 'highlights') {
@@ -662,6 +673,7 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
                                 sport="football"
                                 getTeamKey={(team) => team?.teamCode || team?.teamName}
                                 getTeamLogo={(team) => resolveMediaUrl(team?.teamIcon)}
+                                onTeamPress={(team) => navigateToTeam(team?.teamCode)}
                             />
                         </View>
                     ))
@@ -672,6 +684,7 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
                         sport="football"
                         getTeamKey={(team) => team?.key || team?.code || team?.teamCode}
                         getTeamLogo={(team) => resolveMediaUrl(team?.teamIcon || team?.icon)}
+                        onTeamPress={(team) => navigateToTeam(team?.code || team?.teamCode || team?.key)}
                     />
                 )}
             </ScrollView>
@@ -728,6 +741,7 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
                     state={info?.state}
                     startDateTime={startDateTime}
                     onClose={handleClose}
+                    onTeamPress={(side) => navigateToTeam(side === 'home' ? homeCode : awayCode)}
                 />
 
                 {/* Tab Bar */}

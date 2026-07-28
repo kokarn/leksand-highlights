@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../contexts';
 
 /**
@@ -31,7 +31,8 @@ export const StandingsTable = ({
     selectedTeams = [],
     sport = 'shl', // 'shl' or 'football'
     getTeamKey,
-    getTeamLogo
+    getTeamLogo,
+    onTeamPress
 }) => {
     const { colors, isDark } = useTheme();
     
@@ -77,9 +78,14 @@ export const StandingsTable = ({
                 const position = Number(team.position);
                 const showDivider = dividerPositions.includes(position);
 
+                const RowContainer = onTeamPress ? TouchableOpacity : View;
+                const rowProps = onTeamPress
+                    ? { activeOpacity: 0.6, onPress: () => onTeamPress(team) }
+                    : {};
+
                 return (
                     <Fragment key={team.teamUuid || team.teamCode || team.teamName}>
-                        <View style={[styles.tableRow, { borderBottomColor: colors.separator }, isFavorite && { backgroundColor: colors.chipActive }]}>
+                        <RowContainer {...rowProps} style={[styles.tableRow, { borderBottomColor: colors.separator }, isFavorite && { backgroundColor: colors.chipActive }]}>
                         <Text style={[styles.tableCell, styles.colRank, { color: colors.text }]}>
                             {formatStatValue(team.position)}
                         </Text>
@@ -126,7 +132,7 @@ export const StandingsTable = ({
                         <Text style={[styles.tableCell, styles.colPoints, { color: colors.text }]}>
                             {formatStatValue(team.points)}
                         </Text>
-                        </View>
+                        </RowContainer>
                         {showDivider && <View style={[styles.groupDivider, { backgroundColor: colors.cardBorder }]} />}
                     </Fragment>
                 );

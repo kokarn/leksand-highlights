@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { View, Text, Modal, ScrollView, ActivityIndicator, StyleSheet, Animated, Dimensions, Platform, RefreshControl, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { getTeamLogoUrl, fetchStandings, resolveMediaUrl } from '../../api/shl';
@@ -90,6 +91,7 @@ export const ShlGameModal = ({
     targetVideoId = null
 }) => {
     const { colors } = useTheme();
+    const router = useRouter();
     const { width: windowWidth } = useWindowDimensions();
     const useCompactTabs = windowWidth <= 430;
     const { processedData, scoreDisplay, events, goals, getGoalVideoId } = useGameDetails(gameDetails, game, videos);
@@ -208,6 +210,15 @@ export const ShlGameModal = ({
             stopVideo();
         }
         onTabChange(tab);
+    };
+
+    // Navigate to a team page (close the modal first so back returns to schedule).
+    const navigateToTeam = (code) => {
+        if (!code) {
+            return;
+        }
+        handleClose();
+        router.push(`/team/${standingsSport}/${encodeURIComponent(String(code).toUpperCase())}`);
     };
 
     const currentlyPlayingVideo = videos.find(v => v.id === playingVideoId);
@@ -496,6 +507,7 @@ export const ShlGameModal = ({
                             const teamCode = team.teamCode || team.teamShortName;
                             return teamCode ? getTeamLogoUrl(teamCode) : resolveMediaUrl(team.teamIcon);
                         }}
+                        onTeamPress={(team) => navigateToTeam(team.teamCode || team.teamShortName)}
                     />
                 )}
             </ScrollView>
@@ -515,6 +527,7 @@ export const ShlGameModal = ({
                             state={gameState}
                             startDateTime={startDateTime}
                             onClose={handleClose}
+                            onTeamPress={(side) => navigateToTeam(side === 'home' ? homeCode : awayCode)}
                         />
 
                         {/* Tab Bar */}
