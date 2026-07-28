@@ -136,3 +136,57 @@ test('team page route exists and reuses shared card + screen', () => {
     const header = fs.readFileSync(path.join(appDir, 'components', 'modals', 'GameModalHeader.js'), 'utf8');
     assert.match(header, /onTeamPress/);
 });
+
+test('leaguesForTeam returns only the leagues present in the team games, in family order', async () => {
+    const { leaguesForTeam } = await importApp('utils/teamGames.js');
+    const leagues = [
+        { slug: 'allsvenskan' },
+        { slug: 'svenska-cupen' },
+        { slug: 'conference-league-qual' }
+    ];
+    const games = [
+        { sport: 'allsvenskan' },
+        { sport: 'conference-league-qual' },
+        { sport: 'allsvenskan' }
+    ];
+    const out = leaguesForTeam(games, leagues);
+    assert.deepEqual(out.map((l) => l.slug), ['allsvenskan', 'conference-league-qual']);
+    // Empty when no games
+    assert.deepEqual(leaguesForTeam([], leagues), []);
+});
+
+test('family league config carries standings metadata; knockout leagues have none', async () => {
+    const { TEAM_FAMILIES, getLeagueBySlug } = await importApp('constants/teamFamilies.js');
+    // Leagues with a real table
+    for (const slug of ['shl', 'hockeyallsvenskan', 'allsvenskan', 'svenska-cupen']) {
+        const league = getLeagueBySlug(slug);
+        assert.equal(league.hasStandings, true, `${slug} should have standings`);
+        assert.equal(typeof league.fetchStandings, 'function');
+        assert.ok(['table', 'groups'].includes(league.standingsFormat));
+        assert.ok(['shl', 'football'].includes(league.standingsSport));
+    }
+    // Knockout leagues: no table
+    for (const slug of ['europa-league-qual', 'conference-league-qual']) {
+        assert.equal(getLeagueBySlug(slug).hasStandings, false, `${slug} should NOT have standings`);
+    }
+    // Svenska Cupen is grouped, Allsvenskan is a flat table
+    assert.equal(getLeagueBySlug('svenska-cupen').standingsFormat, 'groups');
+    assert.equal(getLeagueBySlug('allsvenskan').standingsFormat, 'table');
+    // Sanity: every family exposes at least one standings-capable league
+    for (const family of Object.values(TEAM_FAMILIES)) {
+        assert.ok(family.leagues.some((l) => l.hasStandings));
+    }
+});
+
+test('standings route exists and reuses StandingsTable + league config', () => {
+    const routePath = path.join(appDir, 'app', 'standings', '[league].js');
+    assert.equal(fs.existsSync(routePath), true, 'expected /standings/[league] route to exist');
+    const screenPath = path.join(appDir, 'components', 'LeagueStandingsScreen.js');
+    assert.equal(fs.existsSync(screenPath), true, 'expected LeagueStandingsScreen to exist');
+    const screen = fs.readFileSync(screenPath, 'utf8');
+    assert.match(screen, /StandingsTable/);
+    // Team page must render buttons that link to the standings route.
+    const teamScreen = fs.readFileSync(path.join(appDir, 'components', 'TeamGamesScreen.js'), 'utf8');
+    assert.match(teamScreen, /leaguesForTeam/);
+    assert.match(teamScreen, /\/standings\//);
+});

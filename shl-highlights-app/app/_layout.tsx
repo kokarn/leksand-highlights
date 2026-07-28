@@ -35,6 +35,7 @@ function RootLayoutContent() {
             <Stack>
                 <Stack.Screen name="index" options={{ headerShown: false }} />
                 <Stack.Screen name="team/[family]/[code]" options={{ headerShown: false }} />
+                <Stack.Screen name="standings/[league]" options={{ headerShown: false }} />
             </Stack>
             <StatusBar 
                 style={colors.statusBarStyle} 

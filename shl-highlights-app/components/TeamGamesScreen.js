@@ -11,7 +11,8 @@ import {
     dedupeGames,
     selectCompletedGames,
     selectUpcomingGames,
-    computeForm
+    computeForm,
+    leaguesForTeam
 } from '../utils/teamGames';
 
 const FORM_COLORS = (colors) => ({
@@ -107,11 +108,22 @@ export function TeamGamesScreen({ family, teamCode }) {
     const teamLogo = teamInfo ? family.getTeamLogo(teamInfo) : null;
     const leagueLabels = family.leagues.map((league) => league.label).join(' · ');
 
+    // Leagues this team actually plays in that have a standings table — used to
+    // render "View standings" buttons. Knockout leagues (no table) are excluded.
+    const standingsLeagues = useMemo(
+        () => leaguesForTeam(games, family.leagues).filter((league) => league.hasStandings),
+        [games, family]
+    );
+
     // Open the match modal via the main screen's deep-link route.
     const openGame = useCallback((game) => {
         const sport = game.sport || family.leagues[0].slug;
         router.push({ pathname: '/', params: { sport, gameId: game.uuid || game.id } });
     }, [router, family]);
+
+    const openStandings = useCallback((leagueSlug) => {
+        router.push(`/standings/${leagueSlug}?team=${encodeURIComponent(normalizedCode)}`);
+    }, [router, normalizedCode]);
 
     const listData = view === 'latest' ? completedGames : upcomingGames;
 
@@ -164,6 +176,25 @@ export function TeamGamesScreen({ family, teamCode }) {
                     );
                 })}
             </View>
+
+            {standingsLeagues.length > 0 && (
+                <View style={styles.standingsButtons}>
+                    {standingsLeagues.map((league) => (
+                        <TouchableOpacity
+                            key={league.slug}
+                            style={[styles.standingsButton, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+                            onPress={() => openStandings(league.slug)}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="podium-outline" size={16} color={colors.accent} />
+                            <Text style={[styles.standingsButtonText, { color: colors.text }]} numberOfLines={1}>
+                                {standingsLeagues.length > 1 ? `${league.label} table` : 'View standings'}
+                            </Text>
+                            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            )}
 
             <View style={styles.sectionHeader}>
                 <Ionicons name={view === 'latest' ? 'time-outline' : 'calendar-outline'} size={20} color={colors.accent} />
@@ -232,6 +263,9 @@ const styles = StyleSheet.create({
     segmentedControl: { flexDirection: 'row', padding: 4, borderRadius: 10, borderWidth: 1, marginBottom: 20, gap: 4 },
     segment: { flex: 1, minHeight: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 8, borderColor: 'transparent' },
     segmentText: { fontSize: 13, fontWeight: '700' },
+    standingsButtons: { gap: 8, marginBottom: 20 },
+    standingsButton: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, minHeight: 44, borderRadius: 10, borderWidth: 1 },
+    standingsButtonText: { flex: 1, fontSize: 14, fontWeight: '600' },
     sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4, marginBottom: 16 },
     sectionTitle: { fontSize: 18, fontWeight: '700', flex: 1 },
     sectionCount: { fontSize: 13, fontWeight: '600' },

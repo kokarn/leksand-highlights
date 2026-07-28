@@ -105,3 +105,16 @@ export const dedupeGames = (games) => {
     }
     return out;
 };
+
+/**
+ * From a team's games (each tagged with a `sport` slug), return the distinct
+ * league slugs the team actually appears in, in the order the family declares
+ * them. Used to render "View standings" buttons only for the team's leagues.
+ *
+ * @param {Array} games   games involving the team, each carrying `.sport`
+ * @param {Array} leagues the family's ordered league entries ({slug,...})
+ */
+export const leaguesForTeam = (games, leagues) => {
+    const present = new Set((games || []).map((game) => String(game?.sport || '').toLowerCase()));
+    return (leagues || []).filter((league) => present.has(league.slug));
+};

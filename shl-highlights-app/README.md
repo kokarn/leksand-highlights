@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.20.0
+- Add "View standings" buttons on team pages: from a team page you can jump to the full league table for each standings-capable league the team plays in (Allsvenskan, SHL, HockeyAllsvenskan, Svenska Cupen groups). Knockout leagues (Europa/Conference League Qualifying) have no table so no button is shown. The standings screen reuses the shared StandingsTable, highlights the team's row, and tapping any row opens that team's page — so you can hop team → standings → team
+
 ### 2.19.0
 - Add team pages: tap a team's logo/name in a game's score view, or a row in any standings table, to open a dedicated page showing that team's latest and upcoming games (form strip + reused game cards). Works across all team sports that share the same setup — hockey (SHL, HockeyAllsvenskan) and football (Allsvenskan, Svenska Cupen, Europa/Conference League Qualifying) — via one shared TeamGamesScreen component and a `/team/[family]/[code]` route
 

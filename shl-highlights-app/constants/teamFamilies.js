@@ -5,6 +5,10 @@ import {
     fetchSvenskaCupenGames,
     fetchEuropaLeagueQualGames,
     fetchConferenceLeagueQualGames,
+    fetchStandings,
+    fetchHockeyAllsvenskanStandings,
+    fetchFootballStandings,
+    fetchSvenskaCupenStandings,
     getTeamLogoUrl,
     resolveMediaUrl
 } from '../api/shl.js';
@@ -40,10 +44,13 @@ export const TEAM_FAMILIES = {
         family: 'hockey',
         sportTab: 'hockey',
         cardType: 'hockey',
+        // `standingsSport` is the `sport` prop StandingsTable expects (column set).
+        // `standingsFormat`: 'table' = flat league table, 'groups' = grouped (cup).
+        // Leagues without a table (knockout) set hasStandings: false.
         // Order matters only for stable de-duplication; games are re-sorted by date.
         leagues: [
-            { slug: 'shl', label: 'SHL', fetchGames: () => fetchGames() },
-            { slug: 'hockeyallsvenskan', label: 'HockeyAllsvenskan', fetchGames: () => fetchHockeyAllsvenskanGames() }
+            { slug: 'shl', label: 'SHL', fetchGames: () => fetchGames(), hasStandings: true, standingsFormat: 'table', standingsSport: 'shl', fetchStandings: (opts) => fetchStandings(opts) },
+            { slug: 'hockeyallsvenskan', label: 'HockeyAllsvenskan', fetchGames: () => fetchHockeyAllsvenskanGames(), hasStandings: true, standingsFormat: 'table', standingsSport: 'shl', fetchStandings: (opts) => fetchHockeyAllsvenskanStandings(opts) }
         ],
         getTeamCode: hockeyTeamCode,
         getTeamName: (team) => team?.names?.short || team?.names?.long || hockeyTeamCode(team) || 'Team',
@@ -58,16 +65,31 @@ export const TEAM_FAMILIES = {
         sportTab: 'football',
         cardType: 'football',
         leagues: [
-            { slug: 'allsvenskan', label: 'Allsvenskan', fetchGames: (filters) => fetchFootballGames(filters) },
-            { slug: 'svenska-cupen', label: 'Svenska Cupen', fetchGames: (filters) => fetchSvenskaCupenGames(filters) },
-            { slug: 'europa-league-qual', label: 'Europa League Qualifying', fetchGames: (filters) => fetchEuropaLeagueQualGames(filters) },
-            { slug: 'conference-league-qual', label: 'Conference League Qualifying', fetchGames: (filters) => fetchConferenceLeagueQualGames(filters) }
+            { slug: 'allsvenskan', label: 'Allsvenskan', fetchGames: (filters) => fetchFootballGames(filters), hasStandings: true, standingsFormat: 'table', standingsSport: 'football', fetchStandings: (opts) => fetchFootballStandings(opts) },
+            { slug: 'svenska-cupen', label: 'Svenska Cupen', fetchGames: (filters) => fetchSvenskaCupenGames(filters), hasStandings: true, standingsFormat: 'groups', standingsSport: 'football', fetchStandings: (opts) => fetchSvenskaCupenStandings(opts) },
+            // Europa/Conference qualifying are knockout — no league table.
+            { slug: 'europa-league-qual', label: 'Europa League Qualifying', fetchGames: (filters) => fetchEuropaLeagueQualGames(filters), hasStandings: false },
+            { slug: 'conference-league-qual', label: 'Conference League Qualifying', fetchGames: (filters) => fetchConferenceLeagueQualGames(filters), hasStandings: false }
         ],
         getTeamCode: footballTeamCode,
         getTeamName: (team) => team?.names?.short || team?.names?.long || footballTeamCode(team) || 'Team',
         // Football logos come from the upstream icon URL (proxied).
         getTeamLogo: (team) => resolveMediaUrl(team?.icon)
     }
+};
+
+/**
+ * Find a single league entry by its slug, across all families.
+ */
+export const getLeagueBySlug = (slug) => {
+    const normalized = String(slug || '').toLowerCase();
+    for (const family of Object.values(TEAM_FAMILIES)) {
+        const league = family.leagues.find((l) => l.slug === normalized);
+        if (league) {
+            return league;
+        }
+    }
+    return null;
 };
 
 /**
