@@ -214,6 +214,10 @@ test('bracket route + screen exist and team page links to them', () => {
     // tap-to-trace: seeded vs advanced origin handling
     assert.match(screen, /Seeded into/);
     assert.match(screen, /Advanced from/);
+    // Round lanes must be visually distinct and connectors must show progression.
+    assert.match(screen, /roundLane/);
+    assert.match(screen, /progressionConnector/);
+    assert.match(screen, /connectorArrow/);
     // Team page renders a "View bracket" link to the route.
     const teamScreen = fs.readFileSync(path.join(appDir, 'components', 'TeamGamesScreen.js'), 'utf8');
     assert.match(teamScreen, /bracketLeagues/);

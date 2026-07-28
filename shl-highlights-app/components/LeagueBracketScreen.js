@@ -10,7 +10,6 @@ import { fetchBracket, resolveMediaUrl } from '../api/shl';
 
 const COL_WIDTH = 240;
 const CARD_GAP = 20;
-const ROUND_HEADER_H = 40;
 
 const shortDate = (value) => {
     if (!value) {
@@ -85,6 +84,15 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
 
     const highlight = String(highlightTeamCode || '').toUpperCase();
 
+    const teamMatchesHighlight = useCallback((team) => Boolean(highlight) && (
+        (team?.code && team.code.toUpperCase() === highlight)
+        || String(team?.name || '').toUpperCase().includes(highlight)
+    ), [highlight]);
+
+    const roundContainsHighlight = useCallback((round) => {
+        return (round?.ties || []).some((tie) => tie.teams.some(teamMatchesHighlight));
+    }, [teamMatchesHighlight]);
+
     const openTeam = useCallback((team) => {
         if (!team?.code) {
             return;
@@ -100,10 +108,7 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
     }, [tieIndex]);
 
     const renderTeamRow = (team, tie, roundTitle, top) => {
-        const isHi = highlight && (
-            (team.code && team.code.toUpperCase() === highlight)
-            || String(team.name || '').toUpperCase().includes(highlight)
-        );
+        const isHi = teamMatchesHighlight(team);
         return (
             <Pressable
                 key={team.id}
@@ -142,8 +147,13 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
     const renderTie = (tie, roundTitle) => {
         const [teamA, teamB] = tie.teams;
         const edgeColor = tie.completed ? colors.accentGreen : colors.accent;
+        const isOnHighlightedPath = tie.teams.some(teamMatchesHighlight);
         return (
-            <View key={tie.key} style={[styles.tieCard, { backgroundColor: isDark ? '#1c1c1e' : colors.card, borderColor: colors.cardBorder }]}>
+            <View key={tie.key} style={[
+                styles.tieCard,
+                { backgroundColor: isDark ? '#1c1c1e' : colors.card, borderColor: colors.cardBorder },
+                isOnHighlightedPath && { borderColor: colors.accent, borderWidth: 2 }
+            ]}>
                 <View style={[styles.tieEdge, { backgroundColor: edgeColor }]} />
                 {teamA && renderTeamRow(teamA, tie, roundTitle, true)}
                 {teamB && renderTeamRow(teamB, tie, roundTitle, false)}
@@ -177,15 +187,38 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
                 <>
                     <Text style={[styles.hint, { color: colors.textMuted }]}>Scroll sideways through the rounds · tap a team to trace its path</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
-                        {data.rounds.map((round) => (
-                            <View key={round.title} style={[styles.column, { width: COL_WIDTH }]}>
-                                <View style={styles.roundHeader}>
-                                    <Text style={[styles.roundTitle, { color: colors.accent }]}>{round.title}</Text>
+                        {data.rounds.map((round, roundIndex) => {
+                            const laneIsHighlighted = roundContainsHighlight(round);
+                            const nextRound = data.rounds[roundIndex + 1];
+                            const connectorIsHighlighted = laneIsHighlighted || roundContainsHighlight(nextRound);
+                            return (
+                            <View
+                                key={round.title}
+                                style={[
+                                    styles.column,
+                                    styles.roundLane,
+                                    {
+                                        width: COL_WIDTH,
+                                        backgroundColor: isDark ? 'rgba(28,28,30,0.72)' : colors.backgroundSecondary,
+                                        borderColor: laneIsHighlighted ? colors.accent : colors.cardBorder
+                                    }
+                                ]}
+                            >
+                                <View style={[
+                                    styles.roundHeader,
+                                    { backgroundColor: laneIsHighlighted ? colors.chipActive : colors.card, borderBottomColor: laneIsHighlighted ? colors.accent : colors.cardBorder }
+                                ]}>
+                                    <View style={[styles.roundNumber, { backgroundColor: laneIsHighlighted ? colors.accent : colors.separator }]}>
+                                        <Text style={[styles.roundNumberText, { color: laneIsHighlighted ? '#fff' : colors.textSecondary }]}>{roundIndex + 1}</Text>
+                                    </View>
+                                    <View style={styles.roundHeaderText}>
+                                    <Text style={[styles.roundTitle, { color: laneIsHighlighted ? colors.accent : colors.text }]}>{round.title}</Text>
                                     <Text style={[styles.roundMeta, { color: colors.textMuted }]}>
                                         {round.ties.length > 0
                                             ? `${round.ties.length} ties${round.seededCount ? ` · ${round.seededCount} seeded in` : ''}`
                                             : round.status || 'Draw pending'}
                                     </Text>
+                                    </View>
                                 </View>
                                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.vScroll}>
                                     {round.ties.map((tie) => renderTie(tie, round.title))}
@@ -197,8 +230,22 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
                                         </View>
                                     )}
                                 </ScrollView>
+                                {nextRound && (
+                                    <View style={styles.progressionConnector} pointerEvents="none">
+                                        <View style={[
+                                            styles.connectorLine,
+                                            { backgroundColor: connectorIsHighlighted ? colors.accent : colors.cardBorder },
+                                            !connectorIsHighlighted && styles.connectorLineMuted
+                                        ]} />
+                                        <View style={[
+                                            styles.connectorArrow,
+                                            { borderLeftColor: connectorIsHighlighted ? colors.accent : colors.cardBorder }
+                                        ]} />
+                                    </View>
+                                )}
                             </View>
-                        ))}
+                            );
+                        })}
                     </ScrollView>
                 </>
             )}
@@ -272,12 +319,20 @@ const styles = StyleSheet.create({
     titleBox: { flex: 1, minHeight: 40, justifyContent: 'center', paddingHorizontal: 14, borderRadius: 10, borderWidth: 1 },
     topTitle: { fontSize: 15, fontWeight: '600' },
     hint: { fontSize: 11, fontWeight: '500', paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
-    hScroll: { paddingHorizontal: 12, paddingBottom: 20 },
-    column: { marginRight: 12 },
-    roundHeader: { height: ROUND_HEADER_H, justifyContent: 'center' },
+    hScroll: { paddingHorizontal: 12, paddingBottom: 20, gap: 28, alignItems: 'stretch' },
+    column: { position: 'relative' },
+    roundLane: { borderRadius: 16, borderWidth: 1, overflow: 'visible', minHeight: 420 },
+    roundHeader: { minHeight: 58, paddingHorizontal: 12, paddingVertical: 9, flexDirection: 'row', alignItems: 'center', gap: 9, borderTopLeftRadius: 15, borderTopRightRadius: 15, borderBottomWidth: 1 },
+    roundNumber: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    roundNumberText: { fontSize: 12, fontWeight: '900' },
+    roundHeaderText: { flex: 1, minWidth: 0 },
     roundTitle: { fontSize: 12, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase' },
     roundMeta: { fontSize: 10, fontWeight: '600', marginTop: 2 },
-    vScroll: { paddingBottom: 40 },
+    vScroll: { padding: 10, paddingBottom: 40 },
+    progressionConnector: { position: 'absolute', right: -28, top: 86, width: 28, height: 18, alignItems: 'center', justifyContent: 'center', overflow: 'visible', zIndex: 5 },
+    connectorLine: { width: 20, height: 3, borderRadius: 2 },
+    connectorLineMuted: { opacity: 0.7 },
+    connectorArrow: { position: 'absolute', right: 1, width: 0, height: 0, borderTopWidth: 6, borderBottomWidth: 6, borderLeftWidth: 8, borderTopColor: 'transparent', borderBottomColor: 'transparent' },
     futureCard: { minHeight: 122, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center', padding: 16, gap: 7 },
     futureTitle: { fontSize: 13, fontWeight: '700', textAlign: 'center' },
     futureDates: { fontSize: 11, fontWeight: '600', textAlign: 'center' },

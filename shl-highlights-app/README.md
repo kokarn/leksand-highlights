@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.23.0
+- Make qualifying rounds visually distinct with bordered round lanes, numbered headers, and directional connector arrows between stages. The selected team's route receives purple lane, tie, and connector highlighting so its possible progression remains visible across unresolved future rounds
+
 ### 2.22.0
 - Extend the qualifying bracket beyond ESPN's currently published fixtures: Conference League now includes the already-drawn **Third Round** with honest unresolved winner slots (including GAIS/Nordsjælland's path), plus the upcoming **Play-off Round** and its draw date. Future slots resolve automatically to real ESPN teams and scores once those fixtures become available
 
