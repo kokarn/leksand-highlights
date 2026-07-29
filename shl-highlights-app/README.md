@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.28.0
+- Make the team-page competition links less pronounced: they're now compact, subtle chips showing just a small icon + the league name (no "table"/"bracket" text, no chevron, no filled card), wrapping in a row instead of full-width buttons
+
 ### 2.27.0
 - Align the qualifying bracket into clean rows: every round column now starts at the same top baseline and its ties are stacked on a fixed grid, so First/Second/Third round cards line up horizontally instead of drifting down the canvas. Feeder→tie connectors still trace each team's path
 

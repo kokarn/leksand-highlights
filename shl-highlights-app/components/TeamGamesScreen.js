@@ -185,39 +185,32 @@ export function TeamGamesScreen({ family, teamCode }) {
                 })}
             </View>
 
-            {standingsLeagues.length > 0 && (
-                <View style={styles.standingsButtons}>
+            {(standingsLeagues.length > 0 || bracketLeagues.length > 0) && (
+                <View style={styles.leagueChips}>
                     {standingsLeagues.map((league) => (
                         <TouchableOpacity
-                            key={league.slug}
-                            style={[styles.standingsButton, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+                            key={`s-${league.slug}`}
+                            style={[styles.leagueChip, { borderColor: colors.cardBorder }]}
                             onPress={() => openStandings(league.slug)}
-                            activeOpacity={0.7}
+                            activeOpacity={0.6}
                         >
-                            <Ionicons name="podium-outline" size={16} color={colors.accent} />
-                            <Text style={[styles.standingsButtonText, { color: colors.text }]} numberOfLines={1}>
-                                {`${league.label} table`}
+                            <Ionicons name="podium-outline" size={13} color={colors.textMuted} />
+                            <Text style={[styles.leagueChipText, { color: colors.textSecondary }]} numberOfLines={1}>
+                                {league.label}
                             </Text>
-                            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
                         </TouchableOpacity>
                     ))}
-                </View>
-            )}
-
-            {bracketLeagues.length > 0 && (
-                <View style={styles.standingsButtons}>
                     {bracketLeagues.map((league) => (
                         <TouchableOpacity
-                            key={league.slug}
-                            style={[styles.standingsButton, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+                            key={`b-${league.slug}`}
+                            style={[styles.leagueChip, { borderColor: colors.cardBorder }]}
                             onPress={() => openBracket(league.slug)}
-                            activeOpacity={0.7}
+                            activeOpacity={0.6}
                         >
-                            <Ionicons name="git-network-outline" size={16} color={colors.accent} />
-                            <Text style={[styles.standingsButtonText, { color: colors.text }]} numberOfLines={1}>
-                                {`${league.label} bracket`}
+                            <Ionicons name="git-network-outline" size={13} color={colors.textMuted} />
+                            <Text style={[styles.leagueChipText, { color: colors.textSecondary }]} numberOfLines={1}>
+                                {league.label}
                             </Text>
-                            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -289,9 +282,9 @@ const styles = StyleSheet.create({
     segmentedControl: { flexDirection: 'row', padding: 4, borderRadius: 10, borderWidth: 1, marginBottom: 20, gap: 4 },
     segment: { flex: 1, minHeight: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 8, borderColor: 'transparent' },
     segmentText: { fontSize: 13, fontWeight: '700' },
-    standingsButtons: { gap: 8, marginBottom: 20 },
-    standingsButton: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, minHeight: 44, borderRadius: 10, borderWidth: 1 },
-    standingsButtonText: { flex: 1, fontSize: 14, fontWeight: '600' },
+    leagueChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
+    leagueChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 11, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },
+    leagueChipText: { fontSize: 12, fontWeight: '600' },
     sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4, marginBottom: 16 },
     sectionTitle: { fontSize: 18, fontWeight: '700', flex: 1 },
     sectionCount: { fontSize: 13, fontWeight: '600' },
