@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.27.0
+- Align the qualifying bracket into clean rows: every round column now starts at the same top baseline and its ties are stacked on a fixed grid, so First/Second/Third round cards line up horizontally instead of drifting down the canvas. Feeder→tie connectors still trace each team's path
+
 ### 2.26.0
 - Fix the qualifying bracket only being partly visible: the screen now scrolls both vertically and horizontally, so all rounds are reachable. Previously later rounds (Second/Third) were positioned far down the canvas with no vertical scroll, so they looked empty and the First Round couldn't be scrolled through. Opening the bracket from a team page now auto-scrolls to that team's tie
 

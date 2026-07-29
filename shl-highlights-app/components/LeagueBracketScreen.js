@@ -23,24 +23,23 @@ const tieFeeders = (tie) => {
 export const buildTraditionalBracketLayout = (rounds) => {
     const positions = new Map();
     const roundLayouts = [];
+    const step = CARD_HEIGHT + CARD_GAP;
 
+    // Stack every round's ties uniformly from the top so all columns share the
+    // same baseline and cards line up in rows across rounds. UEFA qualifying is
+    // mostly seeded entrants rather than a clean binary tree, so feeder-centering
+    // produced large accumulating offsets and dead gaps — we keep the layout on a
+    // fixed grid and let the connectors (drawn separately) trace feeder→tie links.
     for (let roundIndex = 0; roundIndex < (rounds || []).length; roundIndex += 1) {
         const round = rounds[roundIndex];
-        let nextFreeTop = 0;
-        const ties = (round.ties || []).map((tie) => {
-            const feederCenters = tieFeeders(tie)
-                .map((key) => positions.get(key))
-                .filter((value) => Number.isFinite(value));
-            const idealCenter = feederCenters.length > 0
-                ? feederCenters.reduce((sum, value) => sum + value, 0) / feederCenters.length
-                : nextFreeTop + CARD_HEIGHT / 2;
-            const top = Math.max(nextFreeTop, idealCenter - CARD_HEIGHT / 2);
+        const ties = (round.ties || []).map((tie, tieIndex) => {
+            const top = tieIndex * step;
             const center = top + CARD_HEIGHT / 2;
             positions.set(tie.key, center);
-            nextFreeTop = top + CARD_HEIGHT + CARD_GAP;
             return { tie, top, center };
         });
-        roundLayouts.push({ ...round, ties, height: Math.max(nextFreeTop, CARD_HEIGHT + CARD_GAP) });
+        const height = Math.max(ties.length * step, step);
+        roundLayouts.push({ ...round, ties, height });
     }
 
     const height = Math.max(420, ...roundLayouts.map((round) => round.height));
