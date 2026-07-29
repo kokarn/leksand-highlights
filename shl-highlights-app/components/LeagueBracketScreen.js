@@ -23,76 +23,66 @@ const tieFeeders = (tie) => {
 
 export const buildTraditionalBracketLayout = (rounds) => {
     const positions = new Map();
-    const slotByKey = new Map();
+    const centerByKey = new Map();
     const roundLayouts = [];
     const step = CARD_HEIGHT + CARD_GAP;
+    const allRounds = rounds || [];
 
-    // Row-align ties across rounds by their feeder link: a tie that a team
-    // advanced FROM sits in the same row slot as the tie it feeds into, so e.g.
-    // a club's first-round tie lines up horizontally with its second-round tie.
-    // Ties fed by a previous round claim their feeder's slot (probing outward for
-    // a free one on collision); seeded entrants fill the remaining lowest slots.
-    for (let roundIndex = 0; roundIndex < (rounds || []).length; roundIndex += 1) {
-        const round = rounds[roundIndex];
+    // Traditional bracket shape: each round is a CONTIGUOUS block of ties, ordered
+    // by feeder position (so connectors never cross), and the whole block is
+    // VERTICALLY CENTERED against the tallest round. Because later rounds have
+    // fewer ties, centering makes them converge toward the middle and the feeder
+    // lines angle inward — the normal bracket "funnel" look. We order by each
+    // tie's anchor (mean of its feeders' final centers); seeded/fresh entrants
+    // have no feeder, so they're distributed across the round to fill the gaps.
+    const tallest = Math.max(1, ...allRounds.map((round) => (round.ties || []).length));
+    const globalHeight = tallest * step;
+
+    for (let roundIndex = 0; roundIndex < allRounds.length; roundIndex += 1) {
+        const round = allRounds[roundIndex];
         const roundTies = round.ties || [];
-        const used = new Set();
-        const slotForTie = new Map();
+        const count = roundTies.length;
+        const roundHeight = count * step;
+        const offset = (globalHeight - roundHeight) / 2;
 
-        const fedTies = [];
-        const seededTies = [];
-        for (const tie of roundTies) {
-            const feederSlots = tieFeeders(tie)
-                .map((key) => slotByKey.get(key))
+        // Anchor each tie so we can order the column top→bottom without crossings.
+        const seededCountSoFar = roundTies.filter((tie) => tieFeeders(tie)
+            .every((key) => !centerByKey.has(key))).length || 1;
+        let seededSeen = 0;
+        const anchored = roundTies.map((tie, originalIndex) => {
+            const feederCenters = tieFeeders(tie)
+                .map((key) => centerByKey.get(key))
                 .filter((value) => Number.isFinite(value));
-            if (feederSlots.length > 0) {
-                fedTies.push({ tie, feederSlots });
+            let anchor;
+            if (feederCenters.length > 0) {
+                anchor = feederCenters.reduce((sum, value) => sum + value, 0) / feederCenters.length;
             } else {
-                seededTies.push({ tie });
+                // Distribute seeded entrants evenly across the centered band so they
+                // interleave with fed ties rather than piling at one end.
+                seededSeen += 1;
+                anchor = offset + ((seededSeen - 0.5) / seededCountSoFar) * roundHeight;
             }
-        }
+            return { tie, anchor, originalIndex };
+        });
 
-        for (const { tie, feederSlots } of fedTies) {
-            const desired = Math.round(feederSlots.reduce((sum, value) => sum + value, 0) / feederSlots.length);
-            let slot = desired;
-            let offset = 0;
-            while (used.has(slot)) {
-                offset += 1;
-                slot = used.has(desired + offset) ? desired - offset : desired + offset;
-            }
-            if (slot < 0) {
-                slot = 0;
-                while (used.has(slot)) {
-                    slot += 1;
-                }
-            }
-            used.add(slot);
-            slotForTie.set(tie.key, slot);
-        }
+        anchored.sort((a, b) => (a.anchor - b.anchor) || (a.originalIndex - b.originalIndex));
 
-        let nextFree = 0;
-        for (const { tie } of seededTies) {
-            while (used.has(nextFree)) {
-                nextFree += 1;
-            }
-            used.add(nextFree);
-            slotForTie.set(tie.key, nextFree);
-        }
+        const orderIndex = new Map();
+        anchored.forEach((entry, slot) => orderIndex.set(entry.tie.key, slot));
 
         const ties = roundTies.map((tie) => {
-            const slot = slotForTie.get(tie.key) || 0;
-            const top = slot * step;
+            const slot = orderIndex.get(tie.key) || 0;
+            const top = offset + slot * step;
             const center = top + CARD_HEIGHT / 2;
             positions.set(tie.key, center);
-            slotByKey.set(tie.key, slot);
+            centerByKey.set(tie.key, center);
             return { tie, top, center };
         });
 
-        const maxSlot = used.size > 0 ? Math.max(...used) : 0;
-        const height = Math.max((maxSlot + 1) * step, step);
-        roundLayouts.push({ ...round, ties, height });
+        roundLayouts.push({ ...round, ties, height: globalHeight });
     }
 
-    const height = Math.max(420, ...roundLayouts.map((round) => round.height));
+    const height = Math.max(420, globalHeight);
     return { rounds: roundLayouts, positions, height };
 };
 

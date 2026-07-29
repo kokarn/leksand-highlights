@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.31.0
+- Lay out the qualifying bracket like a real bracket: each round is now a contiguous block of ties ordered by feeder position (connectors flow top-to-bottom without crossing) and vertically centered against the tallest round. Shorter later rounds (e.g. Third Round's 30 ties vs Second Round's 49) sit in the middle band so feeder lines converge inward — the classic bracket funnel — instead of every round starting flush at the top
+
 ### 2.30.0
 - Fix qualifying-bracket connectors that stopped short in empty space: feeder lines are now drawn in a single overlay spanning the whole canvas (instead of nested inside each round column, where the next column's background clipped/painted over them), so every connector bridges the full gap and lands its arrowhead on the target card's left edge
 
