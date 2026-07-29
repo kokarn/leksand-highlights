@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.26.0
+- Fix the qualifying bracket only being partly visible: the screen now scrolls both vertically and horizontally, so all rounds are reachable. Previously later rounds (Second/Third) were positioned far down the canvas with no vertical scroll, so they looked empty and the First Round couldn't be scrolled through. Opening the bracket from a team page now auto-scrolls to that team's tie
+
 ### 2.25.0
 - Clean up the team page header: remove the competition list shown above the team name (logo, name and form now stand alone) and surface each competition the team plays in as a tappable button next to the standings/bracket actions — league-table competitions open standings, knockout competitions open the bracket
 

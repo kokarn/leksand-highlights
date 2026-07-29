@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,7 @@ const COL_WIDTH = 240;
 const CARD_HEIGHT = 94;
 const CARD_GAP = 18;
 const LANE_PADDING = 10;
+const ROUND_HEADER_HEIGHT = 58;
 
 const tieFeeders = (tie) => {
     const explicit = tie?.feederTieKeys || [];
@@ -119,12 +120,45 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
 
     const bracketLayout = useMemo(() => buildTraditionalBracketLayout(data?.rounds || []), [data]);
 
+    const verticalScrollRef = useRef(null);
+    const hasAutoScrolledRef = useRef(false);
+
     const highlight = String(highlightTeamCode || '').toUpperCase();
 
     const teamMatchesHighlight = useCallback((team) => Boolean(highlight) && (
         (team?.code && team.code.toUpperCase() === highlight)
         || String(team?.name || '').toUpperCase().includes(highlight)
     ), [highlight]);
+
+    // Vertical offset of the first tie that involves the highlighted team, so we
+    // can land on its match instead of empty canvas when arriving from a team page.
+    const highlightOffset = useMemo(() => {
+        if (!highlight) {
+            return null;
+        }
+        for (const round of bracketLayout.rounds) {
+            for (const { tie, top } of round.ties) {
+                if (tie.teams.some(teamMatchesHighlight)) {
+                    return top;
+                }
+            }
+        }
+        return null;
+    }, [bracketLayout, highlight, teamMatchesHighlight]);
+
+    useEffect(() => {
+        if (loading || hasAutoScrolledRef.current || highlightOffset == null) {
+            return;
+        }
+        const y = Math.max(0, highlightOffset - 40);
+        const timer = setTimeout(() => {
+            if (verticalScrollRef.current) {
+                verticalScrollRef.current.scrollTo({ y, animated: true });
+                hasAutoScrolledRef.current = true;
+            }
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [loading, highlightOffset]);
 
     const roundContainsHighlight = useCallback((round) => {
         return (round?.ties || []).some((entry) => (entry.tie || entry).teams.some(teamMatchesHighlight));
@@ -222,8 +256,19 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
                 <View style={styles.message}><Text style={{ color: colors.textMuted }}>{error}</Text></View>
             ) : (
                 <>
-                    <Text style={[styles.hint, { color: colors.textMuted }]}>Scroll sideways through the rounds · tap a team to trace its path</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
+                    <Text style={[styles.hint, { color: colors.textMuted }]}>Scroll to explore the rounds · tap a team to trace its path</Text>
+                    <ScrollView
+                        ref={verticalScrollRef}
+                        style={styles.vScroll}
+                        contentContainerStyle={styles.vScrollContent}
+                        showsVerticalScrollIndicator
+                    >
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.hScroll}
+                        style={{ height: bracketLayout.height + LANE_PADDING * 2 + ROUND_HEADER_HEIGHT }}
+                    >
                         {bracketLayout.rounds.map((round, roundIndex) => {
                             const laneIsHighlighted = roundContainsHighlight(round);
                             const nextRound = bracketLayout.rounds[roundIndex + 1];
@@ -298,6 +343,7 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
                             );
                         })}
                     </ScrollView>
+                    </ScrollView>
                 </>
             )}
 
@@ -370,6 +416,8 @@ const styles = StyleSheet.create({
     titleBox: { flex: 1, minHeight: 40, justifyContent: 'center', paddingHorizontal: 14, borderRadius: 10, borderWidth: 1 },
     topTitle: { fontSize: 15, fontWeight: '600' },
     hint: { fontSize: 11, fontWeight: '500', paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
+    vScroll: { flex: 1 },
+    vScrollContent: { paddingBottom: 32 },
     hScroll: { paddingHorizontal: 12, paddingBottom: 20, gap: 28, alignItems: 'stretch' },
     column: { position: 'relative' },
     roundLane: { borderRadius: 16, borderWidth: 1, overflow: 'visible', minHeight: 420 },
