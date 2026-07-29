@@ -106,7 +106,6 @@ export function TeamGamesScreen({ family, teamCode }) {
 
     const teamName = teamInfo ? family.getTeamName(teamInfo) : normalizedCode;
     const teamLogo = teamInfo ? family.getTeamLogo(teamInfo) : null;
-    const leagueLabels = family.leagues.map((league) => league.label).join(' · ');
 
     // Leagues this team actually plays in that have a standings table — used to
     // render "View standings" buttons. Knockout leagues (no table) are excluded.
@@ -157,7 +156,6 @@ export function TeamGamesScreen({ family, teamCode }) {
                     <View style={[styles.teamLogo, styles.teamLogoPlaceholder, { backgroundColor: colors.separator }]} />
                 )}
                 <View style={styles.teamIdentity}>
-                    <Text style={[styles.league, { color: colors.accent }]} numberOfLines={1}>{leagueLabels}</Text>
                     <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={2}>{teamName}</Text>
                     {form.length > 0 && (
                         <View style={styles.formRow}>
@@ -198,7 +196,7 @@ export function TeamGamesScreen({ family, teamCode }) {
                         >
                             <Ionicons name="podium-outline" size={16} color={colors.accent} />
                             <Text style={[styles.standingsButtonText, { color: colors.text }]} numberOfLines={1}>
-                                {standingsLeagues.length > 1 ? `${league.label} table` : 'View standings'}
+                                {`${league.label} table`}
                             </Text>
                             <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
                         </TouchableOpacity>
@@ -217,7 +215,7 @@ export function TeamGamesScreen({ family, teamCode }) {
                         >
                             <Ionicons name="git-network-outline" size={16} color={colors.accent} />
                             <Text style={[styles.standingsButtonText, { color: colors.text }]} numberOfLines={1}>
-                                {bracketLeagues.length > 1 ? `${league.label} bracket` : 'View bracket'}
+                                {`${league.label} bracket`}
                             </Text>
                             <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
                         </TouchableOpacity>
@@ -284,7 +282,6 @@ const styles = StyleSheet.create({
     teamLogo: { width: 72, height: 72, marginRight: 16 },
     teamLogoPlaceholder: { borderRadius: 36 },
     teamIdentity: { flex: 1, minWidth: 0 },
-    league: { fontSize: 11, fontWeight: '800', letterSpacing: 0.6, marginBottom: 6 },
     teamName: { fontSize: 24, fontWeight: '800' },
     formRow: { flexDirection: 'row', gap: 4, marginTop: 10 },
     formBadge: { minWidth: 23, height: 23, paddingHorizontal: 5, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },

@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.25.0
+- Clean up the team page header: remove the competition list shown above the team name (logo, name and form now stand alone) and surface each competition the team plays in as a tappable button next to the standings/bracket actions — league-table competitions open standings, knockout competitions open the bracket
+
 ### 2.24.0
 - Render the qualifying view as a traditional bracket: each real feeder tie now connects directly to the exact tie it feeds in the following round using horizontal/vertical bracket lines and arrowheads. Future draw slots carry explicit feeder links, so GAIS/Nordsjælland visibly joins Valur/Zrinjski in their third-round matchup
 
