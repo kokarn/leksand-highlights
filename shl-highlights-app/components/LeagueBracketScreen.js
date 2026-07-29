@@ -24,63 +24,113 @@ const tieFeeders = (tie) => {
 export const buildTraditionalBracketLayout = (rounds) => {
     const positions = new Map();
     const centerByKey = new Map();
-    const roundLayouts = [];
     const step = CARD_HEIGHT + CARD_GAP;
+    const half = CARD_HEIGHT / 2;
     const allRounds = rounds || [];
 
-    // Traditional bracket shape: each round is a CONTIGUOUS block of ties, ordered
-    // by feeder position (so connectors never cross), and the whole block is
-    // VERTICALLY CENTERED against the tallest round. Because later rounds have
-    // fewer ties, centering makes them converge toward the middle and the feeder
-    // lines angle inward — the normal bracket "funnel" look. We order by each
-    // tie's anchor (mean of its feeders' final centers); seeded/fresh entrants
-    // have no feeder, so they're distributed across the round to fill the gaps.
-    const tallest = Math.max(1, ...allRounds.map((round) => (round.ties || []).length));
-    const globalHeight = tallest * step;
-
+    // Traditional bracket shape. Two goals that pull against each other:
+    //  (a) a tie fed by a previous round should sit at its feeder's SAME vertical
+    //      position, so the connector runs straight across when possible;
+    //  (b) later (shorter) rounds should read as a centered block that funnels
+    //      toward the middle.
+    // Approach per round: FED ties are anchored to their feeder center (sorted by
+    // that center, then min-gap pushed only against each other so they never
+    // overlap — this keeps most connectors dead straight). SEEDED/fresh entrants
+    // (no feeder) are then slotted into the free gaps around them. Finally the
+    // whole round's band is vertically CENTERED against the tallest round.
+    const rawRounds = [];
     for (let roundIndex = 0; roundIndex < allRounds.length; roundIndex += 1) {
         const round = allRounds[roundIndex];
         const roundTies = round.ties || [];
         const count = roundTies.length;
-        const roundHeight = count * step;
-        const offset = (globalHeight - roundHeight) / 2;
 
-        // Anchor each tie so we can order the column top→bottom without crossings.
-        const seededCountSoFar = roundTies.filter((tie) => tieFeeders(tie)
-            .every((key) => !centerByKey.has(key))).length || 1;
-        let seededSeen = 0;
-        const anchored = roundTies.map((tie, originalIndex) => {
+        const fed = [];
+        const seeded = [];
+        roundTies.forEach((tie, originalIndex) => {
             const feederCenters = tieFeeders(tie)
                 .map((key) => centerByKey.get(key))
                 .filter((value) => Number.isFinite(value));
-            let anchor;
             if (feederCenters.length > 0) {
-                anchor = feederCenters.reduce((sum, value) => sum + value, 0) / feederCenters.length;
+                const anchor = feederCenters.reduce((sum, value) => sum + value, 0) / feederCenters.length;
+                fed.push({ tie, originalIndex, anchor });
             } else {
-                // Distribute seeded entrants evenly across the centered band so they
-                // interleave with fed ties rather than piling at one end.
-                seededSeen += 1;
-                anchor = offset + ((seededSeen - 0.5) / seededCountSoFar) * roundHeight;
+                seeded.push({ tie, originalIndex });
             }
-            return { tie, anchor, originalIndex };
         });
 
-        anchored.sort((a, b) => (a.anchor - b.anchor) || (a.originalIndex - b.originalIndex));
+        const placed = new Map();
 
-        const orderIndex = new Map();
-        anchored.forEach((entry, slot) => orderIndex.set(entry.tie.key, slot));
+        if (fed.length === 0) {
+            // First round (or a round with no resolved feeders): uniform stack.
+            [...seeded]
+                .sort((a, b) => a.originalIndex - b.originalIndex)
+                .forEach((entry, slot) => placed.set(entry.tie.key, slot * step + half));
+        } else {
+            // Anchor fed ties to their feeder centers; push down only to avoid overlap.
+            fed.sort((a, b) => (a.anchor - b.anchor) || (a.originalIndex - b.originalIndex));
+            let prev = -Infinity;
+            for (const entry of fed) {
+                const center = Math.max(entry.anchor, prev + step);
+                prev = center;
+                placed.set(entry.tie.key, center);
+            }
+            // Slot seeded ties into free gaps, spread across the fed band.
+            const occupied = [...placed.values()].sort((a, b) => a - b);
+            const fits = (c) => occupied.every((o) => Math.abs(c - o) >= step - 0.5);
+            const fMin = occupied[0];
+            const fMax = occupied[occupied.length - 1];
+            const span = Math.max(fMax - fMin, (count - 1) * step);
+            const seededCount = seeded.length || 1;
+            seeded.sort((a, b) => a.originalIndex - b.originalIndex);
+            let seededSeen = 0;
+            for (const entry of seeded) {
+                seededSeen += 1;
+                const desired = fMin - half + ((seededSeen - 0.5) / seededCount) * span;
+                let center = desired;
+                let k = 0;
+                while (!fits(center)) {
+                    k += 1;
+                    if (fits(desired + k * 8)) { center = desired + k * 8; break; }
+                    if (fits(desired - k * 8)) { center = desired - k * 8; break; }
+                    center = desired + k * 8;
+                }
+                occupied.push(center);
+                occupied.sort((a, b) => a - b);
+                placed.set(entry.tie.key, center);
+            }
+        }
 
+        rawRounds.push({ round, roundTies, placed });
+    }
+
+    // Second pass: apply ONE global shift so the canvas starts at 0. A single
+    // uniform shift preserves every feeder alignment (a fed tie and its feeder
+    // move by the same amount, so straight connectors stay straight). The funnel
+    // look emerges naturally: a round's seeded ties fill above and below its fed
+    // ties, so shorter rounds end up roughly centered against the taller ones
+    // without a per-round shift (which would misalign the connectors).
+    let gMin = Infinity;
+    let gMax = -Infinity;
+    for (const { placed } of rawRounds) {
+        for (const center of placed.values()) {
+            gMin = Math.min(gMin, center - half);
+            gMax = Math.max(gMax, center + half);
+        }
+    }
+    if (!Number.isFinite(gMin)) { gMin = 0; gMax = step; }
+    const globalHeight = gMax - gMin;
+    const globalShift = -gMin;
+
+    const roundLayouts = rawRounds.map(({ round, roundTies, placed }) => {
         const ties = roundTies.map((tie) => {
-            const slot = orderIndex.get(tie.key) || 0;
-            const top = offset + slot * step;
-            const center = top + CARD_HEIGHT / 2;
+            const center = (placed.get(tie.key) || 0) + globalShift;
+            const top = center - half;
             positions.set(tie.key, center);
             centerByKey.set(tie.key, center);
             return { tie, top, center };
         });
-
-        roundLayouts.push({ ...round, ties, height: globalHeight });
-    }
+        return { ...round, ties, height: globalHeight };
+    });
 
     const height = Math.max(420, globalHeight);
     return { rounds: roundLayouts, positions, height };

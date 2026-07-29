@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.32.0
+- Restore straight-across connectors in the qualifying bracket where possible: a tie fed by a single previous-round tie now sits at that feeder's exact vertical position (connector runs dead straight), and only shifts down when two feeders sit too close to both stay level. Seeded/fresh entrants fill the gaps around the anchored ties, and one global shift keeps every aligned pair aligned. ~17 of 29 single-feeder connectors are now perfectly straight (was ~1)
+
 ### 2.31.0
 - Lay out the qualifying bracket like a real bracket: each round is now a contiguous block of ties ordered by feeder position (connectors flow top-to-bottom without crossing) and vertically centered against the tallest round. Shorter later rounds (e.g. Third Round's 30 ties vs Second Round's 49) sit in the middle band so feeder lines converge inward — the classic bracket funnel — instead of every round starting flush at the top
 
