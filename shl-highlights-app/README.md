@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.34.0
+- Fix two qualifying-bracket rendering bugs. (1) Overlapping connectors: every winner→next-round line between a pair of columns used to bend at the same x, so their vertical segments stacked on top of each other and you couldn't tell which match fed which. Each connector now gets its own vertical channel, spread evenly across the inter-column gutter and ordered by height, so no two lines share an x. (2) Round 3 not aligned with Round 2: the feeder/spine-anchoring layout staggered later rounds off a shared baseline (and mislaid rounds whose live data reuses placeholder tie keys like `draw-q3-1`). Every round now stacks uniformly from a shared top baseline on a fixed grid, positioned by slot index, so all columns line up in clean horizontal rows
+
 ### 2.33.0
 - Fix the qualifying bracket bunching every round at the top: the tallest round (e.g. Second Round's 49 ties) is now the spine and every other round aligns to it — earlier rounds spread out so each match sits at the height of the next-round tie it feeds, later rounds anchor to their feeder. Round 1 is now spread across the full height and centered instead of compacted at the top, and ~17 of 18 first→second-round connectors run dead straight
 

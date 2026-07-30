@@ -23,131 +23,39 @@ const tieFeeders = (tie) => {
 
 export const buildTraditionalBracketLayout = (rounds) => {
     const positions = new Map();
-    const center = new Map(); // tie.key -> vertical center (pre-shift)
+    const center = new Map(); // tie.key -> vertical center
     const step = CARD_HEIGHT + CARD_GAP;
     const half = CARD_HEIGHT / 2;
     const allRounds = rounds || [];
 
-    // Traditional bracket shape, built around a SPINE round. UEFA qualifying GROWS
-    // then shrinks (26 → 49 → 30 ties), so the tallest round is the natural spine:
-    // it stacks uniformly top→bottom and every other round aligns TO it. Earlier
-    // (smaller) rounds anchor each tie to the position of the next-round tie it
-    // FEEDS (backward), and later rounds anchor to the position of their feeder
-    // (forward). Either way a tie sits at its neighbour's height → straight
-    // connector; it only shifts to avoid overlapping a sibling. This centres the
-    // shorter rounds against the spine (the funnel) AND keeps most lines straight,
-    // instead of every round piling up at the top.
-    const lengths = allRounds.map((round) => (round.ties || []).length);
-    let spine = 0;
-    for (let i = 1; i < lengths.length; i += 1) {
-        if (lengths[i] > lengths[spine]) { spine = i; }
-    }
-
-    // Place a round by anchoring each tie to a target center (or null = seeded),
-    // sorting by that anchor, min-gap pushing only against siblings, then slotting
-    // the anchorless ties into the free gaps spread across the anchored band.
-    const placeRound = (roundIndex, anchorOf) => {
-        const roundTies = allRounds[roundIndex].ties || [];
-        const count = roundTies.length;
-        const anchored = [];
-        const loose = [];
-        roundTies.forEach((tie, originalIndex) => {
-            const a = anchorOf(tie);
-            if (Number.isFinite(a)) {
-                anchored.push({ tie, originalIndex, anchor: a });
-            } else {
-                loose.push({ tie, originalIndex });
-            }
-        });
-
-        if (anchored.length === 0) {
-            // No anchors (e.g. the very first round with nothing to align to).
-            [...loose]
-                .sort((x, y) => x.originalIndex - y.originalIndex)
-                .forEach((entry, slot) => center.set(entry.tie.key, slot * step + half));
-            return;
-        }
-
-        anchored.sort((x, y) => (x.anchor - y.anchor) || (x.originalIndex - y.originalIndex));
-        let prev = -Infinity;
-        for (const entry of anchored) {
-            const c = Math.max(entry.anchor, prev + step);
-            prev = c;
-            center.set(entry.tie.key, c);
-        }
-
-        const occupied = anchored.map((entry) => center.get(entry.tie.key)).sort((a, b) => a - b);
-        const fits = (c) => occupied.every((o) => Math.abs(c - o) >= step - 0.5);
-        const fMin = occupied[0];
-        const fMax = occupied[occupied.length - 1];
-        const span = Math.max(fMax - fMin, (count - 1) * step);
-        const looseCount = loose.length || 1;
-        loose.sort((x, y) => x.originalIndex - y.originalIndex);
-        let seen = 0;
-        for (const entry of loose) {
-            seen += 1;
-            const desired = fMin - half + ((seen - 0.5) / looseCount) * span;
-            let c = desired;
-            let k = 0;
-            while (!fits(c)) {
-                k += 1;
-                if (fits(desired + k * 8)) { c = desired + k * 8; break; }
-                if (fits(desired - k * 8)) { c = desired - k * 8; break; }
-                c = desired + k * 8;
-            }
-            occupied.push(c);
-            occupied.sort((a, b) => a - b);
-            center.set(entry.tie.key, c);
-        }
-    };
-
-    // 1. Spine: uniform stack.
-    (allRounds[spine]?.ties || []).forEach((tie, slot) => center.set(tie.key, slot * step + half));
-
-    // 2. Rounds AFTER the spine: forward-anchor each tie to its feeder center.
-    for (let ri = spine + 1; ri < allRounds.length; ri += 1) {
-        placeRound(ri, (tie) => {
-            const cs = tieFeeders(tie).map((key) => center.get(key)).filter(Number.isFinite);
-            return cs.length ? cs.reduce((s, v) => s + v, 0) / cs.length : null;
-        });
-    }
-
-    // 3. Rounds BEFORE the spine: backward-anchor each tie to the child tie it feeds.
-    for (let ri = spine - 1; ri >= 0; ri -= 1) {
-        const childPos = new Map();
-        for (const childTie of allRounds[ri + 1].ties || []) {
-            const c = center.get(childTie.key);
-            for (const fk of tieFeeders(childTie)) {
-                if (!childPos.has(fk)) { childPos.set(fk, []); }
-                childPos.get(fk).push(c);
-            }
-        }
-        placeRound(ri, (tie) => {
-            const cs = (childPos.get(tie.key) || []).filter(Number.isFinite);
-            return cs.length ? cs.reduce((s, v) => s + v, 0) / cs.length : null;
-        });
-    }
-
-    // Normalise so the canvas starts at 0 (one uniform shift preserves alignment).
-    let gMin = Infinity;
-    let gMax = -Infinity;
-    for (const c of center.values()) {
-        gMin = Math.min(gMin, c - half);
-        gMax = Math.max(gMax, c + half);
-    }
-    if (!Number.isFinite(gMin)) { gMin = 0; gMax = step; }
-    const globalHeight = gMax - gMin;
-    const globalShift = -gMin;
-
-    const roundLayouts = allRounds.map((round) => {
-        const ties = (round.ties || []).map((tie) => {
-            const c = (center.get(tie.key) || 0) + globalShift;
-            const top = c - half;
+    // UEFA qualifying is NOT a clean binary tree — it GROWS then shrinks
+    // (26 → 49 → 30 ties) because most entrants are SEEDED straight in, not fed
+    // by a prior tie. Any feeder-centering / spine-anchoring scheme therefore
+    // staggers the columns off a shared baseline: a round's first tie drifts
+    // hundreds of px down and the columns no longer line up row-to-row (this was
+    // the "Round 3 not aligned with Round 2" bug). So stack EVERY round uniformly
+    // from the top on one fixed grid — all columns start at y=0, the Nth tie of
+    // every round sits at `N * step`, cards line up in clean horizontal rows.
+    // NB: position is derived from each tie's SLOT INDEX, never from a shared
+    // key→center Map — the live data reuses placeholder keys (e.g. `draw-q3-1`)
+    // across ties, so a Map keyed by tie.key collides and mislays those rounds.
+    // `center` is still recorded per key for the feeder→tie connectors (real
+    // ties have unique keys; placeholder ties have no feeders, so a collision
+    // there is harmless).
+    const roundLayouts = (allRounds).map((round) => {
+        const ties = (round.ties || []).map((tie, slot) => {
+            const c = slot * step + half;
+            center.set(tie.key, c);
             positions.set(tie.key, c);
-            return { tie, top, center: c };
+            return { tie, top: c - half, center: c };
         });
-        return { ...round, ties, height: globalHeight };
+        return { ...round, ties };
     });
+
+    // Canvas height = tallest round.
+    const maxTies = allRounds.reduce((m, r) => Math.max(m, (r.ties || []).length), 0);
+    const globalHeight = Math.max(step, maxTies * step);
+    roundLayouts.forEach((r) => { r.height = globalHeight; });
 
     const height = Math.max(420, globalHeight);
     return { rounds: roundLayouts, positions, height };
@@ -268,24 +176,48 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
             const srcCardRight = srcColLeft + COL_WIDTH - 2 * LANE_PADDING; // tie card right edge
             const dstColLeft = (ri + 1) * (COL_WIDTH + HSCROLL_GAP);
             const dstCardLeft = dstColLeft + 2 * LANE_PADDING; // tie card left edge
-            const midX = (srcColLeft + COL_WIDTH + dstColLeft) / 2; // middle of the inter-column gap
+
+            // Every connector between these two columns shares the same narrow
+            // gutter. If they all bend at the SAME x, their vertical runs stack on
+            // top of each other and you can't tell which line feeds which card
+            // (the "overlapping arrows" bug). Give each connector its OWN vertical
+            // channel, spread evenly across the gutter and ordered by source
+            // height, so no two vertical segments ever share an x-coordinate.
+            const pairs = [];
             for (const { tie, center } of round.ties) {
                 const fed = nextRound.ties.filter(({ tie: nextTie }) => tieFeeders(nextTie).includes(tie.key));
                 for (const { tie: nextTie, center: nextCenter } of fed) {
-                    const y1 = cardTop + center;
-                    const y2 = cardTop + nextCenter;
                     const isPath = tie.teams.some(teamMatchesHighlight) || nextTie.teams.some(teamMatchesHighlight);
-                    out.push({
+                    pairs.push({
                         key: `${tie.key}->${nextTie.key}`,
-                        srcX: srcCardRight,
-                        dstX: dstCardLeft,
-                        midX,
-                        y1,
-                        y2,
+                        y1: cardTop + center,
+                        y2: cardTop + nextCenter,
                         isPath
                     });
                 }
             }
+            // Channels live strictly inside the gutter, with a small inset from
+            // each card edge so lines never touch the cards' rounded corners.
+            const gutterStart = srcCardRight + 6;
+            const gutterEnd = dstCardLeft - 6;
+            const gutterSpan = Math.max(1, gutterEnd - gutterStart);
+            const n = pairs.length;
+            pairs
+                .sort((a, b) => (a.y1 - b.y1) || (a.y2 - b.y2))
+                .forEach((p, idx) => {
+                    const channelX = n === 1
+                        ? gutterStart + gutterSpan / 2
+                        : gutterStart + ((idx + 1) / (n + 1)) * gutterSpan;
+                    out.push({
+                        key: p.key,
+                        srcX: srcCardRight,
+                        dstX: dstCardLeft,
+                        midX: channelX,
+                        y1: p.y1,
+                        y2: p.y2,
+                        isPath: p.isPath
+                    });
+                });
         }
         return out;
     }, [bracketLayout, teamMatchesHighlight]);

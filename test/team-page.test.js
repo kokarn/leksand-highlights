@@ -218,9 +218,27 @@ test('bracket route + screen exist and team page links to them', () => {
     assert.match(screen, /roundLane/);
     assert.match(screen, /feederTieKeys/);
     assert.match(screen, /buildTraditionalBracketLayout/);
-    assert.match(screen, /tieConnector/);
+    assert.match(screen, /connectorOverlay/);
     // Team page renders a "View bracket" link to the route.
     const teamScreen = fs.readFileSync(path.join(appDir, 'components', 'TeamGamesScreen.js'), 'utf8');
     assert.match(teamScreen, /bracketLeagues/);
     assert.match(teamScreen, /\/bracket\//);
+});
+
+test('bracket layout stacks every round uniformly from a shared top baseline', () => {
+    // The screen imports react-native, so it can't be executed under node —
+    // assert the layout contract at the source level instead (repo convention).
+    // Regression guard for the "Round 3 not aligned with Round 2" bug: the
+    // feeder/spine-anchoring scheme that staggered later rounds off the baseline
+    // must be gone, replaced by a uniform top→bottom stack on a fixed grid.
+    const screen = fs.readFileSync(
+        path.join(appDir, 'components', 'LeagueBracketScreen.js'), 'utf8');
+    // Uniform stack: every tie sits at tieIndex * step from a shared y=0 top.
+    assert.match(screen, /slot \* step \+ half/, 'ties stack uniformly by index');
+    // The old off-baseline anchoring machinery must not have crept back.
+    assert.doesNotMatch(screen, /const spine =/, 'no spine-anchoring layout');
+    assert.doesNotMatch(screen, /placeRound/, 'no feeder-centering placer');
+    // Connectors get their own staggered vertical channel so they never overlap.
+    assert.match(screen, /channelX/, 'connectors use per-line channels');
+    assert.match(screen, /gutterSpan/, 'channels spread across the gutter');
 });
