@@ -119,7 +119,10 @@ class ConferenceLeagueQualProvider extends AllsvenskanProvider {
 
         const allEvents = [...events, ...extra.flat()];
         const bracket = mergeFutureRounds(
-            buildBracket(allEvents),
+            buildBracket(allEvents, {
+                resolveNames: (t) => this.getTeamNames(t),
+                resolveIcon: (icon, id) => this.resolveTeamIcon(icon, id)
+            }),
             await fetchConferenceFutureRounds()
         );
         return {

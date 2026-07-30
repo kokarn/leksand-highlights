@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 
 import { useTheme } from '../contexts';
 import { fetchBracket, resolveMediaUrl } from '../api/shl';
+import { getTeamName as resolveTeamName, getTeamLogoUri } from '../utils/teamIdentity';
 import {
     CARD_HEIGHT as LAYOUT_CARD_HEIGHT,
     CARD_GAP as LAYOUT_CARD_GAP,
@@ -24,6 +25,18 @@ const HSCROLL_GAP = 28; // gap between round lanes (hScroll contentContainer gap
 // Layout math (feeder reconstruction, barycenter reorder, spine-anchored feeder
 // alignment) lives in utils/bracketLayout.js so it's unit-testable without RN.
 export { buildTraditionalBracketLayout };
+
+// Bracket teams now carry the canonical { names: { short, long } } shape from the
+// provider (routed through the shared team-identity resolver), so a club reads
+// identically here and in cards/pushes. Real ties use `names`; pending draw slots
+// ("Winner: A / B") only have a raw `name` — fall back to that.
+const bracketTeamName = (team) =>
+    resolveTeamName(team, { fallback: team?.name || 'TBD' });
+
+// One logo entry point: knockout leagues are football, so route through the
+// football path (upstream icon via proxy). The provider already fills ESPN's
+// blank crests from the fallback-badge map before this point.
+const bracketTeamLogo = (team) => getTeamLogoUri(team, 'football') || resolveMediaUrl(team?.logo);
 
 
 const shortDate = (value) => {
@@ -205,16 +218,16 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
                 onPress={() => setSelected({ team, tie, roundTitle })}
                 style={[styles.teamRow, top && styles.teamRowTop, isHi && { backgroundColor: colors.chipActive }]}
             >
-                {team.logo ? (
-                    <Image source={{ uri: resolveMediaUrl(team.logo) }} style={styles.logo} resizeMode="contain" />
+                {(() => { const logoUri = bracketTeamLogo(team); return logoUri ? (
+                    <Image source={{ uri: logoUri }} style={styles.logo} resizeMode="contain" />
                 ) : (
                     <View style={[styles.logo, styles.logoPlaceholder, { backgroundColor: colors.separator }]} />
-                )}
+                ); })()}
                 <Text
                     numberOfLines={1}
                     style={[styles.teamName, { color: team.isWinner ? colors.text : colors.textSecondary }, team.isWinner && styles.winnerName]}
                 >
-                    {team.name}
+                    {bracketTeamName(team)}
                 </Text>
                 {team.origin === 'seeded' && (
                     <View style={[styles.seedTag, { backgroundColor: 'rgba(255,159,10,0.16)' }]}>
@@ -368,12 +381,12 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
                 <Pressable style={styles.overlay} onPress={() => setSelected(null)}>
                     <Pressable style={[styles.popover, { backgroundColor: colors.card, borderColor: colors.cardBorder }]} onPress={() => {}}>
                         <View style={styles.popHeader}>
-                            {selected.team.logo ? (
-                                <Image source={{ uri: resolveMediaUrl(selected.team.logo) }} style={styles.popLogo} resizeMode="contain" />
+                            {(() => { const logoUri = bracketTeamLogo(selected.team); return logoUri ? (
+                                <Image source={{ uri: logoUri }} style={styles.popLogo} resizeMode="contain" />
                             ) : (
                                 <View style={[styles.popLogo, styles.logoPlaceholder, { backgroundColor: colors.separator }]} />
-                            )}
-                            <Text style={[styles.popName, { color: colors.text }]}>{selected.team.name}</Text>
+                            ); })()}
+                            <Text style={[styles.popName, { color: colors.text }]}>{bracketTeamName(selected.team)}</Text>
                         </View>
 
                         {(() => {
@@ -394,7 +407,7 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
                                         </Text>
                                         {beaten && (
                                             <Text style={[styles.popSub, { color: colors.textMuted }]}>
-                                                beat {beaten.name} · {legLine(feeder.tie.legs)}
+                                                beat {bracketTeamName(beaten)} · {legLine(feeder.tie.legs)}
                                             </Text>
                                         )}
                                     </View>

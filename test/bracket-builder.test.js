@@ -99,3 +99,44 @@ test('seededCount tallies entrants per round', () => {
     // 49 ties * 2 slots - 26 advanced = 72 seeded
     assert.equal(second.seededCount, 49 * 2 - 26);
 });
+
+test('buildBracket emits the canonical names shape and routes logos through injected resolvers', () => {
+    // Mirror how the qual providers wire in AllsvenskanProvider.getTeamNames /
+    // resolveTeamIcon so bracket teams read identically to cards/pushes and
+    // ESPN's blank crests get filled from the fallback-badge map.
+    const resolveNames = (t) => ({
+        short: t.shortDisplayName || t.displayName || t.name || t.abbreviation || 'Unknown',
+        long: t.displayName || t.name || t.shortDisplayName || t.abbreviation || 'Unknown'
+    });
+    const resolveIcon = (icon, id) => icon || (id ? `FALLBACK:${id}` : null);
+
+    const { rounds } = buildBracket(events, { resolveNames, resolveIcon });
+    let sawNames = 0;
+    let sawFallbackLogo = 0;
+    for (const round of rounds) {
+        for (const tie of round.ties) {
+            for (const team of tie.teams) {
+                // Canonical shape present, with a back-compat `name` === names.short.
+                assert.ok(team.names && typeof team.names.short === 'string', 'team carries names.short');
+                assert.ok(typeof team.names.long === 'string', 'team carries names.long');
+                assert.equal(team.name, team.names.short, 'name mirrors names.short for back-compat');
+                sawNames++;
+                if (typeof team.logo === 'string' && team.logo.startsWith('FALLBACK:')) {
+                    sawFallbackLogo++;
+                }
+            }
+        }
+    }
+    assert.ok(sawNames > 0, 'saw at least one team with canonical names');
+    // The conf-qual fixture has ESPN teams with no logo → the injected fallback
+    // must have filled them, proving the logo path runs through the resolver.
+    assert.ok(sawFallbackLogo > 0, 'blank ESPN logos were filled via the injected fallback resolver');
+});
+
+test('buildBracket without resolvers keeps the historical field priority (back-compat)', () => {
+    const { rounds } = buildBracket(events);
+    const team = rounds[0].ties[0].teams[0];
+    assert.ok(team.names && team.names.short, 'default names.short still produced');
+    assert.equal(team.name, team.names.short);
+});
+

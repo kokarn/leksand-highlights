@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.37.0
+- Bring the qualifying bracket into the shared team-identity system. The bracket built its team objects straight from raw ESPN fields (`shortDisplayName`/`t.logo`), bypassing both the canonical name resolver and the fallback-badge logo map — so it was the one surface where a club could read differently and where ~118/210 crests were blank. `buildBracket` now accepts injected `resolveNames`/`resolveIcon` (wired to the provider's `getTeamNames`/`resolveTeamIcon`), emits the canonical `names:{short,long}` shape (keeping `name` for back-compat), and the app's `LeagueBracketScreen` renders names/logos through the shared `getTeamName`/`getTeamLogoUri` helpers. Live effect: bracket long-names now match the rest of the app (e.g. `Strassen`→`UNA Strassen`, `BATE`→`BATE Borisov`) and blank bracket logos dropped 118→69 (the remainder are clubs with no crest anywhere)
+
 ### 2.36.1
 - Fix the CI test suite failing to import the new shared team-identity module under raw Node ESM: `utils/teamIdentity.js` imported `../api/shl` without the `.js` extension, which Metro/Expo tolerate but Node's ESM loader rejects (`ERR_MODULE_NOT_FOUND`), breaking the team-page tests and the backend Docker Publish gate
 

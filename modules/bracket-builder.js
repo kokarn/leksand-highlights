@@ -44,13 +44,31 @@ const num = (v) => {
     return Number.isFinite(n) ? n : null;
 };
 
-const teamOf = (competitor) => {
+const teamOf = (competitor, opts = {}) => {
     const t = competitor?.team || {};
+    const id = competitor?.id != null ? String(competitor.id) : (t.id != null ? String(t.id) : null);
+    // Canonical name shape, produced the SAME way as the game providers'
+    // getTeamNames so a club reads identically in the bracket and everywhere
+    // else. When the provider injects resolveNames, defer to it; otherwise fall
+    // back to the same field priority it uses.
+    const names = opts.resolveNames
+        ? opts.resolveNames(t)
+        : {
+            short: t.shortDisplayName || t.displayName || t.name || t.abbreviation || 'Unknown',
+            long: t.displayName || t.name || t.shortDisplayName || t.abbreviation || 'Unknown'
+        };
+    // Logo: route through the provider's fallback-badge map (fills the ~118/210
+    // ESPN blanks with curated crests) exactly like the games feed does.
+    const rawLogo = t.logo || null;
+    const logo = opts.resolveIcon ? opts.resolveIcon(rawLogo, id) : rawLogo;
     return {
-        id: competitor?.id != null ? String(competitor.id) : (t.id != null ? String(t.id) : null),
+        id,
         code: t.abbreviation || null,
-        name: t.shortDisplayName || t.displayName || t.abbreviation || null,
-        logo: t.logo || null
+        // `name` kept for back-compat; `names` is the canonical shape the app
+        // renders through the shared team-identity resolver.
+        name: names.short,
+        names,
+        logo
     };
 };
 
@@ -80,7 +98,7 @@ const tieKeyFromSeries = (series, event) => {
  *   { key, round, roundRank, teams:{[id]:team}, aggregate:{[id]:number|null},
  *     winnerId, completed, legs:[{leg,homeId,awayId,homeScore,awayScore,status,date}] }
  */
-function foldEventsIntoTies(events) {
+function foldEventsIntoTies(events, opts = {}) {
     const ties = new Map();
 
     for (const rawEvent of events || []) {
@@ -136,8 +154,8 @@ function foldEventsIntoTies(events) {
         // Per-leg record.
         const home = (event.competitors || []).find((c) => c.homeAway === 'home') || null;
         const away = (event.competitors || []).find((c) => c.homeAway === 'away') || null;
-        const homeTeam = home ? teamOf(home) : null;
-        const awayTeam = away ? teamOf(away) : null;
+        const homeTeam = home ? teamOf(home, opts) : null;
+        const awayTeam = away ? teamOf(away, opts) : null;
         if (homeTeam?.id) {
             tie.teams[homeTeam.id] = homeTeam;
         }
@@ -210,8 +228,8 @@ function traceOrigins(ties) {
  * Build the full bracket payload from raw ESPN leg-events.
  * Returns { rounds: [{ title, ties: [...] }], generatedAt }.
  */
-function buildBracket(events) {
-    const ties = traceOrigins(foldEventsIntoTies(events));
+function buildBracket(events, opts = {}) {
+    const ties = traceOrigins(foldEventsIntoTies(events, opts));
     const tieList = [...ties.values()];
 
     // Group into rounds, preserving canonical order.

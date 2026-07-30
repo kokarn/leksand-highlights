@@ -115,7 +115,10 @@ class EuropaLeagueQualProvider extends AllsvenskanProvider {
         }
 
         const allEvents = [...events, ...extra.flat()];
-        const bracket = buildBracket(allEvents);
+        const bracket = buildBracket(allEvents, {
+            resolveNames: (t) => this.getTeamNames(t),
+            resolveIcon: (icon, id) => this.resolveTeamIcon(icon, id)
+        });
         return {
             league: this.name,
             sport: 'europa-league-qual',
