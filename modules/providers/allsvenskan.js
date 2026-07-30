@@ -1,4 +1,5 @@
 const BaseProvider = require('./base');
+const teamIdentity = require('../team-identity');
 
 /**
  * Allsvenskan (Swedish Football League) Data Provider
@@ -27,14 +28,7 @@ class AllsvenskanProvider extends BaseProvider {
     }
 
     normalizeComparableText(value) {
-        if (!value) {
-            return '';
-        }
-        return String(value)
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-zA-Z0-9]/g, '')
-            .toLowerCase();
+        return teamIdentity.normalizeComparableText(value);
     }
 
     buildTeamNameCandidates(teamInfo) {
@@ -1150,8 +1144,8 @@ class AllsvenskanProvider extends BaseProvider {
 
     getGameDisplayInfo(game) {
         return {
-            homeTeam: game.homeTeamInfo?.names?.short || game.homeTeamInfo?.code || 'Unknown',
-            awayTeam: game.awayTeamInfo?.names?.short || game.awayTeamInfo?.code || 'Unknown',
+            homeTeam: teamIdentity.getTeamName(game.homeTeamInfo, { fallback: 'Unknown' }),
+            awayTeam: teamIdentity.getTeamName(game.awayTeamInfo, { fallback: 'Unknown' }),
             homeTeamCode: game.homeTeamInfo?.code,
             awayTeamCode: game.awayTeamInfo?.code,
             venue: game.venueInfo?.name || 'arena',

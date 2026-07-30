@@ -14,18 +14,15 @@ import { FootballGoalItem, CardItem, SubstitutionItem, HalfMarker } from '../eve
 import { GameModalHeader } from './GameModalHeader';
 import { MatchTabBar } from './MatchTabBar';
 import { fetchFootballStandings, fetchSvenskaCupenStandings, resolveMediaUrl } from '../../api/shl';
+import { getTeamName as resolveTeamName, getTeamLogoUri } from '../../utils/teamIdentity';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = 50;
 const SWIPE_VELOCITY_THRESHOLD = 500;
 
-const getTeamName = (team, fallback) => {
-    return team?.names?.short || team?.names?.long || team?.code || fallback;
-};
+const getTeamName = (team, fallback) => resolveTeamName(team, { fallback });
 
-const getTeamLogo = (team) => {
-    return resolveMediaUrl(team?.icon);
-};
+const getTeamLogo = (team) => getTeamLogoUri(team, 'football');
 
 const parseFootballClockToSortValue = (clock) => {
     if (clock === null || clock === undefined || clock === '') {

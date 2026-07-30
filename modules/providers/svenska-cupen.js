@@ -1,4 +1,5 @@
 const BaseProvider = require('./base');
+const teamIdentity = require('../team-identity');
 
 const INVISIBLE_TIME_CHARS_REGEX = /[\u200e\u200f\u202a-\u202e]/g;
 
@@ -912,8 +913,8 @@ class SvenskaCupenProvider extends BaseProvider {
 
     getGameDisplayInfo(game) {
         return {
-            homeTeam: game.homeTeamInfo?.names?.short || game.homeTeamInfo?.code || 'Unknown',
-            awayTeam: game.awayTeamInfo?.names?.short || game.awayTeamInfo?.code || 'Unknown',
+            homeTeam: teamIdentity.getTeamName(game.homeTeamInfo, { fallback: 'Unknown' }),
+            awayTeam: teamIdentity.getTeamName(game.awayTeamInfo, { fallback: 'Unknown' }),
             homeTeamCode: game.homeTeamInfo?.code,
             awayTeamCode: game.awayTeamInfo?.code,
             venue: game.venueInfo?.name || 'arena',

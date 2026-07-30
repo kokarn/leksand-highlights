@@ -3,6 +3,7 @@ const { getProvider } = require('./providers');
 const { getActiveGames } = require('./games-cache');
 const pushNotifications = require('./fcm-notifications');
 const { addEntry } = require('./activity-log');
+const teamIdentity = require('./team-identity');
 
 // ============ GOAL WATCHER STATE ============
 // Track previously seen goals to detect new ones
@@ -159,8 +160,8 @@ function extractGoalDetails(goal, gameInfo, sport, computedScore = null) {
     const opposingTeam = isHomeTeam ? gameInfo.awayTeamInfo : gameInfo.homeTeamInfo;
 
     // Get team codes for targeting
-    const scoringTeamCode = scoringTeam?.code || scoringTeam?.names?.short || 'Unknown';
-    const opposingTeamCode = opposingTeam?.code || opposingTeam?.names?.short || 'Unknown';
+    const scoringTeamCode = teamIdentity.getTeamCode(scoringTeam, 'Unknown');
+    const opposingTeamCode = teamIdentity.getTeamCode(opposingTeam, 'Unknown');
 
     // Determine the running score AT THE MOMENT OF THIS GOAL.
     // Order of trust:
@@ -196,9 +197,9 @@ function extractGoalDetails(goal, gameInfo, sport, computedScore = null) {
         gameId: gameInfo.uuid,
         scorerName,
         scoringTeamCode,
-        scoringTeamName: scoringTeam?.names?.long || scoringTeam?.names?.short || scoringTeamCode,
+        scoringTeamName: teamIdentity.getTeamName(scoringTeam, { fallback: scoringTeamCode }),
         opposingTeamCode,
-        opposingTeamName: opposingTeam?.names?.long || opposingTeam?.names?.short || opposingTeamCode,
+        opposingTeamName: teamIdentity.getTeamName(opposingTeam, { fallback: opposingTeamCode }),
         homeTeamCode: gameInfo.homeTeamInfo?.code,
         awayTeamCode: gameInfo.awayTeamInfo?.code,
         homeScore,

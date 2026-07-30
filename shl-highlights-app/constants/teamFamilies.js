@@ -8,10 +8,9 @@ import {
     fetchStandings,
     fetchHockeyAllsvenskanStandings,
     fetchFootballStandings,
-    fetchSvenskaCupenStandings,
-    getTeamLogoUrl,
-    resolveMediaUrl
+    fetchSvenskaCupenStandings
 } from '../api/shl.js';
+import { getTeamName, getTeamCodeUpper, getTeamLogoUri } from '../utils/teamIdentity.js';
 
 /**
  * Team-page configuration, keyed by "team family" (a group of leagues that
@@ -31,12 +30,12 @@ import {
 
 const hockeyTeamCode = (team) => {
     const code = team?.code || team?.names?.code || team?.teamCode;
-    return code ? String(code).toUpperCase() : null;
+    return code ? String(code).toUpperCase() : getTeamCodeUpper(team);
 };
 
 const footballTeamCode = (team) => {
     const code = team?.code || team?.teamCode;
-    return code ? String(code).toUpperCase() : null;
+    return code ? String(code).toUpperCase() : getTeamCodeUpper(team);
 };
 
 export const TEAM_FAMILIES = {
@@ -53,12 +52,9 @@ export const TEAM_FAMILIES = {
             { slug: 'hockeyallsvenskan', label: 'HockeyAllsvenskan', fetchGames: () => fetchHockeyAllsvenskanGames(), hasStandings: true, standingsFormat: 'table', standingsSport: 'shl', fetchStandings: (opts) => fetchHockeyAllsvenskanStandings(opts) }
         ],
         getTeamCode: hockeyTeamCode,
-        getTeamName: (team) => team?.names?.short || team?.names?.long || hockeyTeamCode(team) || 'Team',
+        getTeamName: (team) => getTeamName(team, { fallback: hockeyTeamCode(team) || 'Team' }),
         // Hockey logos come from local static PNGs keyed by lowercased code.
-        getTeamLogo: (team) => {
-            const code = hockeyTeamCode(team);
-            return code ? getTeamLogoUrl(code) : resolveMediaUrl(team?.icon);
-        }
+        getTeamLogo: (team) => getTeamLogoUri(team, 'hockey')
     },
     football: {
         family: 'football',
@@ -72,9 +68,9 @@ export const TEAM_FAMILIES = {
             { slug: 'conference-league-qual', label: 'Conference League Qualifying', fetchGames: (filters) => fetchConferenceLeagueQualGames(filters), hasStandings: false, hasBracket: true }
         ],
         getTeamCode: footballTeamCode,
-        getTeamName: (team) => team?.names?.short || team?.names?.long || footballTeamCode(team) || 'Team',
+        getTeamName: (team) => getTeamName(team, { fallback: footballTeamCode(team) || 'Team' }),
         // Football logos come from the upstream icon URL (proxied).
-        getTeamLogo: (team) => resolveMediaUrl(team?.icon)
+        getTeamLogo: (team) => getTeamLogoUri(team, 'football')
     }
 };
 

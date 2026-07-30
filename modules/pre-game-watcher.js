@@ -21,6 +21,7 @@ const { getProvider } = require('./providers');
 const { formatSwedishTimestamp } = require('./utils');
 const pushNotifications = require('./fcm-notifications');
 const { addEntry } = require('./activity-log');
+const teamIdentity = require('./team-identity');
 
 // ============ PRE-GAME WATCHER STATE ============
 let seenPreGameNotifications = new Set(); // Track sent notifications by gameId
@@ -96,10 +97,10 @@ function extractShlGameInfo(game) {
     return {
         sport: 'shl',
         gameId: game.uuid,
-        homeTeamName: game.homeTeamInfo?.names?.long || game.homeTeamInfo?.names?.short || 'Home',
-        awayTeamName: game.awayTeamInfo?.names?.long || game.awayTeamInfo?.names?.short || 'Away',
-        homeTeamCode: game.homeTeamInfo?.code || game.homeTeamInfo?.names?.short || '',
-        awayTeamCode: game.awayTeamInfo?.code || game.awayTeamInfo?.names?.short || '',
+        homeTeamName: teamIdentity.getTeamName(game.homeTeamInfo, { prefer: 'long', fallback: 'Home' }),
+        awayTeamName: teamIdentity.getTeamName(game.awayTeamInfo, { prefer: 'long', fallback: 'Away' }),
+        homeTeamCode: teamIdentity.getTeamCode(game.homeTeamInfo),
+        awayTeamCode: teamIdentity.getTeamCode(game.awayTeamInfo),
         startDateTime: game.rawStartDateTime || game.startDateTime,
         venue: game.venueInfo?.name || game.venue || null
     };
@@ -113,10 +114,10 @@ function extractHockeyAllsvenskanGameInfo(game) {
     return {
         sport: 'hockeyallsvenskan',
         gameId: game.uuid,
-        homeTeamName: game.homeTeamInfo?.names?.long || game.homeTeamInfo?.names?.short || 'Home',
-        awayTeamName: game.awayTeamInfo?.names?.long || game.awayTeamInfo?.names?.short || 'Away',
-        homeTeamCode: game.homeTeamInfo?.code || game.homeTeamInfo?.names?.short || '',
-        awayTeamCode: game.awayTeamInfo?.code || game.awayTeamInfo?.names?.short || '',
+        homeTeamName: teamIdentity.getTeamName(game.homeTeamInfo, { prefer: 'long', fallback: 'Home' }),
+        awayTeamName: teamIdentity.getTeamName(game.awayTeamInfo, { prefer: 'long', fallback: 'Away' }),
+        homeTeamCode: teamIdentity.getTeamCode(game.homeTeamInfo),
+        awayTeamCode: teamIdentity.getTeamCode(game.awayTeamInfo),
         startDateTime: game.rawStartDateTime || game.startDateTime,
         venue: game.venueInfo?.name || game.venue || null
     };
@@ -129,10 +130,10 @@ function extractFootballGameInfo(game) {
     return {
         sport: 'allsvenskan',
         gameId: game.uuid,
-        homeTeamName: game.homeTeamInfo?.names?.long || game.homeTeamInfo?.names?.short || 'Home',
-        awayTeamName: game.awayTeamInfo?.names?.long || game.awayTeamInfo?.names?.short || 'Away',
-        homeTeamCode: game.homeTeamInfo?.code || game.homeTeamInfo?.names?.short || '',
-        awayTeamCode: game.awayTeamInfo?.code || game.awayTeamInfo?.names?.short || '',
+        homeTeamName: teamIdentity.getTeamName(game.homeTeamInfo, { prefer: 'long', fallback: 'Home' }),
+        awayTeamName: teamIdentity.getTeamName(game.awayTeamInfo, { prefer: 'long', fallback: 'Away' }),
+        homeTeamCode: teamIdentity.getTeamCode(game.homeTeamInfo),
+        awayTeamCode: teamIdentity.getTeamCode(game.awayTeamInfo),
         startDateTime: game.rawStartDateTime || game.startDateTime,
         venue: game.venueInfo?.name || game.venue || null
     };
@@ -145,10 +146,10 @@ function extractSvenskaCupenGameInfo(game) {
     return {
         sport: 'svenska-cupen',
         gameId: game.uuid,
-        homeTeamName: game.homeTeamInfo?.names?.long || game.homeTeamInfo?.names?.short || 'Home',
-        awayTeamName: game.awayTeamInfo?.names?.long || game.awayTeamInfo?.names?.short || 'Away',
-        homeTeamCode: game.homeTeamInfo?.code || game.homeTeamInfo?.names?.short || '',
-        awayTeamCode: game.awayTeamInfo?.code || game.awayTeamInfo?.names?.short || '',
+        homeTeamName: teamIdentity.getTeamName(game.homeTeamInfo, { prefer: 'long', fallback: 'Home' }),
+        awayTeamName: teamIdentity.getTeamName(game.awayTeamInfo, { prefer: 'long', fallback: 'Away' }),
+        homeTeamCode: teamIdentity.getTeamCode(game.homeTeamInfo),
+        awayTeamCode: teamIdentity.getTeamCode(game.awayTeamInfo),
         startDateTime: game.rawStartDateTime || game.startDateTime,
         venue: game.venueInfo?.name || game.venue || null
     };
@@ -161,10 +162,10 @@ function extractEuropaLeagueQualGameInfo(game) {
     return {
         sport: 'europa-league-qual',
         gameId: game.uuid,
-        homeTeamName: game.homeTeamInfo?.names?.long || game.homeTeamInfo?.names?.short || 'Home',
-        awayTeamName: game.awayTeamInfo?.names?.long || game.awayTeamInfo?.names?.short || 'Away',
-        homeTeamCode: game.homeTeamInfo?.code || game.homeTeamInfo?.names?.short || '',
-        awayTeamCode: game.awayTeamInfo?.code || game.awayTeamInfo?.names?.short || '',
+        homeTeamName: teamIdentity.getTeamName(game.homeTeamInfo, { prefer: 'long', fallback: 'Home' }),
+        awayTeamName: teamIdentity.getTeamName(game.awayTeamInfo, { prefer: 'long', fallback: 'Away' }),
+        homeTeamCode: teamIdentity.getTeamCode(game.homeTeamInfo),
+        awayTeamCode: teamIdentity.getTeamCode(game.awayTeamInfo),
         startDateTime: game.rawStartDateTime || game.startDateTime,
         venue: game.venueInfo?.name || game.venue || null
     };
@@ -177,10 +178,10 @@ function extractConferenceLeagueQualGameInfo(game) {
     return {
         sport: 'conference-league-qual',
         gameId: game.uuid,
-        homeTeamName: game.homeTeamInfo?.names?.long || game.homeTeamInfo?.names?.short || 'Home',
-        awayTeamName: game.awayTeamInfo?.names?.long || game.awayTeamInfo?.names?.short || 'Away',
-        homeTeamCode: game.homeTeamInfo?.code || game.homeTeamInfo?.names?.short || '',
-        awayTeamCode: game.awayTeamInfo?.code || game.awayTeamInfo?.names?.short || '',
+        homeTeamName: teamIdentity.getTeamName(game.homeTeamInfo, { prefer: 'long', fallback: 'Home' }),
+        awayTeamName: teamIdentity.getTeamName(game.awayTeamInfo, { prefer: 'long', fallback: 'Away' }),
+        homeTeamCode: teamIdentity.getTeamCode(game.homeTeamInfo),
+        awayTeamCode: teamIdentity.getTeamCode(game.awayTeamInfo),
         startDateTime: game.rawStartDateTime || game.startDateTime,
         venue: game.venueInfo?.name || game.venue || null
     };

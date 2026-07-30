@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { fetchFootballGames, fetchFootballStandings, fetchFootballGameDetails, fetchFootballVideosForGame } from '../api/shl';
+import { getTeamName as getTeamNameShared, getTeamKey as getTeamKeyShared } from '../utils/teamIdentity';
 
 const AUTO_REFRESH_INTERVAL_MS = 20000;
 const STARTING_SOON_WINDOW_MINUTES = 30;
@@ -45,9 +46,7 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
     const hasUserScrolled = useRef(false);
 
     // Get team key helper
-    const getTeamKey = useCallback((team) => {
-        return team?.code || team?.uuid || team?.names?.short || team?.names?.long || null;
-    }, []);
+    const getTeamKey = useCallback((team) => getTeamKeyShared(team), []);
 
     const getStandingsTeamKey = useCallback((team) => {
         return team?.teamCode || team?.teamUuid || team?.teamName || team?.teamShortName || null;
@@ -169,7 +168,7 @@ export function useFootballData(activeSport, selectedFootballTeams, options = {}
             [game.homeTeamInfo, game.awayTeamInfo].forEach(team => {
                 const key = getTeamKey(team);
                 if (!key || teamMap.has(key)) return;
-                const name = team?.names?.short || team?.names?.long || team?.code || key;
+                const name = getTeamNameShared(team, { fallback: key });
                 teamMap.set(key, {
                     key,
                     name,

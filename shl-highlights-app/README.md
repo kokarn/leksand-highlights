@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.36.0
+- Add a shared team-identity system so team names, codes, and logos resolve the same way everywhere. Both the backend (`modules/team-identity.js`) and the app (`utils/teamIdentity.js`) now route every team through one resolver instead of ~15 copy-pasted `names.short || names.long || code` fallback chains. This fixes a real inconsistency where the same club could show a short name on a card but a long name in its goal/pre-game push; the canonical rule is now short for cards/notification titles, long only for long-form push bodies. The app also gets one `getTeamLogoUri(team, family)` entry point that internally picks the hockey local-PNG-by-code path vs the football upstream-icon path, so cards no longer choose the logo mechanism by hand and a new sport is a single switch case
+
 ### 2.35.0
 - Replace the qualifying bracket's fixed row grid with the approved feeder-aligned funnel layout: reconstruct missing Third Round links from `Winner: A / B` placeholder names, reject impossible many-to-one phantom feeders, reorder ties with barycenter sweeps to eliminate connector crossings, anchor the largest round as a spine, and use weighted isotonic alignment to keep matches level with their feeders wherever possible. Connectors now use one simple shared midpoint per column gap (no per-line arrow offsets), while aligned matches render as a single straight horizontal line. Duplicate placeholder tie keys are handled with unique render/layout IDs. The geometry and feeder logic moved into a pure testable utility with regression coverage
 

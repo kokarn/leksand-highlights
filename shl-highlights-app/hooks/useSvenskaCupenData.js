@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { fetchSvenskaCupenGames, fetchSvenskaCupenGameDetails } from '../api/shl';
+import { getTeamName as getTeamNameShared, getTeamKey as getTeamKeyShared } from '../utils/teamIdentity';
 
 const AUTO_REFRESH_INTERVAL_MS = 20000;
 const STARTING_SOON_WINDOW_MINUTES = 30;
@@ -29,9 +30,7 @@ export function useSvenskaCupenData(activeSport, selectedFootballTeams, options 
     const savedScrollOffset = useRef(null);
     const hasUserScrolled = useRef(false);
 
-    const getTeamKey = useCallback((team) => {
-        return team?.code || team?.uuid || team?.names?.short || team?.names?.long || null;
-    }, []);
+    const getTeamKey = useCallback((team) => getTeamKeyShared(team), []);
 
     const shouldAutoRefreshGames = useCallback((gamesList) => {
         const now = Date.now();
@@ -99,7 +98,7 @@ export function useSvenskaCupenData(activeSport, selectedFootballTeams, options 
             [game.homeTeamInfo, game.awayTeamInfo].forEach(team => {
                 const key = getTeamKey(team);
                 if (!key || teamMap.has(key)) return;
-                const name = team?.names?.short || team?.names?.long || team?.code || key;
+                const name = getTeamNameShared(team, { fallback: key });
                 teamMap.set(key, { key, name, icon: team?.icon || null });
             });
         });

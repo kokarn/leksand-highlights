@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { getTeamLogoUrl } from '../../api/shl';
 import { extractScore, formatRelativeDateEnglish, formatTime } from '../../utils';
 import { useTheme } from '../../contexts';
+import { getTeamName, getTeamCode } from '../../utils/teamIdentity';
 
 export const GameCard = memo(function GameCard({ game, onPress, leagueLabel = 'SHL' }) {
     const { colors, isDark } = useTheme();
@@ -12,10 +13,10 @@ export const GameCard = memo(function GameCard({ game, onPress, leagueLabel = 'S
 
     const homeTeam = game?.homeTeamInfo ?? {};
     const awayTeam = game?.awayTeamInfo ?? {};
-    const homeCode = homeTeam.code;
-    const awayCode = awayTeam.code;
-    const homeName = homeTeam?.names?.short ?? homeCode ?? 'Home';
-    const awayName = awayTeam?.names?.short ?? awayCode ?? 'Away';
+    const homeCode = getTeamCode(homeTeam);
+    const awayCode = getTeamCode(awayTeam);
+    const homeName = getTeamName(homeTeam, { fallback: 'Home' });
+    const awayName = getTeamName(awayTeam, { fallback: 'Away' });
     const homeLogo = getTeamLogoUrl(homeCode);
     const awayLogo = getTeamLogoUrl(awayCode);
     const isLive = game?.state === 'live';

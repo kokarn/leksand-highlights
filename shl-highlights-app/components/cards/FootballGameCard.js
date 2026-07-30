@@ -3,15 +3,11 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions } 
 import { LinearGradient } from 'expo-linear-gradient';
 import { extractScore, formatRelativeDateEnglish, formatTime } from '../../utils';
 import { useTheme } from '../../contexts';
-import { resolveMediaUrl } from '../../api/shl';
+import { getTeamName as resolveTeamName, getTeamLogoUri } from '../../utils/teamIdentity';
 
-const getTeamName = (team, fallback) => {
-    return team?.names?.short || team?.names?.long || team?.code || fallback;
-};
+const getTeamName = (team, fallback) => resolveTeamName(team, { fallback });
 
-const getTeamLogo = (team) => {
-    return resolveMediaUrl(team?.icon);
-};
+const getTeamLogo = (team) => getTeamLogoUri(team, 'football');
 
 export const FootballGameCard = memo(function FootballGameCard({ game, onPress, leagueLabel = 'Allsvenskan' }) {
     const { colors, isDark } = useTheme();
