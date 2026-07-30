@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.36.1
+- Fix the CI test suite failing to import the new shared team-identity module under raw Node ESM: `utils/teamIdentity.js` imported `../api/shl` without the `.js` extension, which Metro/Expo tolerate but Node's ESM loader rejects (`ERR_MODULE_NOT_FOUND`), breaking the team-page tests and the backend Docker Publish gate
+
 ### 2.36.0
 - Add a shared team-identity system so team names, codes, and logos resolve the same way everywhere. Both the backend (`modules/team-identity.js`) and the app (`utils/teamIdentity.js`) now route every team through one resolver instead of ~15 copy-pasted `names.short || names.long || code` fallback chains. This fixes a real inconsistency where the same club could show a short name on a card but a long name in its goal/pre-game push; the canonical rule is now short for cards/notification titles, long only for long-form push bodies. The app also gets one `getTeamLogoUri(team, family)` entry point that internally picks the hockey local-PNG-by-code path vs the football upstream-icon path, so cards no longer choose the logo mechanism by hand and a new sport is a single switch case
 

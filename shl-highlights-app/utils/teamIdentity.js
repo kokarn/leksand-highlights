@@ -12,7 +12,7 @@
  * Canonical display rule (agreed with Oskar, Jul 2026): prefer SHORT everywhere
  * compact (cards, titles); pass { prefer: 'long' } only for long-form contexts.
  */
-import { getTeamLogoUrl, resolveMediaUrl } from '../api/shl';
+import { getTeamLogoUrl, resolveMediaUrl } from '../api/shl.js';
 
 /**
  * Human-readable team name. Prefers short by default, then long, then code.
