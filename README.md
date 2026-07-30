@@ -4,6 +4,9 @@
 
 A multi-sport API server that provides real-time game data, notifications, and highlights for Swedish sports leagues.
 
+> **App 2.38.2** — Standardized match timelines across hockey and football:
+> both Summary goals and Events now display chronologically, oldest to newest.
+
 > **3.15.0 / App 2.18.0** — Highlight notifications now deep-link directly to
 > the specific clip and start it automatically for SHL, HockeyAllsvenskan, and
 > Allsvenskan (the sports with notification-backed clips).

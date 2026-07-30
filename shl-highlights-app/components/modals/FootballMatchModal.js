@@ -366,8 +366,7 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
             };
         });
 
-        // Reverse to show most recent first
-        return goalsWithCalcScores.reverse();
+        return goalsWithCalcScores;
     }, [rawGoals, homeCode]);
 
     // Use goals with calculated scores
@@ -411,14 +410,11 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
             return event;
         });
 
-        // Reverse to show most recent first
-        const reversedEvents = eventsWithScores.reverse();
-
-        // Add half markers (now in reverse order: 2nd half first, then 1st)
+        // Add half markers while preserving chronological order.
         const result = [];
         let currentHalf = 0;
 
-        for (const event of reversedEvents) {
+        for (const event of eventsWithScores) {
             const eventHalf = event.period || 1;
             if (eventHalf !== currentHalf) {
                 result.push({ type: 'half_marker', half: eventHalf });

@@ -1,6 +1,22 @@
 import { useMemo } from 'react';
 import { normalizeScoreValue } from '../utils';
 
+const parseHockeyEventTime = (time) => {
+    if (!time) return Number.POSITIVE_INFINITY;
+
+    const [minutes, seconds] = String(time).split(':').map(Number);
+    if (Number.isNaN(minutes) || Number.isNaN(seconds)) {
+        return Number.POSITIVE_INFINITY;
+    }
+    return (minutes * 60) + seconds;
+};
+
+const compareHockeyEventTimes = (a, b) => parseHockeyEventTime(a) - parseHockeyEventTime(b);
+
+const compareHockeyEventsChronologically = (a, b) => (
+    (a.period || 0) - (b.period || 0) || compareHockeyEventTimes(a.time, b.time)
+);
+
 /**
  * Hook for processing SHL game details into a usable format
  * Extracts stats, score, and interesting events from game details
@@ -60,7 +76,7 @@ export function useGameDetails(gameDetails, selectedGame, videos = []) {
                 }
                 return false;
             })
-            .sort((a, b) => b.period - a.period || (b.time > a.time ? 1 : -1));
+            .sort((a, b) => a.period - b.period || compareHockeyEventTimes(a.time, b.time));
 
         sortedEvents.forEach(event => {
             if (event.period !== currentPeriod) {
@@ -104,6 +120,6 @@ export function useGameDetails(gameDetails, selectedGame, videos = []) {
         } : null,
         scoreDisplay: processedData?.scoreDisplay || { home: '-', away: '-' },
         events: processedData?.events || [],
-        goals: gameDetails?.events?.goals || []
+        goals: [...(gameDetails?.events?.goals || [])].sort(compareHockeyEventsChronologically)
     };
 }
