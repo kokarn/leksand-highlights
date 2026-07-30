@@ -216,29 +216,98 @@ test('bracket route + screen exist and team page links to them', () => {
     assert.match(screen, /Advanced from/);
     // Round lanes must be visually distinct and connectors must show progression.
     assert.match(screen, /roundLane/);
-    assert.match(screen, /feederTieKeys/);
     assert.match(screen, /buildTraditionalBracketLayout/);
     assert.match(screen, /connectorOverlay/);
+    // Feeder-link handling lives in the extracted layout util.
+    const layoutUtil = fs.readFileSync(path.join(appDir, 'utils', 'bracketLayout.js'), 'utf8');
+    assert.match(layoutUtil, /feederTieKeys/);
     // Team page renders a "View bracket" link to the route.
     const teamScreen = fs.readFileSync(path.join(appDir, 'components', 'TeamGamesScreen.js'), 'utf8');
     assert.match(teamScreen, /bracketLeagues/);
     assert.match(teamScreen, /\/bracket\//);
 });
 
-test('bracket layout stacks every round uniformly from a shared top baseline', () => {
-    // The screen imports react-native, so it can't be executed under node —
-    // assert the layout contract at the source level instead (repo convention).
-    // Regression guard for the "Round 3 not aligned with Round 2" bug: the
-    // feeder/spine-anchoring scheme that staggered later rounds off the baseline
-    // must be gone, replaced by a uniform top→bottom stack on a fixed grid.
+test('bracket layout: feeder reconstruction, dedup, reorder, and clean alignment', async () => {
+    // The layout math lives in utils/bracketLayout.js (no react-native imports) so
+    // we can execute it directly. Synthetic data reproduces the three live-data
+    // pathologies this feature fixes.
+    const mod = await importApp('utils/bracketLayout.js');
+    const { buildTraditionalBracketLayout, tieFeeders, prepFeeders, reorderByBarycenter } = mod;
+
+    const rounds = [
+        { title: 'First Round', ties: [
+            { key: 'r1a', teams: [{ id: 'a', name: 'Alpha' }, { id: 'b', name: 'Beta' }] },
+            { key: 'r1b', teams: [{ id: 'c', name: 'Gamma' }, { id: 'd', name: 'Delta' }] }
+        ] },
+        { title: 'Second Round', ties: [
+            // fed by r1a (explicit) — a normal link
+            { key: 'r2a', teams: [{ id: 'e', name: 'Alpha', fromTieKey: 'r1a' }, { id: 'f', name: 'Epsilon' }] },
+            { key: 'r2b', teams: [{ id: 'g', name: 'Zeta' }, { id: 'h', name: 'Eta' }] },
+            { key: 'r2c', teams: [{ id: 'i', name: 'Gamma', fromTieKey: 'r1b' }, { id: 'j', name: 'Theta' }] }
+        ] },
+        { title: 'Third Round', ties: [
+            // Two R3 ties SHARE the placeholder key 'draw-q3-1' (dup-key pathology)
+            // and both carry the SAME bogus feederTieKeys:['r2a'] (phantom fan-out).
+            // The real feeder is recoverable from each "Winner: X / Y" name, which
+            // must WIN over the shared bogus link.
+            { key: 'draw-q3-1', feederTieKeys: ['r2a'], teams: [{ id: 'k', name: 'Winner: Alpha / Epsilon' }, { id: 'l', name: 'Iota' }] },
+            { key: 'draw-q3-1', feederTieKeys: ['r2a'], teams: [{ id: 'm', name: 'Winner: Gamma / Theta' }, { id: 'n', name: 'Omega' }] },
+            // A tie whose placeholders are BOTH "Loser: …" — teams dropping in from
+            // CL/EL qualifying, NOT in this bracket. Must never get a feeder link.
+            { key: 'draw-q3-3', teams: [{ id: 'o', name: 'Loser: Kappa / Lambda' }, { id: 'p', name: 'Loser: Mu / Nu' }] }
+        ] }
+    ];
+
+    // 1. Feeder reconstruction + dedup. Each fed R3 tie's name names its real feeder
+    //    (r2a resp. r2c). The name-derived link is authoritative over the corrupt
+    //    shared 'r2a' feederTieKeys, so tie #1 keeps r2a and tie #2 keeps r2c —
+    //    neither ends up wrongly sharing a feeder.
+    const prepped = prepFeeders(rounds);
+    const r3 = prepped[2].ties;
+    const feedersByName = (name) => tieFeeders(r3.find((t) => t.teams.some((x) => x.name === name)));
+    assert.deepEqual(feedersByName('Winner: Alpha / Epsilon'), ['r2a'], 'R3 #1 keeps r2a (its own name)');
+    assert.deepEqual(feedersByName('Winner: Gamma / Theta'), ['r2c'], 'R3 #2 relinked to r2c by name');
+
+    const layout = buildTraditionalBracketLayout(rounds);
+    assert.equal(layout.rounds.length, 3, 'all rounds present');
+
+    // 2. Every tie gets a UNIQUE uid even though two R3 ties share key 'draw-q3-1'
+    //    (fixes the duplicate-key collision that mislaid a whole round).
+    const allUids = layout.rounds.flatMap((r) => r.ties.map((t) => t.uid));
+    assert.equal(new Set(allUids).size, allUids.length, 'uids are unique despite duplicate tie.key');
+
+    // 3. No connector crossings: within each column pair, feeder→tie links drawn in
+    //    the reordered layout must not invert vertical order.
+    let crossings = 0;
+    for (let ri = 0; ri < layout.rounds.length - 1; ri += 1) {
+        const src = layout.rounds[ri].ties;
+        const srcY = new Map();
+        src.forEach((s) => srcY.set(s.tie.key, s.center));
+        const edges = [];
+        layout.rounds[ri + 1].ties.forEach((d) => tieFeeders(d.tie).forEach((k) => {
+            if (srcY.has(k)) { edges.push([srcY.get(k), d.center]); }
+        }));
+        for (let a = 0; a < edges.length; a += 1) {
+            for (let b = a + 1; b < edges.length; b += 1) {
+                if ((edges[a][0] < edges[b][0] && edges[a][1] > edges[b][1])
+                    || (edges[a][0] > edges[b][0] && edges[a][1] < edges[b][1])) { crossings += 1; }
+            }
+        }
+    }
+    assert.equal(crossings, 0, 'reordered + aligned layout has zero connector crossings');
+
+    // 4. The all-'Loser:' tie is never linked (both teams drop in from CL/EL qual).
+    const loserTie = r3.find((t) => t.teams.every((x) => /^Loser:/.test(x.name)));
+    assert.equal(tieFeeders(loserTie).length, 0, 'loser-only tie stays unlinked');
+});
+
+test('bracket screen wires up the extracted layout + simple connectors', () => {
     const screen = fs.readFileSync(
         path.join(appDir, 'components', 'LeagueBracketScreen.js'), 'utf8');
-    // Uniform stack: every tie sits at tieIndex * step from a shared y=0 top.
-    assert.match(screen, /slot \* step \+ half/, 'ties stack uniformly by index');
-    // The old off-baseline anchoring machinery must not have crept back.
-    assert.doesNotMatch(screen, /const spine =/, 'no spine-anchoring layout');
-    assert.doesNotMatch(screen, /placeRound/, 'no feeder-centering placer');
-    // Connectors get their own staggered vertical channel so they never overlap.
-    assert.match(screen, /channelX/, 'connectors use per-line channels');
-    assert.match(screen, /gutterSpan/, 'channels spread across the gutter');
+    // Layout imported from the testable module, not re-implemented inline.
+    assert.match(screen, /from '\.\.\/utils\/bracketLayout'/, 'imports extracted layout module');
+    // Connectors bend at one shared midpoint (no per-line channels/offsets).
+    assert.match(screen, /single shared bend point/, 'uses single shared bend point');
+    assert.doesNotMatch(screen, /channelX/, 'no per-line channel offsets');
+    assert.match(screen, /connectorOverlay/);
 });

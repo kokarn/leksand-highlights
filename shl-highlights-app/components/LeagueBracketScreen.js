@@ -7,59 +7,24 @@ import { useRouter } from 'expo-router';
 
 import { useTheme } from '../contexts';
 import { fetchBracket, resolveMediaUrl } from '../api/shl';
+import {
+    CARD_HEIGHT as LAYOUT_CARD_HEIGHT,
+    CARD_GAP as LAYOUT_CARD_GAP,
+    tieFeeders,
+    buildTraditionalBracketLayout
+} from '../utils/bracketLayout';
 
 const COL_WIDTH = 240;
-const CARD_HEIGHT = 94;
-const CARD_GAP = 18;
+const CARD_HEIGHT = LAYOUT_CARD_HEIGHT;
+const CARD_GAP = LAYOUT_CARD_GAP;
 const LANE_PADDING = 10;
 const ROUND_HEADER_HEIGHT = 58;
 const HSCROLL_GAP = 28; // gap between round lanes (hScroll contentContainer gap)
 
-const tieFeeders = (tie) => {
-    const explicit = tie?.feederTieKeys || [];
-    const resolved = (tie?.teams || []).map((team) => team.fromTieKey).filter(Boolean);
-    return [...new Set([...explicit, ...resolved])];
-};
+// Layout math (feeder reconstruction, barycenter reorder, spine-anchored feeder
+// alignment) lives in utils/bracketLayout.js so it's unit-testable without RN.
+export { buildTraditionalBracketLayout };
 
-export const buildTraditionalBracketLayout = (rounds) => {
-    const positions = new Map();
-    const center = new Map(); // tie.key -> vertical center
-    const step = CARD_HEIGHT + CARD_GAP;
-    const half = CARD_HEIGHT / 2;
-    const allRounds = rounds || [];
-
-    // UEFA qualifying is NOT a clean binary tree — it GROWS then shrinks
-    // (26 → 49 → 30 ties) because most entrants are SEEDED straight in, not fed
-    // by a prior tie. Any feeder-centering / spine-anchoring scheme therefore
-    // staggers the columns off a shared baseline: a round's first tie drifts
-    // hundreds of px down and the columns no longer line up row-to-row (this was
-    // the "Round 3 not aligned with Round 2" bug). So stack EVERY round uniformly
-    // from the top on one fixed grid — all columns start at y=0, the Nth tie of
-    // every round sits at `N * step`, cards line up in clean horizontal rows.
-    // NB: position is derived from each tie's SLOT INDEX, never from a shared
-    // key→center Map — the live data reuses placeholder keys (e.g. `draw-q3-1`)
-    // across ties, so a Map keyed by tie.key collides and mislays those rounds.
-    // `center` is still recorded per key for the feeder→tie connectors (real
-    // ties have unique keys; placeholder ties have no feeders, so a collision
-    // there is harmless).
-    const roundLayouts = (allRounds).map((round) => {
-        const ties = (round.ties || []).map((tie, slot) => {
-            const c = slot * step + half;
-            center.set(tie.key, c);
-            positions.set(tie.key, c);
-            return { tie, top: c - half, center: c };
-        });
-        return { ...round, ties };
-    });
-
-    // Canvas height = tallest round.
-    const maxTies = allRounds.reduce((m, r) => Math.max(m, (r.ties || []).length), 0);
-    const globalHeight = Math.max(step, maxTies * step);
-    roundLayouts.forEach((r) => { r.height = globalHeight; });
-
-    const height = Math.max(420, globalHeight);
-    return { rounds: roundLayouts, positions, height };
-};
 
 const shortDate = (value) => {
     if (!value) {
@@ -176,48 +141,26 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
             const srcCardRight = srcColLeft + COL_WIDTH - 2 * LANE_PADDING; // tie card right edge
             const dstColLeft = (ri + 1) * (COL_WIDTH + HSCROLL_GAP);
             const dstCardLeft = dstColLeft + 2 * LANE_PADDING; // tie card left edge
+            const midX = (srcCardRight + dstCardLeft) / 2; // single shared bend point
 
-            // Every connector between these two columns shares the same narrow
-            // gutter. If they all bend at the SAME x, their vertical runs stack on
-            // top of each other and you can't tell which line feeds which card
-            // (the "overlapping arrows" bug). Give each connector its OWN vertical
-            // channel, spread evenly across the gutter and ordered by source
-            // height, so no two vertical segments ever share an x-coordinate.
-            const pairs = [];
-            for (const { tie, center } of round.ties) {
+            // Ties are reordered (barycenter) + feeder-aligned, so connectors don't
+            // cross — a single shared bend x is clean, and aligned feeders draw as
+            // one straight horizontal line (no elbow).
+            for (const { tie, uid, center } of round.ties) {
                 const fed = nextRound.ties.filter(({ tie: nextTie }) => tieFeeders(nextTie).includes(tie.key));
-                for (const { tie: nextTie, center: nextCenter } of fed) {
+                for (const { tie: nextTie, uid: nextUid, center: nextCenter } of fed) {
                     const isPath = tie.teams.some(teamMatchesHighlight) || nextTie.teams.some(teamMatchesHighlight);
-                    pairs.push({
-                        key: `${tie.key}->${nextTie.key}`,
+                    out.push({
+                        key: `${uid}->${nextUid}`,
+                        srcX: srcCardRight,
+                        dstX: dstCardLeft,
+                        midX,
                         y1: cardTop + center,
                         y2: cardTop + nextCenter,
                         isPath
                     });
                 }
             }
-            // Channels live strictly inside the gutter, with a small inset from
-            // each card edge so lines never touch the cards' rounded corners.
-            const gutterStart = srcCardRight + 6;
-            const gutterEnd = dstCardLeft - 6;
-            const gutterSpan = Math.max(1, gutterEnd - gutterStart);
-            const n = pairs.length;
-            pairs
-                .sort((a, b) => (a.y1 - b.y1) || (a.y2 - b.y2))
-                .forEach((p, idx) => {
-                    const channelX = n === 1
-                        ? gutterStart + gutterSpan / 2
-                        : gutterStart + ((idx + 1) / (n + 1)) * gutterSpan;
-                    out.push({
-                        key: p.key,
-                        srcX: srcCardRight,
-                        dstX: dstCardLeft,
-                        midX: channelX,
-                        y1: p.y1,
-                        y2: p.y2,
-                        isPath: p.isPath
-                    });
-                });
         }
         return out;
     }, [bracketLayout, teamMatchesHighlight]);
@@ -378,8 +321,8 @@ export function LeagueBracketScreen({ sport, leagueLabel, highlightTeamCode }) {
                                     </View>
                                 </View>
                                 <View style={[styles.bracketCanvas, { height: bracketLayout.height + LANE_PADDING * 2 }]}>
-                                    {round.ties.map(({ tie, top }) => (
-                                        <View key={tie.key} style={[styles.positionedTie, { top: top + LANE_PADDING }]}>
+                                    {round.ties.map(({ tie, uid, top }) => (
+                                        <View key={uid} style={[styles.positionedTie, { top: top + LANE_PADDING }]}>
                                             {renderTie(tie, round.title)}
                                         </View>
                                     ))}

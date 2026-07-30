@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.35.0
+- Replace the qualifying bracket's fixed row grid with the approved feeder-aligned funnel layout: reconstruct missing Third Round links from `Winner: A / B` placeholder names, reject impossible many-to-one phantom feeders, reorder ties with barycenter sweeps to eliminate connector crossings, anchor the largest round as a spine, and use weighted isotonic alignment to keep matches level with their feeders wherever possible. Connectors now use one simple shared midpoint per column gap (no per-line arrow offsets), while aligned matches render as a single straight horizontal line. Duplicate placeholder tie keys are handled with unique render/layout IDs. The geometry and feeder logic moved into a pure testable utility with regression coverage
+
 ### 2.34.0
 - Fix two qualifying-bracket rendering bugs. (1) Overlapping connectors: every winner→next-round line between a pair of columns used to bend at the same x, so their vertical segments stacked on top of each other and you couldn't tell which match fed which. Each connector now gets its own vertical channel, spread evenly across the inter-column gutter and ordered by height, so no two lines share an x. (2) Round 3 not aligned with Round 2: the feeder/spine-anchoring layout staggered later rounds off a shared baseline (and mislaid rounds whose live data reuses placeholder tie keys like `draw-q3-1`). Every round now stacks uniformly from a shared top baseline on a fixed grid, positioned by slot index, so all columns line up in clean horizontal rows
 
