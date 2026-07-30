@@ -301,6 +301,49 @@ test('bracket layout: feeder reconstruction, dedup, reorder, and clean alignment
     assert.equal(tieFeeders(loserTie).length, 0, 'loser-only tie stays unlinked');
 });
 
+test('bracket feeder match links Wikipedia name variants by prefix (Paks vs Paksi)', async () => {
+    // Live pathology (Conference qual R3): the Wikipedia draw slot reads
+    // "Winner: Paks / Panathinaikos" but the ESPN R2 tie is "Panathinaikos vs
+    // Paksi SE". "Paks" and "Paksi" share no exact token, so the tie rendered
+    // with NO connection. A ≥4-char prefix match links them without risking a
+    // false positive on short/ambiguous tokens.
+    const mod = await importApp('utils/bracketLayout.js');
+    const { prepFeeders, tieFeeders } = mod;
+    const rounds = [
+        { title: 'Second Round', ties: [
+            { key: 'r2x', teams: [{ id: 'a', name: 'Panathinaikos' }, { id: 'b', name: 'Paksi SE' }] },
+            { key: 'r2y', teams: [{ id: 'c', name: 'Aris' }, { id: 'd', name: 'Aberdeen' }] }
+        ] },
+        { title: 'Third Round', ties: [
+            { key: 'draw-q3-1', teams: [{ id: 'e', name: 'Winner: Paks / Panathinaikos' }, { id: 'f', name: 'CSKA 1948' }] }
+        ] }
+    ];
+    const prepped = prepFeeders(rounds);
+    const t = prepped[1].ties[0];
+    assert.deepEqual(tieFeeders(t), ['r2x'], 'Paks/Paksi variant links to its real R2 tie via prefix match');
+});
+
+test('bracket feeder prefix match does NOT link on short/ambiguous tokens', async () => {
+    // "AEK" (3 chars) must not prefix-match "AEK Larnaca" vs "AEK Athens" into a
+    // wrong link; only ≥4-char shared prefixes count, and a bare 3-char token
+    // still requires an exact token hit.
+    const mod = await importApp('utils/bracketLayout.js');
+    const { prepFeeders, tieFeeders } = mod;
+    const rounds = [
+        { title: 'Second Round', ties: [
+            { key: 'r2a', teams: [{ id: 'a', name: 'Rosenborg' }, { id: 'b', name: 'Malmo' }] }
+        ] },
+        { title: 'Third Round', ties: [
+            // No R2 tie contains these clubs → must stay unlinked, not falsely
+            // grabbed by a loose partial.
+            { key: 'draw-q3-1', teams: [{ id: 'c', name: 'Winner: Ros / Mal' }, { id: 'd', name: 'Fresh Club' }] }
+        ] }
+    ];
+    const prepped = prepFeeders(rounds);
+    assert.equal(tieFeeders(prepped[1].ties[0]).length, 0, 'short 3-char tokens do not force a false feeder link');
+});
+
+
 test('bracket screen wires up the extracted layout + simple connectors', () => {
     const screen = fs.readFileSync(
         path.join(appDir, 'components', 'LeagueBracketScreen.js'), 'utf8');

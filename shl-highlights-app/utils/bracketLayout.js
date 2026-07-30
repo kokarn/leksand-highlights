@@ -38,7 +38,18 @@ const feederTeamMatch = (a, b) => {
     const A = feederTokenSet(a);
     const B = feederTokenSet(b);
     if (!A.size || !B.size) { return false; }
-    for (const x of A) { if (B.has(x)) { return true; } }
+    for (const x of A) {
+        if (B.has(x)) { return true; }
+        // Prefix match for name variants the alias map doesn't cover, e.g. the
+        // Wikipedia draw's "Paks" vs ESPN's "Paksi (SE)". Require the shorter
+        // token be ≥4 chars and a prefix of the longer, so short/ambiguous
+        // tokens ("aek", "inter") can't cause a false link.
+        for (const y of B) {
+            const lo = x.length < y.length ? x : y;
+            const hi = x.length < y.length ? y : x;
+            if (lo.length >= 4 && hi.startsWith(lo)) { return true; }
+        }
+    }
     return false;
 };
 const reconstructFeeders = (rounds) => rounds.map((round, ri) => {
