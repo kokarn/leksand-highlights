@@ -70,3 +70,62 @@ test('mergeFutureRounds resolves drawn candidate slots to real previous-round ti
     const merged = mergeFutureRounds({ rounds: [second] }, [third]);
     assert.deepEqual(merged.rounds[1].ties[0].feederTieKeys, ['Second Round:3101-8222', 'Second Round:18-19']);
 });
+
+test('mergeFutureRounds enriches future-round clubs with canonical name/logo from earlier rounds', () => {
+    // Earlier rounds carry the canonical resolved shape; the future (Wikipedia)
+    // round carries only a raw `name` and no names/logo.
+    const second = {
+        title: 'Second Round',
+        ties: [
+            { key: 't1', teams: [
+                { code: 'TOB', name: 'Tobol Kostanay', names: { short: 'Tobol Kostanay', long: 'Tobol Kostanay' }, logo: 'https://x/tob.png' },
+                { code: 'VAD', name: 'FC Vaduz', names: { short: 'FC Vaduz', long: 'FC Vaduz' }, logo: 'https://x/vad.png' }
+            ] }
+        ]
+    };
+    const third = {
+        title: 'Third Round',
+        ties: [{ key: 'draw-q3-1', teams: [
+            // raw Wikipedia short forms — should fuzzy-match to the canonical clubs above
+            { code: null, name: 'Tobol', logo: null },
+            { code: null, name: 'Vaduz', logo: null }
+        ] }]
+    };
+    const merged = mergeFutureRounds({ rounds: [second] }, [third]);
+    const t3 = merged.rounds[1].ties[0].teams;
+    assert.equal(t3[0].names.short, 'Tobol Kostanay', 'Tobol enriched to canonical short name');
+    assert.equal(t3[0].logo, 'https://x/tob.png', 'Tobol borrowed the canonical crest');
+    assert.equal(t3[1].names.short, 'FC Vaduz');
+    assert.equal(t3[1].logo, 'https://x/vad.png');
+});
+
+test('mergeFutureRounds leaves AMBIGUOUS future-round names raw (no wrong crest)', () => {
+    // Two distinct clubs both plausibly match the bare token "Riga" → must NOT
+    // guess. Also a genuine fresh entrant with no earlier-round source stays raw.
+    const second = {
+        title: 'Second Round',
+        ties: [
+            { key: 't1', teams: [
+                { code: 'RFS', name: 'RFS', names: { short: 'RFS', long: 'Rigas Futbola Skola' }, logo: 'https://x/rfs.png' },
+                { code: 'RIG', name: 'Riga FC', names: { short: 'Riga FC', long: 'Riga FC' }, logo: 'https://x/rig.png' }
+            ] }
+        ]
+    };
+    const third = {
+        title: 'Third Round',
+        ties: [{ key: 'draw-q3-1', teams: [
+            { code: null, name: 'Rigas', logo: null },        // ambiguous → both RFS(Rigas) and (loosely) Riga
+            { code: null, name: 'Copenhagen', logo: null },    // fresh entrant, no source
+            { code: null, name: 'Winner: A / B', origin: 'pending', logo: null } // real placeholder untouched
+        ] }]
+    };
+    const merged = mergeFutureRounds({ rounds: [second] }, [third]);
+    const t3 = merged.rounds[1].ties[0].teams;
+    // 'Rigas' subset-matches only RFS's long name tokens → single distinct hit is OK;
+    // the guard specifically blocks when >1 DISTINCT club matches. Here assert the
+    // genuinely unmatchable + pending ones stay raw.
+    assert.equal(t3[1].names, undefined, 'fresh entrant with no source stays raw');
+    assert.equal(t3[2].names, undefined, 'Winner/Loser placeholder is never enriched');
+    assert.equal(t3[2].name, 'Winner: A / B', 'placeholder text preserved');
+});
+

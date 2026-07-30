@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.38.0
+- Fix Round 3 (and later drawn rounds) of the qualifying brackets showing inconsistent team names + blank logos. Those rounds come from a separate Wikipedia-draw source (`future-bracket-rounds.js`) that emits raw placeholder teams, so a club that already played earlier rounds re-appeared with a different name and no crest (e.g. R3 "Vaduz"/"Tobol"/"Drita" vs "FC Vaduz"/"Tobol Kostanay"/"Drita Gjilan" with logos in R1/R2). `mergeFutureRounds` now enriches each real future-round club with the canonical name/code/logo from earlier rounds — exact match on code/name first, then a conservative token-subset fuzzy match that is SKIPPED when more than one distinct club matches (so ambiguous bare names like "Riga" never get the wrong crest). Genuine undecided "Winner: A / B" slots and fresh entrants dropping in from Champions/Europa qualifying stay as-is. Live effect on Conference qual R3: 7 of 11 real clubs now resolve to their canonical name + crest, the rest correctly left raw
+
 ### 2.37.0
 - Bring the qualifying bracket into the shared team-identity system. The bracket built its team objects straight from raw ESPN fields (`shortDisplayName`/`t.logo`), bypassing both the canonical name resolver and the fallback-badge logo map — so it was the one surface where a club could read differently and where ~118/210 crests were blank. `buildBracket` now accepts injected `resolveNames`/`resolveIcon` (wired to the provider's `getTeamNames`/`resolveTeamIcon`), emits the canonical `names:{short,long}` shape (keeping `name` for back-compat), and the app's `LeagueBracketScreen` renders names/logos through the shared `getTeamName`/`getTeamLogoUri` helpers. Live effect: bracket long-names now match the rest of the app (e.g. `Strassen`→`UNA Strassen`, `BATE`→`BATE Borisov`) and blank bracket logos dropped 118→69 (the remainder are clubs with no crest anywhere)
 

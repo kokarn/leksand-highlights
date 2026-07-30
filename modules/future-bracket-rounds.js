@@ -251,6 +251,97 @@ function mergeFutureRounds(bracket, futureRounds) {
         return aliases.get(normalized) || normalized;
     };
 
+    // Build an index of every REAL (resolved) team across all rounds, keyed by
+    // normalized name AND by code, so future-round (Wikipedia-sourced) placeholder
+    // rounds can borrow the canonical name/logo. Future rounds come from a
+    // different source (future-bracket-rounds.js) and carry Wikipedia-flavored
+    // names with no `names`/`logo` — without this, the SAME club reads e.g.
+    // "Inter Club d'Escaldes" here but "Escaldes" (with a crest) in R1/R2.
+    const realByName = new Map();
+    const realByCode = new Map();
+    const realTeams = [];
+    // Token set for fuzzy matching: normalize, drop generic football-club words
+    // and tokens ≤2 chars so "FC Vaduz" ⇄ "Vaduz", "Tobol Kostanay" ⇄ "Tobol".
+    const STOP = new Set(['fc', 'fk', 'the', 'club', 'city', 'sport', 'sk', 'if', 'af', 'ac', 'cf']);
+    const tokenSet = (value) => new Set(
+        normalize(value).split(' ').filter((w) => w.length > 2 && !STOP.has(w))
+    );
+    for (const round of rounds) {
+        for (const tie of round?.ties || []) {
+            for (const team of tie.teams || []) {
+                if (!team?.names?.short) {
+                    continue; // only index resolved teams
+                }
+                const canonical = { names: team.names, code: team.code || null, logo: team.logo || null };
+                for (const n of [team.names.short, team.names.long, team.name]) {
+                    const key = normalize(n);
+                    if (key && !realByName.has(key)) {
+                        realByName.set(key, canonical);
+                    }
+                }
+                if (team.code) {
+                    const ck = String(team.code).toUpperCase();
+                    if (!realByCode.has(ck)) {
+                        realByCode.set(ck, canonical);
+                    }
+                }
+                realTeams.push({ canonical, tokens: tokenSet(team.names.long || team.names.short) });
+            }
+        }
+    }
+
+    // Fuzzy fallback: match a raw future-round name to a real club by token
+    // containment (one name's meaningful tokens are a subset of the other's).
+    // ONLY accept when EXACTLY ONE real club matches — "Riga" matches both
+    // "RFS / Rigas Futbola Skola" and "Riga FC", so it's ambiguous and left raw
+    // (a wrong crest is worse than none).
+    const fuzzyMatch = (rawName) => {
+        const want = tokenSet(rawName);
+        if (want.size === 0) {
+            return null;
+        }
+        const hits = [];
+        for (const rt of realTeams) {
+            const a = rt.tokens;
+            if (a.size === 0) {
+                continue;
+            }
+            const subset = [...want].every((t) => a.has(t)) || [...a].every((t) => want.has(t));
+            if (subset) {
+                hits.push(rt.canonical);
+            }
+        }
+        // Collapse hits that are the same club (same code) before judging ambiguity.
+        const distinct = new Map();
+        for (const h of hits) {
+            distinct.set(h.code || h.names.short, h);
+        }
+        return distinct.size === 1 ? [...distinct.values()][0] : null;
+    };
+
+    // Enrich future-round teams that are actual clubs (not "Winner:/Loser:"
+    // placeholders) with the canonical name/code/logo from earlier rounds.
+    for (const round of rounds) {
+        for (const tie of round?.ties || []) {
+            for (const team of tie.teams || []) {
+                if (team?.names?.short || team?.origin === 'pending' || !team?.name) {
+                    continue; // already resolved, or a genuine undecided slot
+                }
+                const match =
+                    (team.code && realByCode.get(String(team.code).toUpperCase())) ||
+                    realByName.get(normalize(team.name)) ||
+                    fuzzyMatch(team.name);
+                if (match) {
+                    team.names = match.names;
+                    team.code = team.code || match.code;
+                    if (!team.logo && match.logo) {
+                        team.logo = match.logo;
+                    }
+                }
+            }
+        }
+    }
+
     for (let roundIndex = 1; roundIndex < rounds.length; roundIndex += 1) {
         const previousTies = rounds[roundIndex - 1]?.ties || [];
         for (const tie of rounds[roundIndex]?.ties || []) {
