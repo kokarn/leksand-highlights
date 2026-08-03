@@ -4,6 +4,14 @@
 
 A multi-sport API server that provides real-time game data, notifications, and highlights for Swedish sports leagues.
 
+> **App 2.38.3** — Fixed game navigation from team pages: tapping a game (e.g.
+> AIK's last game) now opens its detail/stats page instead of bouncing to the
+> football listing. The deep-link handler was running against an empty games
+> list during the initial load and its dedup guard latched on that empty pass,
+> so it never retried once games loaded. It now defers when games aren't loaded
+> yet and only marks the link consumed after a real open (or a genuine miss on a
+> loaded list), so valid games always open.
+
 > **App 2.38.2** — Standardized match timelines across hockey and football:
 > both Summary goals and Events now display chronologically, oldest to newest.
 

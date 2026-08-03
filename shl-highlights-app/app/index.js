@@ -405,7 +405,29 @@ export default function App() {
             };
         };
 
-        // Open a game by ID
+        // Build a minimal fallback game object from any team codes carried on
+        // the deep link (notifications pass these; team-page route links do not).
+        const buildFallbackGame = (gameId, homeTeamCode, awayTeamCode) => ({
+            uuid: gameId,
+            homeTeamInfo: homeTeamCode
+                ? { code: homeTeamCode, names: { short: homeTeamCode } }
+                : undefined,
+            awayTeamInfo: awayTeamCode
+                ? { code: awayTeamCode, names: { short: awayTeamCode } }
+                : undefined
+        });
+
+        // Open a game by ID.
+        //
+        // Returns TRUE when the link was "consumed" — either the real game object
+        // was found and opened, or the relevant list has finished loading and the
+        // game genuinely isn't in it (so we open a best-effort stub). Returns FALSE
+        // when the list simply hasn't loaded yet, signalling the caller NOT to latch
+        // its dedup guard so the effect retries once games populate. This fixes the
+        // race where a team-page tap (router.push('/?sport=...&gameId=...')) fired
+        // the deep-link effect while football.games was still [] — the old code
+        // latched on that empty pass and never retried, bouncing the user to the
+        // listing instead of opening the game.
         const openGameById = (sport, gameId, tab = null, options = {}) => {
             const normalizedSport = normalizeSport(sport);
             const normalizedTab = normalizeDeepLinkTab(tab) || 'summary';
@@ -413,109 +435,81 @@ export default function App() {
             const awayTeamCode = normalizeRouteParam(options?.awayTeamCode);
             const targetVideoId = normalizeRouteParam(options?.videoId);
 
-            // Prevent processing the same deep link twice
+            // Prevent processing the same deep link twice (once consumed).
             const linkKey = `${normalizedSport}:${gameId}:${normalizedTab}:${targetVideoId || ''}`;
             if (processedDeepLinkRef.current === linkKey) {
-                return;
+                return true;
             }
-            processedDeepLinkRef.current = linkKey;
 
-            // Clear after a short delay to allow re-opening if needed
-            setTimeout(() => {
-                processedDeepLinkRef.current = null;
-            }, 2000);
+            // Resolve the hook that owns this sport so we can inspect its
+            // load state and decide between "retry later" and "genuine miss".
+            const sportHooks = {
+                shl: { hook: shl, parentSport: 'hockey' },
+                hockeyallsvenskan: { hook: hockeyAllsvenskan, parentSport: 'hockey' },
+                allsvenskan: { hook: football, parentSport: 'football' },
+                'svenska-cupen': { hook: svenskaCupen, parentSport: 'football' },
+                'europa-league-qual': { hook: europaLeagueQual, parentSport: 'football' },
+                'conference-league-qual': { hook: conferenceLeagueQual, parentSport: 'football' }
+            };
+
+            const entry = sportHooks[normalizedSport];
+            if (!entry) {
+                console.warn('[DeepLink] Unsupported sport in deep link:', normalizedSport);
+                // Unknown sport is never going to resolve — mark consumed so we
+                // don't retry forever.
+                processedDeepLinkRef.current = linkKey;
+                return true;
+            }
+
+            const { hook, parentSport } = entry;
+            const game = hook.games.find(g => g.uuid === gameId);
+
+            // The game isn't in the list AND the list hasn't finished loading yet
+            // (or is still empty). Don't open a stub and don't latch — let the
+            // effect re-run and retry once games populate.
+            if (!game && (hook.loading || hook.games.length === 0)) {
+                console.log('[DeepLink] Games not loaded yet, will retry:', normalizedSport, gameId);
+                return false;
+            }
 
             console.log('[DeepLink] Opening game:', normalizedSport, gameId, normalizedTab);
 
-            if (normalizedSport === 'shl') {
-                // Find the game in SHL games list
-                const game = shl.games.find(g => g.uuid === gameId);
-                if (game) {
-                    handleSportChange('hockey');
-                    setShlActiveTab(normalizedTab);
-                    setShlTargetVideoId(targetVideoId || null);
-                    shl.handleGamePress(game);
-                } else {
-                    // Game not in list yet, try to open anyway with minimal data
-                    console.log('[DeepLink] SHL game not found in list, opening with ID');
-                    handleSportChange('hockey');
-                    setShlActiveTab(normalizedTab);
-                    setShlTargetVideoId(targetVideoId || null);
-                    const fallbackGame = {
-                        uuid: gameId,
-                        homeTeamInfo: homeTeamCode
-                            ? {
-                                code: homeTeamCode,
-                                names: { short: homeTeamCode }
-                            }
-                            : undefined,
-                        awayTeamInfo: awayTeamCode
-                            ? {
-                                code: awayTeamCode,
-                                names: { short: awayTeamCode }
-                            }
-                            : undefined
-                    };
-                    shl.handleGamePress(fallbackGame);
+            // From here on we've either found the game or the list is loaded and
+            // the game genuinely isn't in it — either way the link is consumed.
+            processedDeepLinkRef.current = linkKey;
+            // Clear after a short delay to allow re-opening the same game later.
+            setTimeout(() => {
+                if (processedDeepLinkRef.current === linkKey) {
+                    processedDeepLinkRef.current = null;
                 }
+            }, 2000);
+
+            handleSportChange(parentSport);
+
+            if (normalizedSport === 'shl') {
+                setShlActiveTab(normalizedTab);
+                setShlTargetVideoId(targetVideoId || null);
+                shl.handleGamePress(game || buildFallbackGame(gameId, homeTeamCode, awayTeamCode));
             } else if (normalizedSport === 'hockeyallsvenskan') {
-                const game = hockeyAllsvenskan.games.find(g => g.uuid === gameId);
-                handleSportChange('hockey');
                 setHaActiveTab(normalizedTab);
                 setHaTargetVideoId(targetVideoId || null);
-                if (game) {
-                    hockeyAllsvenskan.handleGamePress(game);
-                } else {
-                    console.log('[DeepLink] HockeyAllsvenskan game not found in list, opening with ID');
-                    const fallbackGame = {
-                        uuid: gameId,
-                        homeTeamInfo: homeTeamCode
-                            ? { code: homeTeamCode, names: { short: homeTeamCode } }
-                            : undefined,
-                        awayTeamInfo: awayTeamCode
-                            ? { code: awayTeamCode, names: { short: awayTeamCode } }
-                            : undefined
-                    };
-                    hockeyAllsvenskan.handleGamePress(fallbackGame);
-                }
+                hockeyAllsvenskan.handleGamePress(game || buildFallbackGame(gameId, homeTeamCode, awayTeamCode));
             } else if (normalizedSport === 'allsvenskan') {
-                const game = football.games.find(g => g.uuid === gameId);
-                handleSportChange('football');
                 setFootballActiveTab(normalizedTab);
                 setFootballTargetVideoId(targetVideoId || null);
-                if (game) {
-                    football.handleGamePress(game);
-                } else {
-                    console.log('[DeepLink] Football game not found in list');
-                    football.handleGamePress({ uuid: gameId });
+                if (!game) {
+                    console.log('[DeepLink] Football game not found in loaded list, opening with ID');
                 }
+                football.handleGamePress(game || buildFallbackGame(gameId, homeTeamCode, awayTeamCode));
             } else if (normalizedSport === 'svenska-cupen') {
-                handleSportChange('football');
-                const game = svenskaCupen.games.find(g => g.uuid === gameId);
-                if (game) {
-                    svenskaCupen.handleGamePress(game);
-                } else {
-                    svenskaCupen.handleGamePress({ uuid: gameId });
-                }
+                svenskaCupen.handleGamePress(game || buildFallbackGame(gameId, homeTeamCode, awayTeamCode));
             } else if (normalizedSport === 'europa-league-qual') {
-                handleSportChange('football');
-                const game = europaLeagueQual.games.find(g => g.uuid === gameId);
-                if (game) {
-                    europaLeagueQual.handleGamePress(game);
-                } else {
-                    europaLeagueQual.handleGamePress({ uuid: gameId });
-                }
+                europaLeagueQual.handleGamePress(game || buildFallbackGame(gameId, homeTeamCode, awayTeamCode));
             } else if (normalizedSport === 'conference-league-qual') {
-                handleSportChange('football');
-                const game = conferenceLeagueQual.games.find(g => g.uuid === gameId);
-                if (game) {
-                    conferenceLeagueQual.handleGamePress(game);
-                } else {
-                    conferenceLeagueQual.handleGamePress({ uuid: gameId });
-                }
-            } else {
-                console.warn('[DeepLink] Unsupported sport in deep link:', normalizedSport);
+                conferenceLeagueQual.handleGamePress(game || buildFallbackGame(gameId, homeTeamCode, awayTeamCode));
             }
+
+            return true;
         };
 
         const openFromGameInfo = (gameInfo, delayMs = 0) => {
@@ -536,10 +530,21 @@ export default function App() {
             if (processedRouteDeepLinkRef.current === routeLinkKey) {
                 return;
             }
-            processedRouteDeepLinkRef.current = routeLinkKey;
 
             const timeoutId = setTimeout(() => {
-                openGameById(deepLinkParams.sport, deepLinkParams.gameId, deepLinkParams.tab, deepLinkParams);
+                // Only latch the dedup guard when the link was actually consumed.
+                // If the target sport's games haven't loaded yet, openGameById
+                // returns false and we leave the ref unset so this effect re-runs
+                // (deps include every hook's .games) and retries once data lands.
+                const consumed = openGameById(
+                    deepLinkParams.sport,
+                    deepLinkParams.gameId,
+                    deepLinkParams.tab,
+                    deepLinkParams
+                );
+                if (consumed) {
+                    processedRouteDeepLinkRef.current = routeLinkKey;
+                }
             }, 0);
 
             return () => {
