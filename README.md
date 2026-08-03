@@ -154,5 +154,7 @@ Query params (envelope mode):
 
 Each team carries a **`leagues[]` array** because a team can belong to multiple leagues (e.g. an Allsvenskan club also in Svenska Cupen). Filters combine as: search **AND** league **AND** region; **OR** within the league facet.
 
+**Team keys:** `id` is unique *within* a sport; `code`/`key` are the per-sport picker selection keys (hockey selects by `code`, football by `key`). For the mixed `sport=all` list, use **`uid`** (= `${sport}:${id}`), which is **globally unique** — as of v3.21.1 every envelope team carries it. Three teams (AIK, DIF, VIK) share a code across hockey and football, so their `id` collides while `uid` stays distinct; key React lists / Sets / dedupes on `uid`.
+
 ---
 *Powered by SHL Media API & Firebase Cloud Messaging*

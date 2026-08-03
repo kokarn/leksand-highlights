@@ -100,6 +100,13 @@ function upsertTeam(map, sport, rawTeam, league) {
         const city = rawTeam.city || null;
         entry = {
             id,
+            // Globally-unique key across the aggregated (sport=all) index. `id` is only
+            // unique WITHIN a sport (it drops the sport: prefix), so cross-sport teams
+            // that share a team code collide on `id` (e.g. AIK hockey vs AIK football).
+            // `uid` mirrors the internal mapKey and is safe as a React list key / Set key
+            // / dedupe key for any consumer of the mixed sport=all list. The per-sport
+            // pickers keep using `code` (hockey) / `key` (football) unchanged.
+            uid: mapKey,
             sport,
             leagues: [],
             names: normalizeNames(rawTeam),

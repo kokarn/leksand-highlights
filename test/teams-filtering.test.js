@@ -209,6 +209,69 @@ test('selected ids are marked, not force-included', () => {
     assert.strictEqual(res.teams[0].selected, true);
 });
 
+// --- Globally-unique key (uid) across sport=all --------------------------
+
+// Cross-sport code collisions: the same team code exists in BOTH a hockey and a
+// football league (the real-world AIK / DIF / VIK cases). Internally these are
+// distinct entries (mapKey = `${sport}:${id}`) and must stay distinct rows, but
+// their public `id` drops the sport prefix and therefore collides.
+const collisionShlTeams = [
+    { code: 'AIK', uuid: 'u-aik-h', names: { short: 'AIK', long: 'AIK Hockey' }, city: 'Stockholm' },
+    { code: 'DIF', uuid: 'u-dif-h', names: { short: 'Djurgården', long: 'Djurgårdens IF' }, city: 'Stockholm' },
+    { code: 'VIK', uuid: 'u-vik-h', names: { short: 'Västerås', long: 'Västerås IK' }, city: 'Västerås' }
+];
+
+const collisionFootballGames = [
+    {
+        homeTeamInfo: { code: 'AIK', uuid: '2001', names: { short: 'AIK', long: 'AIK Fotboll' }, icon: 'http://x/aikf.png' },
+        awayTeamInfo: { code: 'DIF', uuid: '2003', names: { short: 'Differdange 03', long: 'FC Differdange 03' }, icon: 'http://x/dif03.png' }
+    },
+    {
+        homeTeamInfo: { code: 'VIK', uuid: '2005', names: { short: 'Vikingur', long: 'Vikingur Reykjavik' }, icon: 'http://x/vik.png' },
+        awayTeamInfo: { code: 'MFF', uuid: '2002', names: { short: 'Malmö FF', long: 'Malmö FF' }, icon: 'http://x/mff.png' }
+    }
+];
+
+function buildCollisionIndex() {
+    return buildTeamsIndex({
+        shlTeams: collisionShlTeams,
+        gamesByLeague: {
+            'conference-league-qual': collisionFootballGames
+        }
+    });
+}
+
+test('sport=all exposes a globally-unique uid per team', () => {
+    const index = buildCollisionIndex();
+    const uids = index.map(t => t.uid);
+    const uniqueUids = new Set(uids);
+    assert.strictEqual(uids.length, uniqueUids.size, 'every team has a distinct uid');
+    // uid is the internal sport:id map key
+    for (const team of index) {
+        assert.strictEqual(team.uid, `${team.sport}:${team.id}`);
+    }
+});
+
+test('cross-sport code collisions collide on id but stay distinct rows via uid', () => {
+    const index = buildCollisionIndex();
+    // AIK/DIF/VIK each appear once as hockey and once as football = 3 duplicate ids
+    for (const code of ['AIK', 'DIF', 'VIK']) {
+        const rows = index.filter(t => t.id === code);
+        assert.strictEqual(rows.length, 2, `${code} appears in both a hockey and a football league`);
+        const sports = rows.map(r => r.sport).sort();
+        assert.deepStrictEqual(sports, ['football', 'hockey'], `${code} rows span both sports`);
+        // Same id, but distinct uid keeps them apart for any id-keying consumer.
+        assert.strictEqual(rows[0].id, rows[1].id);
+        assert.notStrictEqual(rows[0].uid, rows[1].uid);
+    }
+    // id is NOT globally unique (the documented cosmetic collision)...
+    const ids = index.map(t => t.id);
+    assert.notStrictEqual(new Set(ids).size, ids.length);
+    // ...but uid IS.
+    const uids = index.map(t => t.uid);
+    assert.strictEqual(new Set(uids).size, uids.length);
+});
+
 // --- Envelope switch & helpers -------------------------------------------
 
 test('usesEnvelopeApi detects new-API params only', () => {

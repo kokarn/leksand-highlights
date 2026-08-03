@@ -287,6 +287,13 @@ app.get('/api/sports', (req, res) => {
  *   - selected comma list of ids to mark selected:true (never force-included)
  *   - sort    name | code (default name, sv locale by display name)
  *   - limit, offset  pagination; response always includes total
+ *
+ * Envelope team shape: each team carries `id` (unique WITHIN its sport), `code`
+ * and `key` (the per-sport picker selection keys — hockey selects by `code`,
+ * football by `key`), plus `uid` = `${sport}:${id}` which is GLOBALLY unique
+ * across the mixed sport=all list. Use `uid` (not `id`) as a React list key /
+ * Set / dedupe key: 3 teams (AIK, DIF, VIK) share a code across hockey and
+ * football, so their `id` collides while `uid` stays distinct.
  */
 app.get('/api/teams', async (req, res) => {
     // Back-compat: no query params -> original bare SHL array.
