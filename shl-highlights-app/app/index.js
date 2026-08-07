@@ -830,28 +830,32 @@ export default function App() {
                             <TouchableOpacity
                                 style={[
                                     styles.biathlonGenderButton,
-                                    { backgroundColor: colors.chip, borderColor: colors.chipBorder },
+                                    { backgroundColor: colors.card, borderColor: colors.cardBorder },
                                     biathlon.standingsGender === 'men' && { backgroundColor: colors.chipActive, borderColor: colors.accent }
                                 ]}
                                 onPress={() => biathlon.handleStandingsGenderChange('men')}
+                                activeOpacity={0.7}
                             >
+                                <Ionicons name="male" size={14} color={biathlon.standingsGender === 'men' ? colors.accent : colors.textMuted} />
                                 <Text style={[
                                     styles.biathlonGenderText,
-                                    { color: colors.textSecondary },
+                                    { color: colors.textMuted },
                                     biathlon.standingsGender === 'men' && { color: colors.accent }
                                 ]}>Men</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[
                                     styles.biathlonGenderButton,
-                                    { backgroundColor: colors.chip, borderColor: colors.chipBorder },
+                                    { backgroundColor: colors.card, borderColor: colors.cardBorder },
                                     biathlon.standingsGender === 'women' && { backgroundColor: colors.chipActive, borderColor: colors.accent }
                                 ]}
                                 onPress={() => biathlon.handleStandingsGenderChange('women')}
+                                activeOpacity={0.7}
                             >
+                                <Ionicons name="female" size={14} color={biathlon.standingsGender === 'women' ? colors.accent : colors.textMuted} />
                                 <Text style={[
                                     styles.biathlonGenderText,
-                                    { color: colors.textSecondary },
+                                    { color: colors.textMuted },
                                     biathlon.standingsGender === 'women' && { color: colors.accent }
                                 ]}>Women</Text>
                             </TouchableOpacity>
@@ -1356,22 +1360,23 @@ const styles = StyleSheet.create({
     },
     biathlonGenderPicker: {
         flexDirection: 'row',
-        gap: 8,
+        gap: 6,
+        justifyContent: 'center',
         marginTop: 12,
         marginBottom: 8
     },
     biathlonGenderButton: {
-        flex: 1,
-        paddingVertical: 10,
-        backgroundColor: '#2c2c2e',
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: '#3c3c3e',
-        alignItems: 'center'
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+        borderWidth: 1
     },
     biathlonGenderText: {
-        color: '#8e8e93',
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: '600'
     },
     biathlonTypePicker: {

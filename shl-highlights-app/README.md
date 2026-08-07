@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.38.5
+- Restyle the Biathlon Men/Women gender selector in the standings view to match the app's other pill selectors (the Schedule/Standings ViewToggle right above it). It now uses the same compact, centered icon+text chips with the shared card/chipActive theme tokens and male/female icons, instead of the previous full-width buttons with hardcoded colors and no icons
+
 ### 2.38.4
 - Show the day of week before the date on event cards, in short form (e.g. "Fri 8 Aug" / "Fre 8 aug"). Upcoming games within the next week now read as a short weekday abbreviation ("Fri" instead of "Friday"), and games further out lead with the weekday before the day/month. "Today"/"Tomorrow" (and the Swedish "Idag"/"Imorgon") are unchanged
 
