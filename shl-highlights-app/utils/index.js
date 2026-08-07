@@ -76,8 +76,8 @@ export const formatRelativeDate = (dateStr) => {
         if (isToday(date)) return 'Idag';
         if (isTomorrow(date)) return 'Imorgon';
         const days = differenceInDays(date, new Date());
-        if (days > 0 && days <= 7) return format(date, 'EEEE', { locale: sv });
-        return format(date, 'd MMM', { locale: sv });
+        if (days > 0 && days <= 7) return format(date, 'EEE', { locale: sv });
+        return format(date, 'EEE d MMM', { locale: sv });
     } catch (error) {
         return '-';
     }
@@ -96,8 +96,8 @@ export const formatRelativeDateEnglish = (dateStr) => {
         if (isToday(date)) return 'Today';
         if (isTomorrow(date)) return 'Tomorrow';
         const days = differenceInDays(date, new Date());
-        if (days > 0 && days <= 7) return format(date, 'EEEE');
-        return format(date, 'd MMM');
+        if (days > 0 && days <= 7) return format(date, 'EEE');
+        return format(date, 'EEE d MMM');
     } catch (error) {
         return '-';
     }

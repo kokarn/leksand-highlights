@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.38.4
+- Show the day of week before the date on event cards, in short form (e.g. "Fri 8 Aug" / "Fre 8 aug"). Upcoming games within the next week now read as a short weekday abbreviation ("Fri" instead of "Friday"), and games further out lead with the weekday before the day/month. "Today"/"Tomorrow" (and the Swedish "Idag"/"Imorgon") are unchanged
+
 ### 2.38.1
 - Fix ~10 Round 3 qualifying-bracket ties rendering with NO connector to the round that feeds them. The app reconstructs feeder links by matching each "Winner: A / B" draw placeholder back to the previous round's tie by team name, but the matcher only accepted an exact shared token — so Wikipedia-vs-ESPN name variants like "Paks" (draw) vs "Paksi SE" (ESPN R2) never linked. Added a conservative ≥4-char prefix match (shorter token must be a prefix of the longer) alongside the existing alias map; this recovers the missing links (live Conference qual R3: 26→27 of 30 connected) with zero ambiguous multi-matches. The remaining unconnected R3 ties are correct: fresh seeded entrants and "Loser: …" slots dropping in from Champions/Europa League qualifying, which genuinely have no feeder in this bracket. Short/ambiguous tokens (≤3 chars like "AEK") still require an exact hit so they can't force a wrong link
 
