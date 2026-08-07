@@ -77,6 +77,11 @@ export function useAppUpdate() {
     const isMounted = useRef(true);
     useEffect(() => () => { isMounted.current = false; }, []);
 
+    // Guards against re-entrant downloads: the status state flip to 'downloading'
+    // is async, so a fast double-tap could otherwise start two downloads / two
+    // installer launches. This ref flips synchronously on the first press.
+    const isDownloadingRef = useRef(false);
+
     const safeSet = useCallback((fn) => {
         if (isMounted.current) fn();
     }, []);
@@ -135,11 +140,14 @@ export function useAppUpdate() {
      */
     const downloadAndInstall = useCallback(async () => {
         if (Platform.OS !== 'android') return;
+        // Re-entrancy guard: ignore taps while a download/install is already underway.
+        if (isDownloadingRef.current) return;
         if (!updateInfo?.apkUrl) {
             safeSet(() => { setStatus('error'); setError('No update available to download'); });
             return;
         }
 
+        isDownloadingRef.current = true;
         safeSet(() => { setStatus('downloading'); setProgress(0); setError(null); });
 
         // Cache-bust the filename per version so we never install a stale cached APK.
@@ -186,11 +194,16 @@ export function useAppUpdate() {
             // After this the OS installer takes over; if the user cancels we stay 'ready'.
         } catch (e) {
             safeSet(() => { setStatus('error'); setError(e?.message || 'Download/install failed'); });
+        } finally {
+            // Allow a fresh attempt once this run settles (success hands off to the
+            // OS installer; failure surfaces an error the user can retry).
+            isDownloadingRef.current = false;
         }
     }, [updateInfo, safeSet]);
 
     /** Reset transient error/download state back to a sensible status. */
     const reset = useCallback(() => {
+        isDownloadingRef.current = false;
         safeSet(() => {
             setError(null);
             setProgress(0);

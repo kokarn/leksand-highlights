@@ -4,6 +4,10 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.38.6
+- Fix a bug where the "Download & install" update button could be tapped multiple times, kicking off duplicate downloads / installer launches. The download is now guarded so repeat taps while a download or install is already underway are ignored
+- When an app update is available (or downloading/installing), the App Updates card now moves to the TOP of Settings instead of sitting below Appearance, so the action is the first thing you see
+
 ### 2.38.5
 - Restyle the Biathlon Men/Women gender selector in the standings view to match the app's other pill selectors (the Schedule/Standings ViewToggle right above it). It now uses the same compact, centered icon+text chips with the shared card/chipActive theme tokens and male/female icons, instead of the previous full-width buttons with hardcoded colors and no icons
 

@@ -103,7 +103,101 @@ export const SettingsModal = ({
     };
     
     const themedStyles = getThemedStyles(colors, isDark);
-    
+
+    // App Updates card (Android sideload self-update). Extracted so it can render
+    // at the TOP of settings when an update is available, and in its normal spot
+    // (below Appearance) otherwise.
+    const appUpdatesCard = Platform.OS === 'android' ? (
+        <>
+            <Text style={themedStyles.settingsSection}>App Updates</Text>
+            <Text style={themedStyles.settingsSectionSubtitle}>Download and install the latest version directly</Text>
+
+            <View style={themedStyles.settingsCard}>
+                <View style={styles.settingsCardHeader}>
+                    <Ionicons name="cloud-download-outline" size={22} color={colors.accent} />
+                    <Text style={themedStyles.settingsCardTitle}>App Version</Text>
+                    <Text style={[styles.settingsCardCount, { color: colors.textMuted }]}>
+                        v{APP_VERSION}
+                    </Text>
+                </View>
+
+                {updateStatus === 'available' && updateInfo ? (
+                    <>
+                        <View style={themedStyles.notificationInfo}>
+                            <Ionicons name="sparkles-outline" size={16} color={colors.accent} />
+                            <Text style={themedStyles.notificationInfoText}>
+                                Version {updateInfo.version} is available
+                            </Text>
+                        </View>
+                        {updateInfo.notes ? (
+                            <Text style={[styles.updateNotes, { color: colors.textSecondary }]} numberOfLines={6}>
+                                {updateInfo.notes.trim()}
+                            </Text>
+                        ) : null}
+                        <TouchableOpacity
+                            style={[styles.updateButton, { backgroundColor: colors.accent }]}
+                            onPress={onDownloadAndInstall}
+                            activeOpacity={0.85}
+                        >
+                            <Ionicons name="download-outline" size={18} color="#fff" />
+                            <Text style={styles.updateButtonText}>Download & install v{updateInfo.version}</Text>
+                        </TouchableOpacity>
+                    </>
+                ) : updateStatus === 'downloading' || updateStatus === 'ready' ? (
+                    <>
+                        <View style={styles.updateProgressTrack}>
+                            <View
+                                style={[
+                                    styles.updateProgressFill,
+                                    { backgroundColor: colors.accent, width: `${Math.round(updateProgress * 100)}%` }
+                                ]}
+                            />
+                        </View>
+                        <Text style={[styles.updateProgressText, { color: colors.textSecondary }]}>
+                            {updateStatus === 'ready'
+                                ? 'Download complete — opening installer…'
+                                : `Downloading… ${Math.round(updateProgress * 100)}%`}
+                        </Text>
+                    </>
+                ) : (
+                    <>
+                        <TouchableOpacity
+                            style={[styles.updateButton, { backgroundColor: colors.chip, borderWidth: 1, borderColor: colors.cardBorder }]}
+                            onPress={() => onCheckForUpdate?.({ silent: false })}
+                            activeOpacity={0.85}
+                            disabled={updateStatus === 'checking'}
+                        >
+                            <Ionicons
+                                name={updateStatus === 'checking' ? 'sync-outline' : 'refresh-outline'}
+                                size={18}
+                                color={colors.text}
+                            />
+                            <Text style={[styles.updateButtonText, { color: colors.text }]}>
+                                {updateStatus === 'checking' ? 'Checking…' : 'Check for updates'}
+                            </Text>
+                        </TouchableOpacity>
+                        {updateStatus === 'up-to-date' && (
+                            <Text style={[styles.updateProgressText, { color: colors.textMuted }]}>
+                                You&apos;re on the latest version
+                            </Text>
+                        )}
+                        {updateStatus === 'error' && updateError && (
+                            <View style={themedStyles.notificationWarning}>
+                                <Ionicons name="warning-outline" size={16} color={colors.accentOrange} />
+                                <Text style={themedStyles.notificationWarningText}>{updateError}</Text>
+                            </View>
+                        )}
+                    </>
+                )}
+            </View>
+        </>
+    ) : null;
+
+    // Pin the update card to the top of settings only while an update is actionable
+    // (available / downloading / installing); otherwise it lives in its normal spot.
+    const showUpdateCardAtTop = Platform.OS === 'android'
+        && (updateStatus === 'available' || updateStatus === 'downloading' || updateStatus === 'ready');
+
     return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
         <SafeAreaView style={themedStyles.modalContainer} edges={['top', 'left', 'right', 'bottom']}>
@@ -117,6 +211,9 @@ export const SettingsModal = ({
                 style={styles.settingsContent}
                 contentContainerStyle={styles.settingsContentContainer}
             >
+                {/* Pinned to top when an update is available/in progress */}
+                {showUpdateCardAtTop && appUpdatesCard}
+
                 {/* Notifications Section */}
                 <Text style={themedStyles.settingsSection}>Notifications</Text>
                 <Text style={themedStyles.settingsSectionSubtitle}>Get notified when goals are scored</Text>
@@ -169,7 +266,7 @@ export const SettingsModal = ({
                         <View style={themedStyles.notificationInfo}>
                             <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
                             <Text style={themedStyles.notificationInfoText}>
-                                You'll receive goal alerts for your selected teams below
+                                You&apos;ll receive goal alerts for your selected teams below
                             </Text>
                         </View>
                     )}
@@ -417,92 +514,9 @@ export const SettingsModal = ({
                     </View>
                 </View>
 
-                {/* App Updates Section (Android sideload self-update) */}
-                {Platform.OS === 'android' && (
-                    <>
-                        <Text style={themedStyles.settingsSection}>App Updates</Text>
-                        <Text style={themedStyles.settingsSectionSubtitle}>Download and install the latest version directly</Text>
-
-                        <View style={themedStyles.settingsCard}>
-                            <View style={styles.settingsCardHeader}>
-                                <Ionicons name="cloud-download-outline" size={22} color={colors.accent} />
-                                <Text style={themedStyles.settingsCardTitle}>App Version</Text>
-                                <Text style={[styles.settingsCardCount, { color: colors.textMuted }]}>
-                                    v{APP_VERSION}
-                                </Text>
-                            </View>
-
-                            {updateStatus === 'available' && updateInfo ? (
-                                <>
-                                    <View style={themedStyles.notificationInfo}>
-                                        <Ionicons name="sparkles-outline" size={16} color={colors.accent} />
-                                        <Text style={themedStyles.notificationInfoText}>
-                                            Version {updateInfo.version} is available
-                                        </Text>
-                                    </View>
-                                    {updateInfo.notes ? (
-                                        <Text style={[styles.updateNotes, { color: colors.textSecondary }]} numberOfLines={6}>
-                                            {updateInfo.notes.trim()}
-                                        </Text>
-                                    ) : null}
-                                    <TouchableOpacity
-                                        style={[styles.updateButton, { backgroundColor: colors.accent }]}
-                                        onPress={onDownloadAndInstall}
-                                        activeOpacity={0.85}
-                                    >
-                                        <Ionicons name="download-outline" size={18} color="#fff" />
-                                        <Text style={styles.updateButtonText}>Download & install v{updateInfo.version}</Text>
-                                    </TouchableOpacity>
-                                </>
-                            ) : updateStatus === 'downloading' || updateStatus === 'ready' ? (
-                                <>
-                                    <View style={styles.updateProgressTrack}>
-                                        <View
-                                            style={[
-                                                styles.updateProgressFill,
-                                                { backgroundColor: colors.accent, width: `${Math.round(updateProgress * 100)}%` }
-                                            ]}
-                                        />
-                                    </View>
-                                    <Text style={[styles.updateProgressText, { color: colors.textSecondary }]}>
-                                        {updateStatus === 'ready'
-                                            ? 'Download complete — opening installer…'
-                                            : `Downloading… ${Math.round(updateProgress * 100)}%`}
-                                    </Text>
-                                </>
-                            ) : (
-                                <>
-                                    <TouchableOpacity
-                                        style={[styles.updateButton, { backgroundColor: colors.chip, borderWidth: 1, borderColor: colors.cardBorder }]}
-                                        onPress={() => onCheckForUpdate?.({ silent: false })}
-                                        activeOpacity={0.85}
-                                        disabled={updateStatus === 'checking'}
-                                    >
-                                        <Ionicons
-                                            name={updateStatus === 'checking' ? 'sync-outline' : 'refresh-outline'}
-                                            size={18}
-                                            color={colors.text}
-                                        />
-                                        <Text style={[styles.updateButtonText, { color: colors.text }]}>
-                                            {updateStatus === 'checking' ? 'Checking…' : 'Check for updates'}
-                                        </Text>
-                                    </TouchableOpacity>
-                                    {updateStatus === 'up-to-date' && (
-                                        <Text style={[styles.updateProgressText, { color: colors.textMuted }]}>
-                                            You&apos;re on the latest version
-                                        </Text>
-                                    )}
-                                    {updateStatus === 'error' && updateError && (
-                                        <View style={themedStyles.notificationWarning}>
-                                            <Ionicons name="warning-outline" size={16} color={colors.accentOrange} />
-                                            <Text style={themedStyles.notificationWarningText}>{updateError}</Text>
-                                        </View>
-                                    )}
-                                </>
-                            )}
-                        </View>
-                    </>
-                )}
+                {/* App Updates Section (Android sideload self-update).
+                    Rendered here normally; pinned to the top instead when an update is actionable. */}
+                {!showUpdateCardAtTop && appUpdatesCard}
 
                 {/* Reset Onboarding */}
                 <TouchableOpacity style={themedStyles.resetOnboardingButton} onPress={onResetOnboarding}>
