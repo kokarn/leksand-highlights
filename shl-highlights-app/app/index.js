@@ -158,6 +158,32 @@ export default function App() {
     }, [combinedFootballGames]);
 
     const hasFootballCombinedInitialScrolled = useRef(false);
+    const hasHockeyCombinedInitialScrolled = useRef(false);
+
+    // Reset the one-shot auto-scroll guards when the schedule scope flips so the
+    // list re-anchors to live/upcoming in the newly-sized (compact vs card) list.
+    // The list also holds a stale scroll offset from the previous scope (e.g. the
+    // long "All matches" list leaves a large offset that overshoots the short
+    // "My teams" list), so snap both lists back to the top here first. This effect
+    // MUST be declared BEFORE the target-scroll effects below: React runs effects
+    // in declaration order, and the guards are refs mutated synchronously, so
+    // clearing them here lets the target effects (which also list scheduleScope in
+    // their deps) re-anchor to live/upcoming in the SAME commit. If this runs
+    // after them, they bail on the still-true guard and the list stays at the top.
+    const isFirstScopeRender = useRef(true);
+    useEffect(() => {
+        hasFootballCombinedInitialScrolled.current = false;
+        hasHockeyCombinedInitialScrolled.current = false;
+
+        // Don't fight the initial mount scroll — only react to real scope changes.
+        if (isFirstScopeRender.current) {
+            isFirstScopeRender.current = false;
+            return;
+        }
+
+        football.listRef.current?.scrollToOffset({ offset: 0, animated: false });
+        shl.listRef.current?.scrollToOffset({ offset: 0, animated: false });
+    }, [scheduleScope]);
 
     // Initial scroll to live/upcoming in combined football list
     useEffect(() => {
@@ -177,7 +203,7 @@ export default function App() {
             }
         }, 50);
         return () => clearTimeout(timeoutId);
-    }, [activeSport, football.viewMode, combinedFootballTargetGameIndex, combinedFootballGames.length]);
+    }, [activeSport, football.viewMode, combinedFootballTargetGameIndex, combinedFootballGames.length, scheduleScope, showAllMatches]);
 
     // Combined hockey games (SHL + HockeyAllsvenskan) for single list
     const combinedHockeyGames = useMemo(() => {
@@ -205,30 +231,6 @@ export default function App() {
         return combinedHockeyGames.length - 1;
     }, [combinedHockeyGames]);
 
-    const hasHockeyCombinedInitialScrolled = useRef(false);
-
-    // Reset the one-shot auto-scroll guards when the schedule scope flips so the
-    // list re-anchors to live/upcoming in the newly-sized (compact vs card) list.
-    // The list also holds a stale scroll offset from the previous scope (e.g. the
-    // long "All matches" list leaves a large offset that overshoots the short
-    // "My teams" list), so snap both lists back to the top here. The target
-    // effects below then re-anchor to live/upcoming when the target index > 0;
-    // when it is 0 the top is already the correct position.
-    const isFirstScopeRender = useRef(true);
-    useEffect(() => {
-        hasFootballCombinedInitialScrolled.current = false;
-        hasHockeyCombinedInitialScrolled.current = false;
-
-        // Don't fight the initial mount scroll — only react to real scope changes.
-        if (isFirstScopeRender.current) {
-            isFirstScopeRender.current = false;
-            return;
-        }
-
-        football.listRef.current?.scrollToOffset({ offset: 0, animated: false });
-        shl.listRef.current?.scrollToOffset({ offset: 0, animated: false });
-    }, [scheduleScope]);
-
     // Initial scroll to live/upcoming in combined hockey list
     useEffect(() => {
         if (activeSport !== 'hockey') {
@@ -247,7 +249,7 @@ export default function App() {
             }
         }, 50);
         return () => clearTimeout(timeoutId);
-    }, [activeSport, combinedHockeyTargetGameIndex, combinedHockeyGames.length]);
+    }, [activeSport, combinedHockeyTargetGameIndex, combinedHockeyGames.length, scheduleScope, showAllMatches]);
 
     // Merged hockey teams (SHL + HockeyAllsvenskan) for filter in Settings/Onboarding
     // Merged football teams (Allsvenskan + Svenska Cupen) for filter in Settings/Onboarding

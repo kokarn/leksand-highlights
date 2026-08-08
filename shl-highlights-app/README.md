@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.40.1
+- Fix schedule scroll position getting stuck at the top when switching between the My teams and All matches views. The list now correctly re-anchors to the live/upcoming match after a scope flip (previously the auto-scroll guard reset ran after the scroll effects and left both the football and hockey lists pinned to the top)
+
 ### 2.40.0
 - Reverse the ordering of the in-match timeline on game pages so the most recent event now appears at the top. This applies consistently across all four surfaces — the Summary goal list and the Events tab, for both hockey and football. Running scores are still calculated in chronological order, and period/half markers stay above their group
 

@@ -60,6 +60,21 @@ test('switching scope snaps both lists back to the top to drop the stale offset'
     assert.match(appSource, /isFirstScopeRender\.current/);
 });
 
+test('auto-scroll target effects re-run on scope flip so the list re-anchors to live', () => {
+    // The guard-reset effect must precede the football/hockey target-scroll
+    // effects (React runs effects in declaration order); otherwise the target
+    // effects bail on the still-true guard and the list stays pinned to the top.
+    const resetIdx = appSource.indexOf('hasFootballCombinedInitialScrolled.current = false;');
+    const footballScrollIdx = appSource.indexOf('Initial scroll to live/upcoming in combined football list');
+    const hockeyScrollIdx = appSource.indexOf('Initial scroll to live/upcoming in combined hockey list');
+    assert.ok(resetIdx > -1 && footballScrollIdx > -1 && hockeyScrollIdx > -1);
+    assert.ok(resetIdx < footballScrollIdx, 'guard reset must be declared before the football scroll effect');
+    assert.ok(resetIdx < hockeyScrollIdx, 'guard reset must be declared before the hockey scroll effect');
+    // both target effects list scheduleScope in their deps so they re-fire on a flip
+    assert.match(appSource, /combinedFootballGames\.length, scheduleScope, showAllMatches\]/);
+    assert.match(appSource, /combinedHockeyGames\.length, scheduleScope, showAllMatches\]/);
+});
+
 test('ScopeToggle offers My teams / All matches and is wired into both tabs', () => {
     assert.match(scopeToggleSource, /key: 'myteams', label: 'My teams'/);
     assert.match(scopeToggleSource, /key: 'all', label: 'All matches'/);
