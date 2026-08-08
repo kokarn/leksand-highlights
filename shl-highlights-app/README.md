@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.43.1
+- Fix the All matches list rendering empty when you switch to Football (or Hockey) → All matches, only appearing after scrolling one pixel. Disabled `removeClippedSubviews` on the schedule lists, which on Android left rows detached until a manual scroll forced a re-layout
+
 ### 2.43.0
 - Merge the separate "Game Reminders" and "All Matches" settings cards into a single **Leagues** section. Each league now has one row with two controls: an eye (show in the All matches view) and a bell (5-min game reminder), so leagues are no longer listed twice. Biathlon shows only the reminder control since it isn't part of the All matches list
 

@@ -811,7 +811,11 @@ export default function App() {
             onScrollToIndexFailed={handleScrollToIndexFailed}
             onScroll={shl.handleScroll}
             scrollEventThrottle={100}
-            removeClippedSubviews={true}
+            // removeClippedSubviews causes a known Android bug where rows stay
+            // detached (blank list) until a manual scroll forces a re-layout —
+            // hit when switching to All matches with the live target at the top,
+            // so no auto-scroll fires to trigger the recompute. Keep it off here.
+            removeClippedSubviews={false}
             maxToRenderPerBatch={10}
             windowSize={11}
             ListEmptyComponent={<EmptyState message="No games found." />}
@@ -873,7 +877,10 @@ export default function App() {
             onScrollToIndexFailed={handleScrollToIndexFailed}
             onScroll={football.handleScroll}
             scrollEventThrottle={100}
-            removeClippedSubviews={true}
+            // See hockey list: removeClippedSubviews leaves rows blank on Android
+            // until a manual 1px scroll forces a re-layout. Disabled to fix the
+            // empty All-matches list.
+            removeClippedSubviews={false}
             maxToRenderPerBatch={10}
             windowSize={11}
             ListEmptyComponent={<EmptyState message="No matches found." />}
