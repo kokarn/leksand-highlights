@@ -100,9 +100,9 @@ export const NOTIFICATION_TAGS = FCM_TOPICS;
 
 // Gender options for biathlon
 export const GENDER_OPTIONS = [
-    { id: 'men', label: 'Men', color: '#4A90D9' },
-    { id: 'women', label: 'Women', color: '#D94A8C' },
-    { id: 'mixed', label: 'Mixed', color: '#9B59B6' }
+    { id: 'men', label: 'Men', color: '#4A90D9', icon: 'male' },
+    { id: 'women', label: 'Women', color: '#D94A8C', icon: 'female' },
+    { id: 'mixed', label: 'Mixed', color: '#9B59B6', icon: 'male-female' }
 ];
 
 // Discipline icons for biathlon

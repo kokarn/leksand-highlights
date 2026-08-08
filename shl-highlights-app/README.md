@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.41.1
+- Restyle the Biathlon Gender selector in Settings to match the rest of the app's selectors — compact pill chips with a gender icon and the purple accent when selected, instead of the oversized blocky blue/pink/purple buttons. Now consistent with the Theme picker below it and the standings gender picker
+
 ### 2.41.0
 - Group the All matches list by day. Each day now has a section header, and today's header is highlighted so you can spot the current day at a glance. Auto-scroll still lands on the live/upcoming match, keeping its day header in view
 

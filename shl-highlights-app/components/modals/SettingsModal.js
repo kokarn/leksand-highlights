@@ -462,20 +462,29 @@ export const SettingsModal = ({
                         <Text style={themedStyles.settingsCardTitle}>Biathlon Gender</Text>
                     </View>
                     <View style={styles.genderRow}>
-                        {GENDER_OPTIONS.map(gender => (
-                            <TouchableOpacity
-                                key={gender.id}
-                                style={[
-                                    themedStyles.genderChip,
-                                    selectedGenders.includes(gender.id) && { backgroundColor: gender.color, borderColor: gender.color }
-                                ]}
-                                onPress={() => onToggleGender(gender.id)}
-                            >
-                                <Text style={[themedStyles.genderText, selectedGenders.includes(gender.id) && themedStyles.genderTextActive]}>
-                                    {gender.label}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
+                        {GENDER_OPTIONS.map(gender => {
+                            const active = selectedGenders.includes(gender.id);
+                            return (
+                                <TouchableOpacity
+                                    key={gender.id}
+                                    style={[
+                                        themedStyles.genderChip,
+                                        active && { backgroundColor: colors.chipActive, borderColor: colors.accent }
+                                    ]}
+                                    onPress={() => onToggleGender(gender.id)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Ionicons
+                                        name={gender.icon}
+                                        size={14}
+                                        color={active ? colors.accent : colors.textMuted}
+                                    />
+                                    <Text style={[themedStyles.genderText, active && themedStyles.genderTextActive]}>
+                                        {gender.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
                 </View>
 
@@ -962,20 +971,26 @@ const getThemedStyles = (colors, isDark) => ({
     chipTextActive: {
         color: colors.text
     },
-    // Gender chip styles
+    // Gender chip styles — compact ViewToggle pill (icon + label, accent on select)
     genderChip: {
         flex: 1,
+        flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 14,
-        borderRadius: 12,
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 10,
+        borderRadius: 10,
         backgroundColor: colors.chip,
-        borderWidth: 2,
+        borderWidth: 1,
         borderColor: colors.chipBorder
     },
     genderText: {
-        color: colors.textSecondary,
-        fontSize: 15,
-        fontWeight: '700'
+        color: colors.textMuted,
+        fontSize: 13,
+        fontWeight: '600'
+    },
+    genderTextActive: {
+        color: colors.accent
     },
     // Theme picker chip styles
     themeChip: {
@@ -1056,10 +1071,6 @@ const getThemedStyles = (colors, isDark) => ({
         paddingHorizontal: 12,
         backgroundColor: isDark ? 'rgba(142, 142, 147, 0.1)' : 'rgba(142, 142, 147, 0.08)',
         borderRadius: 8
-    },
-    // Gender text active state
-    genderTextActive: {
-        color: '#fff'
     },
     // Warning notification box
     notificationWarning: {
