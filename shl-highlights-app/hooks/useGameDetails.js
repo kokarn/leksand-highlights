@@ -78,7 +78,9 @@ export function useGameDetails(gameDetails, selectedGame, videos = []) {
             })
             .sort((a, b) => a.period - b.period || compareHockeyEventTimes(a.time, b.time));
 
-        sortedEvents.forEach(event => {
+        // Display newest-first: iterate reversed so the most recent period (and
+        // its newest event) appears at the top, each period marker still above its group.
+        [...sortedEvents].reverse().forEach(event => {
             if (event.period !== currentPeriod) {
                 currentPeriod = event.period;
                 interestingEvents.push({ type: 'period_marker', period: currentPeriod });
@@ -120,6 +122,6 @@ export function useGameDetails(gameDetails, selectedGame, videos = []) {
         } : null,
         scoreDisplay: processedData?.scoreDisplay || { home: '-', away: '-' },
         events: processedData?.events || [],
-        goals: [...(gameDetails?.events?.goals || [])].sort(compareHockeyEventsChronologically)
+        goals: [...(gameDetails?.events?.goals || [])].sort(compareHockeyEventsChronologically).reverse()
     };
 }

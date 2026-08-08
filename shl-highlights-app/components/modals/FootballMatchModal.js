@@ -366,7 +366,8 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
             };
         });
 
-        return goalsWithCalcScores;
+        // Scores tallied chronologically above; display newest-first.
+        return goalsWithCalcScores.reverse();
     }, [rawGoals, homeCode]);
 
     // Use goals with calculated scores
@@ -410,11 +411,13 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
             return event;
         });
 
-        // Add half markers while preserving chronological order.
+        // Add half markers. Display newest-first: iterate reversed so the most
+        // recent half (and its newest event) appears at the top, each half marker
+        // still sitting above its group. Running scores were tallied chronologically above.
         const result = [];
         let currentHalf = 0;
 
-        for (const event of eventsWithScores) {
+        for (const event of [...eventsWithScores].reverse()) {
             const eventHalf = event.period || 1;
             if (eventHalf !== currentHalf) {
                 result.push({ type: 'half_marker', half: eventHalf });
