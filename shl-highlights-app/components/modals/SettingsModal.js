@@ -65,6 +65,49 @@ export const SettingsModal = ({
     const [versionTapCount, setVersionTapCount] = useState(0);
     const tapTimeoutRef = useRef(null);
 
+    // Favorites cards are collapsible so the (now very long) team lists don't
+    // stretch the Settings scroll. Collapsed by default; tap a card header to
+    // expand its search + team grid.
+    const [expandedCards, setExpandedCards] = useState({});
+    const toggleCard = (id) =>
+        setExpandedCards((prev) => ({ ...prev, [id]: !prev[id] }));
+
+    // One-line summaries shown on a collapsed card so you can see your picks
+    // without expanding. Falls back to a "tap to choose" hint when nothing is
+    // selected.
+    const summarize = (names, noneHint) => {
+        if (!names.length) {
+            return noneHint;
+        }
+        if (names.length <= 3) {
+            return names.join(', ');
+        }
+        return `${names.slice(0, 2).join(', ')} +${names.length - 2}`;
+    };
+    const hockeySummary = summarize(
+        selectedTeams
+            .map((code) => {
+                const t = (teams || []).find((x) => x.code === code);
+                return t?.names?.short || t?.code || code;
+            }),
+        'Tap to choose hockey teams'
+    );
+    const footballSummary = summarize(
+        selectedFootballTeams
+            .map((key) => {
+                const t = (footballTeams || []).find((x) => x.key === key);
+                return t?.shortName || t?.name || key;
+            }),
+        'Tap to choose football teams'
+    );
+    const biathlonSummary = summarize(
+        (selectedGenders || []).map((id) => {
+            const g = GENDER_OPTIONS.find((x) => x.id === id);
+            return g?.label || id;
+        }),
+        'Tap to choose biathlon'
+    );
+
     const handleVersionTap = () => {
         // Clear previous timeout
         if (tapTimeoutRef.current) {
@@ -406,15 +449,36 @@ export const SettingsModal = ({
                 <Text style={themedStyles.settingsSection}>Favorites</Text>
                 <Text style={themedStyles.settingsSectionSubtitle}>Customize which sports and teams you follow</Text>
 
-                {/* Hockey Teams */}
+                {/* Hockey Teams (collapsible) */}
                 <View style={themedStyles.settingsCard}>
-                    <View style={styles.settingsCardHeader}>
+                    <TouchableOpacity
+                        style={styles.settingsCardHeader}
+                        onPress={() => toggleCard('hockey')}
+                        activeOpacity={0.7}
+                        accessibilityLabel={`${expandedCards.hockey ? 'Collapse' : 'Expand'} hockey teams`}
+                    >
                         <Ionicons name="snow-outline" size={22} color={colors.accent} />
-                        <Text style={themedStyles.settingsCardTitle}>Hockey Teams</Text>
-                        <Text style={[styles.settingsCardCount, { color: colors.textMuted }]}>
-                            {selectedTeams.length > 0 ? `${selectedTeams.length} selected` : ''}
-                        </Text>
-                    </View>
+                        <View style={styles.cardHeaderTextWrap}>
+                            <Text style={themedStyles.settingsCardTitle}>Hockey Teams</Text>
+                            {!expandedCards.hockey && (
+                                <Text style={themedStyles.cardHeaderSummary} numberOfLines={1}>
+                                    {hockeySummary}
+                                </Text>
+                            )}
+                        </View>
+                        {selectedTeams.length > 0 && (
+                            <Text style={[styles.settingsCardCount, { color: colors.textMuted }]}>
+                                {selectedTeams.length}
+                            </Text>
+                        )}
+                        <Ionicons
+                            name={expandedCards.hockey ? 'chevron-up' : 'chevron-down'}
+                            size={18}
+                            color={colors.textMuted}
+                        />
+                    </TouchableOpacity>
+                    {expandedCards.hockey && (
+                    <>
                     <TeamFilterGrid
                         teams={teams}
                         selectedKeys={selectedTeams}
@@ -448,17 +512,40 @@ export const SettingsModal = ({
                             <Text style={themedStyles.clearButtonText}>Clear selection</Text>
                         </TouchableOpacity>
                     )}
+                    </>
+                    )}
                 </View>
 
-                {/* Football Teams */}
+                {/* Football Teams (collapsible) */}
                 <View style={themedStyles.settingsCard}>
-                    <View style={styles.settingsCardHeader}>
+                    <TouchableOpacity
+                        style={styles.settingsCardHeader}
+                        onPress={() => toggleCard('football')}
+                        activeOpacity={0.7}
+                        accessibilityLabel={`${expandedCards.football ? 'Collapse' : 'Expand'} football teams`}
+                    >
                         <Ionicons name="football-outline" size={22} color={colors.accentGreen} />
-                        <Text style={themedStyles.settingsCardTitle}>Football Teams</Text>
-                        <Text style={[styles.settingsCardCount, { color: colors.textMuted }]}>
-                            {selectedFootballTeams.length > 0 ? `${selectedFootballTeams.length} selected` : ''}
-                        </Text>
-                    </View>
+                        <View style={styles.cardHeaderTextWrap}>
+                            <Text style={themedStyles.settingsCardTitle}>Football Teams</Text>
+                            {!expandedCards.football && (
+                                <Text style={themedStyles.cardHeaderSummary} numberOfLines={1}>
+                                    {footballSummary}
+                                </Text>
+                            )}
+                        </View>
+                        {selectedFootballTeams.length > 0 && (
+                            <Text style={[styles.settingsCardCount, { color: colors.textMuted }]}>
+                                {selectedFootballTeams.length}
+                            </Text>
+                        )}
+                        <Ionicons
+                            name={expandedCards.football ? 'chevron-up' : 'chevron-down'}
+                            size={18}
+                            color={colors.textMuted}
+                        />
+                    </TouchableOpacity>
+                    {expandedCards.football && (
+                    <>
                     {footballTeams.length > 0 ? (
                         <TeamFilterGrid
                             teams={footballTeams}
@@ -496,14 +583,34 @@ export const SettingsModal = ({
                             <Text style={themedStyles.clearButtonText}>Clear selection</Text>
                         </TouchableOpacity>
                     )}
+                    </>
+                    )}
                 </View>
 
-                {/* Biathlon */}
+                {/* Biathlon (collapsible) */}
                 <View style={themedStyles.settingsCard}>
-                    <View style={styles.settingsCardHeader}>
+                    <TouchableOpacity
+                        style={styles.settingsCardHeader}
+                        onPress={() => toggleCard('biathlon')}
+                        activeOpacity={0.7}
+                        accessibilityLabel={`${expandedCards.biathlon ? 'Collapse' : 'Expand'} biathlon`}
+                    >
                         <Ionicons name="locate-outline" size={22} color={colors.accentPink} />
-                        <Text style={themedStyles.settingsCardTitle}>Biathlon</Text>
-                    </View>
+                        <View style={styles.cardHeaderTextWrap}>
+                            <Text style={themedStyles.settingsCardTitle}>Biathlon</Text>
+                            {!expandedCards.biathlon && (
+                                <Text style={themedStyles.cardHeaderSummary} numberOfLines={1}>
+                                    {biathlonSummary}
+                                </Text>
+                            )}
+                        </View>
+                        <Ionicons
+                            name={expandedCards.biathlon ? 'chevron-up' : 'chevron-down'}
+                            size={18}
+                            color={colors.textMuted}
+                        />
+                    </TouchableOpacity>
+                    {expandedCards.biathlon && (
                     <View style={styles.genderRow}>
                         {GENDER_OPTIONS.map(gender => {
                             const active = selectedGenders.includes(gender.id);
@@ -529,6 +636,7 @@ export const SettingsModal = ({
                             );
                         })}
                     </View>
+                    )}
                 </View>
 
                 {/* Appearance Section */}
@@ -651,6 +759,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 10,
         marginBottom: 16
+    },
+    cardHeaderTextWrap: {
+        flex: 1
     },
     settingsCardTitle: {
         color: '#fff',
@@ -961,6 +1072,11 @@ const getThemedStyles = (colors, isDark) => ({
         fontSize: 16,
         fontWeight: '700',
         flex: 1
+    },
+    cardHeaderSummary: {
+        color: colors.textMuted,
+        fontSize: 12,
+        marginTop: 2
     },
     resetOnboardingButton: {
         flexDirection: 'row',

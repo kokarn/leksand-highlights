@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.44.0
+- Make the Favorites team cards (Hockey, Football, Biathlon) in Settings collapsible. Each card is collapsed by default and shows a one-line summary of your picks (e.g. "AIK, Hammarby") plus a count; tap the header to expand the search + team list. Fixes the very long Settings scroll now that the football team list spans ~190 teams across Allsvenskan, Europa and Conference League qualifying
+
 ### 2.43.1
 - Fix the All matches list rendering empty when you switch to Football (or Hockey) → All matches, only appearing after scrolling one pixel. Disabled `removeClippedSubviews` on the schedule lists, which on Android left rows detached until a manual scroll forced a re-layout
 
