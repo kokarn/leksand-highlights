@@ -11,6 +11,7 @@ const prefsSource = read('hooks/usePreferences.js');
 const constantsSource = read('constants/index.js');
 const scopeToggleSource = read('components/ui/ScopeToggle.js');
 const compactCardSource = read('components/cards/CompactGameCard.js');
+const dayHeaderSource = read('components/ui/DayHeader.js');
 
 test('schedule scope is persisted via a dedicated storage key', () => {
     assert.match(constantsSource, /SCHEDULE_SCOPE:\s*'scheduleScope'/);
@@ -36,56 +37,68 @@ test("'all' scope bypasses the team filter by passing empty arrays to the data h
     assert.match(appSource, /useConferenceLeagueQualData\(activeSport, scopedFootballTeams/);
 });
 
-test('compact rows are used only in all-matches scope; tall cards otherwise', () => {
-    // football list branches on showAllMatches
-    assert.match(appSource, /showAllMatches \? \(\s*<CompactGameCard[\s\S]*?family="football"[\s\S]*?\) : \(\s*<FootballGameCard/);
-    // hockey list branches on showAllMatches
-    assert.match(appSource, /showAllMatches \? \(\s*<CompactGameCard[\s\S]*?family=\{item\.sport === 'hockeyallsvenskan' \? 'hockeyallsvenskan' : 'shl'\}[\s\S]*?\) : \(\s*<GameCard/);
+test('all-matches scope renders day-grouped sections (DayHeader + CompactGameCard)', () => {
+    // both lists feed the section array in all scope, raw games otherwise
+    assert.match(appSource, /data=\{showAllMatches \? footballSections : combinedFootballGames\}/);
+    assert.match(appSource, /data=\{showAllMatches \? hockeySections : combinedHockeyGames\}/);
+    // header rows render DayHeader; game rows render CompactGameCard
+    assert.match(appSource, /item\.type === 'header' \? \(\s*<DayHeader date=\{item\.date\} \/>/);
+    assert.match(appSource, /<CompactGameCard[\s\S]*?game=\{item\.game\}[\s\S]*?family="football"/);
+    assert.match(appSource, /<CompactGameCard[\s\S]*?game=\{item\.game\}[\s\S]*?family=\{item\.game\.sport === 'hockeyallsvenskan' \? 'hockeyallsvenskan' : 'shl'\}/);
+    // sections are only built in all scope
+    assert.match(appSource, /buildScheduleSections\(combinedFootballGames\)/);
+    assert.match(appSource, /buildScheduleSections\(combinedHockeyGames\)/);
 });
 
-test('getItemLayout and auto-scroll use the compact height when in all scope', () => {
-    assert.match(appSource, /showAllMatches \? COMPACT_CARD_HEIGHT : GAME_CARD_HEIGHT/);
-    assert.match(appSource, /showAllMatches \? COMPACT_CARD_HEIGHT : FOOTBALL_CARD_HEIGHT/);
-    // scroll guards reset when scope flips so it re-anchors to live
+test('getItemLayout uses the precomputed section layout in all scope; uniform tall card otherwise', () => {
+    assert.match(appSource, /const l = footballSectionLayout\[index\]/);
+    assert.match(appSource, /const l = hockeySectionLayout\[index\]/);
+    assert.match(appSource, /length: FOOTBALL_CARD_HEIGHT, offset: FOOTBALL_CARD_HEIGHT \* index/);
+    assert.match(appSource, /length: GAME_CARD_HEIGHT, offset: GAME_CARD_HEIGHT \* index/);
+});
+
+test('auto-scroll uses the section offset in all scope so it lands on the live match not the top', () => {
+    assert.match(appSource, /showAllMatches\s*\?\s*footballSectionTargetOffset/);
+    assert.match(appSource, /showAllMatches\s*\?\s*hockeySectionTargetOffset/);
+});
+
+test('scroll guards reset when scope flips, before the target effects, so it re-anchors', () => {
     assert.match(appSource, /hasFootballCombinedInitialScrolled\.current = false;\s*hasHockeyCombinedInitialScrolled\.current = false;/);
     assert.match(appSource, /\}, \[scheduleScope\]\)/);
-});
-
-test('switching scope snaps both lists back to the top to drop the stale offset', () => {
-    // A large offset left over from the long "All matches" list overshoots the
-    // short "My teams" list; both lists must be reset to offset 0 on scope change.
-    assert.match(appSource, /football\.listRef\.current\?\.scrollToOffset\(\{ offset: 0, animated: false \}\)/);
-    assert.match(appSource, /shl\.listRef\.current\?\.scrollToOffset\(\{ offset: 0, animated: false \}\)/);
-    // but not on the initial mount, only on real scope changes
-    assert.match(appSource, /isFirstScopeRender\.current/);
-});
-
-test('auto-scroll target effects re-run on scope flip so the list re-anchors to live', () => {
-    // The guard-reset effect must precede the football/hockey target-scroll
-    // effects (React runs effects in declaration order); otherwise the target
-    // effects bail on the still-true guard and the list stays pinned to the top.
     const resetIdx = appSource.indexOf('hasFootballCombinedInitialScrolled.current = false;');
     const footballScrollIdx = appSource.indexOf('Initial scroll to live/upcoming in combined football list');
     const hockeyScrollIdx = appSource.indexOf('Initial scroll to live/upcoming in combined hockey list');
     assert.ok(resetIdx > -1 && footballScrollIdx > -1 && hockeyScrollIdx > -1);
     assert.ok(resetIdx < footballScrollIdx, 'guard reset must be declared before the football scroll effect');
     assert.ok(resetIdx < hockeyScrollIdx, 'guard reset must be declared before the hockey scroll effect');
-    // both target effects list scheduleScope in their deps so they re-fire on a flip
-    assert.match(appSource, /combinedFootballGames\.length, scheduleScope, showAllMatches\]/);
-    assert.match(appSource, /combinedHockeyGames\.length, scheduleScope, showAllMatches\]/);
+});
+
+test('switching scope snaps both lists back to the top to drop the stale offset', () => {
+    assert.match(appSource, /football\.listRef\.current\?\.scrollToOffset\(\{ offset: 0, animated: false \}\)/);
+    assert.match(appSource, /shl\.listRef\.current\?\.scrollToOffset\(\{ offset: 0, animated: false \}\)/);
+    assert.match(appSource, /isFirstScopeRender\.current/);
 });
 
 test('ScopeToggle offers My teams / All matches and is wired into both tabs', () => {
     assert.match(scopeToggleSource, /key: 'myteams', label: 'My teams'/);
     assert.match(scopeToggleSource, /key: 'all', label: 'All matches'/);
-    // rendered in the app for hockey and football (two ScopeToggle instances)
     const count = (appSource.match(/<ScopeToggle scope=\{scheduleScope\} onChange=\{handleScheduleScopeChange\}/g) || []).length;
     assert.equal(count, 2);
+});
+
+test('DayHeader accents today and uses theme tokens, not hardcoded hex', () => {
+    assert.match(dayHeaderSource, /isToday/);
+    assert.match(dayHeaderSource, /TODAY ·/);
+    assert.match(dayHeaderSource, /colors\.chipActive/);
+    assert.match(dayHeaderSource, /colors\.accent/);
+    assert.match(dayHeaderSource, /colors\.textMuted/);
+    // height must match the layout constant so scroll offsets stay exact
+    assert.match(dayHeaderSource, /height: 30/);
+    assert.match(dayHeaderSource, /marginBottom: 12/);
 });
 
 test('CompactGameCard reuses shared team-identity resolvers, not a fresh fallback chain', () => {
     assert.match(compactCardSource, /getTeamName as resolveTeamName, getTeamLogoUri.*teamIdentity/);
     assert.match(compactCardSource, /export const COMPACT_CARD_HEIGHT/);
-    // no firebase / FCM imports in a pure UI card
     assert.doesNotMatch(compactCardSource, /firebase|expo-notifications|messaging/i);
 });

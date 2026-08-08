@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.41.0
+- Group the All matches list by day. Each day now has a section header, and today's header is highlighted so you can spot the current day at a glance. Auto-scroll still lands on the live/upcoming match, keeping its day header in view
+
 ### 2.40.1
 - Fix schedule scroll position getting stuck at the top when switching between the My teams and All matches views. The list now correctly re-anchors to the live/upcoming match after a scope flip (previously the auto-scroll guard reset ran after the scroll effects and left both the football and hockey lists pinned to the top)
 

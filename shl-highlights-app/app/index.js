@@ -52,6 +52,7 @@ import { getTeamLogoUrl, getNationFlag, fetchHockeyAllsvenskanStandings } from '
 
 // Utils
 import { formatSwedishDate } from '../utils';
+import { buildScheduleSections, buildItemLayout, findTargetScrollOffset, DAY_HEADER_HEIGHT } from '../utils/scheduleSections';
 
 // Hooks
 import {
@@ -73,6 +74,7 @@ import {
     SportPicker,
     ViewToggle,
     ScopeToggle,
+    DayHeader,
     ScheduleHeader,
     SectionHeader,
     EmptyState
@@ -157,6 +159,22 @@ export default function App() {
         return combinedFootballGames.length - 1;
     }, [combinedFootballGames]);
 
+    // All-matches scope renders a day-grouped list (DayHeader rows interleaved
+    // with compact game rows). Sections + a precomputed variable-height layout
+    // drive getItemLayout and the auto-scroll offset. Empty in My-teams scope.
+    const footballSections = useMemo(
+        () => (showAllMatches ? buildScheduleSections(combinedFootballGames) : []),
+        [showAllMatches, combinedFootballGames]
+    );
+    const footballSectionLayout = useMemo(
+        () => buildItemLayout(footballSections, COMPACT_CARD_HEIGHT, DAY_HEADER_HEIGHT),
+        [footballSections]
+    );
+    const footballSectionTargetOffset = useMemo(
+        () => findTargetScrollOffset(footballSections, footballSectionLayout),
+        [footballSections, footballSectionLayout]
+    );
+
     const hasFootballCombinedInitialScrolled = useRef(false);
     const hasHockeyCombinedInitialScrolled = useRef(false);
 
@@ -190,20 +208,27 @@ export default function App() {
         if (activeSport !== 'football' || football.viewMode !== 'schedule') {
             return;
         }
-        if (hasFootballCombinedInitialScrolled.current || combinedFootballTargetGameIndex <= 0 || !combinedFootballGames.length) {
+        if (hasFootballCombinedInitialScrolled.current || !combinedFootballGames.length) {
+            return;
+        }
+        // In all-matches scope the list is day-grouped (headers interleaved), so
+        // the target offset comes from the precomputed section layout; otherwise
+        // it's the plain card-height * game index.
+        const offset = showAllMatches
+            ? footballSectionTargetOffset
+            : combinedFootballTargetGameIndex * FOOTBALL_CARD_HEIGHT;
+        if (offset <= 0) {
+            hasFootballCombinedInitialScrolled.current = true;
             return;
         }
         const timeoutId = setTimeout(() => {
             if (football.listRef.current && !hasFootballCombinedInitialScrolled.current) {
                 hasFootballCombinedInitialScrolled.current = true;
-                football.listRef.current.scrollToOffset({
-                    offset: combinedFootballTargetGameIndex * (showAllMatches ? COMPACT_CARD_HEIGHT : FOOTBALL_CARD_HEIGHT),
-                    animated: false
-                });
+                football.listRef.current.scrollToOffset({ offset, animated: false });
             }
         }, 50);
         return () => clearTimeout(timeoutId);
-    }, [activeSport, football.viewMode, combinedFootballTargetGameIndex, combinedFootballGames.length, scheduleScope, showAllMatches]);
+    }, [activeSport, football.viewMode, combinedFootballTargetGameIndex, combinedFootballGames.length, scheduleScope, showAllMatches, footballSectionTargetOffset]);
 
     // Combined hockey games (SHL + HockeyAllsvenskan) for single list
     const combinedHockeyGames = useMemo(() => {
@@ -231,25 +256,43 @@ export default function App() {
         return combinedHockeyGames.length - 1;
     }, [combinedHockeyGames]);
 
+    // Day-grouped sections for the hockey all-matches list (see football above).
+    const hockeySections = useMemo(
+        () => (showAllMatches ? buildScheduleSections(combinedHockeyGames) : []),
+        [showAllMatches, combinedHockeyGames]
+    );
+    const hockeySectionLayout = useMemo(
+        () => buildItemLayout(hockeySections, COMPACT_CARD_HEIGHT, DAY_HEADER_HEIGHT),
+        [hockeySections]
+    );
+    const hockeySectionTargetOffset = useMemo(
+        () => findTargetScrollOffset(hockeySections, hockeySectionLayout),
+        [hockeySections, hockeySectionLayout]
+    );
+
     // Initial scroll to live/upcoming in combined hockey list
     useEffect(() => {
         if (activeSport !== 'hockey') {
             return;
         }
-        if (hasHockeyCombinedInitialScrolled.current || combinedHockeyTargetGameIndex <= 0 || !combinedHockeyGames.length) {
+        if (hasHockeyCombinedInitialScrolled.current || !combinedHockeyGames.length) {
+            return;
+        }
+        const offset = showAllMatches
+            ? hockeySectionTargetOffset
+            : combinedHockeyTargetGameIndex * GAME_CARD_HEIGHT;
+        if (offset <= 0) {
+            hasHockeyCombinedInitialScrolled.current = true;
             return;
         }
         const timeoutId = setTimeout(() => {
             if (shl.listRef.current && !hasHockeyCombinedInitialScrolled.current) {
                 hasHockeyCombinedInitialScrolled.current = true;
-                shl.listRef.current.scrollToOffset({
-                    offset: combinedHockeyTargetGameIndex * (showAllMatches ? COMPACT_CARD_HEIGHT : GAME_CARD_HEIGHT),
-                    animated: false
-                });
+                shl.listRef.current.scrollToOffset({ offset, animated: false });
             }
         }, 50);
         return () => clearTimeout(timeoutId);
-    }, [activeSport, combinedHockeyTargetGameIndex, combinedHockeyGames.length, scheduleScope, showAllMatches]);
+    }, [activeSport, combinedHockeyTargetGameIndex, combinedHockeyGames.length, scheduleScope, showAllMatches, hockeySectionTargetOffset]);
 
     // Merged hockey teams (SHL + HockeyAllsvenskan) for filter in Settings/Onboarding
     // Merged football teams (Allsvenskan + Svenska Cupen) for filter in Settings/Onboarding
@@ -662,17 +705,24 @@ export default function App() {
     }, [activeSport, shl, hockeyAllsvenskan, football, svenskaCupen, europaLeagueQual, conferenceLeagueQual, biathlon, unified]);
 
     // getItemLayout functions for consistent scroll behavior. In 'all' scope the
-    // rows are the shorter CompactGameCard, so the height must switch to match or
-    // scroll offsets (auto-scroll-to-live) land wrong.
+    // list is day-grouped (DayHeader + CompactGameCard rows of differing heights),
+    // so we index into the precomputed section layout; in 'myteams' scope every
+    // row is a uniform tall card.
     const getShlItemLayout = useCallback((data, index) => {
-        const h = showAllMatches ? COMPACT_CARD_HEIGHT : GAME_CARD_HEIGHT;
-        return { length: h, offset: h * index, index };
-    }, [showAllMatches]);
+        if (showAllMatches) {
+            const l = hockeySectionLayout[index];
+            return l ? { ...l, index } : { length: COMPACT_CARD_HEIGHT, offset: COMPACT_CARD_HEIGHT * index, index };
+        }
+        return { length: GAME_CARD_HEIGHT, offset: GAME_CARD_HEIGHT * index, index };
+    }, [showAllMatches, hockeySectionLayout]);
 
     const getFootballItemLayout = useCallback((data, index) => {
-        const h = showAllMatches ? COMPACT_CARD_HEIGHT : FOOTBALL_CARD_HEIGHT;
-        return { length: h, offset: h * index, index };
-    }, [showAllMatches]);
+        if (showAllMatches) {
+            const l = footballSectionLayout[index];
+            return l ? { ...l, index } : { length: COMPACT_CARD_HEIGHT, offset: COMPACT_CARD_HEIGHT * index, index };
+        }
+        return { length: FOOTBALL_CARD_HEIGHT, offset: FOOTBALL_CARD_HEIGHT * index, index };
+    }, [showAllMatches, footballSectionLayout]);
 
     const getBiathlonItemLayout = useCallback((data, index) => ({
         length: BIATHLON_CARD_HEIGHT,
@@ -732,14 +782,18 @@ export default function App() {
     const renderHockeySchedule = () => (
         <FlatList
             ref={shl.listRef}
-            data={combinedHockeyGames}
+            data={showAllMatches ? hockeySections : combinedHockeyGames}
             renderItem={({ item }) => (
                 showAllMatches ? (
-                    <CompactGameCard
-                        game={item}
-                        family={item.sport === 'hockeyallsvenskan' ? 'hockeyallsvenskan' : 'shl'}
-                        onPress={() => handleHockeyGamePress(item)}
-                    />
+                    item.type === 'header' ? (
+                        <DayHeader date={item.date} />
+                    ) : (
+                        <CompactGameCard
+                            game={item.game}
+                            family={item.game.sport === 'hockeyallsvenskan' ? 'hockeyallsvenskan' : 'shl'}
+                            onPress={() => handleHockeyGamePress(item.game)}
+                        />
+                    )
                 ) : (
                     <GameCard
                         game={item}
@@ -748,7 +802,7 @@ export default function App() {
                     />
                 )
             )}
-            keyExtractor={item => `${item.sport}-${item.uuid}`}
+            keyExtractor={item => (showAllMatches ? item.key : `${item.sport}-${item.uuid}`)}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
             getItemLayout={getShlItemLayout}
@@ -790,14 +844,18 @@ export default function App() {
     const renderFootballSchedule = () => (
         <FlatList
             ref={football.listRef}
-            data={combinedFootballGames}
+            data={showAllMatches ? footballSections : combinedFootballGames}
             renderItem={({ item }) => (
                 showAllMatches ? (
-                    <CompactGameCard
-                        game={item}
-                        family="football"
-                        onPress={() => openFootballGame(item)}
-                    />
+                    item.type === 'header' ? (
+                        <DayHeader date={item.date} />
+                    ) : (
+                        <CompactGameCard
+                            game={item.game}
+                            family="football"
+                            onPress={() => openFootballGame(item.game)}
+                        />
+                    )
                 ) : (
                     <FootballGameCard
                         game={item}
@@ -806,7 +864,7 @@ export default function App() {
                     />
                 )
             )}
-            keyExtractor={item => `${item.sport}-${item.uuid}`}
+            keyExtractor={item => (showAllMatches ? item.key : `${item.sport}-${item.uuid}`)}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
             getItemLayout={getFootballItemLayout}
