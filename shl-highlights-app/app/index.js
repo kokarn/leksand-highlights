@@ -72,12 +72,13 @@ import {
 import {
     SportPicker,
     ViewToggle,
+    ScopeToggle,
     ScheduleHeader,
     SectionHeader,
     EmptyState
 } from '../components';
 
-import { GameCard, FootballGameCard, BiathlonRaceCard, UnifiedEventCard } from '../components/cards';
+import { GameCard, FootballGameCard, CompactGameCard, COMPACT_CARD_HEIGHT, BiathlonRaceCard, UnifiedEventCard } from '../components/cards';
 import {
     RaceModal,
     FootballMatchModal,
@@ -95,10 +96,12 @@ export default function App() {
         selectedFootballTeams,
         selectedNations,
         selectedGenders,
+        scheduleScope,
         showOnboarding,
         onboardingStep,
         setOnboardingStep,
         handleSportChange,
+        handleScheduleScopeChange,
         toggleTeamFilter,
         clearTeamFilter,
         toggleFootballTeamFilter,
@@ -110,13 +113,20 @@ export default function App() {
         resetOnboarding
     } = usePreferences();
 
+    // When the schedule scope is 'all', pass empty filter arrays so the data
+    // hooks return every match of the day (their team filter self-disables when
+    // the selected list is empty). 'myteams' keeps the user's followed teams.
+    const showAllMatches = scheduleScope === 'all';
+    const scopedTeams = showAllMatches ? [] : selectedTeams;
+    const scopedFootballTeams = showAllMatches ? [] : selectedFootballTeams;
+
     // Eager load all sports data on app start for instant scroll
-    const shl = useShlData(activeSport, selectedTeams, { eagerLoad: true });
-    const hockeyAllsvenskan = useHockeyAllsvenskanData(activeSport, selectedTeams, { eagerLoad: true });
-    const football = useFootballData(activeSport, selectedFootballTeams, { eagerLoad: true });
-    const svenskaCupen = useSvenskaCupenData(activeSport, selectedFootballTeams, { eagerLoad: true });
-    const europaLeagueQual = useEuropaLeagueQualData(activeSport, selectedFootballTeams, { eagerLoad: true });
-    const conferenceLeagueQual = useConferenceLeagueQualData(activeSport, selectedFootballTeams, { eagerLoad: true });
+    const shl = useShlData(activeSport, scopedTeams, { eagerLoad: true });
+    const hockeyAllsvenskan = useHockeyAllsvenskanData(activeSport, scopedTeams, { eagerLoad: true });
+    const football = useFootballData(activeSport, scopedFootballTeams, { eagerLoad: true });
+    const svenskaCupen = useSvenskaCupenData(activeSport, scopedFootballTeams, { eagerLoad: true });
+    const europaLeagueQual = useEuropaLeagueQualData(activeSport, scopedFootballTeams, { eagerLoad: true });
+    const conferenceLeagueQual = useConferenceLeagueQualData(activeSport, scopedFootballTeams, { eagerLoad: true });
     const biathlon = useBiathlonData(activeSport, selectedNations, selectedGenders, { eagerLoad: true });
 
     // Combined football games (Allsvenskan + Svenska Cupen + Europa League Qual) for single list
@@ -161,7 +171,7 @@ export default function App() {
             if (football.listRef.current && !hasFootballCombinedInitialScrolled.current) {
                 hasFootballCombinedInitialScrolled.current = true;
                 football.listRef.current.scrollToOffset({
-                    offset: combinedFootballTargetGameIndex * FOOTBALL_CARD_HEIGHT,
+                    offset: combinedFootballTargetGameIndex * (showAllMatches ? COMPACT_CARD_HEIGHT : FOOTBALL_CARD_HEIGHT),
                     animated: false
                 });
             }
@@ -197,6 +207,13 @@ export default function App() {
 
     const hasHockeyCombinedInitialScrolled = useRef(false);
 
+    // Reset the one-shot auto-scroll guards when the schedule scope flips so the
+    // list re-anchors to live/upcoming in the newly-sized (compact vs card) list.
+    useEffect(() => {
+        hasFootballCombinedInitialScrolled.current = false;
+        hasHockeyCombinedInitialScrolled.current = false;
+    }, [scheduleScope]);
+
     // Initial scroll to live/upcoming in combined hockey list
     useEffect(() => {
         if (activeSport !== 'hockey') {
@@ -209,7 +226,7 @@ export default function App() {
             if (shl.listRef.current && !hasHockeyCombinedInitialScrolled.current) {
                 hasHockeyCombinedInitialScrolled.current = true;
                 shl.listRef.current.scrollToOffset({
-                    offset: combinedHockeyTargetGameIndex * GAME_CARD_HEIGHT,
+                    offset: combinedHockeyTargetGameIndex * (showAllMatches ? COMPACT_CARD_HEIGHT : GAME_CARD_HEIGHT),
                     animated: false
                 });
             }
@@ -627,18 +644,18 @@ export default function App() {
         }
     }, [activeSport, shl, hockeyAllsvenskan, football, svenskaCupen, europaLeagueQual, conferenceLeagueQual, biathlon, unified]);
 
-    // getItemLayout functions for consistent scroll behavior
-    const getShlItemLayout = useCallback((data, index) => ({
-        length: GAME_CARD_HEIGHT,
-        offset: GAME_CARD_HEIGHT * index,
-        index
-    }), []);
+    // getItemLayout functions for consistent scroll behavior. In 'all' scope the
+    // rows are the shorter CompactGameCard, so the height must switch to match or
+    // scroll offsets (auto-scroll-to-live) land wrong.
+    const getShlItemLayout = useCallback((data, index) => {
+        const h = showAllMatches ? COMPACT_CARD_HEIGHT : GAME_CARD_HEIGHT;
+        return { length: h, offset: h * index, index };
+    }, [showAllMatches]);
 
-    const getFootballItemLayout = useCallback((data, index) => ({
-        length: FOOTBALL_CARD_HEIGHT,
-        offset: FOOTBALL_CARD_HEIGHT * index,
-        index
-    }), []);
+    const getFootballItemLayout = useCallback((data, index) => {
+        const h = showAllMatches ? COMPACT_CARD_HEIGHT : FOOTBALL_CARD_HEIGHT;
+        return { length: h, offset: h * index, index };
+    }, [showAllMatches]);
 
     const getBiathlonItemLayout = useCallback((data, index) => ({
         length: BIATHLON_CARD_HEIGHT,
@@ -700,11 +717,19 @@ export default function App() {
             ref={shl.listRef}
             data={combinedHockeyGames}
             renderItem={({ item }) => (
-                <GameCard
-                    game={item}
-                    onPress={() => handleHockeyGamePress(item)}
-                    leagueLabel={item.sport === 'hockeyallsvenskan' ? 'HockeyAllsvenskan' : 'SHL'}
-                />
+                showAllMatches ? (
+                    <CompactGameCard
+                        game={item}
+                        family={item.sport === 'hockeyallsvenskan' ? 'hockeyallsvenskan' : 'shl'}
+                        onPress={() => handleHockeyGamePress(item)}
+                    />
+                ) : (
+                    <GameCard
+                        game={item}
+                        onPress={() => handleHockeyGamePress(item)}
+                        leagueLabel={item.sport === 'hockeyallsvenskan' ? 'HockeyAllsvenskan' : 'SHL'}
+                    />
+                )
             )}
             keyExtractor={item => `${item.sport}-${item.uuid}`}
             contentContainerStyle={styles.listContent}
@@ -724,28 +749,45 @@ export default function App() {
     );
 
     // Render Football schedule (Allsvenskan + Svenska Cupen in one list)
+    const openFootballGame = (item) => {
+        if (item.sport === 'svenska-cupen') {
+            svenskaCupen.handleGamePress(item);
+        } else if (item.sport === 'europa-league-qual') {
+            europaLeagueQual.handleGamePress(item);
+        } else if (item.sport === 'conference-league-qual') {
+            conferenceLeagueQual.handleGamePress(item);
+        } else {
+            setFootballActiveTab('summary');
+            setFootballTargetVideoId(null);
+            football.handleGamePress(item);
+        }
+    };
+
+    const footballLeagueLabel = (sport) => (
+        sport === 'svenska-cupen' ? 'Svenska Cupen'
+            : sport === 'europa-league-qual' ? 'Europa League Qualifying'
+                : sport === 'conference-league-qual' ? 'Conference League Qualifying'
+                    : 'Allsvenskan'
+    );
+
     const renderFootballSchedule = () => (
         <FlatList
             ref={football.listRef}
             data={combinedFootballGames}
             renderItem={({ item }) => (
-                <FootballGameCard
-                    game={item}
-                    onPress={() => {
-                        if (item.sport === 'svenska-cupen') {
-                            svenskaCupen.handleGamePress(item);
-                        } else if (item.sport === 'europa-league-qual') {
-                            europaLeagueQual.handleGamePress(item);
-                        } else if (item.sport === 'conference-league-qual') {
-                            conferenceLeagueQual.handleGamePress(item);
-                        } else {
-                            setFootballActiveTab('summary');
-                            setFootballTargetVideoId(null);
-                            football.handleGamePress(item);
-                        }
-                    }}
-                    leagueLabel={item.sport === 'svenska-cupen' ? 'Svenska Cupen' : (item.sport === 'europa-league-qual' ? 'Europa League Qualifying' : (item.sport === 'conference-league-qual' ? 'Conference League Qualifying' : 'Allsvenskan'))}
-                />
+                showAllMatches ? (
+                    <CompactGameCard
+                        game={item}
+                        family="football"
+                        onPress={() => openFootballGame(item)}
+                    />
+                ) : (
+                    <FootballGameCard
+                        game={item}
+                        onPress={() => openFootballGame(item)}
+                        leagueLabel={footballLeagueLabel(item.sport)}
+                    />
+                )
             )}
             keyExtractor={item => `${item.sport}-${item.uuid}`}
             contentContainerStyle={styles.listContent}
@@ -994,6 +1036,14 @@ export default function App() {
                 </View>
             ) : activeSport === 'hockey' ? (
                 <View style={styles.scheduleContainer}>
+                    <View style={[styles.stickyToggle, { backgroundColor: colors.background }]}>
+                        <ScopeToggle scope={scheduleScope} onChange={handleScheduleScopeChange} />
+                        <LinearGradient
+                            colors={[colors.background, 'transparent']}
+                            style={styles.toggleGradient}
+                            pointerEvents="none"
+                        />
+                    </View>
                     {(shl.loading || hockeyAllsvenskan.loading) ? (
                         <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
                     ) : (
@@ -1002,6 +1052,14 @@ export default function App() {
                 </View>
             ) : activeSport === 'football' ? (
                 <View style={styles.scheduleContainer}>
+                    <View style={[styles.stickyToggle, { backgroundColor: colors.background }]}>
+                        <ScopeToggle scope={scheduleScope} onChange={handleScheduleScopeChange} />
+                        <LinearGradient
+                            colors={[colors.background, 'transparent']}
+                            style={styles.toggleGradient}
+                            pointerEvents="none"
+                        />
+                    </View>
                     {(football.loading || svenskaCupen.loading || europaLeagueQual.loading || conferenceLeagueQual.loading) ? (
                         <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
                     ) : (

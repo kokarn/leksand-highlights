@@ -20,6 +20,10 @@ export function usePreferences() {
     const [selectedNations, setSelectedNations] = useState([]);
     const [selectedGenders, setSelectedGenders] = useState([]);
 
+    // Schedule scope: 'myteams' shows followed teams only, 'all' shows every
+    // match today rendered as compact rows. Defaults to 'myteams'.
+    const [scheduleScope, setScheduleScope] = useState('myteams');
+
     // Onboarding state
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [onboardingStep, setOnboardingStep] = useState(0);
@@ -46,14 +50,16 @@ export function usePreferences() {
                     savedNations,
                     savedGenders,
                     savedFootballTeams,
-                    onboardingComplete
+                    onboardingComplete,
+                    savedScheduleScope
                 ] = await Promise.all([
                     AsyncStorage.getItem(STORAGE_KEYS.SELECTED_SPORT),
                     AsyncStorage.getItem(STORAGE_KEYS.SELECTED_TEAMS),
                     AsyncStorage.getItem(STORAGE_KEYS.SELECTED_NATIONS),
                     AsyncStorage.getItem(STORAGE_KEYS.SELECTED_GENDERS),
                     AsyncStorage.getItem(STORAGE_KEYS.SELECTED_FOOTBALL_TEAMS),
-                    AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETE)
+                    AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETE),
+                    AsyncStorage.getItem(STORAGE_KEYS.SCHEDULE_SCOPE)
                 ]);
 
                 if (savedSport) setActiveSport(savedSport);
@@ -61,6 +67,7 @@ export function usePreferences() {
                 if (savedNations) setSelectedNations(JSON.parse(savedNations));
                 if (savedGenders) setSelectedGenders(JSON.parse(savedGenders));
                 if (savedFootballTeams) setSelectedFootballTeams(JSON.parse(savedFootballTeams));
+                if (savedScheduleScope) setScheduleScope(savedScheduleScope);
 
                 if (!onboardingComplete) {
                     setShowOnboarding(true);
@@ -79,6 +86,12 @@ export function usePreferences() {
     const handleSportChange = useCallback((sport) => {
         setActiveSport(sport);
         savePreference(STORAGE_KEYS.SELECTED_SPORT, sport);
+    }, [savePreference]);
+
+    // Schedule scope handler ('myteams' | 'all')
+    const handleScheduleScopeChange = useCallback((scope) => {
+        setScheduleScope(scope);
+        savePreference(STORAGE_KEYS.SCHEDULE_SCOPE, scope);
     }, [savePreference]);
 
     // SHL team filter handlers
@@ -165,6 +178,7 @@ export function usePreferences() {
         selectedFootballTeams,
         selectedNations,
         selectedGenders,
+        scheduleScope,
         showOnboarding,
         onboardingStep,
         preferencesLoaded,
@@ -175,6 +189,7 @@ export function usePreferences() {
 
         // Handlers
         handleSportChange,
+        handleScheduleScopeChange,
         toggleTeamFilter,
         clearTeamFilter,
         toggleFootballTeamFilter,

@@ -36,7 +36,9 @@ export const STORAGE_KEYS = {
     // Legacy grouped football flag (migrated to per-league keys, see PRE_GAME_LEAGUES)
     LEGACY_PRE_GAME_FOOTBALL_ENABLED: 'preGameFootballEnabled',
     // Theme preference
-    THEME_MODE: 'themeMode'
+    THEME_MODE: 'themeMode',
+    // Schedule scope: 'myteams' (followed teams only) vs 'all' (every match, compact)
+    SCHEDULE_SCOPE: 'scheduleScope'
 };
 
 // Pre-game reminder leagues. One toggle per league so reminders can be

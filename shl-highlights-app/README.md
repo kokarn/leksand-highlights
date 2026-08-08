@@ -4,6 +4,10 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.39.0
+- Add a "My teams / All matches" scope toggle to the Hockey and Football tabs. "My teams" keeps the current view of just the teams you follow; "All matches" shows every match of the day. Your choice is remembered between launches
+- In "All matches" mode the fixtures render as condensed single-row cards (home logo + name · centre score/kickoff time · away name + logo, with a colored left stripe for live/finished/upcoming) so a full day of matches fits without endless scrolling. Tapping a row opens the same match modal as before, and auto-scroll-to-live still applies
+
 ### 2.38.6
 - Fix a bug where the "Download & install" update button could be tapped multiple times, kicking off duplicate downloads / installer launches. The download is now guarded so repeat taps while a download or install is already underway are ignored
 - When an app update is available (or downloading/installing), the App Updates card now moves to the TOP of Settings instead of sitting below Appearance, so the action is the first thing you see
