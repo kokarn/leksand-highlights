@@ -209,9 +209,24 @@ export default function App() {
 
     // Reset the one-shot auto-scroll guards when the schedule scope flips so the
     // list re-anchors to live/upcoming in the newly-sized (compact vs card) list.
+    // The list also holds a stale scroll offset from the previous scope (e.g. the
+    // long "All matches" list leaves a large offset that overshoots the short
+    // "My teams" list), so snap both lists back to the top here. The target
+    // effects below then re-anchor to live/upcoming when the target index > 0;
+    // when it is 0 the top is already the correct position.
+    const isFirstScopeRender = useRef(true);
     useEffect(() => {
         hasFootballCombinedInitialScrolled.current = false;
         hasHockeyCombinedInitialScrolled.current = false;
+
+        // Don't fight the initial mount scroll — only react to real scope changes.
+        if (isFirstScopeRender.current) {
+            isFirstScopeRender.current = false;
+            return;
+        }
+
+        football.listRef.current?.scrollToOffset({ offset: 0, animated: false });
+        shl.listRef.current?.scrollToOffset({ offset: 0, animated: false });
     }, [scheduleScope]);
 
     // Initial scroll to live/upcoming in combined hockey list

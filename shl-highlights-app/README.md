@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.39.1
+- Fix incorrect scroll position when switching the schedule scope back to "My teams" after viewing "All matches" — the list kept a stale scroll offset from the longer all-matches list and could overshoot. Both lists now snap to the top on scope change and re-anchor to the live/upcoming match
+
 ### 2.39.0
 - Add a "My teams / All matches" scope toggle to the Hockey and Football tabs. "My teams" keeps the current view of just the teams you follow; "All matches" shows every match of the day. Your choice is remembered between launches
 - In "All matches" mode the fixtures render as condensed single-row cards (home logo + name · centre score/kickoff time · away name + logo, with a colored left stripe for live/finished/upcoming) so a full day of matches fits without endless scrolling. Tapping a row opens the same match modal as before, and auto-scroll-to-live still applies

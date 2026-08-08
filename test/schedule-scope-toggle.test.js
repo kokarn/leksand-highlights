@@ -47,7 +47,17 @@ test('getItemLayout and auto-scroll use the compact height when in all scope', (
     assert.match(appSource, /showAllMatches \? COMPACT_CARD_HEIGHT : GAME_CARD_HEIGHT/);
     assert.match(appSource, /showAllMatches \? COMPACT_CARD_HEIGHT : FOOTBALL_CARD_HEIGHT/);
     // scroll guards reset when scope flips so it re-anchors to live
-    assert.match(appSource, /hasFootballCombinedInitialScrolled\.current = false;\s*hasHockeyCombinedInitialScrolled\.current = false;\s*\}, \[scheduleScope\]\)/);
+    assert.match(appSource, /hasFootballCombinedInitialScrolled\.current = false;\s*hasHockeyCombinedInitialScrolled\.current = false;/);
+    assert.match(appSource, /\}, \[scheduleScope\]\)/);
+});
+
+test('switching scope snaps both lists back to the top to drop the stale offset', () => {
+    // A large offset left over from the long "All matches" list overshoots the
+    // short "My teams" list; both lists must be reset to offset 0 on scope change.
+    assert.match(appSource, /football\.listRef\.current\?\.scrollToOffset\(\{ offset: 0, animated: false \}\)/);
+    assert.match(appSource, /shl\.listRef\.current\?\.scrollToOffset\(\{ offset: 0, animated: false \}\)/);
+    // but not on the initial mount, only on real scope changes
+    assert.match(appSource, /isFirstScopeRender\.current/);
 });
 
 test('ScopeToggle offers My teams / All matches and is wired into both tabs', () => {
