@@ -24,6 +24,10 @@ export function usePreferences() {
     // match today rendered as compact rows. Defaults to 'myteams'.
     const [scheduleScope, setScheduleScope] = useState('myteams');
 
+    // Leagues hidden from the "All matches" view (array of `sport` slugs).
+    // Stored as the hidden set so new leagues appear by default. Empty = all shown.
+    const [hiddenAllMatchesLeagues, setHiddenAllMatchesLeagues] = useState([]);
+
     // Onboarding state
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [onboardingStep, setOnboardingStep] = useState(0);
@@ -51,7 +55,8 @@ export function usePreferences() {
                     savedGenders,
                     savedFootballTeams,
                     onboardingComplete,
-                    savedScheduleScope
+                    savedScheduleScope,
+                    savedHiddenLeagues
                 ] = await Promise.all([
                     AsyncStorage.getItem(STORAGE_KEYS.SELECTED_SPORT),
                     AsyncStorage.getItem(STORAGE_KEYS.SELECTED_TEAMS),
@@ -59,7 +64,8 @@ export function usePreferences() {
                     AsyncStorage.getItem(STORAGE_KEYS.SELECTED_GENDERS),
                     AsyncStorage.getItem(STORAGE_KEYS.SELECTED_FOOTBALL_TEAMS),
                     AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETE),
-                    AsyncStorage.getItem(STORAGE_KEYS.SCHEDULE_SCOPE)
+                    AsyncStorage.getItem(STORAGE_KEYS.SCHEDULE_SCOPE),
+                    AsyncStorage.getItem(STORAGE_KEYS.HIDDEN_ALL_MATCHES_LEAGUES)
                 ]);
 
                 if (savedSport) setActiveSport(savedSport);
@@ -68,6 +74,7 @@ export function usePreferences() {
                 if (savedGenders) setSelectedGenders(JSON.parse(savedGenders));
                 if (savedFootballTeams) setSelectedFootballTeams(JSON.parse(savedFootballTeams));
                 if (savedScheduleScope) setScheduleScope(savedScheduleScope);
+                if (savedHiddenLeagues) setHiddenAllMatchesLeagues(JSON.parse(savedHiddenLeagues));
 
                 if (!onboardingComplete) {
                     setShowOnboarding(true);
@@ -92,6 +99,18 @@ export function usePreferences() {
     const handleScheduleScopeChange = useCallback((scope) => {
         setScheduleScope(scope);
         savePreference(STORAGE_KEYS.SCHEDULE_SCOPE, scope);
+    }, [savePreference]);
+
+    // Toggle a league's visibility in the "All matches" view. We store the
+    // HIDDEN set, so toggling ON removes it from hidden and toggling OFF adds it.
+    const toggleAllMatchesLeague = useCallback((leagueId) => {
+        setHiddenAllMatchesLeagues(prev => {
+            const newHidden = prev.includes(leagueId)
+                ? prev.filter(l => l !== leagueId)
+                : [...prev, leagueId];
+            savePreference(STORAGE_KEYS.HIDDEN_ALL_MATCHES_LEAGUES, newHidden);
+            return newHidden;
+        });
     }, [savePreference]);
 
     // SHL team filter handlers
@@ -179,6 +198,7 @@ export function usePreferences() {
         selectedNations,
         selectedGenders,
         scheduleScope,
+        hiddenAllMatchesLeagues,
         showOnboarding,
         onboardingStep,
         preferencesLoaded,
@@ -190,6 +210,7 @@ export function usePreferences() {
         // Handlers
         handleSportChange,
         handleScheduleScopeChange,
+        toggleAllMatchesLeague,
         toggleTeamFilter,
         clearTeamFilter,
         toggleFootballTeamFilter,

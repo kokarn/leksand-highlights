@@ -38,8 +38,26 @@ export const STORAGE_KEYS = {
     // Theme preference
     THEME_MODE: 'themeMode',
     // Schedule scope: 'myteams' (followed teams only) vs 'all' (every match, compact)
-    SCHEDULE_SCOPE: 'scheduleScope'
+    SCHEDULE_SCOPE: 'scheduleScope',
+    // Leagues HIDDEN from the "All matches" view. Stored as the hidden set (not
+    // the shown set) so newly-added leagues appear by default and need no
+    // migration. Empty = every league shown.
+    HIDDEN_ALL_MATCHES_LEAGUES: 'hiddenAllMatchesLeagues'
 };
+
+// Leagues shown in the "All matches" schedule view, grouped by the sport tab
+// they live under (the All-matches compact list only exists for Hockey and
+// Football, so biathlon is intentionally excluded). `id` matches the game
+// `sport` slug so filtering is a direct `game.sport` lookup. Adding a league
+// here makes it appear in the All-matches league filter automatically.
+export const ALL_MATCHES_LEAGUES = [
+    { id: 'shl', label: 'SHL', sportGroup: 'Hockey', icon: 'snow-outline' },
+    { id: 'hockeyallsvenskan', label: 'HockeyAllsvenskan', sportGroup: 'Hockey', icon: 'snow-outline' },
+    { id: 'allsvenskan', label: 'Allsvenskan', sportGroup: 'Football', icon: 'football-outline' },
+    { id: 'svenska-cupen', label: 'Svenska Cupen', sportGroup: 'Football', icon: 'football-outline' },
+    { id: 'europa-league-qual', label: 'Europa League Qual', sportGroup: 'Football', icon: 'football-outline' },
+    { id: 'conference-league-qual', label: 'Conference League Qual', sportGroup: 'Football', icon: 'football-outline' }
+];
 
 // Pre-game reminder leagues. One toggle per league so reminders can be
 // controlled individually. Adding a new league = add one entry here (plus

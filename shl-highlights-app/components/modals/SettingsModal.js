@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import * as Clipboard from 'expo-clipboard';
 import { getTeamLogoUrl, resolveMediaUrl } from '../../api/shl';
-import { GENDER_OPTIONS, THEME_OPTIONS, PRE_GAME_LEAGUES, HOCKEY_LEAGUE_FACETS, FOOTBALL_LEAGUE_FACETS } from '../../constants';
+import { GENDER_OPTIONS, THEME_OPTIONS, PRE_GAME_LEAGUES, ALL_MATCHES_LEAGUES, HOCKEY_LEAGUE_FACETS, FOOTBALL_LEAGUE_FACETS } from '../../constants';
 import { useTheme } from '../../contexts';
 import { TeamFilterGrid } from '../TeamFilterGrid';
 
@@ -35,6 +35,9 @@ export const SettingsModal = ({
     onClearNations,
     selectedGenders,
     onToggleGender,
+    // "All matches" league visibility (hidden set of sport slugs)
+    hiddenAllMatchesLeagues = [],
+    onToggleAllMatchesLeague,
     onResetOnboarding,
     // Push notification props
     notificationsEnabled = false,
@@ -455,11 +458,67 @@ export const SettingsModal = ({
                     )}
                 </View>
 
-                {/* Biathlon Gender */}
+                {/* All Matches leagues — which leagues appear in the "All matches" view */}
+                <View style={themedStyles.settingsCard}>
+                    <View style={styles.settingsCardHeader}>
+                        <Ionicons name="grid-outline" size={22} color={colors.accent} />
+                        <Text style={themedStyles.settingsCardTitle}>All Matches</Text>
+                    </View>
+                    <Text style={[themedStyles.notificationDescription, styles.allMatchesIntro]}>
+                        Choose which leagues show up in the All matches view
+                    </Text>
+                    {(() => {
+                        const groupColors = { Hockey: colors.accent, Football: colors.accentGreen };
+                        const groupOrder = [];
+                        const grouped = {};
+                        for (const league of ALL_MATCHES_LEAGUES) {
+                            if (!grouped[league.sportGroup]) {
+                                grouped[league.sportGroup] = [];
+                                groupOrder.push(league.sportGroup);
+                            }
+                            grouped[league.sportGroup].push(league);
+                        }
+                        const rows = [];
+                        groupOrder.forEach((group, groupIdx) => {
+                            const isLastGroup = groupIdx === groupOrder.length - 1;
+                            rows.push(
+                                <Text key={`amhdr-${group}`} style={themedStyles.preGameGroupHeader}>
+                                    {group}
+                                </Text>
+                            );
+                            grouped[group].forEach((league, idx) => {
+                                const isLast = isLastGroup && idx === grouped[group].length - 1;
+                                const shown = !hiddenAllMatchesLeagues.includes(league.id);
+                                rows.push(
+                                    <View
+                                        key={league.id}
+                                        style={isLast
+                                            ? [themedStyles.notificationRow, styles.notificationRowLast]
+                                            : themedStyles.notificationRow}
+                                    >
+                                        <View style={styles.sportLabelRow}>
+                                            <Ionicons name={league.icon} size={16} color={groupColors[group] || colors.accent} />
+                                            <Text style={themedStyles.notificationLabel}>{league.label}</Text>
+                                        </View>
+                                        <Switch
+                                            value={shown}
+                                            onValueChange={() => onToggleAllMatchesLeague?.(league.id)}
+                                            trackColor={{ false: colors.switchTrackOff, true: colors.accentPurple }}
+                                            thumbColor="#fff"
+                                        />
+                                    </View>
+                                );
+                            });
+                        });
+                        return rows;
+                    })()}
+                </View>
+
+                {/* Biathlon */}
                 <View style={themedStyles.settingsCard}>
                     <View style={styles.settingsCardHeader}>
                         <Ionicons name="locate-outline" size={22} color={colors.accentPink} />
-                        <Text style={themedStyles.settingsCardTitle}>Biathlon Gender</Text>
+                        <Text style={themedStyles.settingsCardTitle}>Biathlon</Text>
                     </View>
                     <View style={styles.genderRow}>
                         {GENDER_OPTIONS.map(gender => {
@@ -809,6 +868,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 6,
         marginBottom: 2
+    },
+    allMatchesIntro: {
+        marginBottom: 8
     },
     // App update styles
     updateButton: {

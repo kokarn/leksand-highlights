@@ -4,6 +4,10 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.42.0
+- Add a per-league filter for the All matches view. In Settings → All Matches you can now toggle which leagues (SHL, HockeyAllsvenskan, Allsvenskan, Svenska Cupen, Europa/Conference League Qual) show up in the All matches list. All leagues are shown by default
+- Drop the redundant "Gender" wording — the Settings biathlon card is now just "Biathlon" and the onboarding biathlon step no longer has a separate "Gender" label
+
 ### 2.41.1
 - Restyle the Biathlon Gender selector in Settings to match the rest of the app's selectors — compact pill chips with a gender icon and the purple accent when selected, instead of the oversized blocky blue/pink/purple buttons. Now consistent with the Theme picker below it and the standings gender picker
 

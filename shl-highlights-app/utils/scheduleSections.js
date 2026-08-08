@@ -33,6 +33,21 @@ export const localDayKey = (iso) => {
     return `${y}-${m}-${day}`;
 };
 
+// Filter a games array down to leagues NOT in the hidden set. Used by the
+// "All matches" view so a user can hide leagues they don't care about. An empty
+// hidden set (the default) returns the list unchanged, so new leagues show up
+// automatically. `hiddenLeagues` may be an array or a Set of `sport` slugs.
+export const filterVisibleLeagues = (games, hiddenLeagues) => {
+    if (!games || !games.length) {
+        return games || [];
+    }
+    const hidden = hiddenLeagues instanceof Set ? hiddenLeagues : new Set(hiddenLeagues || []);
+    if (hidden.size === 0) {
+        return games;
+    }
+    return games.filter(g => !hidden.has(g?.sport));
+};
+
 // Flatten a time-sorted games array into a mixed list of header + game rows:
 //   [{ type:'header', key, dayKey, date }, { type:'game', key, game }, ...]
 // A header is emitted whenever the calendar day changes.

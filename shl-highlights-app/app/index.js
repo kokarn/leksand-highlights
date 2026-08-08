@@ -52,7 +52,7 @@ import { getTeamLogoUrl, getNationFlag, fetchHockeyAllsvenskanStandings } from '
 
 // Utils
 import { formatSwedishDate } from '../utils';
-import { buildScheduleSections, buildItemLayout, findTargetScrollOffset, DAY_HEADER_HEIGHT } from '../utils/scheduleSections';
+import { buildScheduleSections, buildItemLayout, findTargetScrollOffset, filterVisibleLeagues, DAY_HEADER_HEIGHT } from '../utils/scheduleSections';
 
 // Hooks
 import {
@@ -99,11 +99,13 @@ export default function App() {
         selectedNations,
         selectedGenders,
         scheduleScope,
+        hiddenAllMatchesLeagues,
         showOnboarding,
         onboardingStep,
         setOnboardingStep,
         handleSportChange,
         handleScheduleScopeChange,
+        toggleAllMatchesLeague,
         toggleTeamFilter,
         clearTeamFilter,
         toggleFootballTeamFilter,
@@ -163,8 +165,8 @@ export default function App() {
     // with compact game rows). Sections + a precomputed variable-height layout
     // drive getItemLayout and the auto-scroll offset. Empty in My-teams scope.
     const footballSections = useMemo(
-        () => (showAllMatches ? buildScheduleSections(combinedFootballGames) : []),
-        [showAllMatches, combinedFootballGames]
+        () => (showAllMatches ? buildScheduleSections(filterVisibleLeagues(combinedFootballGames, hiddenAllMatchesLeagues)) : []),
+        [showAllMatches, combinedFootballGames, hiddenAllMatchesLeagues]
     );
     const footballSectionLayout = useMemo(
         () => buildItemLayout(footballSections, COMPACT_CARD_HEIGHT, DAY_HEADER_HEIGHT),
@@ -258,8 +260,8 @@ export default function App() {
 
     // Day-grouped sections for the hockey all-matches list (see football above).
     const hockeySections = useMemo(
-        () => (showAllMatches ? buildScheduleSections(combinedHockeyGames) : []),
-        [showAllMatches, combinedHockeyGames]
+        () => (showAllMatches ? buildScheduleSections(filterVisibleLeagues(combinedHockeyGames, hiddenAllMatchesLeagues)) : []),
+        [showAllMatches, combinedHockeyGames, hiddenAllMatchesLeagues]
     );
     const hockeySectionLayout = useMemo(
         () => buildItemLayout(hockeySections, COMPACT_CARD_HEIGHT, DAY_HEADER_HEIGHT),
@@ -1305,6 +1307,8 @@ export default function App() {
                 onClearNations={clearNationFilter}
                 selectedGenders={selectedGenders}
                 onToggleGender={toggleGenderFilter}
+                hiddenAllMatchesLeagues={hiddenAllMatchesLeagues}
+                onToggleAllMatchesLeague={toggleAllMatchesLeague}
                 onResetOnboarding={async () => {
                     await resetOnboarding();
                     setShowSettings(false);

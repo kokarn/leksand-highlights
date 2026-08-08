@@ -182,7 +182,6 @@ export const OnboardingModal = ({
                         <Text style={themedStyles.onboardingStepSubtitle}>Which race categories interest you?</Text>
                     </View>
                     <View style={styles.onboardingCenteredContent}>
-                        <Text style={themedStyles.sectionLabel}>Gender</Text>
                         <View style={styles.genderRow}>
                             {GENDER_OPTIONS.map(gender => (
                                 <TouchableOpacity

@@ -89,3 +89,33 @@ test('findTargetScrollOffset returns 0 when the first game is the target', async
     // live game at index 1, header above it at index 0 -> offset 0
     assert.equal(findTargetScrollOffset(items, layout), 0);
 });
+
+test('filterVisibleLeagues drops hidden leagues and leaves the rest', async () => {
+    const { filterVisibleLeagues } = await importApp('utils/scheduleSections.js');
+    const games = [
+        game('a', 'allsvenskan', '2026-08-08T13:00:00Z'),
+        game('b', 'svenska-cupen', '2026-08-08T15:00:00Z'),
+        game('c', 'conference-league-qual', '2026-08-08T17:00:00Z')
+    ];
+    const out = filterVisibleLeagues(games, ['svenska-cupen', 'conference-league-qual']);
+    assert.deepEqual(out.map(g => g.uuid), ['a']);
+});
+
+test('filterVisibleLeagues returns the list unchanged when nothing is hidden', async () => {
+    const { filterVisibleLeagues } = await importApp('utils/scheduleSections.js');
+    const games = [game('a', 'allsvenskan', '2026-08-08T13:00:00Z')];
+    // empty hidden set / undefined -> passthrough (new leagues show by default)
+    assert.equal(filterVisibleLeagues(games, []), games);
+    assert.equal(filterVisibleLeagues(games, undefined), games);
+    assert.deepEqual(filterVisibleLeagues([], ['allsvenskan']), []);
+});
+
+test('filterVisibleLeagues accepts a Set as well as an array', async () => {
+    const { filterVisibleLeagues } = await importApp('utils/scheduleSections.js');
+    const games = [
+        game('a', 'allsvenskan', '2026-08-08T13:00:00Z'),
+        game('b', 'shl', '2026-08-08T15:00:00Z')
+    ];
+    const out = filterVisibleLeagues(games, new Set(['shl']));
+    assert.deepEqual(out.map(g => g.uuid), ['a']);
+});

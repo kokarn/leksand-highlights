@@ -12,6 +12,8 @@ const constantsSource = read('constants/index.js');
 const scopeToggleSource = read('components/ui/ScopeToggle.js');
 const compactCardSource = read('components/cards/CompactGameCard.js');
 const dayHeaderSource = read('components/ui/DayHeader.js');
+const settingsSource = read('components/modals/SettingsModal.js');
+const onboardingSource = read('components/modals/OnboardingModal.js');
 
 test('schedule scope is persisted via a dedicated storage key', () => {
     assert.match(constantsSource, /SCHEDULE_SCOPE:\s*'scheduleScope'/);
@@ -45,9 +47,9 @@ test('all-matches scope renders day-grouped sections (DayHeader + CompactGameCar
     assert.match(appSource, /item\.type === 'header' \? \(\s*<DayHeader date=\{item\.date\} \/>/);
     assert.match(appSource, /<CompactGameCard[\s\S]*?game=\{item\.game\}[\s\S]*?family="football"/);
     assert.match(appSource, /<CompactGameCard[\s\S]*?game=\{item\.game\}[\s\S]*?family=\{item\.game\.sport === 'hockeyallsvenskan' \? 'hockeyallsvenskan' : 'shl'\}/);
-    // sections are only built in all scope
-    assert.match(appSource, /buildScheduleSections\(combinedFootballGames\)/);
-    assert.match(appSource, /buildScheduleSections\(combinedHockeyGames\)/);
+    // sections are only built in all scope (now filtered by visible leagues)
+    assert.match(appSource, /buildScheduleSections\(filterVisibleLeagues\(combinedFootballGames/);
+    assert.match(appSource, /buildScheduleSections\(filterVisibleLeagues\(combinedHockeyGames/);
 });
 
 test('getItemLayout uses the precomputed section layout in all scope; uniform tall card otherwise', () => {
@@ -101,4 +103,30 @@ test('CompactGameCard reuses shared team-identity resolvers, not a fresh fallbac
     assert.match(compactCardSource, /getTeamName as resolveTeamName, getTeamLogoUri.*teamIdentity/);
     assert.match(compactCardSource, /export const COMPACT_CARD_HEIGHT/);
     assert.doesNotMatch(compactCardSource, /firebase|expo-notifications|messaging/i);
+});
+
+test('All-matches league filter: persisted hidden set, filtered sections, settings toggles', () => {
+    // storage key + config
+    assert.match(constantsSource, /HIDDEN_ALL_MATCHES_LEAGUES:\s*'hiddenAllMatchesLeagues'/);
+    assert.match(constantsSource, /export const ALL_MATCHES_LEAGUES = \[/);
+    // prefs plumbing (load, state, handler, exposed)
+    assert.match(prefsSource, /const \[hiddenAllMatchesLeagues, setHiddenAllMatchesLeagues\] = useState\(\[\]\)/);
+    assert.match(prefsSource, /AsyncStorage\.getItem\(STORAGE_KEYS\.HIDDEN_ALL_MATCHES_LEAGUES\)/);
+    assert.match(prefsSource, /savePreference\(STORAGE_KEYS\.HIDDEN_ALL_MATCHES_LEAGUES, newHidden\)/);
+    assert.match(prefsSource, /toggleAllMatchesLeague,/);
+    // app applies the filter to both section lists (only in all scope)
+    assert.match(appSource, /buildScheduleSections\(filterVisibleLeagues\(combinedFootballGames, hiddenAllMatchesLeagues\)\)/);
+    assert.match(appSource, /buildScheduleSections\(filterVisibleLeagues\(combinedHockeyGames, hiddenAllMatchesLeagues\)\)/);
+    // settings renders the toggle card, wired to the handler
+    assert.match(settingsSource, /ALL_MATCHES_LEAGUES/);
+    assert.match(settingsSource, /onToggleAllMatchesLeague\?\.\(league\.id\)/);
+    assert.match(settingsSource, /All Matches</);
+});
+
+test('redundant "Gender" wording removed from Settings + Onboarding', () => {
+    // Settings biathlon card is now just "Biathlon"
+    assert.match(settingsSource, /settingsCardTitle}>Biathlon</);
+    assert.doesNotMatch(settingsSource, />Biathlon Gender</);
+    // Onboarding biathlon step no longer has a standalone "Gender" label
+    assert.doesNotMatch(onboardingSource, /sectionLabel}>Gender</);
 });
