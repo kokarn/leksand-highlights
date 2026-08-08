@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.43.0
+- Merge the separate "Game Reminders" and "All Matches" settings cards into a single **Leagues** section. Each league now has one row with two controls: an eye (show in the All matches view) and a bell (5-min game reminder), so leagues are no longer listed twice. Biathlon shows only the reminder control since it isn't part of the All matches list
+
 ### 2.42.0
 - Add a per-league filter for the All matches view. In Settings → All Matches you can now toggle which leagues (SHL, HockeyAllsvenskan, Allsvenskan, Svenska Cupen, Europa/Conference League Qual) show up in the All matches list. All leagues are shown by default
 - Drop the redundant "Gender" wording — the Settings biathlon card is now just "Biathlon" and the onboarding biathlon step no longer has a separate "Gender" label

@@ -284,84 +284,124 @@ export const SettingsModal = ({
                     )}
                 </View>
 
-                {/* Pre-game Reminders Section */}
-                {notificationsEnabled && (
-                    <View style={themedStyles.settingsCard}>
-                        <View style={styles.settingsCardHeader}>
-                            <Ionicons name="time-outline" size={22} color={colors.accentPurple} />
-                            <Text style={themedStyles.settingsCardTitle}>Game Reminders</Text>
-                        </View>
-                        <Text style={themedStyles.preGameDescription}>
-                            Get notified 5 minutes before games start
-                        </Text>
+                {/* Leagues Section — one row per league, controlling both the
+                    5-min game reminder (bell) and whether it shows in the All
+                    matches view (eye). Replaces the old separate "Game Reminders"
+                    and "All Matches" cards that listed every league twice. */}
+                <Text style={themedStyles.settingsSection}>Leagues</Text>
+                <Text style={themedStyles.settingsSectionSubtitle}>Reminders before games and which leagues show in All matches</Text>
 
-                        {(() => {
-                            // Group per-league toggles by their sport for display.
-                            const groupColors = {
-                                Hockey: colors.accent,
-                                Football: colors.accentGreen,
-                                Biathlon: colors.accentPink
-                            };
-                            const groupOrder = [];
-                            const grouped = {};
-                            for (const league of PRE_GAME_LEAGUES) {
-                                if (!grouped[league.sportGroup]) {
-                                    grouped[league.sportGroup] = [];
-                                    groupOrder.push(league.sportGroup);
-                                }
-                                grouped[league.sportGroup].push(league);
+                <View style={themedStyles.settingsCard}>
+                    {(() => {
+                        const groupColors = {
+                            Hockey: colors.accent,
+                            Football: colors.accentGreen,
+                            Biathlon: colors.accentPink
+                        };
+                        const allMatchesIds = new Set(ALL_MATCHES_LEAGUES.map(l => l.id));
+                        const groupOrder = [];
+                        const grouped = {};
+                        for (const league of PRE_GAME_LEAGUES) {
+                            if (!grouped[league.sportGroup]) {
+                                grouped[league.sportGroup] = [];
+                                groupOrder.push(league.sportGroup);
                             }
+                            grouped[league.sportGroup].push(league);
+                        }
 
-                            const rows = [];
-                            groupOrder.forEach((group, groupIdx) => {
-                                const isLastGroup = groupIdx === groupOrder.length - 1;
-                                rows.push(
-                                    <Text key={`hdr-${group}`} style={themedStyles.preGameGroupHeader}>
-                                        {group}
-                                    </Text>
-                                );
-                                grouped[group].forEach((league, idx) => {
-                                    const isLastLeagueInLastGroup = isLastGroup && idx === grouped[group].length - 1;
-                                    rows.push(
-                                        <View
-                                            key={league.id}
-                                            style={isLastLeagueInLastGroup
-                                                ? [themedStyles.notificationRow, styles.notificationRowLast]
-                                                : themedStyles.notificationRow}
-                                        >
-                                            <View style={styles.notificationTextContainer}>
-                                                <View style={styles.sportLabelRow}>
-                                                    <Ionicons name={league.icon} size={16} color={groupColors[group] || colors.accent} />
-                                                    <Text style={themedStyles.notificationLabel}>{league.label}</Text>
-                                                </View>
-                                                <Text style={themedStyles.notificationDescription}>
-                                                    {league.description}
-                                                </Text>
-                                            </View>
-                                            <Switch
-                                                value={!!preGameLeagues[league.id]}
-                                                onValueChange={(value) => onTogglePreGameLeague?.(league.id, value)}
-                                                trackColor={{ false: colors.switchTrackOff, true: colors.accentPurple }}
-                                                thumbColor="#fff"
-                                            />
-                                        </View>
-                                    );
-                                });
-                            });
-                            return rows;
-                        })()}
-
-                        {Object.values(preGameLeagues).some(Boolean) &&
-                         (selectedTeams.length > 0 || selectedFootballTeams.length > 0 || selectedNations.length > 0) && (
-                            <View style={themedStyles.notificationInfo}>
-                                <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
-                                <Text style={themedStyles.notificationInfoText}>
-                                    Reminders are sent for your favorite teams
+                        const rows = [];
+                        groupOrder.forEach((group, groupIdx) => {
+                            const isLastGroup = groupIdx === groupOrder.length - 1;
+                            rows.push(
+                                <Text key={`lhdr-${group}`} style={themedStyles.preGameGroupHeader}>
+                                    {group}
                                 </Text>
-                            </View>
-                        )}
+                            );
+                            grouped[group].forEach((league, idx) => {
+                                const isLast = isLastGroup && idx === grouped[group].length - 1;
+                                const reminderOn = !!preGameLeagues[league.id];
+                                const inAllMatches = allMatchesIds.has(league.id);
+                                const shown = !hiddenAllMatchesLeagues.includes(league.id);
+                                rows.push(
+                                    <View
+                                        key={league.id}
+                                        style={isLast
+                                            ? [themedStyles.leagueRow, styles.notificationRowLast]
+                                            : themedStyles.leagueRow}
+                                    >
+                                        <View style={styles.sportLabelRow}>
+                                            <Ionicons name={league.icon} size={16} color={groupColors[group] || colors.accent} />
+                                            <Text style={themedStyles.notificationLabel}>{league.label}</Text>
+                                        </View>
+                                        <View style={styles.leagueControls}>
+                                            {/* Show in All matches (eye). Not applicable to biathlon. */}
+                                            {inAllMatches ? (
+                                                <TouchableOpacity
+                                                    style={[themedStyles.leagueToggle, shown && themedStyles.leagueToggleActive]}
+                                                    onPress={() => onToggleAllMatchesLeague?.(league.id)}
+                                                    accessibilityLabel={`${shown ? 'Hide' : 'Show'} ${league.label} in All matches`}
+                                                    activeOpacity={0.7}
+                                                >
+                                                    <Ionicons
+                                                        name={shown ? 'eye' : 'eye-off-outline'}
+                                                        size={18}
+                                                        color={shown ? colors.accent : colors.textMuted}
+                                                    />
+                                                </TouchableOpacity>
+                                            ) : (
+                                                <View style={themedStyles.leagueToggleSpacer} />
+                                            )}
+                                            {/* 5-min reminder (bell). Requires notifications enabled. */}
+                                            <TouchableOpacity
+                                                style={[
+                                                    themedStyles.leagueToggle,
+                                                    reminderOn && notificationsEnabled && themedStyles.leagueToggleActivePurple,
+                                                    !notificationsEnabled && styles.leagueToggleDisabled
+                                                ]}
+                                                onPress={() => {
+                                                    if (!notificationsEnabled) {
+                                                        onRequestNotificationPermission?.();
+                                                        return;
+                                                    }
+                                                    onTogglePreGameLeague?.(league.id, !reminderOn);
+                                                }}
+                                                accessibilityLabel={`${reminderOn ? 'Disable' : 'Enable'} reminders for ${league.label}`}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Ionicons
+                                                    name={reminderOn && notificationsEnabled ? 'notifications' : 'notifications-outline'}
+                                                    size={18}
+                                                    color={reminderOn && notificationsEnabled ? colors.accentPurple : colors.textMuted}
+                                                />
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                );
+                            });
+                        });
+                        return rows;
+                    })()}
+
+                    <View style={themedStyles.leagueLegend}>
+                        <View style={styles.sportLabelRow}>
+                            <Ionicons name="eye" size={14} color={colors.textSecondary} />
+                            <Text style={themedStyles.leagueLegendText}>Show in All matches</Text>
+                        </View>
+                        <View style={styles.sportLabelRow}>
+                            <Ionicons name="notifications" size={14} color={colors.textSecondary} />
+                            <Text style={themedStyles.leagueLegendText}>Remind 5 min before</Text>
+                        </View>
                     </View>
-                )}
+
+                    {!notificationsEnabled && (
+                        <View style={themedStyles.notificationWarning}>
+                            <Ionicons name="warning-outline" size={16} color={colors.accentOrange} />
+                            <Text style={themedStyles.notificationWarningText}>
+                                Enable notifications above to set game reminders
+                            </Text>
+                        </View>
+                    )}
+                </View>
 
                 <Text style={themedStyles.settingsSection}>Favorites</Text>
                 <Text style={themedStyles.settingsSectionSubtitle}>Customize which sports and teams you follow</Text>
@@ -456,62 +496,6 @@ export const SettingsModal = ({
                             <Text style={themedStyles.clearButtonText}>Clear selection</Text>
                         </TouchableOpacity>
                     )}
-                </View>
-
-                {/* All Matches leagues — which leagues appear in the "All matches" view */}
-                <View style={themedStyles.settingsCard}>
-                    <View style={styles.settingsCardHeader}>
-                        <Ionicons name="grid-outline" size={22} color={colors.accent} />
-                        <Text style={themedStyles.settingsCardTitle}>All Matches</Text>
-                    </View>
-                    <Text style={[themedStyles.notificationDescription, styles.allMatchesIntro]}>
-                        Choose which leagues show up in the All matches view
-                    </Text>
-                    {(() => {
-                        const groupColors = { Hockey: colors.accent, Football: colors.accentGreen };
-                        const groupOrder = [];
-                        const grouped = {};
-                        for (const league of ALL_MATCHES_LEAGUES) {
-                            if (!grouped[league.sportGroup]) {
-                                grouped[league.sportGroup] = [];
-                                groupOrder.push(league.sportGroup);
-                            }
-                            grouped[league.sportGroup].push(league);
-                        }
-                        const rows = [];
-                        groupOrder.forEach((group, groupIdx) => {
-                            const isLastGroup = groupIdx === groupOrder.length - 1;
-                            rows.push(
-                                <Text key={`amhdr-${group}`} style={themedStyles.preGameGroupHeader}>
-                                    {group}
-                                </Text>
-                            );
-                            grouped[group].forEach((league, idx) => {
-                                const isLast = isLastGroup && idx === grouped[group].length - 1;
-                                const shown = !hiddenAllMatchesLeagues.includes(league.id);
-                                rows.push(
-                                    <View
-                                        key={league.id}
-                                        style={isLast
-                                            ? [themedStyles.notificationRow, styles.notificationRowLast]
-                                            : themedStyles.notificationRow}
-                                    >
-                                        <View style={styles.sportLabelRow}>
-                                            <Ionicons name={league.icon} size={16} color={groupColors[group] || colors.accent} />
-                                            <Text style={themedStyles.notificationLabel}>{league.label}</Text>
-                                        </View>
-                                        <Switch
-                                            value={shown}
-                                            onValueChange={() => onToggleAllMatchesLeague?.(league.id)}
-                                            trackColor={{ false: colors.switchTrackOff, true: colors.accentPurple }}
-                                            thumbColor="#fff"
-                                        />
-                                    </View>
-                                );
-                            });
-                        });
-                        return rows;
-                    })()}
                 </View>
 
                 {/* Biathlon */}
@@ -869,8 +853,13 @@ const styles = StyleSheet.create({
         gap: 6,
         marginBottom: 2
     },
-    allMatchesIntro: {
-        marginBottom: 8
+    leagueControls: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8
+    },
+    leagueToggleDisabled: {
+        opacity: 0.4
     },
     // App update styles
     updateButton: {
@@ -1116,6 +1105,48 @@ const getThemedStyles = (colors, isDark) => ({
         paddingVertical: 12,
         borderBottomWidth: 1,
         borderBottomColor: colors.separator
+    },
+    // Unified league row (icon+label on the left, eye + bell toggles on the right)
+    leagueRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.separator
+    },
+    leagueToggle: {
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.chip,
+        borderWidth: 1,
+        borderColor: colors.chipBorder
+    },
+    leagueToggleActive: {
+        backgroundColor: colors.chipActive,
+        borderColor: colors.accent
+    },
+    leagueToggleActivePurple: {
+        backgroundColor: colors.chipActive,
+        borderColor: colors.accentPurple
+    },
+    leagueToggleSpacer: {
+        width: 36,
+        height: 36
+    },
+    leagueLegend: {
+        flexDirection: 'row',
+        justifyContent: 'flex-start',
+        gap: 16,
+        paddingTop: 12,
+        marginTop: 4
+    },
+    leagueLegendText: {
+        color: colors.textSecondary,
+        fontSize: 12
     },
     // Clear button style
     clearButtonText: {

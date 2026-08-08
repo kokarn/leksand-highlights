@@ -117,10 +117,16 @@ test('All-matches league filter: persisted hidden set, filtered sections, settin
     // app applies the filter to both section lists (only in all scope)
     assert.match(appSource, /buildScheduleSections\(filterVisibleLeagues\(combinedFootballGames, hiddenAllMatchesLeagues\)\)/);
     assert.match(appSource, /buildScheduleSections\(filterVisibleLeagues\(combinedHockeyGames, hiddenAllMatchesLeagues\)\)/);
-    // settings renders the toggle card, wired to the handler
+    // settings renders the unified Leagues section, wired to both handlers
     assert.match(settingsSource, /ALL_MATCHES_LEAGUES/);
     assert.match(settingsSource, /onToggleAllMatchesLeague\?\.\(league\.id\)/);
-    assert.match(settingsSource, /All Matches</);
+    assert.match(settingsSource, /settingsSection}>Leagues</);
+    // the old duplicate cards are gone
+    assert.doesNotMatch(settingsSource, />Game Reminders</);
+    assert.doesNotMatch(settingsSource, /settingsCardTitle}>All Matches</);
+    // each league row carries both the reminder (bell) and the all-matches (eye) control
+    assert.match(settingsSource, /onTogglePreGameLeague\?\.\(league\.id, !reminderOn\)/);
+    assert.match(settingsSource, /eye-off-outline/);
 });
 
 test('redundant "Gender" wording removed from Settings + Onboarding', () => {
