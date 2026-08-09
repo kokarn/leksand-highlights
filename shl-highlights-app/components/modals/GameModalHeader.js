@@ -1,6 +1,6 @@
 import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { formatSwedishDate } from '../../utils';
+import { formatSwedishDate, formatLiveClock } from '../../utils';
 import { useTheme } from '../../contexts/ThemeContext';
 import { resolveMediaUrl } from '../../api/shl';
 
@@ -23,6 +23,7 @@ export const GameModalHeader = ({
     awayScore,
     state,
     startDateTime,
+    statusText,
     onClose,
     onTeamPress
 }) => {
@@ -30,11 +31,14 @@ export const GameModalHeader = ({
     const { width: windowWidth } = useWindowDimensions();
     const isLive = state === 'live';
     const isCompactHeader = windowWidth <= 430;
+    const liveClock = isLive ? formatLiveClock(statusText) : null;
     const stateLabel = state === 'post-game'
         ? 'Final'
         : state === 'pre-game'
             ? 'Pre-game'
-            : state || '-';
+            : isLive
+                ? (liveClock ? `LIVE · ${liveClock}` : 'LIVE')
+                : state || '-';
 
     const themedStyles = createStyles(colors);
 

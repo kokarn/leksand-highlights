@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { extractScore, formatRelativeDateEnglish, formatTime } from '../../utils';
+import { extractScore, formatRelativeDateEnglish, formatTime, formatLiveClock } from '../../utils';
 import { useTheme } from '../../contexts';
 import { getTeamName as resolveTeamName, getTeamLogoUri } from '../../utils/teamIdentity';
 
@@ -17,6 +17,7 @@ export const FootballGameCard = memo(function FootballGameCard({ game, onPress, 
     const homeTeam = game?.homeTeamInfo ?? {};
     const awayTeam = game?.awayTeamInfo ?? {};
     const isLive = game?.state === 'live';
+    const liveClock = isLive ? formatLiveClock(game?.statusText) : null;
     const isFinished = game?.state === 'post-game';
     const rawDate = formatRelativeDateEnglish(game?.startDateTime);
     const isFinishedToday = isFinished && rawDate === 'Today';
@@ -28,7 +29,9 @@ export const FootballGameCard = memo(function FootballGameCard({ game, onPress, 
         ? 'Final'
         : game?.state === 'pre-game'
             ? 'Pre-game'
-            : game?.state || '-';
+            : isLive
+                ? (liveClock || 'Live')
+                : game?.state || '-';
     
     const cardColors = isDark 
         ? (isLive ? ['#2a1c1c', '#1c1c1e'] : ['#1c1c1e', '#2c2c2e'])
@@ -45,9 +48,12 @@ export const FootballGameCard = memo(function FootballGameCard({ game, onPress, 
                 <View style={styles.cardHeader}>
                     <Text style={[styles.leagueText, { color: colors.textMuted }]}>{leagueLabel}</Text>
                     <View style={styles.headerRight}>
-                        <Text style={[styles.gameDate, { color: colors.textSecondary }, isLive && styles.liveTextAccented]}>
-                            {isLive ? 'LIVE' : formattedDate}
-                        </Text>
+                        <View style={styles.liveRow}>
+                            {isLive && <View style={styles.liveDot} />}
+                            <Text style={[styles.gameDate, { color: colors.textSecondary }, isLive && styles.liveTextAccented]}>
+                                {isLive ? (liveClock ? `LIVE · ${liveClock}` : 'LIVE') : formattedDate}
+                            </Text>
+                        </View>
                         {!isLive && !isFinishedToday && <Text style={[styles.gameTime, { color: colors.textMuted }]}>{formattedTime}</Text>}
                     </View>
                 </View>
@@ -86,7 +92,7 @@ export const FootballGameCard = memo(function FootballGameCard({ game, onPress, 
                         <Text style={[styles.scoreText, isCompactLayout && styles.scoreTextCompact, { color: colors.text }]}>
                             {homeScore} - {awayScore}
                         </Text>
-                        <Text style={[styles.statusText, { color: colors.textMuted }]} numberOfLines={1}>
+                        <Text style={[styles.statusText, { color: isLive ? '#FF453A' : colors.textMuted }]} numberOfLines={1}>
                             {stateLabel}
                         </Text>
                     </View>
@@ -151,6 +157,17 @@ const styles = StyleSheet.create({
     },
     headerRight: {
         alignItems: 'flex-end'
+    },
+    liveRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5
+    },
+    liveDot: {
+        width: 7,
+        height: 7,
+        borderRadius: 4,
+        backgroundColor: '#FF453A'
     },
     gameDate: {
         color: '#8e8e93',

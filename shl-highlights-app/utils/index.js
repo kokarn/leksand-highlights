@@ -201,6 +201,34 @@ export const extractScore = (teamResult, teamInfo) => {
 };
 
 /**
+ * Normalize a football live-clock/status string into a short badge label.
+ *
+ * The football API exposes a free-form `statusText` on each game (e.g. "37'",
+ * "45+2'", "HT", "FT", "TBD"). For a LIVE game this is the match minute we want
+ * to surface as a ticking indicator. This trims it, keeps compact live values
+ * (minutes, half-time), and returns null for non-informative placeholders so
+ * callers can fall back to a plain "LIVE" label.
+ *
+ * @param {string} statusText - raw statusText from the game object
+ * @returns {string|null} short live label (e.g. "37'", "HT") or null
+ */
+export const formatLiveClock = (statusText) => {
+    if (statusText === null || statusText === undefined) {
+        return null;
+    }
+    const trimmed = String(statusText).trim();
+    if (!trimmed) {
+        return null;
+    }
+    // Placeholders that carry no live-timing signal.
+    const uninformative = new Set(['TBD', 'FT', 'FULL-TIME', 'FULL TIME', 'AET', 'PENS', '-']);
+    if (uninformative.has(trimmed.toUpperCase())) {
+        return null;
+    }
+    return trimmed;
+};
+
+/**
  * Get penalty minutes from penalty event
  * @param {Object} penalty - Penalty event object
  * @returns {string} Penalty minutes

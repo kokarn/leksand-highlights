@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import { extractScore, formatTime } from '../../utils';
+import { extractScore, formatTime, formatLiveClock } from '../../utils';
 import { useTheme } from '../../contexts';
 import { getTeamName as resolveTeamName, getTeamLogoUri } from '../../utils/teamIdentity';
 
@@ -32,6 +32,9 @@ export const CompactGameCard = memo(function CompactGameCard({ game, onPress, fa
     const homeScore = extractScore(null, homeTeam);
     const awayScore = extractScore(null, awayTeam);
     const formattedTime = formatTime(game?.startDateTime);
+    // Football live games carry a match minute in statusText ("37'", "HT").
+    // Hockey has no live clock, so this is null there and we just show the score.
+    const liveClock = isLive ? formatLiveClock(game?.statusText) : null;
 
     const stripeColor = isLive ? '#FF453A' : (isFinished ? '#30D158' : colors.accent);
     const scoreColor = isLive ? '#FF453A' : colors.text;
@@ -70,9 +73,14 @@ export const CompactGameCard = memo(function CompactGameCard({ game, onPress, fa
                     {isUpcoming ? (
                         <Text style={[styles.time, { color: colors.textMuted }]}>{formattedTime}</Text>
                     ) : (
-                        <Text style={[styles.score, { color: scoreColor }]}>
-                            {homeScore}–{awayScore}
-                        </Text>
+                        <>
+                            <Text style={[styles.score, { color: scoreColor }]}>
+                                {homeScore}–{awayScore}
+                            </Text>
+                            {liveClock && (
+                                <Text style={styles.liveClock} numberOfLines={1}>{liveClock}</Text>
+                            )}
+                        </>
                     )}
                 </View>
 
@@ -153,6 +161,13 @@ const styles = StyleSheet.create({
     time: {
         fontSize: 13,
         fontWeight: '700',
+        fontVariant: ['tabular-nums']
+    },
+    liveClock: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#FF453A',
+        marginTop: 1,
         fontVariant: ['tabular-nums']
     }
 });

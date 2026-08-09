@@ -736,6 +736,7 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
                     awayScore={awayScore}
                     state={info?.state}
                     startDateTime={startDateTime}
+                    statusText={info?.statusText}
                     onClose={handleClose}
                     onTeamPress={(side) => navigateToTeam(side === 'home' ? homeCode : awayCode)}
                 />
