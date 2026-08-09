@@ -109,10 +109,18 @@ export const findTargetItemIndex = (items) => {
     return 0;
 };
 
+// Index of the day header directly above the target game (or the target itself
+// if it has no header above it) — used for FlatList initialScrollIndex so a
+// freshly-mounted all-matches list lands on today WITHOUT a post-mount
+// scrollToOffset (which races the first layout pass and no-ops on cold mount).
+export const findTargetAnchorIndex = (items) => {
+    const idx = findTargetItemIndex(items);
+    return (idx > 0 && items[idx - 1]?.type === 'header') ? idx - 1 : idx;
+};
+
 // Scroll offset to anchor the target game — prefer the day header directly above
 // it so the day context ("Today · …") stays visible after the jump.
 export const findTargetScrollOffset = (items, layouts) => {
-    const idx = findTargetItemIndex(items);
-    const anchorIdx = (idx > 0 && items[idx - 1]?.type === 'header') ? idx - 1 : idx;
+    const anchorIdx = findTargetAnchorIndex(items);
     return layouts?.[anchorIdx]?.offset ?? 0;
 };

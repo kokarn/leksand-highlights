@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.44.2
+- Fix the All matches list not jumping to today on the very first load (later switches worked). The list now positions on today at mount time via `initialScrollIndex` instead of a post-mount scroll that raced the first layout pass and no-op'd on the cold render
+
 ### 2.44.1
 - Actually fix the All matches list rendering empty until you scroll one pixel. The 2.43.1 fix wasn't enough — the real cause is Android's FlatList not repainting when the data + row heights swap in place on a scope flip. The Hockey and Football lists now remount when you switch between My teams and All matches, so the new rows paint immediately
 

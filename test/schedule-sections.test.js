@@ -90,6 +90,20 @@ test('findTargetScrollOffset returns 0 when the first game is the target', async
     assert.equal(findTargetScrollOffset(items, layout), 0);
 });
 
+test('findTargetAnchorIndex points at the day header above the target game', async () => {
+    const { buildScheduleSections, findTargetAnchorIndex } =
+        await importApp('utils/scheduleSections.js');
+    const games = [
+        game('a', 'allsvenskan', '2026-08-08T13:00:00Z', 'post-game'),
+        game('b', 'allsvenskan', '2026-08-08T15:00:00Z', 'post-game'),
+        game('c', 'allsvenskan', '2026-08-09T15:00:00Z', 'live')
+    ];
+    const items = buildScheduleSections(games);
+    // items: header0, gameA(1), gameB(2), header(3), gameC(live,4)
+    // anchor is the header directly above the live game -> index 3.
+    assert.equal(findTargetAnchorIndex(items), 3);
+});
+
 test('filterVisibleLeagues drops hidden leagues and leaves the rest', async () => {
     const { filterVisibleLeagues } = await importApp('utils/scheduleSections.js');
     const games = [

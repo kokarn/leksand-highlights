@@ -52,7 +52,7 @@ import { getTeamLogoUrl, getNationFlag, fetchHockeyAllsvenskanStandings } from '
 
 // Utils
 import { formatSwedishDate } from '../utils';
-import { buildScheduleSections, buildItemLayout, findTargetScrollOffset, filterVisibleLeagues, DAY_HEADER_HEIGHT } from '../utils/scheduleSections';
+import { buildScheduleSections, buildItemLayout, findTargetScrollOffset, findTargetAnchorIndex, filterVisibleLeagues, DAY_HEADER_HEIGHT } from '../utils/scheduleSections';
 
 // Hooks
 import {
@@ -176,6 +176,12 @@ export default function App() {
         () => findTargetScrollOffset(footballSections, footballSectionLayout),
         [footballSections, footballSectionLayout]
     );
+    // Anchor index for the fresh-mount initialScrollIndex (lands on today without
+    // a racing post-mount scrollToOffset). 0 when no sections (My-teams scope).
+    const footballSectionAnchorIndex = useMemo(
+        () => (footballSections.length ? findTargetAnchorIndex(footballSections) : 0),
+        [footballSections]
+    );
 
     const hasFootballCombinedInitialScrolled = useRef(false);
     const hasHockeyCombinedInitialScrolled = useRef(false);
@@ -270,6 +276,10 @@ export default function App() {
     const hockeySectionTargetOffset = useMemo(
         () => findTargetScrollOffset(hockeySections, hockeySectionLayout),
         [hockeySections, hockeySectionLayout]
+    );
+    const hockeySectionAnchorIndex = useMemo(
+        () => (hockeySections.length ? findTargetAnchorIndex(hockeySections) : 0),
+        [hockeySections]
     );
 
     // Initial scroll to live/upcoming in combined hockey list
@@ -791,6 +801,11 @@ export default function App() {
             key={`hockey-${scheduleScope}`}
             ref={shl.listRef}
             data={showAllMatches ? hockeySections : combinedHockeyGames}
+            // On the all-matches list, position on today at mount time via
+            // initialScrollIndex (backed by getItemLayout) instead of a
+            // post-mount scrollToOffset — the latter races the first layout and
+            // no-ops on the very first cold render.
+            initialScrollIndex={showAllMatches ? hockeySectionAnchorIndex : undefined}
             renderItem={({ item }) => (
                 showAllMatches ? (
                     item.type === 'header' ? (
@@ -861,6 +876,9 @@ export default function App() {
             key={`football-${scheduleScope}`}
             ref={football.listRef}
             data={showAllMatches ? footballSections : combinedFootballGames}
+            // See hockey list: position on today at mount time in all-matches
+            // scope so the first cold render lands on today, not the top.
+            initialScrollIndex={showAllMatches ? footballSectionAnchorIndex : undefined}
             renderItem={({ item }) => (
                 showAllMatches ? (
                     item.type === 'header' ? (
