@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.44.1
+- Actually fix the All matches list rendering empty until you scroll one pixel. The 2.43.1 fix wasn't enough — the real cause is Android's FlatList not repainting when the data + row heights swap in place on a scope flip. The Hockey and Football lists now remount when you switch between My teams and All matches, so the new rows paint immediately
+
 ### 2.44.0
 - Make the Favorites team cards (Hockey, Football, Biathlon) in Settings collapsible. Each card is collapsed by default and shows a one-line summary of your picks (e.g. "AIK, Hammarby") plus a count; tap the header to expand the search + team list. Fixes the very long Settings scroll now that the football team list spans ~190 teams across Allsvenskan, Europa and Conference League qualifying
 

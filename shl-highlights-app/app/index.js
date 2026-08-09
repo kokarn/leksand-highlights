@@ -783,6 +783,12 @@ export default function App() {
     // Render Hockey schedule (SHL + HockeyAllsvenskan in one list)
     const renderHockeySchedule = () => (
         <FlatList
+            // Remount the list when the scope flips: swapping data in place
+            // (flat games <-> day-grouped sections with different item heights)
+            // leaves Android's VirtualizedList showing a blank list until a
+            // manual scroll forces a cell recompute. A changing key gives a
+            // fresh initial render that paints immediately.
+            key={`hockey-${scheduleScope}`}
             ref={shl.listRef}
             data={showAllMatches ? hockeySections : combinedHockeyGames}
             renderItem={({ item }) => (
@@ -849,6 +855,10 @@ export default function App() {
 
     const renderFootballSchedule = () => (
         <FlatList
+            // See hockey list: remount on scope flip so Android's VirtualizedList
+            // paints the new (compact vs card) rows immediately instead of a
+            // blank list until the first manual scroll.
+            key={`football-${scheduleScope}`}
             ref={football.listRef}
             data={showAllMatches ? footballSections : combinedFootballGames}
             renderItem={({ item }) => (
