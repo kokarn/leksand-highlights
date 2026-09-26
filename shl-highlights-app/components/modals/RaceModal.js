@@ -1,3 +1,4 @@
+import React from 'react';
 import { View, Text, Modal, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,27 +7,6 @@ import { GENDER_COLORS } from '../../constants';
 import { formatSwedishDate } from '../../utils';
 import { useTheme } from '../../contexts/ThemeContext';
 import { ShootingDisplay, ShootingInline } from '../biathlon';
-
-/**
- * Parse shooting string into array of misses per stage
- */
-/**
- * Parse shooting string into array of misses per stage
- * Two formats: "0+1+0+0" (individual) or "0+2 0+3" (relay)
- * Note: This function is kept for potential future use but ShootingDisplay has its own parser
- */
-function parseShootings(shootings) {
-    if (!shootings || typeof shootings !== 'string') {
-        return null;
-    }
-    const trimmed = shootings.trim();
-    // Relay format: space-separated stages like "0+2 0+3"
-    if (trimmed.includes(' ')) {
-        return trimmed.split(/\s+/).map(stage => parseInt(stage.split('+')[0], 10) || 0);
-    }
-    // Individual format: "0+1+0+0"
-    return trimmed.split('+').map(s => parseInt(s, 10) || 0);
-}
 
 /**
  * Get medal emoji for top 3 positions
@@ -455,9 +435,8 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
     const { colors } = useTheme();
     const themedStyles = createStyles(colors);
 
-    if (!race) return null;
-
-    const raceInfo = details?.info || race;
+    // Derived values from props (safe even when race is null)
+    const raceInfo = details?.info || race || {};
     const competition = details?.competition || null;
     const results = Array.isArray(details?.results) ? details.results : null;
     const startList = Array.isArray(details?.startList) ? details.startList : null;
@@ -469,65 +448,47 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
     const isStartingSoon = raceInfo?.state === 'starting-soon';
     const isUpcomingRace = raceInfo?.state === 'upcoming' || raceInfo?.state === 'pre-race';
 
-    // State for expanded rows
+    // Hooks — declared unconditionally (before early return)
     const [expandedRows, setExpandedRows] = React.useState(new Set());
-
-    // State for country filter
     const [selectedCountry, setSelectedCountry] = React.useState(null);
 
-    // Extract unique countries from results
     const availableCountries = React.useMemo(() => {
         const countries = new Set();
         allResultRows.forEach(item => {
             const nation = item?.Nat || item?.Nation || item?.Country;
-            if (nation) {
-                countries.add(nation);
-            }
+            if (nation) countries.add(nation);
         });
         return Array.from(countries).sort();
     }, [allResultRows]);
 
-    // Filter results by selected country
     const resultRows = React.useMemo(() => {
-        if (!selectedCountry) {
-            return allResultRows;
-        }
+        if (!selectedCountry) return allResultRows;
         return allResultRows.filter(item => {
             const nation = item?.Nat || item?.Nation || item?.Country;
             return nation === selectedCountry;
         });
     }, [allResultRows, selectedCountry]);
 
-    // Group by nation for relay races
     const relayTeams = React.useMemo(() => {
-        if (!isRelay) {
-            return null;
-        }
+        if (!isRelay) return null;
         const dataToGroup = selectedCountry ? resultRows : allResultRows;
         return groupByNation(dataToGroup);
     }, [isRelay, allResultRows, resultRows, selectedCountry]);
 
-    // Reset country filter when race changes
-    React.useEffect(() => {
-        setSelectedCountry(null);
-    }, [race?.raceId]);
-
     const toggleRow = React.useCallback((index) => {
         setExpandedRows(prev => {
             const next = new Set(prev);
-            if (next.has(index)) {
-                next.delete(index);
-            } else {
-                next.add(index);
-            }
+            if (next.has(index)) next.delete(index);
+            else next.add(index);
             return next;
         });
     }, []);
 
-    // Reset expanded rows when results change
-    React.useEffect(() => {
-        setExpandedRows(new Set());
-    }, [results, startList]);
+    React.useEffect(() => { setSelectedCountry(null); }, [race?.raceId]);
+    React.useEffect(() => { setExpandedRows(new Set()); }, [results, startList]);
+
+    // Early return — AFTER all hooks so React's rules of hooks are satisfied
+    if (!race) return null;
 
     const getStatusLabel = () => {
         if (competition?.StatusText) {
@@ -759,9 +720,6 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
         </Modal>
     );
 };
-
-// Need React for useState and useEffect
-import React from 'react';
 
 const createStyles = (colors) => StyleSheet.create({
     modalContainer: {
