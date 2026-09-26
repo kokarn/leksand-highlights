@@ -95,6 +95,43 @@ class AllsvenskanProvider extends BaseProvider {
         return -2;
     }
 
+    /**
+     * Fetch FotbollPlay games within a date window.
+     *
+     * NOTE: FotbollPlay's from_date/to_date query params are silently ignored
+     * by the API (it always returns the same newest-first page of ~100 games).
+     * The id_lt pagination cursor also does not work (returns identical batches).
+     * We therefore fetch a single page of the 100 most recent games and filter
+     * by date window client-side. This covers the most recent ~40 match days.
+     */
+    async fetchFotbollPlayGamesInWindow(startDate, endDate) {
+        const fromMs = new Date(startDate).getTime();
+        const toMs = new Date(endDate).getTime();
+        if (Number.isNaN(fromMs) || Number.isNaN(toMs)) {
+            return [];
+        }
+
+        const url = `${this.fotbollPlayApiBaseUrl}/game?count=100`;
+        let page;
+        try {
+            const response = await fetch(url, { headers: this.headers });
+            if (!response.ok) {
+                console.warn(`[${this.name}] FotbollPlay window fetch failed (${response.status})`);
+                return [];
+            }
+            page = await response.json();
+        } catch (error) {
+            console.warn(`[${this.name}] FotbollPlay window fetch error:`, error.message);
+            return [];
+        }
+
+        const games = Array.isArray(page?.games) ? page.games : [];
+        return games.filter(g => {
+            const ms = new Date(g.start_time).getTime();
+            return !Number.isNaN(ms) && ms >= fromMs && ms <= toMs;
+        });
+    }
+
     formatFotbollPlayDate(date) {
         return date.toISOString().slice(0, 10);
     }
@@ -278,16 +315,11 @@ class AllsvenskanProvider extends BaseProvider {
         return date.getUTCFullYear();
     }
 
-    getSeasonDateRange(year) {
-        return {
-            start: `${year}0101`,
-            end: `${year}1231`
-        };
-    }
-
     async fetchSeasonEvents(year) {
-        const { start, end } = this.getSeasonDateRange(year);
-        const url = `${this.scoreboardBaseUrl}?dates=${start}-${end}&limit=${this.maxEvents}`;
+        // The ESPN scoreboard endpoint only returns the current day's games
+        // and the `dates` parameter is no longer functional (returns 400).
+        // Fetch without date params to get the current match day.
+        const url = `${this.scoreboardBaseUrl}?limit=${this.maxEvents}`;
         const response = await fetch(url, { headers: this.headers });
 
         if (!response.ok) {
@@ -409,6 +441,83 @@ class AllsvenskanProvider extends BaseProvider {
             .filter(Boolean);
     }
 
+    /**
+     * Convert a FotbollPlay game object to the normalized game format used
+     * throughout the app. FotbollPlay games use home_team/visiting_team pairs
+     * with start_time and goal fields.
+     */
+    normalizeFotbollPlayGame(game) {
+        if (!game || !game.start_time) return null;
+
+        const startTime = game.start_time;
+        const startMs = new Date(startTime).getTime();
+        const nowMs = Date.now();
+        const hasHomeGoals = game.home_team_goals != null && game.home_team_goals !== '' && Number(game.home_team_goals) > 0;
+        const hasAwayGoals = game.visiting_team_goals != null && game.visiting_team_goals !== '' && Number(game.visiting_team_goals) > 0;
+        const isFinished = hasHomeGoals || hasAwayGoals;
+
+        let state;
+        if (isFinished) {
+            state = 'post-game';
+        } else if (startMs > nowMs) {
+            state = 'pre-game';
+        } else {
+            // Started but no goals recorded — treat as pre-game (live games
+            // are rare in this historical window; the app's filter handles
+            // the live case separately if a real live feed is available).
+            state = 'pre-game';
+        }
+
+        const homeTeam = game.home_team || {};
+        const awayTeam = game.visiting_team || game.away_team || {};
+        const homeScore = isFinished ? this.parseScore(game.home_team_goals, state) : null;
+        const awayScore = isFinished ? this.parseScore(game.visiting_team_goals, state) : null;
+
+        return {
+            uuid: String(game.id),
+            startDateTime: startTime,
+            state,
+            homeTeamInfo: {
+                code: this.cleanTeamCode(homeTeam.short_name || homeTeam.name),
+                uuid: homeTeam.id || null,
+                names: {
+                    short: this.cleanTeamName(homeTeam.name || homeTeam.short_name),
+                    long: this.cleanTeamName(homeTeam.name || homeTeam.short_name)
+                },
+                score: homeScore,
+                icon: null
+            },
+            awayTeamInfo: {
+                code: this.cleanTeamCode(awayTeam.short_name || awayTeam.name),
+                uuid: awayTeam.id || null,
+                names: {
+                    short: this.cleanTeamName(awayTeam.name || awayTeam.short_name),
+                    long: this.cleanTeamName(awayTeam.name || awayTeam.short_name)
+                },
+                score: awayScore,
+                icon: null
+            },
+            venueInfo: {
+                name: game.stadium_name || null
+            },
+            statusText: isFinished
+                ? `${homeScore ?? '?'} - ${awayScore ?? '?'}`
+                : null,
+            sport: 'allsvenskan',
+            source: 'fotbollplay'
+        };
+    }
+
+    cleanTeamName(name) {
+        if (!name) return 'Okänd';
+        return name.trim();
+    }
+
+    cleanTeamCode(code) {
+        if (!code) return null;
+        return code.trim().toUpperCase();
+    }
+
     mergeGamesById(...gameLists) {
         const merged = new Map();
         gameLists.flat().forEach(game => {
@@ -422,7 +531,24 @@ class AllsvenskanProvider extends BaseProvider {
         const year = this.getSeasonYear();
         const now = new Date();
         const events = await this.fetchSeasonEventsSafe(year);
-        const games = this.normalizeEvents(events);
+        let games = this.normalizeEvents(events);
+
+        // Supplement with FotbollPlay's 100-game window (covers ~40 match days,
+        // newest-first). The ESPN scoreboard only returns one day; FotbollPlay
+        // fills in the surrounding match days for video lookup and schedule display.
+        try {
+            const seasonStart = new Date(`${year}-01-01T00:00:00Z`);
+            const seasonEnd = new Date(`${year}-12-31T23:59:59Z`);
+            const fpGames = await this.fetchFotbollPlayGamesInWindow(
+                seasonStart.toISOString().slice(0, 10),
+                seasonEnd.toISOString().slice(0, 10)
+            );
+            const fpNormalized = fpGames.map(g => this.normalizeFotbollPlayGame(g)).filter(Boolean);
+            games = this.mergeGamesById(games, fpNormalized);
+        } catch (error) {
+            console.warn(`[${this.name}] FotbollPlay window fetch failed:`, error.message);
+        }
+
         const hasFutureGames = games.some(game => new Date(game.startDateTime) >= now);
         const hasPastGames = games.some(game => new Date(game.startDateTime) < now);
 
@@ -430,17 +556,21 @@ class AllsvenskanProvider extends BaseProvider {
 
         if (!hasFutureGames) {
             const nextYear = year + 1;
-            extraEventBatches.push(await this.fetchSeasonEventsSafe(nextYear));
+            const nextFpGames = await this.fetchFotbollPlayGamesInWindow(
+                `${nextYear}-01-01`, `${nextYear}-12-31`
+            ).catch(() => []);
+            games = this.mergeGamesById(games, nextFpGames.map(g => this.normalizeFotbollPlayGame(g)).filter(Boolean));
         }
 
         if (!hasPastGames) {
             const previousYear = year - 1;
-            extraEventBatches.push(await this.fetchSeasonEventsSafe(previousYear));
+            const prevFpGames = await this.fetchFotbollPlayGamesInWindow(
+                `${previousYear}-01-01`, `${previousYear}-12-31`
+            ).catch(() => []);
+            games = this.mergeGamesById(games, prevFpGames.map(g => this.normalizeFotbollPlayGame(g)).filter(Boolean));
         }
 
-        const extraEvents = extraEventBatches.flat();
-        const extraGames = extraEvents.length ? this.normalizeEvents(extraEvents) : [];
-        const mergedGames = this.mergeGamesById(games, extraGames);
+        const mergedGames = this.mergeGamesById(games);
 
         return mergedGames.sort((a, b) => new Date(b.startDateTime) - new Date(a.startDateTime));
     }

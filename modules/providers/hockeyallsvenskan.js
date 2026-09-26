@@ -19,10 +19,16 @@ class HockeyAllsvenskanProvider extends SHLProvider {
         // Re-brand (BaseProvider.name drives log tags + getName()).
         this.name = 'HockeyAllsvenskan';
 
-        this.baseUrl = 'https://www.hockeyallsvenskan.se/api';
+        // HA runs on the same backend platform as the SHL — same API contract,
+        // same JSON shapes, just different league/series UUIDs. Fans call it the
+        // "hockeyallsvenskan.se API" but the actual data endpoint is SHL's host;
+        // the old sporterapi.meningsbyggaren.se SHL backend was migrated into SHL's
+        // www.shl.se/api platform. Point HA at SHL's host with HA UUIDs.
+        this.baseUrl = 'https://www.shl.se/api';
 
-        // Current season identifiers (2025-26). Sourced from the HA site's embedded
-        // game-schedule URL. gameTypeUuid (regular season) happens to match SHL's.
+        // Current season identifiers (2026-27 season). Sourced from the HA site's
+        // embedded game-schedule URL. gameTypeUuid (regular season) happens to
+        // match SHL's — both use qQ9-af37Ti40B.
         this.seasonUuid = 'ndcf81nlb3';
         this.seriesUuid = 'qQ9-594cW8OWD';
         this.gameTypeUuid = 'qQ9-af37Ti40B';
