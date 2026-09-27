@@ -74,7 +74,11 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: reactivecircus/android-sdk-installer@v2
+        with:
+          cmdline-tools-version: 11076708
+          platform-version: 34
+          build-tools-version: 34.0.0
 
       - name: Setup Expo
         uses: expo/expo-github-action@v8
