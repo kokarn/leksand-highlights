@@ -435,7 +435,7 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
     const { colors } = useTheme();
     const themedStyles = createStyles(colors);
 
-    // Derived values from props (safe even when race is null)
+    // --- Derived values (safe even when race is null — used by hooks below) ---
     const raceInfo = details?.info || race || {};
     const competition = details?.competition || null;
     const results = Array.isArray(details?.results) ? details.results : null;
@@ -448,7 +448,7 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
     const isStartingSoon = raceInfo?.state === 'starting-soon';
     const isUpcomingRace = raceInfo?.state === 'upcoming' || raceInfo?.state === 'pre-race';
 
-    // Hooks — declared unconditionally (before early return)
+    // --- Hooks — declared unconditionally before early return (React rules of hooks) ---
     const [expandedRows, setExpandedRows] = React.useState(new Set());
     const [selectedCountry, setSelectedCountry] = React.useState(null);
 
@@ -487,7 +487,7 @@ export const RaceModal = ({ race, details, visible, onClose, loading, onRefresh,
     React.useEffect(() => { setSelectedCountry(null); }, [race?.raceId]);
     React.useEffect(() => { setExpandedRows(new Set()); }, [results, startList]);
 
-    // Early return — AFTER all hooks so React's rules of hooks are satisfied
+    // Early return AFTER hooks
     if (!race) return null;
 
     const getStatusLabel = () => {
