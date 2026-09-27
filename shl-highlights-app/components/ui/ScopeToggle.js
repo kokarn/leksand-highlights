@@ -12,7 +12,8 @@ export const ScopeToggle = ({ scope, onChange }) => {
 
     const options = [
         { key: 'myteams', label: 'My teams', icon: 'star-outline' },
-        { key: 'all', label: 'All matches', icon: 'grid-outline' }
+        { key: 'all', label: 'All matches', icon: 'grid-outline' },
+        { key: 'standings', label: 'Standings', icon: 'stats-chart' }
     ];
 
     return (
