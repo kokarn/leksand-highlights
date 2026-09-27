@@ -14,6 +14,7 @@ on:
       - '.github/workflows/docker-publish.yml'
       - 'static/**'
       - 'test/**'
+      - 'shl-highlights-app/**'
 
 env:
   REGISTRY: ghcr.io
@@ -37,6 +38,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Install mobile app dependencies
+        run: cd shl-highlights-app && npm ci
 
       - name: Run tests + Kokarn API routing guard
         run: npm test
