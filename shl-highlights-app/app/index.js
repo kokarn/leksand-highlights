@@ -332,158 +332,6 @@ export default function App() {
         [hockeySections]
     );
 
-    // Inline standings views for the Hockey and Football tabs (shown when
-    // scheduleScope === 'standings'). Each shows the primary league tables for
-    // that sport: SHL + HockeyAllsvenskan for hockey, Allsvenskan + Svenska
-    // Cupen for football. Favorites are highlighted via the selected team lists.
-    const renderHockeyStandings = useCallback(() => {
-        const shlRows = shlStandings?.standings || [];
-        const haRows = haStandings?.standings || [];
-        const shlUpdated = shlStandings?.lastUpdated
-            ? formatSwedishDate(shlStandings.lastUpdated, 'd MMM HH:mm')
-            : null;
-        const haUpdated = haStandings?.lastUpdated
-            ? formatSwedishDate(haStandings.lastUpdated, 'd MMM HH:mm')
-            : null;
-        return (
-            <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
-                {/* SHL */}
-                <View style={[styles.standingsBlock, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                    <View style={[styles.standingsBlockHeader, { borderBottomColor: colors.cardBorder }]}>
-                        <Ionicons name="trophy-outline" size={16} color={colors.accent} />
-                        <Text style={[styles.standingsBlockTitle, { color: colors.text }]}>SHL</Text>
-                        {shlUpdated && <Text style={[styles.standingsBlockMeta, { color: colors.textSecondary }]}>{shlUpdated}</Text>}
-                    </View>
-                    {shlStandingsLoading && !shlRows.length ? (
-                        <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 12 }} />
-                    ) : shlRows.length === 0 ? (
-                        <Text style={[styles.standingsEmpty, { color: colors.textMuted }]}>No standings available.</Text>
-                    ) : (
-                        <StandingsTable
-                            standings={shlRows}
-                            selectedTeams={selectedTeams}
-                            sport="shl"
-                            getTeamKey={(t) => t.teamCode || t.teamShortName}
-                            getTeamLogo={(t) => getTeamLogoUrl(t.teamCode || t.teamShortName)}
-                        />
-                    )}
-                </View>
-                {/* HockeyAllsvenskan */}
-                <View style={[styles.standingsBlock, { backgroundColor: colors.card, borderColor: colors.cardBorder, marginTop: 12 }]}>
-                    <View style={[styles.standingsBlockHeader, { borderBottomColor: colors.cardBorder }]}>
-                        <Ionicons name="trophy-outline" size={16} color={colors.accent} />
-                        <Text style={[styles.standingsBlockTitle, { color: colors.text }]}>HockeyAllsvenskan</Text>
-                        {haUpdated && <Text style={[styles.standingsBlockMeta, { color: colors.textSecondary }]}>{haUpdated}</Text>}
-                    </View>
-                    {haStandingsLoading && !haRows.length ? (
-                        <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 12 }} />
-                    ) : haRows.length === 0 ? (
-                        <Text style={[styles.standingsEmpty, { color: colors.textMuted }]}>No standings available.</Text>
-                    ) : (
-                        <StandingsTable
-                            standings={haRows}
-                            selectedTeams={selectedTeams}
-                            sport="shl"
-                            getTeamKey={(t) => t.teamCode || t.teamShortName}
-                            getTeamLogo={(t) => getTeamLogoUrl(t.teamCode || t.teamShortName)}
-                        />
-                    )}
-                </View>
-            </ScrollView>
-        );
-    }, [shlStandings, shlStandingsLoading, haStandings, haStandingsLoading, selectedTeams]);
-
-    const renderFootballStandings = useCallback(() => {
-        const alRows = footballStandings?.standings || [];
-        const cupenGroups = cupenStandings?.groups || [];
-        const alUpdated = footballStandings?.lastUpdated
-            ? formatSwedishDate(footballStandings.lastUpdated, 'd MMM HH:mm')
-            : null;
-        const cupenUpdated = cupenStandings?.lastUpdated
-            ? formatSwedishDate(cupenStandings.lastUpdated, 'd MMM HH:mm')
-            : null;
-        const cupenGroupBlocks = cupenGroups.map((group) => {
-            const rows = group.standings || [];
-            const groupUpdated = group.lastUpdated
-                ? formatSwedishDate(group.lastUpdated, 'd MMM HH:mm')
-                : null;
-            return (
-                <View key={group.id || group.name} style={[styles.standingsBlock, { backgroundColor: colors.card, borderColor: colors.cardBorder, marginTop: 12 }]}>
-                    <View style={[styles.standingsBlockHeader, { borderBottomColor: colors.cardBorder }]}>
-                        <Ionicons name="trophy-outline" size={16} color={colors.accent} />
-                        <Text style={[styles.standingsBlockTitle, { color: colors.text }]}>{group.name}</Text>
-                        {groupUpdated && <Text style={[styles.standingsBlockMeta, { color: colors.textSecondary }]}>{groupUpdated}</Text>}
-                    </View>
-                    {cupenStandingsLoading && !rows.length ? (
-                        <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 12 }} />
-                    ) : rows.length === 0 ? (
-                        <Text style={[styles.standingsEmpty, { color: colors.textMuted }]}>No standings available.</Text>
-                    ) : (
-                        <StandingsTable
-                            standings={rows}
-                            selectedTeams={selectedFootballTeams}
-                            sport="football"
-                            getTeamKey={(t) => t.teamCode || t.teamShortName}
-                            getTeamLogo={(t) => resolveMediaUrl(t.teamIcon || t.icon)}
-                        />
-                    )}
-                </View>
-            );
-        });
-        return (
-            <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
-                {/* Allsvenskan */}
-                <View style={[styles.standingsBlock, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                    <View style={[styles.standingsBlockHeader, { borderBottomColor: colors.cardBorder }]}>
-                        <Ionicons name="trophy-outline" size={16} color={colors.accent} />
-                        <Text style={[styles.standingsBlockTitle, { color: colors.text }]}>Allsvenskan</Text>
-                        {alUpdated && <Text style={[styles.standingsBlockMeta, { color: colors.textSecondary }]}>{alUpdated}</Text>}
-                    </View>
-                    {footballStandingsLoading && !alRows.length ? (
-                        <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 12 }} />
-                    ) : alRows.length === 0 ? (
-                        <Text style={[styles.standingsEmpty, { color: colors.textMuted }]}>No standings available.</Text>
-                    ) : (
-                        <StandingsTable
-                            standings={alRows}
-                            selectedTeams={selectedFootballTeams}
-                            sport="football"
-                            getTeamKey={(t) => t.teamCode || t.teamShortName}
-                            getTeamLogo={(t) => resolveMediaUrl(t.teamIcon || t.icon)}
-                        />
-                    )}
-                </View>
-                {cupenGroupBlocks}
-            </ScrollView>
-        );
-    }, [footballStandings, footballStandingsLoading, cupenStandings, cupenStandingsLoading, selectedFootballTeams]);
-
-    // Initial scroll to live/upcoming in combined hockey list
-    useEffect(() => {
-        if (activeSport !== 'hockey') {
-            return;
-        }
-        if (hasHockeyCombinedInitialScrolled.current || !combinedHockeyGames.length) {
-            return;
-        }
-        const offset = showAllMatches
-            ? hockeySectionTargetOffset
-            : combinedHockeyTargetGameIndex * GAME_CARD_HEIGHT;
-        if (offset <= 0) {
-            hasHockeyCombinedInitialScrolled.current = true;
-            return;
-        }
-        const timeoutId = setTimeout(() => {
-            if (shl.listRef.current && !hasHockeyCombinedInitialScrolled.current) {
-                hasHockeyCombinedInitialScrolled.current = true;
-                shl.listRef.current.scrollToOffset({ offset, animated: false });
-            }
-        }, 50);
-        return () => clearTimeout(timeoutId);
-    }, [activeSport, combinedHockeyTargetGameIndex, combinedHockeyGames.length, scheduleScope, showAllMatches, hockeySectionTargetOffset]);
-
-    // Merged hockey teams (SHL + HockeyAllsvenskan) for filter in Settings/Onboarding
-    // Merged football teams (Allsvenskan + Svenska Cupen) for filter in Settings/Onboarding
     // Merge team lists across leagues, tagging each team with a `leagues` array
     // (a team can appear in several leagues, e.g. an Allsvenskan club also in
     // Svenska Cupen). This drives the league-facet chips in the team picker
@@ -531,6 +379,167 @@ export default function App() {
             ((a.names?.short || a.code) || '').localeCompare((b.names?.short || b.code) || '', 'sv')
         );
     }, [shl.teams, hockeyAllsvenskan.teams]);
+
+    // Inline standings views for the Hockey and Football tabs (shown when
+    // scheduleScope === 'standings'). Each shows the primary league tables for
+    // that sport: SHL + HockeyAllsvenskan for hockey, Allsvenskan + Svenska
+    // Cupen for football. Favorites are highlighted via the selected team lists.
+    const renderHockeyStandings = useCallback(() => {
+        const shlRows = shlStandings?.standings || [];
+        const haRows = haStandings?.standings || [];
+        const shlUpdated = shlStandings?.lastUpdated
+            ? formatSwedishDate(shlStandings.lastUpdated, 'd MMM HH:mm')
+            : null;
+        const haUpdated = haStandings?.lastUpdated
+            ? formatSwedishDate(haStandings.lastUpdated, 'd MMM HH:mm')
+            : null;
+        return (
+            <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
+                {/* SHL */}
+                <View style={[styles.standingsBlock, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                    <View style={[styles.standingsBlockHeader, { borderBottomColor: colors.cardBorder }]}>
+                        <Ionicons name="trophy-outline" size={16} color={colors.accent} />
+                        <Text style={[styles.standingsBlockTitle, { color: colors.text }]}>SHL</Text>
+                        {shlUpdated && <Text style={[styles.standingsBlockMeta, { color: colors.textSecondary }]}>{shlUpdated}</Text>}
+                    </View>
+                    {shlStandingsLoading && !shlRows.length ? (
+                        <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 12 }} />
+                    ) : shlRows.length === 0 ? (
+                        <Text style={[styles.standingsEmpty, { color: colors.textMuted }]}>No standings available.</Text>
+                    ) : (
+                        <StandingsTable
+                            standings={shlRows}
+                            selectedTeams={selectedTeams}
+                            teamRoster={combinedHockeyTeams}
+                            sport="shl"
+                            league="shl"
+                            getTeamKey={(t) => t.teamCode || t.teamShortName}
+                            getTeamLogo={(t) => getTeamLogoUrl(t.teamCode || t.teamShortName)}
+                        />
+                    )}
+                </View>
+                {/* HockeyAllsvenskan */}
+                <View style={[styles.standingsBlock, { backgroundColor: colors.card, borderColor: colors.cardBorder, marginTop: 12 }]}>
+                    <View style={[styles.standingsBlockHeader, { borderBottomColor: colors.cardBorder }]}>
+                        <Ionicons name="trophy-outline" size={16} color={colors.accent} />
+                        <Text style={[styles.standingsBlockTitle, { color: colors.text }]}>HockeyAllsvenskan</Text>
+                        {haUpdated && <Text style={[styles.standingsBlockMeta, { color: colors.textSecondary }]}>{haUpdated}</Text>}
+                    </View>
+                    {haStandingsLoading && !haRows.length ? (
+                        <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 12 }} />
+                    ) : haRows.length === 0 ? (
+                        <Text style={[styles.standingsEmpty, { color: colors.textMuted }]}>No standings available.</Text>
+                    ) : (
+                        <StandingsTable
+                            standings={haRows}
+                            selectedTeams={selectedTeams}
+                            teamRoster={combinedHockeyTeams}
+                            sport="shl"
+                            league="hockeyallsvenskan"
+                            getTeamKey={(t) => t.teamCode || t.teamShortName}
+                            getTeamLogo={(t) => getTeamLogoUrl(t.teamCode || t.teamShortName)}
+                        />
+                    )}
+                </View>
+            </ScrollView>
+        );
+    }, [shlStandings, shlStandingsLoading, haStandings, haStandingsLoading, selectedTeams, combinedHockeyTeams]);
+
+    const renderFootballStandings = useCallback(() => {
+        const alRows = footballStandings?.standings || [];
+        const cupenGroups = cupenStandings?.groups || [];
+        const alUpdated = footballStandings?.lastUpdated
+            ? formatSwedishDate(footballStandings.lastUpdated, 'd MMM HH:mm')
+            : null;
+        const cupenUpdated = cupenStandings?.lastUpdated
+            ? formatSwedishDate(cupenStandings.lastUpdated, 'd MMM HH:mm')
+            : null;
+        const cupenGroupBlocks = cupenGroups.map((group) => {
+            const rows = group.standings || [];
+            const groupUpdated = group.lastUpdated
+                ? formatSwedishDate(group.lastUpdated, 'd MMM HH:mm')
+                : null;
+            return (
+                <View key={group.id || group.name} style={[styles.standingsBlock, { backgroundColor: colors.card, borderColor: colors.cardBorder, marginTop: 12 }]}>
+                    <View style={[styles.standingsBlockHeader, { borderBottomColor: colors.cardBorder }]}>
+                        <Ionicons name="trophy-outline" size={16} color={colors.accent} />
+                        <Text style={[styles.standingsBlockTitle, { color: colors.text }]}>{group.name}</Text>
+                        {groupUpdated && <Text style={[styles.standingsBlockMeta, { color: colors.textSecondary }]}>{groupUpdated}</Text>}
+                    </View>
+                    {cupenStandingsLoading && !rows.length ? (
+                        <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 12 }} />
+                    ) : rows.length === 0 ? (
+                        <Text style={[styles.standingsEmpty, { color: colors.textMuted }]}>No standings available.</Text>
+                    ) : (
+                        <StandingsTable
+                            standings={rows}
+                            selectedTeams={selectedFootballTeams}
+                            teamRoster={combinedFootballTeams}
+                            sport="football"
+                            league="svenska-cupen"
+                            getTeamKey={(t) => t.teamCode || t.teamShortName}
+                            getTeamLogo={(t) => resolveMediaUrl(t.teamIcon || t.icon)}
+                        />
+                    )}
+                </View>
+            );
+        });
+        return (
+            <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
+                {/* Allsvenskan */}
+                <View style={[styles.standingsBlock, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                    <View style={[styles.standingsBlockHeader, { borderBottomColor: colors.cardBorder }]}>
+                        <Ionicons name="trophy-outline" size={16} color={colors.accent} />
+                        <Text style={[styles.standingsBlockTitle, { color: colors.text }]}>Allsvenskan</Text>
+                        {alUpdated && <Text style={[styles.standingsBlockMeta, { color: colors.textSecondary }]}>{alUpdated}</Text>}
+                    </View>
+                    {footballStandingsLoading && !alRows.length ? (
+                        <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 12 }} />
+                    ) : alRows.length === 0 ? (
+                        <Text style={[styles.standingsEmpty, { color: colors.textMuted }]}>No standings available.</Text>
+                    ) : (
+                        <StandingsTable
+                            standings={alRows}
+                            selectedTeams={selectedFootballTeams}
+                            teamRoster={combinedFootballTeams}
+                            sport="football"
+                            league="allsvenskan"
+                            getTeamKey={(t) => t.teamCode || t.teamShortName}
+                            getTeamLogo={(t) => resolveMediaUrl(t.teamIcon || t.icon)}
+                        />
+                    )}
+                </View>
+                {cupenGroupBlocks}
+            </ScrollView>
+        );
+    }, [footballStandings, footballStandingsLoading, cupenStandings, cupenStandingsLoading, selectedFootballTeams, combinedFootballTeams]);
+
+    // Initial scroll to live/upcoming in combined hockey list
+    useEffect(() => {
+        if (activeSport !== 'hockey') {
+            return;
+        }
+        if (hasHockeyCombinedInitialScrolled.current || !combinedHockeyGames.length) {
+            return;
+        }
+        const offset = showAllMatches
+            ? hockeySectionTargetOffset
+            : combinedHockeyTargetGameIndex * GAME_CARD_HEIGHT;
+        if (offset <= 0) {
+            hasHockeyCombinedInitialScrolled.current = true;
+            return;
+        }
+        const timeoutId = setTimeout(() => {
+            if (shl.listRef.current && !hasHockeyCombinedInitialScrolled.current) {
+                hasHockeyCombinedInitialScrolled.current = true;
+                shl.listRef.current.scrollToOffset({ offset, animated: false });
+            }
+        }, 50);
+        return () => clearTimeout(timeoutId);
+    }, [activeSport, combinedHockeyTargetGameIndex, combinedHockeyGames.length, scheduleScope, showAllMatches, hockeySectionTargetOffset]);
+
+    // Merged hockey teams (SHL + HockeyAllsvenskan) for filter in Settings/Onboarding
+    // Merged football teams (Allsvenskan + Svenska Cupen) for filter in Settings/Onboarding
 
     // Unified data combining all sports
     const unified = useUnifiedData(shl, hockeyAllsvenskan, football, svenskaCupen, europaLeagueQual, conferenceLeagueQual, biathlon);

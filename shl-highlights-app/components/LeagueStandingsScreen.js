@@ -108,6 +108,7 @@ export function LeagueStandingsScreen({ league, family, highlightTeamCode }) {
                                         standings={group.standings || []}
                                         selectedTeams={highlight}
                                         sport={league.standingsSport}
+                                        league={league.slug}
                                         getTeamKey={teamKeyFor}
                                         getTeamLogo={(team) => teamLogoFor(league, team)}
                                         onTeamPress={navigateToTeam}
@@ -120,6 +121,7 @@ export function LeagueStandingsScreen({ league, family, highlightTeamCode }) {
                             standings={rows}
                             selectedTeams={highlight}
                             sport={league.standingsSport}
+                            league={league.slug}
                             getTeamKey={teamKeyFor}
                             getTeamLogo={(team) => teamLogoFor(league, team)}
                             onTeamPress={navigateToTeam}

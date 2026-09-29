@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../contexts';
+import { buildFavoriteTokens, standingsRowIsFavorite, getDividerPositions } from '../utils/standingsIdentity';
 
 /**
  * Format stat value for display
@@ -11,17 +12,6 @@ const formatStatValue = (value) => {
 };
 
 /**
- * Position thresholds for dividers between groups
- * Divider appears AFTER the specified position
- */
-const LEAGUE_DIVIDERS = {
-    // SHL: 1-6 direct playoffs, 7-10 playoff qualification, 11-12 safe, 13-14 relegation
-    shl: [6, 10, 12],
-    // Allsvenskan: 1-3 European spots, 4-13 safe, 14 relegation playoff, 15-16 direct relegation
-    football: [3, 13, 14]
-};
-
-/**
  * Reusable standings table component
  * Supports both SHL (hockey) and Football standings formats
  * Full width layout that fits without horizontal scrolling
@@ -29,7 +19,9 @@ const LEAGUE_DIVIDERS = {
 export const StandingsTable = ({
     standings = [],
     selectedTeams = [],
-    sport = 'shl', // 'shl' or 'football'
+    sport = 'shl', // column set: 'shl' (OW/OL) or 'football' (D)
+    league, // league slug — picks the divider rule; falls back to `sport`
+    teamRoster = [], // { key, name } list, so a favourite key resolves to its club name
     getTeamKey,
     getTeamLogo,
     onTeamPress
@@ -45,7 +37,8 @@ export const StandingsTable = ({
     }
 
     const isHockey = sport === 'shl';
-    const dividerPositions = LEAGUE_DIVIDERS[sport] || [];
+    const favoriteTokens = buildFavoriteTokens(selectedTeams, teamRoster);
+    const dividerPositions = getDividerPositions(standings, league || sport);
 
     return (
         <View style={[styles.tableCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
@@ -73,7 +66,10 @@ export const StandingsTable = ({
             {/* Data Rows */}
             {standings.map(team => {
                 const teamKey = getTeamKey?.(team) || team.teamCode || team.teamShortName;
-                const isFavorite = teamKey && selectedTeams.includes(teamKey);
+                // Matched on a normalized club name, not the raw key: the standings
+                // feeds and the games feeds (which favourites come from) use
+                // different id spaces. See utils/standingsIdentity.
+                const isFavorite = standingsRowIsFavorite(team, favoriteTokens);
                 const logoUrl = getTeamLogo?.(team);
                 const position = Number(team.position);
                 const showDivider = dividerPositions.includes(position);
@@ -133,7 +129,17 @@ export const StandingsTable = ({
                             {formatStatValue(team.points)}
                         </Text>
                         </RowContainer>
-                        {showDivider && <View style={[styles.groupDivider, { backgroundColor: colors.cardBorder }]} />}
+                        {showDivider && (
+                            <View style={[styles.groupDivider, { backgroundColor: colors.cardBorder }]}>
+                                {/* The feed labels its own boundaries ("Relegation playoff",
+                                    "Champions League qualifying"); show it when present. */}
+                                {team.note ? (
+                                    <Text style={[styles.dividerLabel, { color: colors.textMuted, backgroundColor: colors.card }]} numberOfLines={1}>
+                                        {team.note}
+                                    </Text>
+                                ) : null}
+                            </View>
+                        )}
                     </Fragment>
                 );
             })}
@@ -168,7 +174,16 @@ const styles = StyleSheet.create({
     },
     groupDivider: {
         height: 2,
-        backgroundColor: '#444'
+        backgroundColor: '#444',
+        justifyContent: 'center'
+    },
+    dividerLabel: {
+        position: 'absolute',
+        right: 8,
+        fontSize: 9,
+        fontWeight: '700',
+        textTransform: 'uppercase',
+        paddingHorizontal: 4
     },
     tableCell: {
         color: '#d1d1d6',

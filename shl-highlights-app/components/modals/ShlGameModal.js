@@ -502,6 +502,7 @@ export const ShlGameModal = ({
                         standings={standingsRows}
                         selectedTeams={selectedTeams}
                         sport="shl"
+                        league={standingsSport === 'hockeyallsvenskan' ? 'hockeyallsvenskan' : 'shl'}
                         getTeamKey={(team) => team.teamCode || team.teamShortName}
                         getTeamLogo={(team) => {
                             const teamCode = team.teamCode || team.teamShortName;

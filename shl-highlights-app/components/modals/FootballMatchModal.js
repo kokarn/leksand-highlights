@@ -667,6 +667,7 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
                                 standings={group.standings || []}
                                 selectedTeams={selectedTeams}
                                 sport="football"
+                                league="svenska-cupen"
                                 getTeamKey={(team) => team?.teamCode || team?.teamName}
                                 getTeamLogo={(team) => resolveMediaUrl(team?.teamIcon)}
                                 onTeamPress={(team) => navigateToTeam(team?.teamCode)}
@@ -678,6 +679,7 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
                         standings={standingsRows}
                         selectedTeams={selectedTeams}
                         sport="football"
+                        league="allsvenskan"
                         getTeamKey={(team) => team?.key || team?.code || team?.teamCode}
                         getTeamLogo={(team) => resolveMediaUrl(team?.teamIcon || team?.icon)}
                         onTeamPress={(team) => navigateToTeam(team?.code || team?.teamCode || team?.key)}
