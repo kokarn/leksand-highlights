@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 // Theme
 import { useTheme } from '../contexts';
@@ -52,6 +52,7 @@ import { getTeamLogoUrl, getNationFlag, fetchHockeyAllsvenskanStandings, fetchSt
 
 // Utils
 import { formatSwedishDate } from '../utils';
+import { standingsRowTeamParam } from '../utils/standingsIdentity';
 import { buildScheduleSections, buildItemLayout, findTargetScrollOffset, findTargetAnchorIndex, filterVisibleLeagues, DAY_HEADER_HEIGHT } from '../utils/scheduleSections';
 
 // Hooks
@@ -332,6 +333,8 @@ export default function App() {
         [hockeySections]
     );
 
+    const router = useRouter();
+
     // Merge team lists across leagues, tagging each team with a `leagues` array
     // (a team can appear in several leagues, e.g. an Allsvenskan club also in
     // Svenska Cupen). This drives the league-facet chips in the team picker
@@ -380,6 +383,31 @@ export default function App() {
         );
     }, [shl.teams, hockeyAllsvenskan.teams]);
 
+    // Tapping a standings row opens that club's team page.
+    //
+    // The row is resolved through the games-derived roster rather than navigated
+    // by its raw `teamCode`, because the Allsvenskan standings feed has its own
+    // code set and six of them (SIR, MAL, GOT, BRO, ÖRG, VAS) appear in no games
+    // feed — navigating with those landed on an empty team page. The cup feed is
+    // a third case again: it puts the club NAME in `teamCode`.
+    const openTeamPage = useCallback((row, roster, family) => {
+        const param = standingsRowTeamParam(row, roster);
+        if (!param) {
+            return;
+        }
+        router.push(`/team/${family}/${encodeURIComponent(param)}`);
+    }, [router]);
+
+    const openHockeyTeamPage = useCallback(
+        (row) => openTeamPage(row, combinedHockeyTeams, 'hockey'),
+        [openTeamPage, combinedHockeyTeams]
+    );
+
+    const openFootballTeamPage = useCallback(
+        (row) => openTeamPage(row, combinedFootballTeams, 'football'),
+        [openTeamPage, combinedFootballTeams]
+    );
+
     // Inline standings views for the Hockey and Football tabs (shown when
     // scheduleScope === 'standings'). Each shows the primary league tables for
     // that sport: SHL + HockeyAllsvenskan for hockey, Allsvenskan + Svenska
@@ -415,6 +443,7 @@ export default function App() {
                             league="shl"
                             getTeamKey={(t) => t.teamCode || t.teamShortName}
                             getTeamLogo={(t) => getTeamLogoUrl(t.teamCode || t.teamShortName)}
+                            onTeamPress={openHockeyTeamPage}
                         />
                     )}
                 </View>
@@ -438,12 +467,13 @@ export default function App() {
                             league="hockeyallsvenskan"
                             getTeamKey={(t) => t.teamCode || t.teamShortName}
                             getTeamLogo={(t) => getTeamLogoUrl(t.teamCode || t.teamShortName)}
+                            onTeamPress={openHockeyTeamPage}
                         />
                     )}
                 </View>
             </ScrollView>
         );
-    }, [shlStandings, shlStandingsLoading, haStandings, haStandingsLoading, selectedTeams, combinedHockeyTeams]);
+    }, [shlStandings, shlStandingsLoading, haStandings, haStandingsLoading, selectedTeams, combinedHockeyTeams, openHockeyTeamPage]);
 
     const renderFootballStandings = useCallback(() => {
         const alRows = footballStandings?.standings || [];
@@ -479,6 +509,7 @@ export default function App() {
                             league="svenska-cupen"
                             getTeamKey={(t) => t.teamCode || t.teamShortName}
                             getTeamLogo={(t) => resolveMediaUrl(t.teamIcon || t.icon)}
+                            onTeamPress={openFootballTeamPage}
                         />
                     )}
                 </View>
@@ -506,13 +537,14 @@ export default function App() {
                             league="allsvenskan"
                             getTeamKey={(t) => t.teamCode || t.teamShortName}
                             getTeamLogo={(t) => resolveMediaUrl(t.teamIcon || t.icon)}
+                            onTeamPress={openFootballTeamPage}
                         />
                     )}
                 </View>
                 {cupenGroupBlocks}
             </ScrollView>
         );
-    }, [footballStandings, footballStandingsLoading, cupenStandings, cupenStandingsLoading, selectedFootballTeams, combinedFootballTeams]);
+    }, [footballStandings, footballStandingsLoading, cupenStandings, cupenStandingsLoading, selectedFootballTeams, combinedFootballTeams, openFootballTeamPage]);
 
     // Initial scroll to live/upcoming in combined hockey list
     useEffect(() => {

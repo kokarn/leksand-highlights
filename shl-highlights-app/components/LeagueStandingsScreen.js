@@ -9,6 +9,7 @@ import { useTheme } from '../contexts';
 import { StandingsTable } from './StandingsTable';
 import { getTeamLogoUrl, resolveMediaUrl } from '../api/shl';
 import { formatSwedishDate } from '../utils';
+import { standingsRowTeamParam } from '../utils/standingsIdentity';
 
 const teamLogoFor = (league, team) => {
     // Hockey tables key logos off the local static PNG by code; football uses the
@@ -57,12 +58,16 @@ export function LeagueStandingsScreen({ league, family, highlightTeamCode }) {
         load();
     }, [load]);
 
+    // Navigate by the row's resolved identity, NOT its raw standings code: six
+    // Allsvenskan standings codes (SIR, MAL, GOT, BRO, ÖRG, VAS) exist in no games
+    // feed, so those rows used to open an empty team page. standingsRowTeamParam
+    // falls back to the club name, which every feed agrees on.
     const navigateToTeam = useCallback((team) => {
-        const code = teamKeyFor(team);
-        if (!code || !family) {
+        const param = standingsRowTeamParam(team);
+        if (!param || !family) {
             return;
         }
-        router.push(`/team/${family.family}/${encodeURIComponent(String(code).toUpperCase())}`);
+        router.push(`/team/${family.family}/${encodeURIComponent(param)}`);
     }, [router, family]);
 
     const highlight = highlightTeamCode ? [String(highlightTeamCode).toUpperCase()] : [];

@@ -7,3 +7,6 @@ fcm_errors.json
 .env
 IconKitchen-Output/
 data/olympics-hockey-relay.json
+
+# Playwright MCP scratch output (snapshots, console logs, screenshots)
+.playwright-mcp/

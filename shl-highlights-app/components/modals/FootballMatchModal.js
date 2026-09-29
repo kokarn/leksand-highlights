@@ -14,6 +14,7 @@ import { FootballGoalItem, CardItem, SubstitutionItem, HalfMarker } from '../eve
 import { GameModalHeader } from './GameModalHeader';
 import { MatchTabBar } from './MatchTabBar';
 import { fetchFootballStandings, fetchSvenskaCupenStandings, resolveMediaUrl } from '../../api/shl';
+import { standingsRowTeamParam } from '../../utils/standingsIdentity';
 import { getTeamName as resolveTeamName, getTeamLogoUri } from '../../utils/teamIdentity';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -210,7 +211,7 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
             return;
         }
         handleClose();
-        router.push(`/team/${sport}/${encodeURIComponent(String(code).toUpperCase())}`);
+        router.push(`/team/${sport}/${encodeURIComponent(String(code))}`);
     }, [router, sport, handleClose]);
 
     const handleTabChange = useCallback((nextTab) => {
@@ -670,7 +671,7 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
                                 league="svenska-cupen"
                                 getTeamKey={(team) => team?.teamCode || team?.teamName}
                                 getTeamLogo={(team) => resolveMediaUrl(team?.teamIcon)}
-                                onTeamPress={(team) => navigateToTeam(team?.teamCode)}
+                                onTeamPress={(team) => navigateToTeam(standingsRowTeamParam(team))}
                             />
                         </View>
                     ))
@@ -682,7 +683,7 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
                         league="allsvenskan"
                         getTeamKey={(team) => team?.key || team?.code || team?.teamCode}
                         getTeamLogo={(team) => resolveMediaUrl(team?.teamIcon || team?.icon)}
-                        onTeamPress={(team) => navigateToTeam(team?.code || team?.teamCode || team?.key)}
+                        onTeamPress={(team) => navigateToTeam(standingsRowTeamParam(team))}
                     />
                 )}
             </ScrollView>

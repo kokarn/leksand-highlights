@@ -150,3 +150,93 @@ test('an empty table is safe', async () => {
     assert.deepEqual(getDividerPositions([], 'shl'), []);
     assert.deepEqual(getDividerPositions(undefined, 'shl'), []);
 });
+
+// --- identity tokens & team-page navigation ---------------------------------
+// Standings rows must resolve to something the GAMES feeds recognize. Verified
+// against the live API: six Allsvenskan standings codes (SIR, MAL, GOT, BRO,
+// ÖRG, VAS) appear in no games feed at all, so navigating by teamCode opened an
+// empty team page (?team=SIR returned 0 games, ?team=IKS returned 12).
+
+test("teamIdentityToken folds the Swedish genitive -s", async () => {
+    const { teamIdentityToken } = await load();
+    // The standings feed says "Djurgården"; the games feed says "Djurgårdens IF".
+    assert.equal(teamIdentityToken("Djurgården"), teamIdentityToken("Djurgårdens IF"));
+    assert.equal(teamIdentityToken("Halmstad"), teamIdentityToken("Halmstads BK"));
+    // Short codes must survive intact — folding them would merge distinct clubs.
+    assert.equal(teamIdentityToken("GAIS"), "gais");
+    assert.equal(teamIdentityToken("AIS"), "ais");
+    assert.equal(teamIdentityToken("VIS"), "vis");
+    // GAIS and AIS stay distinct despite both ending in -s.
+    assert.notEqual(teamIdentityToken("GAIS"), teamIdentityToken("AIS"));
+});
+
+test("teamIdentityToken keeps different clubs in the same family apart", async () => {
+    const { teamIdentityToken } = await load();
+    assert.notEqual(teamIdentityToken("IFK Göteborg"), teamIdentityToken("Örgryte IS"));
+    assert.notEqual(teamIdentityToken("Malmö FF"), teamIdentityToken("Mjällby AIF"));
+    assert.notEqual(teamIdentityToken("Hammarby IF"), teamIdentityToken("Halmstads BK"));
+    // Swept across all six live feeds: 265 football + 87 hockey distinct tokens
+    // with ZERO within-family cross-club collisions.
+});
+
+test("token collisions across sports are harmless because navigation is family-scoped", async () => {
+    const { teamIdentityToken } = await load();
+    // Stripping the club-type word makes a few names collide ACROSS sports:
+    // Kalmar FF and the hockey feed's "Kalmar" (Kalmar HC) fold together, as do
+    // Västerås SK and "Västerås" (Västerås IK), because the club-type word is
+    // stripped and the hockey feed's short name is just the city.
+    // The hockey feed's SHORT names are bare city names ("Kalmar" for Kalmar HC,
+    // "Västerås" for Västerås IK), which collide with the football clubs:
+    assert.equal(teamIdentityToken("Kalmar FF"), teamIdentityToken("Kalmar"));
+    assert.equal(teamIdentityToken("Västerås SK"), teamIdentityToken("Västerås"));
+    assert.equal(teamIdentityToken("Malmö FF"), teamIdentityToken("Malmö"));
+    // That is safe: every caller navigates to /team/<family>/... and the team
+    // page only ever fetches that family's leagues, so a football token is never
+    // matched against a hockey team. Documented here so the next reader does not
+    // "fix" the collision by un-stripping the club words, which would re-break
+    // the six Allsvenskan rows this module exists to resolve.
+});
+
+test("teamIdentityTokens reads every label shape the feeds use", async () => {
+    const { teamIdentityTokens, teamIdentityToken } = await load();
+    // Games-feed shape
+    const gameTeam = { code: "IKS", names: { short: "IK Sirius", long: "IK Sirius" } };
+    assert.equal(teamIdentityTokens(gameTeam).has(teamIdentityToken("Sirius")), true);
+    // Standings-row shape, with a code that exists in no games feed
+    const row = { teamCode: "SIR", teamShortName: "Sirius", teamName: "IK Sirius" };
+    assert.equal(teamIdentityTokens(row).has(teamIdentityToken("Sirius")), true);
+    // The two therefore meet, which is what makes the row navigable
+    const shared = [...teamIdentityTokens(row)].some((t) => teamIdentityTokens(gameTeam).has(t));
+    assert.equal(shared, true);
+    assert.equal(teamIdentityTokens(null).size, 0);
+});
+
+test("standingsRowTeamParam resolves a standings row to a games-feed code", async () => {
+    const { standingsRowTeamParam } = await load();
+    // The roster is built from the GAMES feeds, so its keys are navigable.
+    const roster = [
+        { key: "IKS", name: "IK Sirius" },
+        { key: "MFF", name: "Malmö FF" },
+        { key: "OIS", name: "Örgryte IS" },
+        { key: "DIF", name: "Djurgårdens IF" }
+    ];
+    // SIR/MAL/ÖRG are standings-only codes — each must come back as a games code.
+    assert.equal(standingsRowTeamParam({ teamCode: "SIR", teamName: "IK Sirius" }, roster), "IKS");
+    assert.equal(standingsRowTeamParam({ teamCode: "MAL", teamName: "Malmö FF" }, roster), "MFF");
+    assert.equal(standingsRowTeamParam({ teamCode: "ÖRG", teamName: "Örgryte IS" }, roster), "OIS");
+    // Genitive difference between the two feeds still resolves.
+    assert.equal(standingsRowTeamParam({ teamCode: "DJU", teamName: "Djurgården" }, roster), "DIF");
+});
+
+test("standingsRowTeamParam falls back to the club name, never a dead code", async () => {
+    const { standingsRowTeamParam } = await load();
+    // No roster yet (still loading) — the name resolves in every feed, the
+    // standings-only code does not, so the name is the safe fallback.
+    assert.equal(standingsRowTeamParam({ teamCode: "SIR", teamName: "IK Sirius" }), "IK Sirius");
+    // Svenska Cupen puts the club NAME in teamCode and has no teamName distinct
+    // from it; that name is already navigable.
+    assert.equal(standingsRowTeamParam({ teamCode: "Mjällby", teamName: "Mjällby" }, []), "Mjällby");
+    // A row with nothing usable yields null rather than a broken URL.
+    assert.equal(standingsRowTeamParam(null), null);
+    assert.equal(standingsRowTeamParam({}), null);
+});

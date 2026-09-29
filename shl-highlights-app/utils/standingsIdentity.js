@@ -38,6 +38,67 @@ export const normalizeTeamToken = (value) => String(value ?? '')
     .replace(/\s+/g, '');
 
 /**
+ * Swedish clubs appear with and without the genitive -s: the Allsvenskan
+ * standings feed says "Djurgarden" where the games feed says "Djurgardens IF",
+ * and "Halmstad"/"Halmstads" differ the same way. Fold a trailing -s so those
+ * meet. Guarded on length so short codes (GAIS, AIS, VIS) survive intact.
+ *
+ * Verified against all six live feeds (SHL, HockeyAllsvenskan, Allsvenskan,
+ * Svenska Cupen, Europa/Conference qual): 265 football + 87 hockey distinct
+ * stems with ZERO cross-club collisions, so the fold never merges two clubs.
+ *
+ * @param {string|number} value
+ * @returns {string} '' when nothing usable remains
+ */
+export const teamIdentityToken = (value) => {
+    const token = normalizeTeamToken(value);
+    return token.length > 4 && token.endsWith('s') ? token.slice(0, -1) : token;
+};
+
+// Every label a team object might carry its identity in. Standings rows use
+// teamCode/teamShortName/teamName; games-feed teams use code/names.*; the cup
+// puts the club NAME in the code slot. Read them all rather than guess a shape.
+const IDENTITY_LABELS = (team) => [
+    team?.code,
+    team?.teamCode,
+    team?.key,
+    team?.name,
+    team?.teamName,
+    team?.teamShortName,
+    team?.names?.code,
+    team?.names?.short,
+    team?.names?.long,
+    team?.names?.full
+];
+
+/**
+ * Every identity token a team object resolves to, for matching one feed's team
+ * against another's. Pass `getTeamCode` (a TEAM_FAMILIES accessor) to fold in a
+ * family-specific code as well.
+ *
+ * @param {object} team
+ * @param {(team: object) => string|null} [getTeamCode]
+ * @returns {Set<string>}
+ */
+export const teamIdentityTokens = (team, getTeamCode) => {
+    const tokens = new Set();
+    if (!team) {
+        return tokens;
+    }
+    const labels = IDENTITY_LABELS(team);
+    if (typeof getTeamCode === 'function') {
+        labels.push(getTeamCode(team));
+    }
+    for (const label of labels) {
+        const token = teamIdentityToken(label);
+        if (token) {
+            tokens.add(token);
+        }
+    }
+    return tokens;
+};
+
+/**
  * Build the lookup set for a favourites list.
  *
  * `selectedTeams` holds bare keys (that is what AsyncStorage persists), and a
@@ -106,6 +167,40 @@ export const standingsRowIsFavorite = (row, favoriteTokens) => {
             const token = normalizeTeamToken(value);
             return token && favoriteTokens.has(token);
         });
+};
+
+/**
+ * The value to put in a team-page URL for a standings row.
+ *
+ * Standings codes are NOT usable as a games-feed identity for every club: the
+ * Allsvenskan standings feed invents its own set, and six of its codes (SIR,
+ * MAL, GOT, BRO, ORG, VAS) appear nowhere in the games feeds, so navigating
+ * with them lands on an empty team page. The club NAME resolves in every feed,
+ * so prefer a roster-resolved games code when we have the roster and fall back
+ * to the name — never to a bare standings code.
+ *
+ * @param {object} row - standings row
+ * @param {Array<{key?: string, code?: string, name?: string}>} [teamRoster]
+ *        the games-derived roster, so the row can resolve to a real feed code
+ * @returns {string|null}
+ */
+export const standingsRowTeamParam = (row, teamRoster = []) => {
+    if (!row) {
+        return null;
+    }
+    const tokens = teamIdentityTokens(row);
+    for (const team of teamRoster) {
+        const candidate = team?.key || team?.code;
+        if (!candidate) {
+            continue;
+        }
+        const matched = [...teamIdentityTokens(team)].some((token) => tokens.has(token));
+        if (matched) {
+            return String(candidate);
+        }
+    }
+    const fallback = row.teamName || row.teamShortName || row.teamCode;
+    return fallback ? String(fallback) : null;
 };
 
 /**

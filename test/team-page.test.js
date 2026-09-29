@@ -357,3 +357,119 @@ test('bracket screen wires up the extracted layout + simple connectors', () => {
     assert.doesNotMatch(screen, /channelX/, 'no per-line channel offsets');
     assert.match(screen, /connectorOverlay/);
 });
+
+// --- identity-based matching across disjoint code spaces --------------------
+// The Allsvenskan games feed is an ESPN + FotbollPlay merge carrying TWO codes
+// per club (Degerfors is both DEG and DEIF), and the standings feed uses a third
+// set entirely. Verified live: ?team=DEG returned 1 of Degerfors 12 fixtures and
+// ?team=SIR returned 0, so matching one uppercased code drops most of a club.
+
+const footballCode = (team) => (team?.code ? String(team.code).toUpperCase() : null);
+
+const fbGame = (state, home, hs, away, as, extra = {}) => ({
+    uuid: `${home}-${away}-${extra.startDateTime || state}`,
+    state,
+    startDateTime: extra.startDateTime || "2026-03-01T19:00:00",
+    homeTeamInfo: typeof home === "string" ? { code: home } : home,
+    awayTeamInfo: typeof away === "string" ? { code: away } : away,
+    homeTeamResult: { score: hs },
+    awayTeamResult: { score: as },
+    ...extra
+});
+
+const DEG_ESPN = { code: "DEG", names: { short: "Degerfors", long: "Degerfors IF" } };
+const DEG_FP = { code: "DEIF", names: { short: "Degerfors IF", long: "Degerfors IF" } };
+const SIRIUS = { code: "IKS", names: { short: "IK Sirius", long: "IK Sirius" } };
+const AIK = { code: "AIK", names: { short: "AIK", long: "AIK" } };
+
+test("selectTeamGames finds a club under BOTH of its games-feed codes", async () => {
+    const { selectTeamGames } = await importApp("utils/teamGames.js");
+    const espnGame = fbGame("post-game", DEG_ESPN, 1, AIK, 0);
+    const fpGame = fbGame("post-game", DEG_FP, 2, AIK, 1);
+    const all = [espnGame, fpGame, fbGame("pre-game", SIRIUS, null, AIK, null)];
+    // Holding EITHER code must return BOTH Degerfors fixtures. Measured live:
+    // filtering on one code returned 1 of 12. The bridge is the club name, which
+    // the bare param does not carry, so the identity is resolved across the set
+    // first: DEG -> {deg, degerfor} via the ESPN record -> matches DEIF.
+    for (const held of ["DEG", "DEIF"]) {
+        const found = selectTeamGames(all, held, footballCode);
+        assert.equal(found.length, 2, held);
+        assert.equal(found.includes(espnGame), true, held);
+        assert.equal(found.includes(fpGame), true, held);
+    }
+    // A different club is not dragged in by the closure.
+    assert.deepEqual(selectTeamGames(all, "MFF", footballCode), []);
+    assert.equal(selectTeamGames(all, "IKS", footballCode).length, 1);
+    assert.deepEqual(selectTeamGames(all, null, footballCode), []);
+});
+
+test("resolveTeamIdentity does not merge two different clubs", async () => {
+    const { resolveTeamIdentity, teamMatchesIdentity } = await importApp("utils/teamGames.js");
+    const all = [fbGame("post-game", DEG_ESPN, 1, AIK, 0), fbGame("post-game", DEG_FP, 2, AIK, 1)];
+    const identity = resolveTeamIdentity(all, "DEG", footballCode);
+    // Grew to cover the other code...
+    assert.equal(identity.has("deif"), true);
+    // ...but AIK appeared in the same games and must NOT be absorbed. If it
+    // were, every AIK fixture would show up on the Degerfors page.
+    assert.equal(identity.has("aik"), false);
+    assert.equal(teamMatchesIdentity(AIK, identity, footballCode), false);
+});
+
+test("gameInvolvesTeam matches a standings-only code via the club name", async () => {
+    const { gameInvolvesTeam } = await importApp("utils/teamGames.js");
+    const game = fbGame("pre-game", SIRIUS, null, AIK, null);
+    // SIR is the Allsvenskan standings code; it appears in no games feed.
+    assert.equal(gameInvolvesTeam(game, "IK Sirius", footballCode), true);
+    assert.equal(gameInvolvesTeam(game, { teamCode: "SIR", teamName: "IK Sirius" }, footballCode), true);
+    // A bare dead code alone genuinely cannot match, which is why callers pass
+    // the resolved param from standingsRowTeamParam rather than teamCode.
+    assert.equal(gameInvolvesTeam(game, "SIR", footballCode), false);
+});
+
+test("gameInvolvesTeam folds the genitive so Djurgarden matches Djurgardens IF", async () => {
+    const { gameInvolvesTeam } = await importApp("utils/teamGames.js");
+    const game = fbGame("pre-game", { code: "DIF", names: { long: "Djurgårdens IF" } }, null, AIK, null);
+    assert.equal(gameInvolvesTeam(game, "Djurgården", footballCode), true);
+});
+
+test("getTeamResult picks the right side when the club has two codes", async () => {
+    const { getTeamResult, resolveTeamIdentity } = await importApp("utils/teamGames.js");
+    // Degerfors at HOME winning 2-1, recorded under the FotbollPlay code.
+    const fpGame = fbGame("post-game", DEG_FP, 2, AIK, 1);
+    const all = [fbGame("post-game", DEG_ESPN, 1, AIK, 0), fpGame];
+    // The screen resolves the identity once and threads it through, so a club
+    // recorded under its other code is not read as the AWAY side — which would
+    // invert this win into a loss.
+    const identity = resolveTeamIdentity(all, "DEG", footballCode);
+    assert.equal(getTeamResult(fpGame, identity, footballCode), "W");
+    assert.equal(getTeamResult(fpGame, "DEIF", footballCode), "W");
+    assert.equal(getTeamResult(fpGame, "AIK", footballCode), "L");
+    // 0-0 finals still read as a draw, not as missing scores.
+    assert.equal(getTeamResult(fbGame("post-game", DEG_FP, 0, AIK, 0), identity, footballCode), "D");
+});
+
+test("teamMatchesIdentity resolves a team object for the page header", async () => {
+    const { teamMatchesIdentity } = await importApp("utils/teamGames.js");
+    assert.equal(teamMatchesIdentity(SIRIUS, "IK Sirius", footballCode), true);
+    assert.equal(teamMatchesIdentity(SIRIUS, "IKS", footballCode), true);
+    assert.equal(teamMatchesIdentity(SIRIUS, "AIK", footballCode), false);
+    assert.equal(teamMatchesIdentity(null, "IKS", footballCode), false);
+    assert.equal(teamMatchesIdentity(SIRIUS, null, footballCode), false);
+});
+
+test("hockey codes keep matching exactly as before", async () => {
+    const { gameInvolvesTeam, getTeamResult } = await importApp("utils/teamGames.js");
+    // Hockey standings codes match the games feed exactly (verified all 28
+    // clubs), so this path must be unchanged by the football fix.
+    const g = mk("post-game", "LIF", 4, "FHC", 2);
+    assert.equal(gameInvolvesTeam(g, "LIF", getCode), true);
+    assert.equal(gameInvolvesTeam(g, "lif", getCode), true);
+    assert.equal(gameInvolvesTeam(g, "BIF", getCode), false);
+    assert.equal(getTeamResult(g, "LIF", getCode), "W");
+    // GAIS/AIS and VIS are 3-4 letter codes ending in -s; the genitive fold must
+    // not merge them into one club.
+    const ha = mk("post-game", "AIS", 1, "VIS", 3);
+    assert.equal(gameInvolvesTeam(ha, "AIS", getCode), true);
+    assert.equal(gameInvolvesTeam(ha, "VIS", getCode), true);
+    assert.equal(gameInvolvesTeam(ha, "SSK", getCode), false);
+});

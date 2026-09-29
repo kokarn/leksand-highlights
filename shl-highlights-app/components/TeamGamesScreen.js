@@ -12,7 +12,10 @@ import {
     selectCompletedGames,
     selectUpcomingGames,
     computeForm,
-    leaguesForTeam
+    leaguesForTeam,
+    selectTeamGames,
+    resolveTeamIdentity,
+    teamMatchesIdentity
 } from '../utils/teamGames';
 
 const FORM_COLORS = (colors) => ({
@@ -43,7 +46,10 @@ export function TeamGamesScreen({ family, teamCode }) {
     const [error, setError] = useState(null);
     const [view, setView] = useState('latest');
 
-    const normalizedCode = String(teamCode || '').toUpperCase();
+    // The route param is whatever identity the linking surface held — a games
+    // code, a standings code, or a club name — so keep it verbatim for matching
+    // and only uppercase it for display fallbacks.
+    const teamParam = String(teamCode || '');
 
     const loadGames = useCallback(async () => {
         if (!family) {
@@ -54,9 +60,16 @@ export function TeamGamesScreen({ family, teamCode }) {
         setLoading(true);
         setError(null);
         try {
+            // Deliberately fetch each league UNFILTERED and match client-side.
+            // The server filter compares one uppercased code for equality, which
+            // cannot work here: the Allsvenskan games feed carries two codes per
+            // club (Degerfors is both DEG and DEIF, so ?team=DEG returns 1 of 12
+            // fixtures), and six Allsvenskan standings codes exist in no games
+            // feed at all (?team=SIR returns 0). gameInvolvesTeam compares
+            // normalized identity tokens instead and finds every fixture.
             const perLeague = await Promise.all(
                 family.leagues.map(async (league) => {
-                    const list = await league.fetchGames({ team: normalizedCode });
+                    const list = await league.fetchGames();
                     return (list || []).map((game) => ({
                         ...game,
                         sport: game.sport || league.slug,
@@ -64,13 +77,17 @@ export function TeamGamesScreen({ family, teamCode }) {
                     }));
                 })
             );
-            setGames(dedupeGames(perLeague.flat()));
+            // Resolve the identity against the WHOLE fetched set before
+            // filtering. Matching game-by-game is not enough: a bare code like
+            // DEG shares no token with this club’s DEIF-coded records, because
+            // the bridge is the club name and the URL param carries only a code.
+            setGames(dedupeGames(selectTeamGames(perLeague.flat(), teamParam, family.getTeamCode)));
         } catch (loadError) {
             setError(loadError.message);
         } finally {
             setLoading(false);
         }
-    }, [family, normalizedCode]);
+    }, [family, teamParam]);
 
     useEffect(() => {
         loadGames();
@@ -78,33 +95,49 @@ export function TeamGamesScreen({ family, teamCode }) {
 
     const getTeamCode = family?.getTeamCode;
 
+    // Resolved once, then threaded through every consumer. The selectors and
+    // getTeamResult all compare with the same token set, so a club recorded
+    // under its other code is not mistaken for the opponent (which would
+    // invert its W/L).
+    const teamIdentity = useMemo(
+        () => resolveTeamIdentity(games, teamParam, getTeamCode),
+        [games, teamParam, getTeamCode]
+    );
+
     const completedGames = useMemo(
-        () => (getTeamCode ? selectCompletedGames(games, normalizedCode, getTeamCode) : []),
-        [games, normalizedCode, getTeamCode]
+        () => (getTeamCode ? selectCompletedGames(games, teamIdentity, getTeamCode) : []),
+        [games, teamIdentity, getTeamCode]
     );
     const upcomingGames = useMemo(
-        () => (getTeamCode ? selectUpcomingGames(games, normalizedCode, getTeamCode) : []),
-        [games, normalizedCode, getTeamCode]
+        () => (getTeamCode ? selectUpcomingGames(games, teamIdentity, getTeamCode) : []),
+        [games, teamIdentity, getTeamCode]
     );
     const form = useMemo(
-        () => (getTeamCode ? computeForm(completedGames, normalizedCode, getTeamCode, 5) : []),
-        [completedGames, normalizedCode, getTeamCode]
+        () => (getTeamCode ? computeForm(completedGames, teamIdentity, getTeamCode, 5) : []),
+        [completedGames, teamIdentity, getTeamCode]
     );
 
     // Identify this team's display info + logo from the first game we can find.
+    // Matched by identity token, like the games above, so a club reached by name
+    // or by a standings-only code still gets its crest and full name.
     const teamInfo = useMemo(() => {
         for (const game of games) {
             for (const side of ['homeTeamInfo', 'awayTeamInfo']) {
                 const info = game?.[side];
-                if (info && String(family.getTeamCode(info) || '').toUpperCase() === normalizedCode) {
+                if (info && teamMatchesIdentity(info, teamIdentity, family.getTeamCode)) {
                     return info;
                 }
             }
         }
         return null;
-    }, [games, normalizedCode, family]);
+    }, [games, teamIdentity, family]);
 
-    const teamName = teamInfo ? family.getTeamName(teamInfo) : normalizedCode;
+    // The games feed's own code is the canonical identity once we have it, so
+    // onward links (standings/bracket highlight) carry a real code rather than
+    // whatever alias brought us here.
+    const canonicalCode = (teamInfo ? family.getTeamCode(teamInfo) : null) || teamParam;
+
+    const teamName = teamInfo ? family.getTeamName(teamInfo) : teamParam;
     const teamLogo = teamInfo ? family.getTeamLogo(teamInfo) : null;
 
     // Leagues this team actually plays in that have a standings table — used to
@@ -127,12 +160,12 @@ export function TeamGamesScreen({ family, teamCode }) {
     }, [router, family]);
 
     const openStandings = useCallback((leagueSlug) => {
-        router.push(`/standings/${leagueSlug}?team=${encodeURIComponent(normalizedCode)}`);
-    }, [router, normalizedCode]);
+        router.push(`/standings/${leagueSlug}?team=${encodeURIComponent(canonicalCode)}`);
+    }, [router, canonicalCode]);
 
     const openBracket = useCallback((leagueSlug) => {
-        router.push(`/bracket/${leagueSlug}?team=${encodeURIComponent(normalizedCode)}`);
-    }, [router, normalizedCode]);
+        router.push(`/bracket/${leagueSlug}?team=${encodeURIComponent(canonicalCode)}`);
+    }, [router, canonicalCode]);
 
     const listData = view === 'latest' ? completedGames : upcomingGames;
 
