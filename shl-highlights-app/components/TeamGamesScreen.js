@@ -159,9 +159,17 @@ export function TeamGamesScreen({ family, teamCode }) {
         router.push({ pathname: '/', params: { sport, gameId: game.uuid || game.id } });
     }, [router, family]);
 
+    // Send the club NAME alongside the code. A bare code cannot highlight the
+    // row on its own: the standings feeds use their own codes (DIF here is DJU
+    // there), and a code shares no identity token with a club name. The name is
+    // the bridge every feed agrees on — see utils/standingsIdentity.
     const openStandings = useCallback((leagueSlug) => {
-        router.push(`/standings/${leagueSlug}?team=${encodeURIComponent(canonicalCode)}`);
-    }, [router, canonicalCode]);
+        const params = new URLSearchParams({ team: canonicalCode });
+        if (teamName && teamName !== canonicalCode) {
+            params.set('name', teamName);
+        }
+        router.push(`/standings/${leagueSlug}?${params.toString()}`);
+    }, [router, canonicalCode, teamName]);
 
     const openBracket = useCallback((leagueSlug) => {
         router.push(`/bracket/${leagueSlug}?team=${encodeURIComponent(canonicalCode)}`);

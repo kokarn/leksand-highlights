@@ -7,14 +7,13 @@ import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { extractScore, formatSwedishDate } from '../../utils';
 import { useTheme } from '../../contexts/ThemeContext';
 import { StatBar } from '../StatBar';
-import { StandingsTable } from '../StandingsTable';
+import { LeagueStandingsBlock } from '../LeagueStandingsBlock';
 import { VideoCard } from '../cards';
 import { VideoPlayer } from '../VideoPlayer';
 import { FootballGoalItem, CardItem, SubstitutionItem, HalfMarker } from '../events';
 import { GameModalHeader } from './GameModalHeader';
 import { MatchTabBar } from './MatchTabBar';
-import { fetchFootballStandings, fetchSvenskaCupenStandings, resolveMediaUrl } from '../../api/shl';
-import { standingsRowTeamParam } from '../../utils/standingsIdentity';
+import { getLeagueBySlug } from '../../constants/teamFamilies';
 import { getTeamName as resolveTeamName, getTeamLogoUri } from '../../utils/teamIdentity';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -104,7 +103,7 @@ const FOOTBALL_BASE_TABS = [
 ];
 const FOOTBALL_STANDINGS_TAB = { key: 'standings', title: 'Standings', icon: 'podium-outline' };
 
-export const FootballMatchModal = ({ match, details, videos = [], visible, onClose, loading, onRefresh, refreshing = false, selectedTeams = [], showStandingsTab = false, sport = 'allsvenskan', activeTab: controlledActiveTab, onTabChange, targetVideoId = null }) => {
+export const FootballMatchModal = ({ match, details, videos = [], visible, onClose, loading, onRefresh, refreshing = false, selectedTeams = [], teamRoster = [], showStandingsTab = false, sport = 'allsvenskan', activeTab: controlledActiveTab, onTabChange, targetVideoId = null }) => {
     const { colors } = useTheme();
     const router = useRouter();
     const { width: windowWidth } = useWindowDimensions();
@@ -133,8 +132,10 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
             setRefreshingStandings(true);
         }
         try {
-            const fetcher = sport === 'svenska-cupen' ? fetchSvenskaCupenStandings : fetchFootballStandings;
-            const data = await fetcher();
+            // The league entry already declares its own fetcher, so there is
+            // nothing to branch on here — one more place the slug was hardcoded.
+            const league = getLeagueBySlug(sport);
+            const data = await league?.fetchStandings?.();
             setStandingsData(data);
         } catch (e) {
             console.error('Failed to load standings', e);
@@ -205,8 +206,10 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
         onClose();
     }, [onClose, stopVideo]);
 
-    // Navigate to a team page (close the modal first so back returns to schedule).
-    const navigateToTeam = useCallback((code) => {
+    // Header crest tap: these codes come from the GAMES feed, so they are
+    // navigable as-is. Standings rows go through LeagueStandingsBlock instead,
+    // which resolves them with standingsRowTeamParam first.
+    const navigateToHeaderTeam = useCallback((code) => {
         if (!code) {
             return;
         }
@@ -623,72 +626,36 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
     );
 
     // Standings Tab Content
-    const renderStandingsTab = () => {
-        const lastUpdatedLabel = standingsData?.lastUpdated
-            ? formatSwedishDate(standingsData.lastUpdated, 'd MMM HH:mm')
-            : null;
-        const isCupen = sport === 'svenska-cupen';
-        const groups = isCupen ? (standingsData?.groups || []) : null;
-        const standingsRows = !isCupen && Array.isArray(standingsData?.standings) ? standingsData.standings : [];
-        const title = isCupen ? 'Svenska Cupen Groups' : 'Allsvenskan Table';
-        const teamCount = isCupen
-            ? groups.reduce((sum, g) => sum + (g.standings?.length || 0), 0)
-            : standingsRows.length;
-
-        return (
-            <ScrollView
-                style={{ flex: 1 }}
-                contentContainerStyle={themedStyles.tabContent}
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshingStandings}
-                        onRefresh={() => loadStandings(true)}
-                        tintColor={colors.text}
-                    />
-                }
-            >
-                <View style={[themedStyles.sectionCard, { marginBottom: 16 }]}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                        <Ionicons name="football-outline" size={20} color={colors.accent} />
-                        <Text style={[themedStyles.sectionTitle, { marginBottom: 0 }]}>{title}</Text>
-                        <Text style={{ color: colors.textMuted, fontSize: 13, fontWeight: '600' }}>{teamCount} teams</Text>
-                    </View>
-                    {lastUpdatedLabel && (
-                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 12 }}>Updated {lastUpdatedLabel}</Text>
-                    )}
-                </View>
-                {loadingStandings ? (
-                    <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 24 }} />
-                ) : isCupen ? (
-                    groups.map((group) => (
-                        <View key={group.id} style={[themedStyles.sectionCard, { marginBottom: 16 }]}>
-                            <Text style={[themedStyles.sectionTitle, { fontSize: 15, marginBottom: 12 }]}>{group.name}</Text>
-                            <StandingsTable
-                                standings={group.standings || []}
-                                selectedTeams={selectedTeams}
-                                sport="football"
-                                league="svenska-cupen"
-                                getTeamKey={(team) => team?.teamCode || team?.teamName}
-                                getTeamLogo={(team) => resolveMediaUrl(team?.teamIcon)}
-                                onTeamPress={(team) => navigateToTeam(standingsRowTeamParam(team))}
-                            />
-                        </View>
-                    ))
-                ) : (
-                    <StandingsTable
-                        standings={standingsRows}
-                        selectedTeams={selectedTeams}
-                        sport="football"
-                        league="allsvenskan"
-                        getTeamKey={(team) => team?.key || team?.code || team?.teamCode}
-                        getTeamLogo={(team) => resolveMediaUrl(team?.teamIcon || team?.icon)}
-                        onTeamPress={(team) => navigateToTeam(standingsRowTeamParam(team))}
-                    />
-                )}
-            </ScrollView>
-        );
-    };
+    //
+    // The card, header, timestamp, the flat-vs-grouped branch, favourite
+    // matching and row navigation all live in LeagueStandingsBlock, shared with
+    // every other standings surface. `sport` is passed straight through as the
+    // league slug, so a grouped league (the cup) lays itself out from its own
+    // config rather than from a slug comparison here.
+    const renderStandingsTab = () => (
+        <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={themedStyles.tabContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+                <RefreshControl
+                    refreshing={refreshingStandings}
+                    onRefresh={() => loadStandings(true)}
+                    tintColor={colors.text}
+                />
+            }
+        >
+            <LeagueStandingsBlock
+                league={sport}
+                family="football"
+                data={standingsData}
+                loading={loadingStandings}
+                favorites={selectedTeams}
+                teamRoster={teamRoster}
+                onBeforeNavigate={handleClose}
+            />
+        </ScrollView>
+    );
 
     // Events Tab Content
     const renderEventsTab = () => {
@@ -741,7 +708,7 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
                     startDateTime={startDateTime}
                     statusText={info?.statusText}
                     onClose={handleClose}
-                    onTeamPress={(side) => navigateToTeam(side === 'home' ? homeCode : awayCode)}
+                    onTeamPress={(side) => navigateToHeaderTeam(side === 'home' ? homeCode : awayCode)}
                 />
 
                 {/* Tab Bar */}

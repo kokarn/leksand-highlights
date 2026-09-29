@@ -6,31 +6,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { useTheme } from '../contexts';
-import { StandingsTable } from './StandingsTable';
-import { getTeamLogoUrl, resolveMediaUrl } from '../api/shl';
-import { formatSwedishDate } from '../utils';
-import { standingsRowTeamParam } from '../utils/standingsIdentity';
-
-const teamLogoFor = (league, team) => {
-    // Hockey tables key logos off the local static PNG by code; football uses the
-    // upstream icon URL. StandingsTable receives the resolved URL either way.
-    if (league.standingsSport === 'shl') {
-        const code = team?.teamCode || team?.teamShortName;
-        return code ? getTeamLogoUrl(code) : resolveMediaUrl(team?.teamIcon);
-    }
-    return resolveMediaUrl(team?.teamIcon || team?.icon);
-};
-
-const teamKeyFor = (team) => team?.teamCode || team?.code || team?.key || team?.teamShortName;
+import { LeagueStandingsBlock } from './LeagueStandingsBlock';
 
 /**
  * Standalone league standings screen, reachable from a team page's
- * "View standings" buttons. Reuses the same StandingsTable component the game
- * modals use, and the same per-league config in TEAM_FAMILIES — supporting both
- * flat tables (SHL, HockeyAllsvenskan, Allsvenskan) and grouped tables
- * (Svenska Cupen). Tapping a row navigates to that team's page.
+ * "View standings" buttons.
+ *
+ * Owns only the screen chrome — safe area, gradient, back bar, load and error
+ * states. The table itself, its card, header, timestamp, the flat-vs-grouped
+ * branch and row navigation are LeagueStandingsBlock's, shared with the sport
+ * tab and both match modals, so all four surfaces look and behave alike.
+ *
+ * It highlights the team we arrived from (`?team=` on the route) rather than the
+ * user's favourites: `hooks/usePreferences.js` is a plain hook with a single
+ * caller and no surrounding context, so reading favourites here would mean
+ * adding a provider to app/_layout.tsx. Deliberately left out of scope.
  */
-export function LeagueStandingsScreen({ league, family, highlightTeamCode }) {
+export function LeagueStandingsScreen({ league, family, highlightTeamCode, highlightTeamName }) {
     const router = useRouter();
     const { colors } = useTheme();
     const [data, setData] = useState(null);
@@ -58,23 +50,15 @@ export function LeagueStandingsScreen({ league, family, highlightTeamCode }) {
         load();
     }, [load]);
 
-    // Navigate by the row's resolved identity, NOT its raw standings code: six
-    // Allsvenskan standings codes (SIR, MAL, GOT, BRO, ÖRG, VAS) exist in no games
-    // feed, so those rows used to open an empty team page. standingsRowTeamParam
-    // falls back to the club name, which every feed agrees on.
-    const navigateToTeam = useCallback((team) => {
-        const param = standingsRowTeamParam(team);
-        if (!param || !family) {
-            return;
-        }
-        router.push(`/team/${family.family}/${encodeURIComponent(param)}`);
-    }, [router, family]);
-
+    // The arrival team, as a single-entry favourites list plus its own one-entry
+    // roster. The roster is what makes the highlight land: the code alone shares
+    // no identity token with the standings feed's own label (arriving as DIF,
+    // the Allsvenskan table says DJU/"Djurgården"), and the club name is the
+    // bridge. The team page sends both, so this costs no extra fetch.
     const highlight = highlightTeamCode ? [String(highlightTeamCode).toUpperCase()] : [];
-    const lastUpdated = data?.lastUpdated ? formatSwedishDate(data.lastUpdated, 'd MMM HH:mm') : null;
-    const isGroups = league?.standingsFormat === 'groups';
-    const groups = isGroups ? (data?.groups || []) : null;
-    const rows = !isGroups && Array.isArray(data?.standings) ? data.standings : [];
+    const highlightRoster = highlightTeamCode && highlightTeamName
+        ? [{ key: String(highlightTeamCode).toUpperCase(), name: String(highlightTeamName) }]
+        : [];
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
@@ -99,39 +83,14 @@ export function LeagueStandingsScreen({ league, family, highlightTeamCode }) {
                 <View style={styles.message}><Text style={{ color: colors.textMuted }}>{error}</Text></View>
             ) : (
                 <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                    {lastUpdated && (
-                        <Text style={[styles.updated, { color: colors.textSecondary }]}>Updated {lastUpdated}</Text>
-                    )}
-                    {isGroups ? (
-                        groups.length === 0 ? (
-                            <View style={styles.message}><Text style={{ color: colors.textMuted }}>No standings available.</Text></View>
-                        ) : (
-                            groups.map((group) => (
-                                <View key={group.id || group.name} style={styles.groupBlock}>
-                                    <Text style={[styles.groupTitle, { color: colors.text }]}>{group.name}</Text>
-                                    <StandingsTable
-                                        standings={group.standings || []}
-                                        selectedTeams={highlight}
-                                        sport={league.standingsSport}
-                                        league={league.slug}
-                                        getTeamKey={teamKeyFor}
-                                        getTeamLogo={(team) => teamLogoFor(league, team)}
-                                        onTeamPress={navigateToTeam}
-                                    />
-                                </View>
-                            ))
-                        )
-                    ) : (
-                        <StandingsTable
-                            standings={rows}
-                            selectedTeams={highlight}
-                            sport={league.standingsSport}
-                            league={league.slug}
-                            getTeamKey={teamKeyFor}
-                            getTeamLogo={(team) => teamLogoFor(league, team)}
-                            onTeamPress={navigateToTeam}
-                        />
-                    )}
+                    <LeagueStandingsBlock
+                        league={league}
+                        family={family?.family}
+                        data={data}
+                        loading={loading}
+                        favorites={highlight}
+                        teamRoster={highlightRoster}
+                    />
                 </ScrollView>
             )}
         </SafeAreaView>
@@ -145,9 +104,6 @@ const styles = StyleSheet.create({
     titleBox: { flex: 1, minHeight: 40, justifyContent: 'center', paddingHorizontal: 14, borderRadius: 10, borderWidth: 1 },
     topTitle: { fontSize: 15, fontWeight: '600' },
     content: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 32 },
-    updated: { fontSize: 12, fontWeight: '600', marginBottom: 12, paddingHorizontal: 4 },
-    groupBlock: { marginBottom: 20 },
-    groupTitle: { fontSize: 15, fontWeight: '700', marginBottom: 10, paddingHorizontal: 4 },
     loader: { marginTop: 70 },
     message: { alignItems: 'center', paddingVertical: 36 }
 });

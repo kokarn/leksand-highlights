@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 
 // Theme
 import { useTheme } from '../contexts';
@@ -46,13 +46,12 @@ if (Platform.OS !== 'web') {
 }
 
 // API
-import { getTeamLogoUrl, getNationFlag, fetchHockeyAllsvenskanStandings, fetchStandings, fetchFootballStandings, fetchSvenskaCupenStandings, resolveMediaUrl } from '../api/shl';
+import { getNationFlag, fetchHockeyAllsvenskanStandings, fetchStandings, fetchFootballStandings, fetchSvenskaCupenStandings } from '../api/shl';
 
 // Constants - getTeamColor is used by ShlGameModal
 
 // Utils
 import { formatSwedishDate } from '../utils';
-import { standingsRowTeamParam } from '../utils/standingsIdentity';
 import { buildScheduleSections, buildItemLayout, findTargetScrollOffset, findTargetAnchorIndex, filterVisibleLeagues, DAY_HEADER_HEIGHT } from '../utils/scheduleSections';
 
 // Hooks
@@ -79,7 +78,7 @@ import {
     ScheduleHeader,
     SectionHeader,
     EmptyState,
-    StandingsTable
+    LeagueStandingsBlock
 } from '../components';
 
 import { GameCard, FootballGameCard, CompactGameCard, COMPACT_CARD_HEIGHT, BiathlonRaceCard, UnifiedEventCard } from '../components/cards';
@@ -333,7 +332,6 @@ export default function App() {
         [hockeySections]
     );
 
-    const router = useRouter();
 
     // Merge team lists across leagues, tagging each team with a `leagues` array
     // (a team can appear in several leagues, e.g. an Allsvenskan club also in
@@ -383,168 +381,39 @@ export default function App() {
         );
     }, [shl.teams, hockeyAllsvenskan.teams]);
 
-    // Tapping a standings row opens that club's team page.
+    // Inline standings for the Hockey and Football tabs (scheduleScope ===
+    // 'standings'). Every standings surface in the app renders the same
+    // LeagueStandingsBlock, which owns the card, header, favourite matching and
+    // row navigation — see components/LeagueStandingsBlock.js.
     //
-    // The row is resolved through the games-derived roster rather than navigated
-    // by its raw `teamCode`, because the Allsvenskan standings feed has its own
-    // code set and six of them (SIR, MAL, GOT, BRO, ÖRG, VAS) appear in no games
-    // feed — navigating with those landed on an empty team page. The cup feed is
-    // a third case again: it puts the club NAME in `teamCode`.
-    const openTeamPage = useCallback((row, roster, family) => {
-        const param = standingsRowTeamParam(row, roster);
-        if (!param) {
-            return;
-        }
-        router.push(`/team/${family}/${encodeURIComponent(param)}`);
-    }, [router]);
+    // The roster is what makes favourite highlighting work: the standings feeds
+    // and the games feeds (which favourites come from) use different id spaces.
+    const renderStandingsScope = useCallback((leagues) => (
+        <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
+            {leagues.map((entry, index) => (
+                <LeagueStandingsBlock
+                    key={entry.slug}
+                    league={entry.slug}
+                    family={entry.family}
+                    data={entry.data}
+                    loading={entry.loading}
+                    favorites={entry.favorites}
+                    teamRoster={entry.roster}
+                    style={index > 0 ? { marginTop: 12 } : null}
+                />
+            ))}
+        </ScrollView>
+    ), []);
 
-    const openHockeyTeamPage = useCallback(
-        (row) => openTeamPage(row, combinedHockeyTeams, 'hockey'),
-        [openTeamPage, combinedHockeyTeams]
-    );
+    const renderHockeyStandings = useCallback(() => renderStandingsScope([
+        { slug: 'shl', family: 'hockey', data: shlStandings, loading: shlStandingsLoading, favorites: selectedTeams, roster: combinedHockeyTeams },
+        { slug: 'hockeyallsvenskan', family: 'hockey', data: haStandings, loading: haStandingsLoading, favorites: selectedTeams, roster: combinedHockeyTeams }
+    ]), [renderStandingsScope, shlStandings, shlStandingsLoading, haStandings, haStandingsLoading, selectedTeams, combinedHockeyTeams]);
 
-    const openFootballTeamPage = useCallback(
-        (row) => openTeamPage(row, combinedFootballTeams, 'football'),
-        [openTeamPage, combinedFootballTeams]
-    );
-
-    // Inline standings views for the Hockey and Football tabs (shown when
-    // scheduleScope === 'standings'). Each shows the primary league tables for
-    // that sport: SHL + HockeyAllsvenskan for hockey, Allsvenskan + Svenska
-    // Cupen for football. Favorites are highlighted via the selected team lists.
-    const renderHockeyStandings = useCallback(() => {
-        const shlRows = shlStandings?.standings || [];
-        const haRows = haStandings?.standings || [];
-        const shlUpdated = shlStandings?.lastUpdated
-            ? formatSwedishDate(shlStandings.lastUpdated, 'd MMM HH:mm')
-            : null;
-        const haUpdated = haStandings?.lastUpdated
-            ? formatSwedishDate(haStandings.lastUpdated, 'd MMM HH:mm')
-            : null;
-        return (
-            <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
-                {/* SHL */}
-                <View style={[styles.standingsBlock, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                    <View style={[styles.standingsBlockHeader, { borderBottomColor: colors.cardBorder }]}>
-                        <Ionicons name="trophy-outline" size={16} color={colors.accent} />
-                        <Text style={[styles.standingsBlockTitle, { color: colors.text }]}>SHL</Text>
-                        {shlUpdated && <Text style={[styles.standingsBlockMeta, { color: colors.textSecondary }]}>{shlUpdated}</Text>}
-                    </View>
-                    {shlStandingsLoading && !shlRows.length ? (
-                        <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 12 }} />
-                    ) : shlRows.length === 0 ? (
-                        <Text style={[styles.standingsEmpty, { color: colors.textMuted }]}>No standings available.</Text>
-                    ) : (
-                        <StandingsTable
-                            standings={shlRows}
-                            selectedTeams={selectedTeams}
-                            teamRoster={combinedHockeyTeams}
-                            sport="shl"
-                            league="shl"
-                            getTeamKey={(t) => t.teamCode || t.teamShortName}
-                            getTeamLogo={(t) => getTeamLogoUrl(t.teamCode || t.teamShortName)}
-                            onTeamPress={openHockeyTeamPage}
-                        />
-                    )}
-                </View>
-                {/* HockeyAllsvenskan */}
-                <View style={[styles.standingsBlock, { backgroundColor: colors.card, borderColor: colors.cardBorder, marginTop: 12 }]}>
-                    <View style={[styles.standingsBlockHeader, { borderBottomColor: colors.cardBorder }]}>
-                        <Ionicons name="trophy-outline" size={16} color={colors.accent} />
-                        <Text style={[styles.standingsBlockTitle, { color: colors.text }]}>HockeyAllsvenskan</Text>
-                        {haUpdated && <Text style={[styles.standingsBlockMeta, { color: colors.textSecondary }]}>{haUpdated}</Text>}
-                    </View>
-                    {haStandingsLoading && !haRows.length ? (
-                        <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 12 }} />
-                    ) : haRows.length === 0 ? (
-                        <Text style={[styles.standingsEmpty, { color: colors.textMuted }]}>No standings available.</Text>
-                    ) : (
-                        <StandingsTable
-                            standings={haRows}
-                            selectedTeams={selectedTeams}
-                            teamRoster={combinedHockeyTeams}
-                            sport="shl"
-                            league="hockeyallsvenskan"
-                            getTeamKey={(t) => t.teamCode || t.teamShortName}
-                            getTeamLogo={(t) => getTeamLogoUrl(t.teamCode || t.teamShortName)}
-                            onTeamPress={openHockeyTeamPage}
-                        />
-                    )}
-                </View>
-            </ScrollView>
-        );
-    }, [shlStandings, shlStandingsLoading, haStandings, haStandingsLoading, selectedTeams, combinedHockeyTeams, openHockeyTeamPage]);
-
-    const renderFootballStandings = useCallback(() => {
-        const alRows = footballStandings?.standings || [];
-        const cupenGroups = cupenStandings?.groups || [];
-        const alUpdated = footballStandings?.lastUpdated
-            ? formatSwedishDate(footballStandings.lastUpdated, 'd MMM HH:mm')
-            : null;
-        const cupenUpdated = cupenStandings?.lastUpdated
-            ? formatSwedishDate(cupenStandings.lastUpdated, 'd MMM HH:mm')
-            : null;
-        const cupenGroupBlocks = cupenGroups.map((group) => {
-            const rows = group.standings || [];
-            const groupUpdated = group.lastUpdated
-                ? formatSwedishDate(group.lastUpdated, 'd MMM HH:mm')
-                : null;
-            return (
-                <View key={group.id || group.name} style={[styles.standingsBlock, { backgroundColor: colors.card, borderColor: colors.cardBorder, marginTop: 12 }]}>
-                    <View style={[styles.standingsBlockHeader, { borderBottomColor: colors.cardBorder }]}>
-                        <Ionicons name="trophy-outline" size={16} color={colors.accent} />
-                        <Text style={[styles.standingsBlockTitle, { color: colors.text }]}>{group.name}</Text>
-                        {groupUpdated && <Text style={[styles.standingsBlockMeta, { color: colors.textSecondary }]}>{groupUpdated}</Text>}
-                    </View>
-                    {cupenStandingsLoading && !rows.length ? (
-                        <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 12 }} />
-                    ) : rows.length === 0 ? (
-                        <Text style={[styles.standingsEmpty, { color: colors.textMuted }]}>No standings available.</Text>
-                    ) : (
-                        <StandingsTable
-                            standings={rows}
-                            selectedTeams={selectedFootballTeams}
-                            teamRoster={combinedFootballTeams}
-                            sport="football"
-                            league="svenska-cupen"
-                            getTeamKey={(t) => t.teamCode || t.teamShortName}
-                            getTeamLogo={(t) => resolveMediaUrl(t.teamIcon || t.icon)}
-                            onTeamPress={openFootballTeamPage}
-                        />
-                    )}
-                </View>
-            );
-        });
-        return (
-            <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
-                {/* Allsvenskan */}
-                <View style={[styles.standingsBlock, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                    <View style={[styles.standingsBlockHeader, { borderBottomColor: colors.cardBorder }]}>
-                        <Ionicons name="trophy-outline" size={16} color={colors.accent} />
-                        <Text style={[styles.standingsBlockTitle, { color: colors.text }]}>Allsvenskan</Text>
-                        {alUpdated && <Text style={[styles.standingsBlockMeta, { color: colors.textSecondary }]}>{alUpdated}</Text>}
-                    </View>
-                    {footballStandingsLoading && !alRows.length ? (
-                        <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 12 }} />
-                    ) : alRows.length === 0 ? (
-                        <Text style={[styles.standingsEmpty, { color: colors.textMuted }]}>No standings available.</Text>
-                    ) : (
-                        <StandingsTable
-                            standings={alRows}
-                            selectedTeams={selectedFootballTeams}
-                            teamRoster={combinedFootballTeams}
-                            sport="football"
-                            league="allsvenskan"
-                            getTeamKey={(t) => t.teamCode || t.teamShortName}
-                            getTeamLogo={(t) => resolveMediaUrl(t.teamIcon || t.icon)}
-                            onTeamPress={openFootballTeamPage}
-                        />
-                    )}
-                </View>
-                {cupenGroupBlocks}
-            </ScrollView>
-        );
-    }, [footballStandings, footballStandingsLoading, cupenStandings, cupenStandingsLoading, selectedFootballTeams, combinedFootballTeams, openFootballTeamPage]);
+    const renderFootballStandings = useCallback(() => renderStandingsScope([
+        { slug: 'allsvenskan', family: 'football', data: footballStandings, loading: footballStandingsLoading, favorites: selectedFootballTeams, roster: combinedFootballTeams },
+        { slug: 'svenska-cupen', family: 'football', data: cupenStandings, loading: cupenStandingsLoading, favorites: selectedFootballTeams, roster: combinedFootballTeams }
+    ]), [renderStandingsScope, footballStandings, footballStandingsLoading, cupenStandings, cupenStandingsLoading, selectedFootballTeams, combinedFootballTeams]);
 
     // Initial scroll to live/upcoming in combined hockey list
     useEffect(() => {
@@ -1446,6 +1315,7 @@ export default function App() {
                 onRefresh={shl.refreshModalDetails}
                 refreshing={shl.refreshingModal}
                 selectedTeams={selectedTeams}
+                teamRoster={combinedHockeyTeams}
                 targetVideoId={shlTargetVideoId}
             />
 
@@ -1462,6 +1332,7 @@ export default function App() {
                 onRefresh={hockeyAllsvenskan.refreshModalDetails}
                 refreshing={hockeyAllsvenskan.refreshingModal}
                 selectedTeams={selectedTeams}
+                teamRoster={combinedHockeyTeams}
                 standingsFetcher={fetchHockeyAllsvenskanStandings}
                 standingsSport="hockeyallsvenskan"
                 targetVideoId={haTargetVideoId}
@@ -1478,6 +1349,7 @@ export default function App() {
                 onRefresh={football.refreshModalDetails}
                 refreshing={football.refreshingModal}
                 selectedTeams={selectedFootballTeams}
+                teamRoster={combinedFootballTeams}
                 showStandingsTab={true}
                 activeTab={footballActiveTab}
                 onTabChange={setFootballActiveTab}
@@ -1495,6 +1367,8 @@ export default function App() {
                 onRefresh={svenskaCupen.refreshModalDetails}
                 refreshing={svenskaCupen.refreshingModal}
                 sport="svenska-cupen"
+                selectedTeams={selectedFootballTeams}
+                teamRoster={combinedFootballTeams}
                 showStandingsTab={true}
             />
 
@@ -1509,6 +1383,8 @@ export default function App() {
                 onRefresh={europaLeagueQual.refreshModalDetails}
                 refreshing={europaLeagueQual.refreshingModal}
                 sport="europa-league-qual"
+                selectedTeams={selectedFootballTeams}
+                teamRoster={combinedFootballTeams}
                 showStandingsTab={false}
             />
 
@@ -1523,6 +1399,8 @@ export default function App() {
                 onRefresh={conferenceLeagueQual.refreshModalDetails}
                 refreshing={conferenceLeagueQual.refreshingModal}
                 sport="conference-league-qual"
+                selectedTeams={selectedFootballTeams}
+                teamRoster={combinedFootballTeams}
                 showStandingsTab={false}
             />
 
@@ -1870,37 +1748,5 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         minWidth: 60,
         textAlign: 'right'
-    },
-    standingsBlock: {
-        borderRadius: 12,
-        borderWidth: 1,
-        padding: 14,
-        marginBottom: 0
-    },
-    standingsBlockHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        marginBottom: 12,
-        paddingBottom: 10,
-        borderBottomWidth: 1
-    },
-    standingsBlockTitle: {
-        color: '#fff',
-        fontSize: 15,
-        fontWeight: '700',
-        flex: 1
-    },
-    standingsBlockMeta: {
-        color: '#8e8e93',
-        fontSize: 11,
-        fontWeight: '600'
-    },
-    standingsEmpty: {
-        color: '#8e8e93',
-        fontSize: 13,
-        fontWeight: '500',
-        textAlign: 'center',
-        paddingVertical: 16
     }
 });

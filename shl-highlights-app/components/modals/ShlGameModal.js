@@ -11,7 +11,7 @@ import { useGameDetails } from '../../hooks/useGameDetails';
 import { useVideoPlayer } from '../../hooks/useVideoPlayer';
 import { useTheme } from '../../contexts/ThemeContext';
 import { StatBar } from '../StatBar';
-import { StandingsTable } from '../StandingsTable';
+import { LeagueStandingsBlock } from '../LeagueStandingsBlock';
 import { VideoCard } from '../cards';
 import { GoalItem, PenaltyItem, GoalkeeperItem, TimeoutItem, PeriodMarker } from '../events';
 import { VideoPlayer } from '../VideoPlayer';
@@ -86,6 +86,9 @@ export const ShlGameModal = ({
     onRefresh,
     refreshing = false,
     selectedTeams = [],
+    // Games-derived { code } roster, so a favourite from one feed matches a
+    // standings row from another. Supplied by the screen that renders this modal.
+    teamRoster = [],
     standingsFetcher = fetchStandings,
     standingsSport = 'shl',
     targetVideoId = null
@@ -210,15 +213,6 @@ export const ShlGameModal = ({
             stopVideo();
         }
         onTabChange(tab);
-    };
-
-    // Navigate to a team page (close the modal first so back returns to schedule).
-    const navigateToTeam = (code) => {
-        if (!code) {
-            return;
-        }
-        handleClose();
-        router.push(`/team/${standingsSport}/${encodeURIComponent(String(code).toUpperCase())}`);
     };
 
     const currentlyPlayingVideo = videos.find(v => v.id === playingVideoId);
@@ -466,54 +460,45 @@ export const ShlGameModal = ({
         </ScrollView>
     );
 
-    // Standings Tab Content
-    const renderStandingsTab = () => {
-        const lastUpdatedLabel = standingsData?.lastUpdated
-            ? formatSwedishDate(standingsData.lastUpdated, 'd MMM HH:mm')
-            : null;
-        const standingsRows = Array.isArray(standingsData?.standings) ? standingsData.standings : [];
-        return (
-            <ScrollView
-                style={{ flex: 1 }}
-                contentContainerStyle={themedStyles.tabContent}
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshingStandings}
-                        onRefresh={() => loadStandings(true)}
-                        tintColor={colors.text}
-                    />
-                }
-            >
-                <View style={[themedStyles.sectionCard, { marginBottom: 16 }]}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                        <Ionicons name="stats-chart" size={20} color={colors.accent} />
-                        <Text style={[themedStyles.sectionTitle, { marginBottom: 0 }]}>{standingsSport === 'hockeyallsvenskan' ? 'HockeyAllsvenskan Table' : 'SHL Table'}</Text>
-                        <Text style={{ color: colors.textMuted, fontSize: 13, fontWeight: '600' }}>{standingsRows.length} teams</Text>
-                    </View>
-                    {lastUpdatedLabel && (
-                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 12 }}>Updated {lastUpdatedLabel}</Text>
-                    )}
-                </View>
-                {loadingStandings ? (
-                    <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 24 }} />
-                ) : (
-                    <StandingsTable
-                        standings={standingsRows}
-                        selectedTeams={selectedTeams}
-                        sport="shl"
-                        league={standingsSport === 'hockeyallsvenskan' ? 'hockeyallsvenskan' : 'shl'}
-                        getTeamKey={(team) => team.teamCode || team.teamShortName}
-                        getTeamLogo={(team) => {
-                            const teamCode = team.teamCode || team.teamShortName;
-                            return teamCode ? getTeamLogoUrl(teamCode) : resolveMediaUrl(team.teamIcon);
-                        }}
-                        onTeamPress={(team) => navigateToTeam(team.teamCode || team.teamShortName)}
-                    />
-                )}
-            </ScrollView>
-        );
+    // Header crest tap. These codes come from the GAMES feed, so they are
+    // navigable as-is — unlike a standings code, which LeagueStandingsBlock has
+    // to resolve through standingsRowTeamParam first.
+    const navigateToHeaderTeam = (code) => {
+        if (!code) {
+            return;
+        }
+        handleClose();
+        router.push(`/team/hockey/${encodeURIComponent(String(code).toUpperCase())}`);
     };
+
+    // Standings Tab Content
+    // The card, header, timestamp, favourite matching and row navigation all
+    // live in LeagueStandingsBlock, shared with every other standings surface.
+    // This tab keeps only its scroll container and pull-to-refresh.
+    const renderStandingsTab = () => (
+        <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={themedStyles.tabContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+                <RefreshControl
+                    refreshing={refreshingStandings}
+                    onRefresh={() => loadStandings(true)}
+                    tintColor={colors.text}
+                />
+            }
+        >
+            <LeagueStandingsBlock
+                league={standingsSport === 'hockeyallsvenskan' ? 'hockeyallsvenskan' : 'shl'}
+                family="hockey"
+                data={standingsData}
+                loading={loadingStandings}
+                favorites={selectedTeams}
+                teamRoster={teamRoster}
+                onBeforeNavigate={handleClose}
+            />
+        </ScrollView>
+    );
 
     return (
         <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
@@ -528,7 +513,7 @@ export const ShlGameModal = ({
                             state={gameState}
                             startDateTime={startDateTime}
                             onClose={handleClose}
-                            onTeamPress={(side) => navigateToTeam(side === 'home' ? homeCode : awayCode)}
+                            onTeamPress={(side) => navigateToHeaderTeam(side === 'home' ? homeCode : awayCode)}
                         />
 
                         {/* Tab Bar */}

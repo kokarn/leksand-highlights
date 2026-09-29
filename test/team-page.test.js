@@ -181,13 +181,17 @@ test('family league config carries standings metadata; knockout leagues have non
     }
 });
 
-test('standings route exists and reuses StandingsTable + league config', () => {
+test('standings route exists and reuses the shared standings block', () => {
     const routePath = path.join(appDir, 'app', 'standings', '[league].js');
     assert.equal(fs.existsSync(routePath), true, 'expected /standings/[league] route to exist');
     const screenPath = path.join(appDir, 'components', 'LeagueStandingsScreen.js');
     assert.equal(fs.existsSync(screenPath), true, 'expected LeagueStandingsScreen to exist');
     const screen = fs.readFileSync(screenPath, 'utf8');
-    assert.match(screen, /StandingsTable/);
+    // The screen renders the shared block, not StandingsTable directly — the
+    // block owns the card, header, timestamp, flat-vs-grouped branch and row
+    // navigation for all four standings surfaces.
+    assert.match(screen, /LeagueStandingsBlock/);
+    assert.doesNotMatch(screen, /<StandingsTable/);
     // Team page must render buttons that link to the standings route.
     const teamScreen = fs.readFileSync(path.join(appDir, 'components', 'TeamGamesScreen.js'), 'utf8');
     assert.match(teamScreen, /leaguesForTeam/);

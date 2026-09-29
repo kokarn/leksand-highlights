@@ -240,3 +240,95 @@ test("standingsRowTeamParam falls back to the club name, never a dead code", asy
     assert.equal(standingsRowTeamParam(null), null);
     assert.equal(standingsRowTeamParam({}), null);
 });
+
+// --- one normalizer for both jobs -------------------------------------------
+// Favourite matching and team-page navigation used to use DIFFERENT folds:
+// buildFavoriteTokens/standingsRowIsFavorite called normalizeTeamToken, while
+// standingsRowTeamParam called teamIdentityToken, which adds the genitive -s
+// fold. A club whose two feeds disagree by exactly that -s therefore navigated
+// correctly but never highlighted. Both now use teamIdentityToken.
+
+test('Djurgården highlights, not just navigates (the genitive-fold regression)', async () => {
+    const { buildFavoriteTokens, standingsRowIsFavorite, standingsRowTeamParam } = await load();
+    // Games feed: "Djurgårdens IF" / DIF. Standings feed: "Djurgården" / DJU.
+    const roster = [{ key: 'DIF', name: 'Djurgårdens IF' }];
+    const standingsRow = row('DJU', 'Djurgården');
+    // Navigation already worked before the fix…
+    assert.equal(standingsRowTeamParam(standingsRow, roster), 'DIF');
+    // …highlighting did not. This is the assertion that was missing.
+    assert.equal(standingsRowIsFavorite(standingsRow, buildFavoriteTokens(['DIF'], roster)), true);
+});
+
+test('Halmstad is the same shape and also highlights', async () => {
+    const { buildFavoriteTokens, standingsRowIsFavorite } = await load();
+    const roster = [{ key: 'HBK', name: 'Halmstads BK' }];
+    assert.equal(standingsRowIsFavorite(row('HAL', 'Halmstad'), buildFavoriteTokens(['HBK'], roster)), true);
+});
+
+test('the genitive fold does not make a non-favourite match', async () => {
+    const { buildFavoriteTokens, standingsRowIsFavorite } = await load();
+    // Widening the fold must not tint the rest of the table.
+    const tokens = buildFavoriteTokens(['DIF'], [{ key: 'DIF', name: 'Djurgårdens IF' }]);
+    for (const other of ['AIK', 'Hammarby', 'Malmö FF', 'GAIS', 'IFK Göteborg', 'Halmstads BK']) {
+        assert.equal(standingsRowIsFavorite(row(other, other), tokens), false, `${other} must not match`);
+    }
+});
+
+// --- pairwise distinctness sweep --------------------------------------------
+// "265 football + 87 hockey distinct stems with ZERO cross-club collisions"
+// appears in three prose comments (standingsIdentity.js, teamGames.js, and the
+// note above) and was pinned by no executable assertion, so it would rot in
+// silence when a club changes league. Every name below is one this app's feeds
+// actually serve, grouped by the family navigation is scoped to.
+
+const FAMILY_CLUBS = {
+    football: [
+        'AIK', 'BK Häcken', 'Brommapojkarna', 'Degerfors IF', 'Djurgårdens IF',
+        'GAIS', 'Halmstads BK', 'Hammarby IF', 'IF Elfsborg',
+        'IFK Göteborg', 'IFK Norrköping', 'IFK Värnamo', 'IK Sirius', 'Kalmar FF',
+        'Malmö FF', 'Mjällby AIF', 'Örgryte IS', 'Östers IF', 'Varbergs BoIS',
+        'Västerås SK', 'Trelleborgs FF', 'Utsiktens BK', 'Landskrona BoIS',
+        'Helsingborgs IF', 'Örebro SK', 'Sandvikens IF', 'Umeå FC'
+    ],
+    hockey: [
+        'Brynäs IF', 'Djurgårdens IF', 'Frölunda HC', 'Färjestad BK', 'HV71',
+        'Leksands IF', 'Linköping HC', 'Luleå HF', 'Malmö Redhawks', 'Örebro HK',
+        'Rögle BK', 'Skellefteå AIK', 'Timrå IK', 'Växjö Lakers',
+        'AIK', 'Almtuna IS', 'BIK Karlskoga', 'Björklöven', 'Kalmar HC',
+        'Mora IK', 'Nybro Vikings', 'Södertälje SK', 'Tingsryds AIF',
+        'Vita Hästen', 'Västerås IK', 'Östersunds IK'
+    ]
+};
+
+test('no two clubs in the same family fold to the same identity token', async () => {
+    const { teamIdentityToken } = await load();
+    for (const [family, clubs] of Object.entries(FAMILY_CLUBS)) {
+        const seen = new Map();
+        for (const club of clubs) {
+            const token = teamIdentityToken(club);
+            assert.notEqual(token, '', `${club} must leave a usable token`);
+            const clash = seen.get(token);
+            // A collision here means the fold merged two real clubs: favourites
+            // would tint the wrong row and navigation would open the wrong team.
+            assert.equal(
+                clash,
+                undefined,
+                `${family}: "${club}" and "${clash}" both fold to "${token}"`
+            );
+            seen.set(token, club);
+        }
+        assert.equal(seen.size, clubs.length);
+    }
+});
+
+test('the fold is idempotent, so a folded stem re-folds to itself', async () => {
+    const { teamIdentityToken } = await load();
+    // Both sides of every comparison fold, sometimes via different label
+    // shapes, so applying it twice must not lose more.
+    for (const clubs of Object.values(FAMILY_CLUBS)) {
+        for (const club of clubs) {
+            const once = teamIdentityToken(club);
+            assert.equal(teamIdentityToken(once), once, `${club} → ${once} is not stable`);
+        }
+    }
+});

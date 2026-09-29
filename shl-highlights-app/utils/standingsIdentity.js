@@ -46,6 +46,14 @@ export const normalizeTeamToken = (value) => String(value ?? '')
  * Verified against all six live feeds (SHL, HockeyAllsvenskan, Allsvenskan,
  * Svenska Cupen, Europa/Conference qual): 265 football + 87 hockey distinct
  * stems with ZERO cross-club collisions, so the fold never merges two clubs.
+ * That claim is pinned by the pairwise-distinctness sweep in
+ * test/standings-identity.test.js, so it fails loudly if a club changes league.
+ *
+ * This is the ONE token function every comparison in this module uses —
+ * favourite matching and team-page navigation alike. They used to differ by
+ * exactly this fold, which meant a row could navigate correctly while never
+ * highlighting: the standings feed's "Djurgarden" resolved to the games feed's
+ * "Djurgardens IF" for the URL but not for the favourite tint.
  *
  * @param {string|number} value
  * @returns {string} '' when nothing usable remains
@@ -106,7 +114,8 @@ export const teamIdentityTokens = (team, getTeamCode) => {
  * token with the standings code DEG. Pass `teamRoster` — the same { key, name }
  * list that populates the favourites picker — so each key can also contribute
  * its club name. Measured against the live Allsvenskan feeds: keys alone reach
- * 10 of 20 favourites, keys resolved through the roster reach 19.
+ * 10 of 20 favourites, keys resolved through the roster reach 19, and resolved
+ * through the roster with the genitive fold reach 20 of 20.
  *
  * @param {Array<string|{key?: string, name?: string, code?: string}>} selectedTeams
  * @param {Array<{key?: string, code?: string, name?: string}>} [teamRoster]
@@ -115,7 +124,7 @@ export const teamIdentityTokens = (team, getTeamCode) => {
 export const buildFavoriteTokens = (selectedTeams = [], teamRoster = []) => {
     const tokens = new Set();
     const add = (value) => {
-        const token = normalizeTeamToken(value);
+        const token = teamIdentityToken(value);
         if (token) {
             tokens.add(token);
         }
@@ -126,7 +135,7 @@ export const buildFavoriteTokens = (selectedTeams = [], teamRoster = []) => {
     const rosterByToken = new Map();
     for (const team of teamRoster) {
         for (const label of [team?.key, team?.code, team?.name]) {
-            const token = normalizeTeamToken(label);
+            const token = teamIdentityToken(label);
             if (token && !rosterByToken.has(token)) {
                 rosterByToken.set(token, team);
             }
@@ -141,7 +150,7 @@ export const buildFavoriteTokens = (selectedTeams = [], teamRoster = []) => {
         }
         // Expand through the roster: DEIF (favourite) -> "Degerfors" -> matches DEG.
         for (const value of values) {
-            const match = rosterByToken.get(normalizeTeamToken(value));
+            const match = rosterByToken.get(teamIdentityToken(value));
             if (match) {
                 add(match.name);
                 add(match.key);
@@ -154,6 +163,12 @@ export const buildFavoriteTokens = (selectedTeams = [], teamRoster = []) => {
 
 /**
  * Whether a standings row belongs to a favourited team.
+ *
+ * Compares with teamIdentityToken, the same fold navigation uses. Both sides of
+ * every comparison must fold identically: the stems it produces are lossy
+ * ("Sirius" → siriu, "Degerfors" → degerfor, "Brynäs IF" → bryna) and only
+ * meet because the favourite tokens went through the same function.
+ *
  * @param {object} row - standings row ({ teamCode, teamUuid, teamShortName, teamName })
  * @param {Set<string>} favoriteTokens - from buildFavoriteTokens
  * @returns {boolean}
@@ -164,7 +179,7 @@ export const standingsRowIsFavorite = (row, favoriteTokens) => {
     }
     return [row.teamCode, row.teamUuid, row.teamShortName, row.teamName]
         .some((value) => {
-            const token = normalizeTeamToken(value);
+            const token = teamIdentityToken(value);
             return token && favoriteTokens.has(token);
         });
 };

@@ -5,6 +5,7 @@ export { StatBar } from './StatBar';
 export { TabButton } from './TabButton';
 export { LogoMark } from './LogoMark';
 export { StandingsTable } from './StandingsTable';
+export { LeagueStandingsBlock } from './LeagueStandingsBlock';
 export { VideoPlayer } from './VideoPlayer';
 
 // UI components

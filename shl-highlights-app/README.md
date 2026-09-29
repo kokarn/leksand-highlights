@@ -4,6 +4,9 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.46.0
+- Collapse the four standings views (Hockey/Football tab, a team page's "View standings", and both match modals' standings tab) onto one shared table. They now look alike — same card, league header and "Updated" timestamp — and your favourite clubs highlight on all four instead of only the sport tab. Tapping a row always opens that club's page, including the Allsvenskan rows (Sirius, Malmö, Göteborg, Brommapojkarna, Örgryte, Västerås) that used to land on an empty page, and the Svenska Cupen, Europa Qual and Conference Qual match modals now highlight favourites at all
+
 ### 2.45.0
 - Show a live match-minute indicator for ongoing football games. The minute (e.g. "37'", "HT") now appears next to the LIVE label on the schedule cards, in the compact All-matches rows, and in the match detail header, driven by the API's live statusText. Hockey has no live game clock in the feed, so this is football-only
 
