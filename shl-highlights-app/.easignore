@@ -35,9 +35,6 @@ yarn-error.*
 # local env files
 .env*.local
 
-# Note: google-services.json and GoogleService-Info.plist are NOT ignored here
-# so they get included in EAS builds (unlike .gitignore which excludes them)
-
 # typescript
 *.tsbuildinfo
 
@@ -46,3 +43,10 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Firebase config. These are gitignored and therefore untracked, so omitting
+# them above is not enough -- an untracked file needs an explicit `!` negation
+# (and it must come last) or EAS strips it from the uploaded archive and
+# scripts/eas-build-pre-install.js fails the Pre-install hook phase.
+!google-services.json
+!GoogleService-Info.plist

@@ -74,11 +74,10 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Android SDK
-        uses: reactivecircus/android-sdk-installer@v2
-        with:
-          cmdline-tools-version: 11076708
-          platform-version: 34
-          build-tools-version: 34.0.0
+        # v4 is required: Google removed the `tools` package from its SDK
+        # repository, and v3 still passes `packages: 'tools platform-tools'`,
+        # so sdkmanager fails with "Failed to find package 'tools'".
+        uses: android-actions/setup-android@v4
 
       - name: Setup Expo
         uses: expo/expo-github-action@v8
