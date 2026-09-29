@@ -1,0 +1,61 @@
+{
+  "details": {
+    "name": "Svenska Cupen",
+    "selectedSeason": "2025/2026"
+  },
+  "allAvailableSeasons": [
+    "2026/2027",
+    "2025/2026",
+    "2024/2025"
+  ],
+  "table": [
+    {
+      "data": {
+        "tables": [
+          {
+            "leagueId": 913503,
+            "leagueName": "Cup Grp. 1",
+            "table": {
+              "all": [
+                {
+                  "name": "Mjällby",
+                  "shortName": "Mjällby",
+                  "id": 8127,
+                  "pageUrl": "/teams/8127/overview/mjallby",
+                  "deduction": null,
+                  "ongoing": null,
+                  "played": 3,
+                  "wins": 3,
+                  "draws": 0,
+                  "losses": 0,
+                  "scoresStr": "7-1",
+                  "goalConDiff": 6,
+                  "pts": 9,
+                  "idx": 1,
+                  "qualColor": "#2AD572"
+                },
+                {
+                  "name": "Kalmar FF",
+                  "shortName": "Kalmar FF",
+                  "id": 9892,
+                  "pageUrl": "/teams/9892/overview/kalmar-ff",
+                  "deduction": null,
+                  "ongoing": null,
+                  "played": 3,
+                  "wins": 1,
+                  "draws": 1,
+                  "losses": 1,
+                  "scoresStr": "4-5",
+                  "goalConDiff": -1,
+                  "pts": 4,
+                  "idx": 2,
+                  "qualColor": null
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

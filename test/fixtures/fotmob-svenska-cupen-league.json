@@ -1,0 +1,102 @@
+{
+  "details": {
+    "name": "Svenska Cupen",
+    "country": "SWE",
+    "selectedSeason": "2026/2027"
+  },
+  "allAvailableSeasons": [
+    "2026/2027",
+    "2025/2026",
+    "2024/2025"
+  ],
+  "table": null,
+  "fixtures": {
+    "allMatches": [
+      {
+        "round": "1",
+        "roundName": 1,
+        "pageUrl": "/matches/bk-olympic-vs-afc-malmoe/fruwe77r#5629939",
+        "id": "5629939",
+        "home": {
+          "name": "BK Olympic",
+          "shortName": "BK Olympic",
+          "id": "241064"
+        },
+        "away": {
+          "name": "AFC Malmoe",
+          "shortName": "AFC Malmoe",
+          "id": "1331261"
+        },
+        "status": {
+          "utcTime": "2026-05-26T16:00:00Z",
+          "timezone": "",
+          "finished": true,
+          "started": true,
+          "cancelled": false,
+          "awarded": false,
+          "scoreStr": "5 - 3",
+          "reason": {
+            "short": "FT",
+            "shortKey": "fulltime_short",
+            "long": "Full-Time",
+            "longKey": "finished"
+          }
+        }
+      },
+      {
+        "round": "2",
+        "roundName": 2,
+        "pageUrl": "/matches/trollhattan-fc-vs-mjallby/1oyux0#5820431",
+        "id": "5820431",
+        "home": {
+          "name": "Trollhättan FC",
+          "shortName": "Trollhättan FC",
+          "id": "6183"
+        },
+        "away": {
+          "name": "Mjällby",
+          "shortName": "Mjällby",
+          "id": "8127"
+        },
+        "status": {
+          "utcTime": "2026-10-06T15:00:00Z",
+          "timezone": "",
+          "started": false,
+          "cancelled": false,
+          "finished": false
+        }
+      },
+      {
+        "round": "1",
+        "roundName": 1,
+        "pageUrl": "/matches/forssa-bk-vs-ik-franke/2jpqx3tc#5629947",
+        "id": "5629947",
+        "home": {
+          "name": "Forssa BK",
+          "shortName": "Forssa BK",
+          "id": "4193"
+        },
+        "away": {
+          "name": "IK Franke",
+          "shortName": "IK Franke",
+          "id": "627698"
+        },
+        "status": {
+          "utcTime": "2026-06-03T17:15:00Z",
+          "timezone": "",
+          "finished": true,
+          "started": true,
+          "cancelled": false,
+          "awarded": false,
+          "scoreStr": "2 - 2",
+          "reason": {
+            "short": "Pen",
+            "shortKey": "penalties_short",
+            "long": "After penalties",
+            "longKey": "afterpenalties"
+          }
+        }
+      }
+    ]
+  }
+}

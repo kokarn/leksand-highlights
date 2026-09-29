@@ -6,17 +6,20 @@ const INVISIBLE_TIME_CHARS_REGEX = /[\u200e\u200f\u202a-\u202e]/g;
 /**
  * Svenska Cupen (Swedish Cup) Data Provider
  *
- * Data source:
- * - FotMob league API (id=171) for fixtures/live scores
- * - FotMob match page (__NEXT_DATA__) for richer match details
+ * Data source (FotMob's public JSON API, unauthenticated, under /api/data/):
+ * - /api/data/leagues?id=171 for fixtures/live scores
+ * - /api/data/matchDetails?matchId=... for richer match details
  */
 class SvenskaCupenProvider extends BaseProvider {
     constructor() {
         super('Svenska Cupen');
 
         this.leagueId = '171';
-        this.leagueApiUrl = 'https://www.fotmob.com/api/leagues';
-        this.webBaseUrl = 'https://www.fotmob.com';
+        // FotMob moved its public JSON API under /api/data/ (the old /api/leagues
+        // and /api/matchDetails paths now serve a 404 HTML page). Access is still
+        // unauthenticated.
+        this.leagueApiUrl = 'https://www.fotmob.com/api/data/leagues';
+        this.matchDetailsApiUrl = 'https://www.fotmob.com/api/data/matchDetails';
         this.maxHoursSinceGame = 36;
 
         this.headers = {
@@ -42,14 +45,14 @@ class SvenskaCupenProvider extends BaseProvider {
         const response = await fetch(url, { headers: this.headers });
 
         if (!response.ok) {
-            // FotMob withdrew unauthenticated access to its public API — /api/leagues
-            // now returns 404/403 for everyone without a signed request header. Rather
-            // than throw on every 15s poll (which spammed the GoalWatcher error log and
-            // masked real failures), degrade gracefully: warn ONCE, then return an empty
-            // dataset so downstream normalization yields zero games. Revisit when a
-            // replacement data source (e.g. TheSportsDB league 4756) is wired in.
+            // Don't throw on every 15s poll — that spammed the GoalWatcher error log
+            // and masked real failures. Degrade gracefully instead: warn ONCE, then
+            // return an empty dataset so downstream normalization yields zero games.
+            // NOTE: a blanket 404 here usually means FotMob moved the endpoint again
+            // rather than a genuine outage, so check the path before assuming the
+            // source is gone.
             if (!this._sourceUnavailableWarned) {
-                console.warn(`[${this.name}] League source unavailable (${response.status}) — Svenska Cupen data disabled until a new provider source is configured. Suppressing further warnings.`);
+                console.warn(`[${this.name}] League source unavailable (${response.status}) — returning no games until it recovers. Suppressing further warnings.`);
                 this._sourceUnavailableWarned = true;
             }
             return null;
@@ -289,8 +292,7 @@ class SvenskaCupenProvider extends BaseProvider {
             round: match.roundName || match.round || null,
             stage: match?.tournament?.stage || null,
             sport: 'svenska-cupen',
-            source: 'fotmob',
-            pageUrl: match.pageUrl || null
+            source: 'fotmob'
         };
     }
 
@@ -353,52 +355,39 @@ class SvenskaCupenProvider extends BaseProvider {
         });
     }
 
-    resolveMatchPageUrl(pageUrl) {
-        if (!pageUrl) {
-            return null;
-        }
-        if (String(pageUrl).startsWith('http')) {
-            return String(pageUrl);
-        }
-        return `${this.webBaseUrl}${pageUrl}`;
+    buildMatchDetailsUrl(matchId) {
+        const url = new URL(this.matchDetailsApiUrl);
+        url.searchParams.set('matchId', String(matchId));
+        return url.toString();
     }
 
-    extractNextDataJson(html) {
-        if (!html) {
+    /**
+     * Fetch one match's details, keyed on the fixture id.
+     *
+     * Previously this scraped __NEXT_DATA__ out of the match page HTML at the
+     * feed's `pageUrl`. That was unreliable: FotMob's slug-and-hash page URLs go
+     * stale as fixtures are rescheduled or replayed, and the page then serves a
+     * DIFFERENT match while still returning HTTP 200 — so the app silently opened
+     * the wrong game (2 of 4 sampled fixtures resolved to another match). The
+     * `?matchId=` endpoint returns the requested fixture by id, with a payload
+     * byte-identical to the scraped pageProps, so there is no shape change here.
+     */
+    async fetchMatchDetailsData(matchId) {
+        if (!matchId) {
             return null;
         }
 
-        const match = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
-        if (!match || !match[1]) {
-            return null;
-        }
-
-        try {
-            return JSON.parse(match[1]);
-        } catch (_error) {
-            return null;
-        }
-    }
-
-    async fetchMatchPageProps(pageUrl) {
-        const resolvedUrl = this.resolveMatchPageUrl(pageUrl);
-        if (!resolvedUrl) {
-            return null;
-        }
-
-        const response = await fetch(resolvedUrl, { headers: this.headers });
+        const response = await fetch(this.buildMatchDetailsUrl(matchId), { headers: this.headers });
         if (!response.ok) {
-            throw new Error(`[${this.name}] Match page fetch failed (${response.status})`);
+            throw new Error(`[${this.name}] Match details fetch failed (${response.status})`);
         }
 
-        const html = await response.text();
-        const nextData = this.extractNextDataJson(html);
-
-        if (!nextData?.props?.pageProps) {
-            throw new Error(`[${this.name}] Match page payload missing pageProps`);
+        const data = await response.json();
+        if (!data?.general) {
+            throw new Error(`[${this.name}] Match details payload missing general`);
         }
 
-        return nextData.props.pageProps;
+        return data;
     }
 
     inferPeriod(minuteValue) {
@@ -684,8 +673,8 @@ class SvenskaCupenProvider extends BaseProvider {
         return rosters.length > 0 ? rosters : null;
     }
 
-    extractVenueName(pageProps) {
-        const infoBox = pageProps?.content?.matchFacts?.infoBox;
+    extractVenueName(details) {
+        const infoBox = details?.content?.matchFacts?.infoBox;
         const stadium = infoBox?.Stadium;
 
         if (!stadium) {
@@ -736,14 +725,10 @@ class SvenskaCupenProvider extends BaseProvider {
             return null;
         }
 
-        if (!game.pageUrl) {
-            return this.buildFallbackDetails(game);
-        }
-
         try {
-            const pageProps = await this.fetchMatchPageProps(game.pageUrl);
-            const general = pageProps?.general || {};
-            const status = pageProps?.header?.status || {};
+            const details = await this.fetchMatchDetailsData(gameId);
+            const general = details?.general || {};
+            const status = details?.header?.status || {};
             const state = this.normalizeState(status);
             const [homeScoreFromStatus, awayScoreFromStatus] = this.parseScoreString(status.scoreStr);
             const startDateTime = status.utcTime
@@ -771,10 +756,10 @@ class SvenskaCupenProvider extends BaseProvider {
                 state
             );
 
-            const incidents = pageProps?.content?.matchFacts?.events?.events || [];
+            const incidents = details?.content?.matchFacts?.events?.events || [];
             const events = this.extractEvents(incidents, homeTeamInfo, awayTeamInfo);
-            const rosters = this.extractRosters(pageProps?.content?.lineup);
-            const venueName = this.extractVenueName(pageProps) || game?.venueInfo?.name || null;
+            const rosters = this.extractRosters(details?.content?.lineup);
+            const venueName = this.extractVenueName(details) || game?.venueInfo?.name || null;
 
             return {
                 info: {
