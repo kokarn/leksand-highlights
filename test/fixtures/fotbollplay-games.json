@@ -1,0 +1,90 @@
+{
+  "_comment": "Trimmed real FotbollPlay /allsvenskan/game rows (api.fotbollplay.se). Covers a 0-0 final, a scored final, an unplayed fixture, and a row with no phase field. Fields not used by normalizeFotbollPlayGame were dropped for readability.",
+  "games": [
+    {
+      "id": 5085,
+      "start_time": "2026-09-05T13:00:00.000000Z",
+      "phase": "finished",
+      "finished_time": "2026-09-05T14:54:04.049000Z",
+      "end_of_2nd_half": "2026-09-05T14:54:04.049000Z",
+      "home_team_goals": 0,
+      "visiting_team_goals": 0,
+      "stadium_name": "Gamla Ullevi",
+      "home_team": {
+        "id": 33,
+        "name": "GAIS",
+        "short_name": "GAIS",
+        "logo_url": "https://cdn.forzasys.com/team-logos/forzify-backend-allsvenskan/GAIS-g33.png"
+      },
+      "visiting_team": {
+        "id": 3,
+        "name": "BK Häcken",
+        "short_name": "BKH",
+        "logo_url": "https://cdn.forzasys.com/team-logos/forzify-backend-allsvenskan/BK_Hacken-g3.png"
+      }
+    },
+    {
+      "id": 5106,
+      "start_time": "2026-09-20T12:00:00.000000Z",
+      "phase": "finished",
+      "finished_time": "2026-09-20T13:49:26.226000Z",
+      "end_of_2nd_half": "2026-09-20T13:49:26.226000Z",
+      "home_team_goals": 0,
+      "visiting_team_goals": 5,
+      "stadium_name": "Guldfågeln Arena",
+      "home_team": {
+        "id": 15,
+        "name": "Kalmar FF",
+        "short_name": "KFF",
+        "logo_url": "https://cdn.forzasys.com/team-logos/forzify-backend-allsvenskan/Kalmar_FF-g15.png"
+      },
+      "visiting_team": {
+        "id": 3,
+        "name": "BK Häcken",
+        "short_name": "BKH",
+        "logo_url": "https://cdn.forzasys.com/team-logos/forzify-backend-allsvenskan/BK_Hacken-g3.png"
+      }
+    },
+    {
+      "id": 5200,
+      "start_time": "2026-11-29T14:00:00.000000Z",
+      "phase": "not started",
+      "finished_time": null,
+      "end_of_2nd_half": null,
+      "home_team_goals": 0,
+      "visiting_team_goals": 0,
+      "stadium_name": "Tele2 Arena",
+      "home_team": {
+        "id": 4,
+        "name": "Djurgårdens IF",
+        "short_name": "DIF",
+        "logo_url": "https://cdn.forzasys.com/team-logos/forzify-backend-allsvenskan/Djurgardens_IF-g12.png"
+      },
+      "visiting_team": {
+        "id": 3,
+        "name": "BK Häcken",
+        "short_name": "BKH",
+        "logo_url": "https://cdn.forzasys.com/team-logos/forzify-backend-allsvenskan/BK_Hacken-g3.png"
+      }
+    },
+    {
+      "id": 5201,
+      "start_time": "2026-09-19T15:30:00.000000Z",
+      "home_team_goals": 1,
+      "visiting_team_goals": 2,
+      "stadium_name": "Strandvallen",
+      "home_team": {
+        "id": 27,
+        "name": "Mjällby AIF",
+        "short_name": "MAIF",
+        "logo_url": null
+      },
+      "visiting_team": {
+        "id": 9,
+        "name": "Hammarby IF",
+        "short_name": "HAM",
+        "logo_url": null
+      }
+    }
+  ]
+}

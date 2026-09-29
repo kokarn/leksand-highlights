@@ -7,14 +7,15 @@ const { fetchConferenceFutureRounds, mergeFutureRounds } = require('../future-br
  *
  * Uses ESPN public APIs (league slug `uefa.europa.conf_qual`) for fixtures, scores,
  * and game summaries/events — the SAME contract as Allsvenskan (`swe.1`), so this is
- * a thin subclass of AllsvenskanProvider with only the ESPN endpoints + sport tag
- * overridden. (This is where GAIS's 2026/27 European campaign lives — NOT the Europa
- * League qualifiers.)
+ * a thin subclass of AllsvenskanProvider with only the ESPN endpoints, sport slug,
+ * and FotbollPlay capability overridden. (This is where GAIS's 2026/27 European
+ * campaign lives — NOT the Europa League qualifiers.)
  *
  * Differences vs Allsvenskan (same as the Europa League Qualifying provider):
- *  - Clips: FotbollPlay is Allsvenskan-only, so there is NO clip source for this
- *    competition. fetchGameVideos() is overridden to return [] (schedule + scores +
- *    goal pushes only, no highlight clips — expected, not a gap).
+ *  - FotbollPlay: covers Allsvenskan only, so `supportsFotbollPlay = false`. That
+ *    keeps its fixtures out of this competition's schedule and leaves it with no
+ *    clip source — schedule + scores + goal pushes only, no highlight clips
+ *    (expected, not a gap).
  *  - Standings: the ESPN qualifying endpoint returns no standings table (knockout
  *    format), so fetchStandings() degrades to an empty-but-valid payload.
  */
@@ -27,31 +28,13 @@ class ConferenceLeagueQualProvider extends AllsvenskanProvider {
         this.scoreboardBaseUrl = 'https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.europa.conf_qual/scoreboard';
         this.summaryBaseUrl = 'https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.europa.conf_qual/summary';
         this.standingsUrl = 'https://site.web.api.espn.com/apis/v2/sports/soccer/uefa.europa.conf_qual/standings';
-    }
 
-    normalizeEvent(event) {
-        const normalized = super.normalizeEvent(event);
-        if (normalized) {
-            normalized.sport = 'conference-league-qual';
-        }
-        return normalized;
-    }
+        this.sportSlug = 'conference-league-qual';
 
-    async fetchGameDetails(gameId) {
-        const details = await super.fetchGameDetails(gameId);
-        if (details?.info) {
-            details.info.sport = 'conference-league-qual';
-        }
-        return details;
-    }
-
-    /**
-     * No clip source exists for Conference League qualifiers (FotbollPlay is
-     * Allsvenskan-only). Return no clips rather than attempting a Swedish-league
-     * lookup that would never match.
-     */
-    async fetchGameVideos() {
-        return [];
+        // FotbollPlay covers Allsvenskan only. Left on, the inherited
+        // fetchAllGames() merged 100 Swedish league fixtures into this
+        // competition's schedule (every one tagged sport: 'allsvenskan').
+        this.supportsFotbollPlay = false;
     }
 
     /**

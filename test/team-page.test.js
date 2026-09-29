@@ -38,6 +38,9 @@ test('getTeamResult computes W/L/D from the team perspective', async () => {
     assert.equal(getTeamResult(mk('post-game', 'BIF', 3, 'LIF', 1), 'LIF', getCode), 'L');
     // Draw
     assert.equal(getTeamResult(mk('post-game', 'LIF', 2, 'DIF', 2), 'LIF', getCode), 'D');
+    // A 0-0 final is a draw, not "no result" — the score being 0 must not read
+    // as "unplayed" (the bug that left 0-0 football finals stuck at pre-game).
+    assert.equal(getTeamResult(mk('post-game', 'LIF', 0, 'DIF', 0), 'LIF', getCode), 'D');
     // Not finished → null
     assert.equal(getTeamResult(mk('pre-game', 'LIF', 0, 'DIF', 0), 'LIF', getCode), null);
 });

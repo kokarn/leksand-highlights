@@ -16,6 +16,15 @@ class AllsvenskanProvider extends BaseProvider {
         this.fotbollPlayApiBaseUrl = 'https://api.fotbollplay.se/allsvenskan';
         this.fotbollPlayWebBaseUrl = 'https://fotbollplay.se';
 
+        // The sport slug stamped onto every game this provider emits. Subclasses
+        // override it instead of re-stamping in normalizeEvent/fetchGameDetails.
+        this.sportSlug = 'allsvenskan';
+
+        // Is the FotbollPlay supplement (fixtures + clips) valid for this league?
+        // FotbollPlay only covers Allsvenskan, so subclasses for other
+        // competitions must turn it off or they inherit Swedish league fixtures.
+        this.supportsFotbollPlay = true;
+
         this.headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'application/json'
@@ -430,7 +439,7 @@ class AllsvenskanProvider extends BaseProvider {
                 name: venueName
             },
             statusText: status?.type?.detail || status?.type?.shortDetail || null,
-            sport: 'allsvenskan',
+            sport: this.sportSlug,
             source: 'espn'
         };
     }
@@ -442,6 +451,34 @@ class AllsvenskanProvider extends BaseProvider {
     }
 
     /**
+     * Has this FotbollPlay game been played?
+     *
+     * Trust the feed's own lifecycle fields, never the goal counts: a 0-0 final
+     * is indistinguishable from an unplayed fixture by score alone, which left
+     * real finished matches stuck at 'pre-game' forever (and made the app's
+     * All-matches list anchor on them instead of on today's fixtures).
+     *
+     * `phase` is the primary signal ('finished' / 'not started'); the kickoff
+     * timestamps are a fallback for rows where phase is missing or unrecognised.
+     *
+     * @param {object} game - Raw FotbollPlay game object
+     * @returns {boolean}
+     */
+    isFotbollPlayGameFinished(game) {
+        if (!game) {
+            return false;
+        }
+        const phase = typeof game.phase === 'string' ? game.phase.trim().toLowerCase() : null;
+        if (phase === 'finished') {
+            return true;
+        }
+        if (phase === 'not started') {
+            return false;
+        }
+        return Boolean(game.finished_time || game.end_of_2nd_half);
+    }
+
+    /**
      * Convert a FotbollPlay game object to the normalized game format used
      * throughout the app. FotbollPlay games use home_team/visiting_team pairs
      * with start_time and goal fields.
@@ -450,28 +487,20 @@ class AllsvenskanProvider extends BaseProvider {
         if (!game || !game.start_time) return null;
 
         const startTime = game.start_time;
-        const startMs = new Date(startTime).getTime();
-        const nowMs = Date.now();
-        const hasHomeGoals = game.home_team_goals != null && game.home_team_goals !== '' && Number(game.home_team_goals) > 0;
-        const hasAwayGoals = game.visiting_team_goals != null && game.visiting_team_goals !== '' && Number(game.visiting_team_goals) > 0;
-        const isFinished = hasHomeGoals || hasAwayGoals;
-
-        let state;
-        if (isFinished) {
-            state = 'post-game';
-        } else if (startMs > nowMs) {
-            state = 'pre-game';
-        } else {
-            // Started but no goals recorded — treat as pre-game (live games
-            // are rare in this historical window; the app's filter handles
-            // the live case separately if a real live feed is available).
-            state = 'pre-game';
-        }
+        const isFinished = this.isFotbollPlayGameFinished(game);
+        // Only 'finished' vs 'not started' — never 'live'. FotbollPlay exposes no
+        // in-play phase, and a 'live' football game makes goal-watcher poll
+        // fetchGameDetails with a FotbollPlay id, which ESPN's summary endpoint
+        // answers with an unrelated fixture (200, not 404). Live detection stays
+        // on the ESPN path.
+        const state = isFinished ? 'post-game' : 'pre-game';
 
         const homeTeam = game.home_team || {};
         const awayTeam = game.visiting_team || game.away_team || {};
-        const homeScore = isFinished ? this.parseScore(game.home_team_goals, state) : null;
-        const awayScore = isFinished ? this.parseScore(game.visiting_team_goals, state) : null;
+        // parseScore already returns null for pre-game, so a real 0 on a finished
+        // game survives — don't gate these on isFinished or 0-0 finals show '-'.
+        const homeScore = this.parseScore(game.home_team_goals, state);
+        const awayScore = this.parseScore(game.visiting_team_goals, state);
 
         return {
             uuid: String(game.id),
@@ -485,7 +514,7 @@ class AllsvenskanProvider extends BaseProvider {
                     long: this.cleanTeamName(homeTeam.name || homeTeam.short_name)
                 },
                 score: homeScore,
-                icon: null
+                icon: this.resolveTeamIcon(homeTeam.logo_url, homeTeam.id)
             },
             awayTeamInfo: {
                 code: this.cleanTeamCode(awayTeam.short_name || awayTeam.name),
@@ -495,15 +524,15 @@ class AllsvenskanProvider extends BaseProvider {
                     long: this.cleanTeamName(awayTeam.name || awayTeam.short_name)
                 },
                 score: awayScore,
-                icon: null
+                icon: this.resolveTeamIcon(awayTeam.logo_url, awayTeam.id)
             },
             venueInfo: {
                 name: game.stadium_name || null
             },
-            statusText: isFinished
-                ? `${homeScore ?? '?'} - ${awayScore ?? '?'}`
+            statusText: (homeScore !== null && awayScore !== null)
+                ? `${homeScore} - ${awayScore}`
                 : null,
-            sport: 'allsvenskan',
+            sport: this.sportSlug,
             source: 'fotbollplay'
         };
     }
@@ -516,6 +545,141 @@ class AllsvenskanProvider extends BaseProvider {
     cleanTeamCode(code) {
         if (!code) return null;
         return code.trim().toUpperCase();
+    }
+
+    /**
+     * Fuzzy-score two ALREADY-NORMALIZED games as the same fixture.
+     *
+     * Mirrors scoreFotbollPlayGame's scoring, but compares two normalized games
+     * instead of a raw FotbollPlay game against a normalized one — so the
+     * cross-source de-dup pass can run after normalization without disturbing
+     * scoreFotbollPlayGame's existing caller (findFotbollPlayGame, used for
+     * video lookup).
+     *
+     * @param {object} a - Normalized game
+     * @param {object} b - Normalized game
+     * @returns {number} Score; NEGATIVE_INFINITY when the teams cannot match
+     */
+    scoreNormalizedGamePair(a, b) {
+        const homeName = this.normalizeComparableText(
+            b?.homeTeamInfo?.names?.long || b?.homeTeamInfo?.names?.short
+        );
+        const awayName = this.normalizeComparableText(
+            b?.awayTeamInfo?.names?.long || b?.awayTeamInfo?.names?.short
+        );
+
+        if (!homeName || !awayName) {
+            return Number.NEGATIVE_INFINITY;
+        }
+
+        const homeCandidates = this.buildTeamNameCandidates(a?.homeTeamInfo);
+        const awayCandidates = this.buildTeamNameCandidates(a?.awayTeamInfo);
+
+        const directScore = this.getTeamNameScore(homeName, homeCandidates)
+            + this.getTeamNameScore(awayName, awayCandidates);
+        const swappedScore = this.getTeamNameScore(homeName, awayCandidates)
+            + this.getTeamNameScore(awayName, homeCandidates);
+
+        const bestTeamScore = Math.max(directScore, swappedScore - 3);
+        if (bestTeamScore <= 0) {
+            return Number.NEGATIVE_INFINITY;
+        }
+
+        return bestTeamScore + this.getKickoffScore(a?.startDateTime, b?.startDateTime);
+    }
+
+    /**
+     * Collapse the same fixture arriving from both upstream sources into one game.
+     *
+     * mergeGamesById can only de-duplicate within a source: ESPN and FotbollPlay
+     * use disjoint id spaces (e.g. 401842831 vs 5106 for the same match), and
+     * their team codes disagree per club (Degerfors DEG/DEIF, Elfsborg ELF/IFE,
+     * Mjallby MJA/MAIF), so neither id nor code can pair them. Match on team
+     * names + kickoff instead, reusing the same scoring and >= 12 threshold as
+     * findFotbollPlayGame.
+     *
+     * The ESPN record wins, because its uuid is the one fetchGameDetails can
+     * actually resolve — ESPN's summary endpoint answers a FotbollPlay id with an
+     * unrelated fixture (HTTP 200, not 404), so keeping the FotbollPlay twin would
+     * open the wrong game. Fields the winner lacks are backfilled from the twin so
+     * nothing regresses.
+     *
+     * @param {object[]} games - Normalized games from all sources
+     * @returns {object[]} Games with cross-source duplicates removed
+     */
+    dedupeGamesAcrossSources(games) {
+        if (!Array.isArray(games) || games.length < 2) {
+            return Array.isArray(games) ? games : [];
+        }
+
+        const preferred = games.filter(game => game?.source === 'espn');
+        const others = games.filter(game => game?.source !== 'espn');
+        if (preferred.length === 0 || others.length === 0) {
+            return games;
+        }
+
+        const absorbed = new Set();
+        const winners = preferred.map(game => {
+            let bestMatch = null;
+            let bestScore = Number.NEGATIVE_INFINITY;
+
+            for (const candidate of others) {
+                if (absorbed.has(candidate)) {
+                    continue;
+                }
+                const score = this.scoreNormalizedGamePair(game, candidate);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMatch = candidate;
+                }
+            }
+
+            if (!bestMatch || bestScore < 12) {
+                return game;
+            }
+
+            absorbed.add(bestMatch);
+            return this.mergeDuplicateGame(game, bestMatch);
+        });
+
+        // Preserve input order: winners in place, absorbed twins dropped.
+        const winnerByOriginal = new Map();
+        preferred.forEach((game, index) => winnerByOriginal.set(game, winners[index]));
+
+        return games
+            .filter(game => !absorbed.has(game))
+            .map(game => winnerByOriginal.get(game) || game);
+    }
+
+    /**
+     * Merge a duplicate fixture into the winning record, filling only the gaps.
+     * The winner's uuid, state, scores and source are authoritative.
+     *
+     * @param {object} winner - The record to keep (ESPN)
+     * @param {object} duplicate - The record being absorbed (FotbollPlay)
+     * @returns {object}
+     */
+    mergeDuplicateGame(winner, duplicate) {
+        const mergeTeam = (winnerTeam, duplicateTeam) => {
+            if (!winnerTeam) {
+                return duplicateTeam || null;
+            }
+            if (!duplicateTeam) {
+                return winnerTeam;
+            }
+            return {
+                ...winnerTeam,
+                icon: winnerTeam.icon || duplicateTeam.icon || null
+            };
+        };
+
+        return {
+            ...winner,
+            homeTeamInfo: mergeTeam(winner.homeTeamInfo, duplicate.homeTeamInfo),
+            awayTeamInfo: mergeTeam(winner.awayTeamInfo, duplicate.awayTeamInfo),
+            venueInfo: (winner.venueInfo?.name ? winner.venueInfo : (duplicate.venueInfo || winner.venueInfo)),
+            statusText: winner.statusText || duplicate.statusText || null
+        };
     }
 
     mergeGamesById(...gameLists) {
@@ -536,25 +700,30 @@ class AllsvenskanProvider extends BaseProvider {
         // Supplement with FotbollPlay's 100-game window (covers ~40 match days,
         // newest-first). The ESPN scoreboard only returns one day; FotbollPlay
         // fills in the surrounding match days for video lookup and schedule display.
-        try {
-            const seasonStart = new Date(`${year}-01-01T00:00:00Z`);
-            const seasonEnd = new Date(`${year}-12-31T23:59:59Z`);
-            const fpGames = await this.fetchFotbollPlayGamesInWindow(
-                seasonStart.toISOString().slice(0, 10),
-                seasonEnd.toISOString().slice(0, 10)
-            );
-            const fpNormalized = fpGames.map(g => this.normalizeFotbollPlayGame(g)).filter(Boolean);
-            games = this.mergeGamesById(games, fpNormalized);
-        } catch (error) {
-            console.warn(`[${this.name}] FotbollPlay window fetch failed:`, error.message);
+        //
+        // Only for leagues FotbollPlay actually covers. Subclasses for other
+        // competitions (Europa/Conference qualifying) set supportsFotbollPlay
+        // false; without that guard they merged 100 Allsvenskan fixtures into
+        // their own schedules.
+        if (this.supportsFotbollPlay) {
+            try {
+                const seasonStart = new Date(`${year}-01-01T00:00:00Z`);
+                const seasonEnd = new Date(`${year}-12-31T23:59:59Z`);
+                const fpGames = await this.fetchFotbollPlayGamesInWindow(
+                    seasonStart.toISOString().slice(0, 10),
+                    seasonEnd.toISOString().slice(0, 10)
+                );
+                const fpNormalized = fpGames.map(g => this.normalizeFotbollPlayGame(g)).filter(Boolean);
+                games = this.mergeGamesById(games, fpNormalized);
+            } catch (error) {
+                console.warn(`[${this.name}] FotbollPlay window fetch failed:`, error.message);
+            }
         }
 
         const hasFutureGames = games.some(game => new Date(game.startDateTime) >= now);
         const hasPastGames = games.some(game => new Date(game.startDateTime) < now);
 
-        const extraEventBatches = [];
-
-        if (!hasFutureGames) {
+        if (this.supportsFotbollPlay && !hasFutureGames) {
             const nextYear = year + 1;
             const nextFpGames = await this.fetchFotbollPlayGamesInWindow(
                 `${nextYear}-01-01`, `${nextYear}-12-31`
@@ -562,7 +731,7 @@ class AllsvenskanProvider extends BaseProvider {
             games = this.mergeGamesById(games, nextFpGames.map(g => this.normalizeFotbollPlayGame(g)).filter(Boolean));
         }
 
-        if (!hasPastGames) {
+        if (this.supportsFotbollPlay && !hasPastGames) {
             const previousYear = year - 1;
             const prevFpGames = await this.fetchFotbollPlayGamesInWindow(
                 `${previousYear}-01-01`, `${previousYear}-12-31`
@@ -570,7 +739,7 @@ class AllsvenskanProvider extends BaseProvider {
             games = this.mergeGamesById(games, prevFpGames.map(g => this.normalizeFotbollPlayGame(g)).filter(Boolean));
         }
 
-        const mergedGames = this.mergeGamesById(games);
+        const mergedGames = this.dedupeGamesAcrossSources(this.mergeGamesById(games));
 
         return mergedGames.sort((a, b) => new Date(b.startDateTime) - new Date(a.startDateTime));
     }
@@ -613,6 +782,13 @@ class AllsvenskanProvider extends BaseProvider {
     }
 
     async fetchGameVideos(gameId) {
+        // Clips come from FotbollPlay, which is Allsvenskan-only — a subclass for
+        // another competition has no clip source and must not run a Swedish-league
+        // lookup that can only mismatch.
+        if (!this.supportsFotbollPlay) {
+            return [];
+        }
+
         try {
             const details = await this.fetchGameDetails(gameId);
             const matchInfo = details?.info;
@@ -670,6 +846,38 @@ class AllsvenskanProvider extends BaseProvider {
         }
     }
 
+    /**
+     * The ESPN league slug this provider is configured for, parsed out of
+     * summaryBaseUrl ('.../soccer/swe.1/summary' -> 'swe.1'). Reading it from the
+     * URL rather than a separate field means subclasses that already override
+     * summaryBaseUrl get the right slug with no extra wiring.
+     * @returns {string|null}
+     */
+    get espnLeagueSlug() {
+        const match = /\/sports\/soccer\/([^/]+)\//.exec(this.summaryBaseUrl || '');
+        return match ? match[1] : null;
+    }
+
+    /**
+     * Does this summary payload actually belong to our league? Guards against
+     * ESPN answering an out-of-league event id with 200 and a wrong fixture.
+     * Unknown/missing slugs are allowed through so a payload-shape change
+     * degrades to today's behaviour instead of blanking every match.
+     * @param {object} data - Raw ESPN summary response
+     * @returns {boolean}
+     */
+    isExpectedEspnLeague(data) {
+        const expected = this.espnLeagueSlug;
+        if (!expected) {
+            return true;
+        }
+        const actual = data?.header?.league?.slug;
+        if (!actual) {
+            return true;
+        }
+        return String(actual).toLowerCase() === expected.toLowerCase();
+    }
+
     async fetchGameDetails(gameId) {
         const url = `${this.summaryBaseUrl}?event=${gameId}`;
         const response = await fetch(url, { headers: this.headers });
@@ -682,6 +890,16 @@ class AllsvenskanProvider extends BaseProvider {
         }
 
         const data = await response.json();
+
+        // ESPN's summary endpoint does not 404 on an unknown event id — it happily
+        // answers a low-numbered id with a completely unrelated fixture (event=5135
+        // returns a 2000 Serie A Brescia-Napoli). FotbollPlay ids ARE low-numbered,
+        // so a FotbollPlay-sourced game used to open some other league's match.
+        // The echoed id is no help (it is reflected verbatim); the league slug is.
+        if (!this.isExpectedEspnLeague(data)) {
+            return null;
+        }
+
         const competition = data?.header?.competitions?.[0] || {};
         const status = competition.status || null;
         const state = this.normalizeState(status);
@@ -705,7 +923,7 @@ class AllsvenskanProvider extends BaseProvider {
                 name: venueName
             },
             statusText: status?.type?.detail || status?.type?.shortDetail || null,
-            sport: 'allsvenskan',
+            sport: this.sportSlug,
             source: 'espn'
         };
 

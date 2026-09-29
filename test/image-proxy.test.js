@@ -11,6 +11,9 @@ test('isAllowedHost accepts allowlisted CDN hosts and subdomains', () => {
     assert.equal(isAllowedHost('api.staylive.tv'), true);
     assert.equal(isAllowedHost('fotbollplay.se'), true);
     assert.equal(isAllowedHost('api.fotbollplay.se'), true);
+    // FotbollPlay team crests (Allsvenskan) are served from this CDN.
+    assert.equal(isAllowedHost('cdn.forzasys.com'), true);
+    assert.equal(isAllowedHost('forzasys.com'), true);
 });
 
 test('isAllowedHost rejects non-allowlisted hosts (SSRF guard)', () => {
@@ -18,6 +21,8 @@ test('isAllowedHost rejects non-allowlisted hosts (SSRF guard)', () => {
     assert.equal(isAllowedHost('localhost'), false);
     assert.equal(isAllowedHost('169.254.169.254'), false);
     assert.equal(isAllowedHost('espncdn.com.evil.com'), false);
+    assert.equal(isAllowedHost('forzasys.com.evil.com'), false);
+    assert.equal(isAllowedHost('notforzasys.com'), false);
     assert.equal(isAllowedHost(''), false);
     assert.equal(isAllowedHost(null), false);
 });

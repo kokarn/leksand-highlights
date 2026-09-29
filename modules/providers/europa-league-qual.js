@@ -6,13 +6,14 @@ const { buildBracket } = require('../bracket-builder');
  *
  * Uses ESPN public APIs (league slug `uefa.europa_qual`) for fixtures, scores, and
  * game summaries/events — the SAME contract as Allsvenskan (`swe.1`), so this is a
- * thin subclass of AllsvenskanProvider with only the ESPN endpoints + sport tag
- * overridden.
+ * thin subclass of AllsvenskanProvider with only the ESPN endpoints, sport slug,
+ * and FotbollPlay capability overridden.
  *
  * Differences vs Allsvenskan:
- *  - Clips: FotbollPlay is Allsvenskan-only, so there is NO clip source for this
- *    competition. fetchGameVideos() is overridden to return [] (schedule + scores +
- *    goal pushes only, no highlight clips — expected, not a gap).
+ *  - FotbollPlay: covers Allsvenskan only, so `supportsFotbollPlay = false`. That
+ *    keeps its fixtures out of this competition's schedule and leaves it with no
+ *    clip source — schedule + scores + goal pushes only, no highlight clips
+ *    (expected, not a gap).
  *  - Standings: the ESPN qualifying endpoint returns no standings table (knockout
  *    format), so fetchStandings() degrades to an empty-but-valid payload rather than
  *    throwing.
@@ -26,31 +27,13 @@ class EuropaLeagueQualProvider extends AllsvenskanProvider {
         this.scoreboardBaseUrl = 'https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.europa_qual/scoreboard';
         this.summaryBaseUrl = 'https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.europa_qual/summary';
         this.standingsUrl = 'https://site.web.api.espn.com/apis/v2/sports/soccer/uefa.europa_qual/standings';
-    }
 
-    normalizeEvent(event) {
-        const normalized = super.normalizeEvent(event);
-        if (normalized) {
-            normalized.sport = 'europa-league-qual';
-        }
-        return normalized;
-    }
+        this.sportSlug = 'europa-league-qual';
 
-    async fetchGameDetails(gameId) {
-        const details = await super.fetchGameDetails(gameId);
-        if (details?.info) {
-            details.info.sport = 'europa-league-qual';
-        }
-        return details;
-    }
-
-    /**
-     * No clip source exists for Europa League qualifiers (FotbollPlay is
-     * Allsvenskan-only). Return no clips rather than attempting a Swedish-league
-     * lookup that would never match.
-     */
-    async fetchGameVideos() {
-        return [];
+        // FotbollPlay covers Allsvenskan only. Left on, the inherited
+        // fetchAllGames() merged 100 Swedish league fixtures into this
+        // competition's schedule (every one tagged sport: 'allsvenskan').
+        this.supportsFotbollPlay = false;
     }
 
     /**

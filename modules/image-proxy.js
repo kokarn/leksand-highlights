@@ -27,6 +27,8 @@ const ALLOWED_HOST_SUFFIXES = [
     'staylive.tv',
     // FotbollPlay video thumbnails (football)
     'fotbollplay.se',
+    // Forzasys CDN — FotbollPlay team logos (Allsvenskan)
+    'forzasys.com',
     // SHL landing/logo CDN (used by some feeds)
     's8y.se',
 ];
