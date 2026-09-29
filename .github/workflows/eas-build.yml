@@ -13,9 +13,6 @@ jobs:
   eas-build:
     name: Build on EAS
     runs-on: ubuntu-latest
-    outputs:
-      app_version: ${{ steps.app_version.outputs.version }}
-      eas_success: ${{ steps.eas_build.outcome == 'success' }}
     steps:
       - uses: actions/checkout@v5
 
@@ -45,17 +42,22 @@ jobs:
 
       - name: Build on EAS (preview)
         id: eas_build
+        # Non-blocking: the cloud build is a convenience (OTA/store pipeline), and
+        # the APK job below is independent of it.
         continue-on-error: true
         run: eas build --platform android --profile preview --non-interactive
         working-directory: shl-highlights-app
 
   local-build:
-    name: Build locally (fallback)
+    name: Build APK
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    needs: eas-build
-    if: needs.eas-build.outputs.eas_success != 'true'
+    # Deliberately independent of the EAS cloud job. This job is the only one
+    # that produces a downloadable APK and publishes the GitHub Release that the
+    # in-app updater reads, so it must not be gated on EAS failing (it used to be
+    # `if: needs.eas-build.outputs.eas_success != 'true'`, which skipped it on every
+    # successful cloud build) nor queued behind the cloud build via `needs:`.
     steps:
       - name: Setup repo
         uses: actions/checkout@v5
