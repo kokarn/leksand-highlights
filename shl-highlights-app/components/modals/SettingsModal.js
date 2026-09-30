@@ -328,11 +328,12 @@ export const SettingsModal = ({
                 </View>
 
                 {/* Leagues Section — one row per league, controlling both the
-                    5-min game reminder (bell) and whether it shows in the All
-                    matches view (eye). Replaces the old separate "Game Reminders"
-                    and "All Matches" cards that listed every league twice. */}
+                    5-min game reminder (bell) and whether the league is shown at
+                    all (eye: the All matches list and the Standings scope).
+                    Replaces the old separate "Game Reminders" and "All Matches"
+                    cards that listed every league twice. */}
                 <Text style={themedStyles.settingsSection}>Leagues</Text>
-                <Text style={themedStyles.settingsSectionSubtitle}>Reminders before games and which leagues show in All matches</Text>
+                <Text style={themedStyles.settingsSectionSubtitle}>Reminders before games and which leagues show in All matches and Standings</Text>
 
                 <View style={themedStyles.settingsCard}>
                     {(() => {
@@ -377,12 +378,13 @@ export const SettingsModal = ({
                                             <Text style={themedStyles.notificationLabel}>{league.label}</Text>
                                         </View>
                                         <View style={styles.leagueControls}>
-                                            {/* Show in All matches (eye). Not applicable to biathlon. */}
+                                            {/* Show the league (eye): both the All matches list
+                                                and the Standings scope. Not applicable to biathlon. */}
                                             {inAllMatches ? (
                                                 <TouchableOpacity
                                                     style={[themedStyles.leagueToggle, shown && themedStyles.leagueToggleActive]}
                                                     onPress={() => onToggleAllMatchesLeague?.(league.id)}
-                                                    accessibilityLabel={`${shown ? 'Hide' : 'Show'} ${league.label} in All matches`}
+                                                    accessibilityLabel={`${shown ? 'Hide' : 'Show'} ${league.label} in All matches and Standings`}
                                                     activeOpacity={0.7}
                                                 >
                                                     <Ionicons

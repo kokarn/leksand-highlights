@@ -24,8 +24,12 @@ export function usePreferences() {
     // match today rendered as compact rows. Defaults to 'myteams'.
     const [scheduleScope, setScheduleScope] = useState('myteams');
 
-    // Leagues hidden from the "All matches" view (array of `sport` slugs).
-    // Stored as the hidden set so new leagues appear by default. Empty = all shown.
+    // Leagues the user has switched off in Settings (array of `sport` slugs).
+    // Hidden everywhere a league is listed: the "All matches" schedule and the
+    // Standings scope. Stored as the hidden set so a league the user has never
+    // touched — and any league added in a later release — shows by default.
+    // Empty = all shown. The storage key keeps its original allMatches name so
+    // existing installs keep their choices.
     const [hiddenAllMatchesLeagues, setHiddenAllMatchesLeagues] = useState([]);
 
     // Onboarding state
@@ -101,7 +105,7 @@ export function usePreferences() {
         savePreference(STORAGE_KEYS.SCHEDULE_SCOPE, scope);
     }, [savePreference]);
 
-    // Toggle a league's visibility in the "All matches" view. We store the
+    // Toggle a league's visibility (All matches + Standings). We store the
     // HIDDEN set, so toggling ON removes it from hidden and toggling OFF adds it.
     const toggleAllMatchesLeague = useCallback((leagueId) => {
         setHiddenAllMatchesLeagues(prev => {

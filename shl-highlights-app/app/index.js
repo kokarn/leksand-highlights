@@ -239,6 +239,15 @@ export default function App() {
         shl.listRef.current?.scrollToOffset({ offset: 0, animated: false });
     }, [scheduleScope]);
 
+    // A league switched off in Settings is off on every surface that lists
+    // leagues — the All-matches schedule AND the Standings scope. The preference
+    // stores the HIDDEN set (see usePreferences), so a league the user has never
+    // touched, and any league added later, is visible by default.
+    const isLeagueVisible = useCallback(
+        (leagueId) => !hiddenAllMatchesLeagues.includes(leagueId),
+        [hiddenAllMatchesLeagues]
+    );
+
     // Fetch standings data when the user switches to the standings scope.
     // Each league is fetched independently so a slow/all-leagues outage only
     // dims the affected table, not the whole view.
@@ -246,37 +255,46 @@ export default function App() {
         if (scheduleScope !== 'standings') {
             return;
         }
-        if (activeSport === 'hockey') {
-            let cancelled = false;
-            setShlStandingsLoading(true);
-            setHaStandingsLoading(true);
-            Promise.allSettled([
-                fetchStandings().then(setShlStandings),
-                fetchHockeyAllsvenskanStandings().then(setHaStandings)
-            ]).finally(() => {
-                if (!cancelled) {
-                    setShlStandingsLoading(false);
-                    setHaStandingsLoading(false);
-                }
-            });
-            return () => { cancelled = true; };
+        // One descriptor per league this tab's standings scope can show, so the
+        // hidden ones drop out of the fetch as well as the render: an off league
+        // has no block to fill, and requesting its table would spin the scope's
+        // loading gate for a card nobody sees.
+        const tabLeagues = activeSport === 'hockey'
+            ? [
+                { id: 'shl', fetch: fetchStandings, setData: setShlStandings, setLoading: setShlStandingsLoading },
+                { id: 'hockeyallsvenskan', fetch: fetchHockeyAllsvenskanStandings, setData: setHaStandings, setLoading: setHaStandingsLoading }
+            ]
+            : activeSport === 'football'
+                ? [
+                    { id: 'allsvenskan', fetch: fetchFootballStandings, setData: setFootballStandings, setLoading: setFootballStandingsLoading },
+                    { id: 'svenska-cupen', fetch: fetchSvenskaCupenStandings, setData: setCupenStandings, setLoading: setCupenStandingsLoading }
+                ]
+                : [];
+
+        const wanted = tabLeagues.filter(league => isLeagueVisible(league.id));
+        // Clear the flag on every league we are NOT fetching. Without this, a
+        // league hidden mid-flight keeps the `true` its cancelled run set, and the
+        // scope's `loadingA && loadingB` gate would then hang on a request that
+        // will never resolve it.
+        tabLeagues
+            .filter(league => !isLeagueVisible(league.id))
+            .forEach(league => league.setLoading(false));
+
+        if (!wanted.length) {
+            return;
         }
-        if (activeSport === 'football') {
-            let cancelled = false;
-            setFootballStandingsLoading(true);
-            setCupenStandingsLoading(true);
-            Promise.allSettled([
-                fetchFootballStandings().then(setFootballStandings),
-                fetchSvenskaCupenStandings().then(setCupenStandings)
-            ]).finally(() => {
-                if (!cancelled) {
-                    setFootballStandingsLoading(false);
-                    setCupenStandingsLoading(false);
-                }
-            });
-            return () => { cancelled = true; };
-        }
-    }, [scheduleScope, activeSport]);
+
+        let cancelled = false;
+        wanted.forEach(league => league.setLoading(true));
+        Promise.allSettled(
+            wanted.map(league => league.fetch().then(league.setData))
+        ).finally(() => {
+            if (!cancelled) {
+                wanted.forEach(league => league.setLoading(false));
+            }
+        });
+        return () => { cancelled = true; };
+    }, [scheduleScope, activeSport, isLeagueVisible]);
 
     // Initial scroll to live/upcoming in combined football list
     useEffect(() => {
@@ -429,25 +447,35 @@ export default function App() {
     // it: listContent is shared with the game-card lists, which want the gutter.
     // A standings table wants the width, and on a wide screen this padding
     // stacked with the card's and the row's for 42px a side.
-    const renderStandingsScope = useCallback((leagues) => (
-        <ScrollView
-            contentContainerStyle={[styles.listContent, { paddingHorizontal: standingsColumnLayout(windowWidth).screenPadding }]}
-            showsVerticalScrollIndicator={false}
-        >
-            {leagues.map((entry, index) => (
-                <LeagueStandingsBlock
-                    key={entry.slug}
-                    league={entry.slug}
-                    family={entry.family}
-                    data={entry.data}
-                    loading={entry.loading}
-                    favorites={entry.favorites}
-                    teamRoster={entry.roster}
-                    style={index > 0 ? { marginTop: 12 } : null}
-                />
-            ))}
-        </ScrollView>
-    ), [windowWidth]);
+    // A league's `slug` doubles as its ALL_MATCHES_LEAGUES id, so the Settings
+    // eye toggle filters this list directly. Turning every league in a tab off
+    // leaves the scope empty rather than silently showing them all again — the
+    // toggles are in Settings, so say where to switch one back on.
+    const renderStandingsScope = useCallback((leagues) => {
+        const visible = leagues.filter(entry => isLeagueVisible(entry.slug));
+        if (!visible.length) {
+            return <EmptyState message="No leagues selected. Turn one on under Leagues in Settings." />;
+        }
+        return (
+            <ScrollView
+                contentContainerStyle={[styles.listContent, { paddingHorizontal: standingsColumnLayout(windowWidth).screenPadding }]}
+                showsVerticalScrollIndicator={false}
+            >
+                {visible.map((entry, index) => (
+                    <LeagueStandingsBlock
+                        key={entry.slug}
+                        league={entry.slug}
+                        family={entry.family}
+                        data={entry.data}
+                        loading={entry.loading}
+                        favorites={entry.favorites}
+                        teamRoster={entry.roster}
+                        style={index > 0 ? { marginTop: 12 } : null}
+                    />
+                ))}
+            </ScrollView>
+        );
+    }, [windowWidth, isLeagueVisible]);
 
     const renderHockeyStandings = useCallback(() => renderStandingsScope([
         { slug: 'shl', family: 'hockey', data: shlStandings, loading: shlStandingsLoading, favorites: selectedTeams, roster: combinedHockeyTeams },
@@ -458,6 +486,23 @@ export default function App() {
         { slug: 'allsvenskan', family: 'football', data: footballStandings, loading: footballStandingsLoading, favorites: selectedFootballTeams, roster: combinedFootballTeams },
         { slug: 'svenska-cupen', family: 'football', data: cupenStandings, loading: cupenStandingsLoading, favorites: selectedFootballTeams, roster: combinedFootballTeams }
     ]), [renderStandingsScope, footballStandings, footballStandingsLoading, cupenStandings, cupenStandingsLoading, selectedFootballTeams, combinedFootballTeams]);
+
+    // The scope-wide spinner stands in for the whole scope, so it may only show
+    // while EVERY league it would replace is still loading — and a hidden league
+    // is not one of those. It is also never shown when nothing is visible, or it
+    // would spin forever in place of the "no leagues selected" message.
+    const allVisibleLoading = (leagues) => {
+        const visible = leagues.filter(([id]) => isLeagueVisible(id));
+        return visible.length > 0 && visible.every(([, loading]) => loading);
+    };
+    const hockeyStandingsLoading = allVisibleLoading([
+        ['shl', shlStandingsLoading],
+        ['hockeyallsvenskan', haStandingsLoading]
+    ]);
+    const footballStandingsScopeLoading = allVisibleLoading([
+        ['allsvenskan', footballStandingsLoading],
+        ['svenska-cupen', cupenStandingsLoading]
+    ]);
 
     // Initial scroll to live/upcoming in combined hockey list
     useEffect(() => {
@@ -1301,7 +1346,7 @@ export default function App() {
                         />
                     </View>
                     {scheduleScope === 'standings' ? (
-                        shlStandingsLoading && haStandingsLoading ? (
+                        hockeyStandingsLoading ? (
                             <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
                         ) : (
                             renderHockeyStandings()
@@ -1325,7 +1370,7 @@ export default function App() {
                         />
                     </View>
                     {scheduleScope === 'standings' ? (
-                        footballStandingsLoading && cupenStandingsLoading ? (
+                        footballStandingsScopeLoading ? (
                             <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 50 }} />
                         ) : (
                             renderFootballStandings()
