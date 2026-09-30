@@ -1,8 +1,18 @@
 // Automatically determine API base URL based on how the page is accessed
+// - EXPO_PUBLIC_API_BASE_URL wins when set
 // - localhost: use localhost:3080
 // - network IP: use same hostname with port 3080
 // - native mobile: use live API
 const getApiBaseUrl = () => {
+    // The host-derived guess below assumes the API is on port 3080 of whatever
+    // host serves the app, which stops being true behind a proxy: served from
+    // https://<name>.localhost:1355 the app would look for the API at
+    // https://<name>.localhost:3080 and every fetch fails on TLS. An explicit
+    // base also covers pointing a local app at the deployed API.
+    const configured = process.env.EXPO_PUBLIC_API_BASE_URL;
+    if (configured) {
+        return configured.replace(/\/+$/, '');
+    }
     if (typeof window !== 'undefined' && window.location) {
         const { hostname, protocol } = window.location;
         return `${protocol}//${hostname}:3080`;

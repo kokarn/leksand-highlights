@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl, Platform } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl, Platform, useWindowDimensions } from 'react-native';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -53,6 +53,7 @@ import { getNationFlag, fetchHockeyAllsvenskanStandings, fetchStandings, fetchFo
 // Utils
 import { formatSwedishDate } from '../utils';
 import { buildScheduleSections, buildItemLayout, findTargetScrollOffset, findTargetAnchorIndex, filterVisibleLeagues, DAY_HEADER_HEIGHT } from '../utils/scheduleSections';
+import { standingsColumnLayout } from '../utils/standingsPresentation';
 
 // Hooks
 import {
@@ -92,6 +93,9 @@ import {
 
 
 export default function App() {
+    // Feeds the standings scope's horizontal padding; see renderStandingsScope.
+    const { width: windowWidth } = useWindowDimensions();
+
     // User preferences
     const {
         activeSport,
@@ -388,8 +392,16 @@ export default function App() {
     //
     // The roster is what makes favourite highlighting work: the standings feeds
     // and the games feeds (which favourites come from) use different id spaces.
+    //
+    // The scope overrides listContent's horizontal padding rather than changing
+    // it: listContent is shared with the game-card lists, which want the gutter.
+    // A standings table wants the width, and on a wide screen this padding
+    // stacked with the card's and the row's for 42px a side.
     const renderStandingsScope = useCallback((leagues) => (
-        <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+            contentContainerStyle={[styles.listContent, { paddingHorizontal: standingsColumnLayout(windowWidth).screenPadding }]}
+            showsVerticalScrollIndicator={false}
+        >
             {leagues.map((entry, index) => (
                 <LeagueStandingsBlock
                     key={entry.slug}
@@ -403,7 +415,7 @@ export default function App() {
                 />
             ))}
         </ScrollView>
-    ), []);
+    ), [windowWidth]);
 
     const renderHockeyStandings = useCallback(() => renderStandingsScope([
         { slug: 'shl', family: 'hockey', data: shlStandings, loading: shlStandingsLoading, favorites: selectedTeams, roster: combinedHockeyTeams },

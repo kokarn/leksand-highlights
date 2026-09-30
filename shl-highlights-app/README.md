@@ -4,6 +4,10 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.47.0
+- Make the standings tables use the width they have. The table used to sit inside two nested cards that each drew their own border and padding, which on a phone left the rows 318px of a 390px screen; there is now one card and the table runs to its edges, so the club-name column gains ~34px and the whole table reads wider. On a tablet or in a browser the columns also flex to fill the row instead of leaving the surplus in gaps between them (365px of it at 1440px), and past a tablet width the table adds GF/GA — which every standings feed already returns — and spells club names out in full
+- Give the hockey standings the same qualification and relegation markers the football tables have. SHL now labels its boundaries Playoffs (after 6th), Play-in (after 10th) and Relegation playoff (after 12th), and HockeyAllsvenskan labels SHL qualification (after 2nd), Playoffs (after 6th) and Relegation group (after 10th). The lines were already drawn but unlabelled, so you could see that something changed after 6th without seeing what
+
 ### 2.46.0
 - Collapse the four standings views (Hockey/Football tab, a team page's "View standings", and both match modals' standings tab) onto one shared table. They now look alike — same card, league header and "Updated" timestamp — and your favourite clubs highlight on all four instead of only the sport tab. Tapping a row always opens that club's page, including the Allsvenskan rows (Sirius, Malmö, Göteborg, Brommapojkarna, Örgryte, Västerås) that used to land on an empty page, and the Svenska Cupen, Europa Qual and Conference Qual match modals now highlight favourites at all
 

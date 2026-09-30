@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -8,7 +8,7 @@ import { StandingsTable } from './StandingsTable';
 import { getLeagueBySlug } from '../constants/teamFamilies';
 import { formatSwedishDate } from '../utils';
 import { standingsRowTeamParam } from '../utils/standingsIdentity';
-import { standingsRowKey, standingsRowLogo, standingsSections } from '../utils/standingsPresentation';
+import { standingsColumnLayout, standingsRowKey, standingsRowLogo, standingsSections } from '../utils/standingsPresentation';
 
 /**
  * One league's standings, chrome and all — the single standings surface.
@@ -51,6 +51,13 @@ export const LeagueStandingsBlock = ({
 }) => {
     const router = useRouter();
     const { colors } = useTheme();
+    const { width: windowWidth } = useWindowDimensions();
+    // This card is THE card: StandingsTable used to draw an identical one inside
+    // it (same background, same 1px border, same radius 12), so on a 390px phone
+    // the doubled chrome left the row 318px of 390. The table now draws only rows
+    // and runs to this card's edges, which is why the horizontal padding here is
+    // 0 and the header carries its own inset instead.
+    const layout = standingsColumnLayout(windowWidth);
 
     const resolvedLeague = useMemo(
         () => (typeof league === 'string' ? getLeagueBySlug(league) : league) || null,
@@ -81,7 +88,7 @@ export const LeagueStandingsBlock = ({
     );
 
     const header = (label, lastUpdated) => (
-        <View style={[styles.header, { borderBottomColor: colors.cardBorder }]}>
+        <View style={[styles.header, { paddingHorizontal: layout.blockHeaderPaddingH, borderBottomColor: colors.cardBorder }]}>
             <Ionicons name="podium-outline" size={16} color={colors.accent} />
             <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{label}</Text>
             {lastUpdated ? (
@@ -95,7 +102,17 @@ export const LeagueStandingsBlock = ({
     const card = (key, children, extraStyle) => (
         <View
             key={key}
-            style={[styles.block, { backgroundColor: colors.card, borderColor: colors.cardBorder }, extraStyle, style]}
+            style={[
+                styles.block,
+                {
+                    paddingHorizontal: layout.blockPaddingH,
+                    paddingTop: layout.blockPaddingTop,
+                    backgroundColor: colors.card,
+                    borderColor: colors.cardBorder
+                },
+                extraStyle,
+                style
+            ]}
         >
             {children}
         </View>
@@ -113,7 +130,7 @@ export const LeagueStandingsBlock = ({
                 {loading ? (
                     <ActivityIndicator size="small" color={colors.accent} style={styles.loader} />
                 ) : (
-                    <Text style={[styles.empty, { color: colors.textMuted }]}>No standings available.</Text>
+                    <Text style={[styles.empty, { paddingHorizontal: layout.blockHeaderPaddingH, paddingBottom: layout.blockPaddingTop, color: colors.textMuted }]}>No standings available.</Text>
                 )}
             </>
         ));
@@ -137,11 +154,24 @@ export const LeagueStandingsBlock = ({
 };
 
 const styles = StyleSheet.create({
-    block: { borderRadius: 12, borderWidth: 1, padding: 14 },
+    // Rounded on top only, and no bottom padding: the last table row IS the card's
+    // bottom edge. A bottom radius left white wedges beside the final row's
+    // corners, and bottom padding left an empty strip under the table.
+    // overflow hidden still matters for the top corners, which the header meets.
+    block: {
+        borderTopLeftRadius: 12,
+        borderTopRightRadius: 12,
+        borderWidth: 1,
+        overflow: 'hidden'
+    },
     blockSpaced: { marginTop: 12 },
-    header: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 10, borderBottomWidth: 1 },
+    // No marginBottom: the table's own header row sits directly below this, and a
+    // gap between the two reads as a seam now that the table has no card of its
+    // own to separate them.
+    header: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingBottom: 10, borderBottomWidth: 1 },
     title: { fontSize: 15, fontWeight: '700', flex: 1 },
     meta: { fontSize: 11, fontWeight: '600' },
-    loader: { marginTop: 12 },
+    // Closes the card itself when there is no table under it yet.
+    loader: { marginVertical: 12 },
     empty: { fontSize: 13, fontWeight: '500', textAlign: 'center', paddingVertical: 16 }
 });

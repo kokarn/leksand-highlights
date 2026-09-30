@@ -244,6 +244,71 @@ const DIVIDERS_BY_LEAGUE = {
 };
 
 /**
+ * What each hardcoded boundary MEANS, so the hockey tables can label their lines
+ * the way the football ones do.
+ *
+ * Allsvenskan gets its labels free: every row carries a `note` from the feed and
+ * the table prints it. The hockey feeds return no `note` on any row, so their
+ * dividers were unlabelled lines — the reader saw that something changes after
+ * 6th but not what. These supply that text, keyed by the position the line is
+ * drawn AFTER so they line up with DIVIDERS_BY_LEAGUE above.
+ *
+ * Kept next to the thresholds deliberately: a league that changes format needs
+ * both edited together, and splitting them is how they drift.
+ */
+const DIVIDER_LABELS_BY_LEAGUE = {
+    shl: {
+        // 1-6 go straight to the quarterfinals.
+        6: 'Playoffs',
+        // 7-10 play a best-of-three for the last two quarterfinal spots.
+        10: 'Play-in',
+        // 13-14 play the Direktkval; 14th is the worst position in the league.
+        12: 'Relegation playoff'
+    },
+    hockeyallsvenskan: {
+        // Top two meet in the Direktkval for a place in the SHL.
+        2: 'SHL qualification',
+        // 3-6 enter the playoff round that feeds into it.
+        6: 'Playoffs',
+        // 7-10 are safe but done; below 10 is the relegation group.
+        10: 'Relegation group'
+    },
+    allsvenskan: {
+        3: 'Europe',
+        13: 'Relegation playoff',
+        14: 'Relegation'
+    }
+};
+
+/**
+ * The label for one divider, or null when it should be drawn as a bare line.
+ *
+ * `standings` is required, and not for the position: it decides WHICH source is
+ * in charge. A feed that labels its own boundaries is authoritative for all of
+ * them, including the ones it deliberately leaves unlabelled. Allsvenskan draws a
+ * line after 13th (the boundary into the noted relegation rows) that carries no
+ * note of its own, and filling that from the hardcoded table printed "Relegation
+ * playoff" twice — once after 13 and again after 14. So when any row has a note,
+ * this returns nothing and the row's own note is the only label.
+ *
+ * @param {string} [league] - league slug
+ * @param {number} position - the position the divider is drawn after
+ * @param {Array<object>} [standings] - the rows being rendered
+ * @returns {string|null}
+ */
+export const getDividerLabel = (league, position, standings = []) => {
+    // A noted feed owns its labels; see above.
+    if (Array.isArray(standings) && standings.some((row) => row?.note)) {
+        return null;
+    }
+    const labels = DIVIDER_LABELS_BY_LEAGUE[String(league || '').toLowerCase()];
+    if (!labels) {
+        return null;
+    }
+    return labels[Number(position)] || null;
+};
+
+/**
  * Positions to draw a divider AFTER, for one table.
  * @param {Array<object>} standings - the rows being rendered
  * @param {string} [league] - league slug ('shl', 'allsvenskan', 'svenska-cupen', …)

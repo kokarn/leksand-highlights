@@ -145,6 +145,75 @@ test('an unknown league draws no dividers rather than guessing', async () => {
     assert.deepEqual(getDividerPositions(table(12), undefined), []);
 });
 
+// --- divider labels ----------------------------------------------------------
+// Allsvenskan labels its own boundaries via each row's `note`. The hockey feeds
+// send no note on any row, so SHL's 6/10/12 lines were unlabelled: the reader
+// could see that something changes after 6th but not what.
+
+test('SHL boundaries carry labels matching their thresholds', async () => {
+    const { getDividerLabel, getDividerPositions } = await load();
+    // Every threshold must have a label, or a bare line reappears.
+    for (const position of getDividerPositions(table(14), 'shl')) {
+        assert.ok(getDividerLabel('shl', position), `no label for SHL after ${position}`);
+    }
+    assert.equal(getDividerLabel('shl', 6), 'Playoffs');
+    assert.equal(getDividerLabel('shl', 12), 'Relegation playoff');
+});
+
+test('HockeyAllsvenskan gets its own labels, not SHL\'s', async () => {
+    const { getDividerLabel, getDividerPositions } = await load();
+    for (const position of getDividerPositions(table(14), 'hockeyallsvenskan')) {
+        assert.ok(getDividerLabel('hockeyallsvenskan', position), `no label after ${position}`);
+    }
+    // Its top boundary is promotion, the opposite end from SHL's playoff cut.
+    assert.equal(getDividerLabel('hockeyallsvenskan', 2), 'SHL qualification');
+    assert.notEqual(getDividerLabel('hockeyallsvenskan', 6), getDividerLabel('shl', 6) + '!');
+});
+
+test('an unlabelled league or position yields null, not a guess', async () => {
+    const { getDividerLabel } = await load();
+    assert.equal(getDividerLabel('europa-league-qual', 6), null);
+    assert.equal(getDividerLabel(undefined, 6), null);
+    // A position that is not a boundary in that league has no label.
+    assert.equal(getDividerLabel('shl', 7), null);
+    assert.equal(getDividerLabel('svenska-cupen', 1), null);
+});
+
+test('a noted feed owns every one of its boundaries, labelled or not', async () => {
+    const { getDividerLabel, getDividerPositions } = await load();
+    // Regression: Allsvenskan draws a line after 13th — the boundary INTO the
+    // noted relegation rows — which carries no note itself. Filling it from the
+    // hardcoded table printed "Relegation playoff" twice, after 13 and after 14.
+    const rows = table(16, {
+        1: 'Champions League qualifying',
+        2: 'Conference League qualifying',
+        3: 'Conference League qualifying',
+        14: 'Relegation playoff',
+        15: 'Relegation',
+        16: 'Relegation'
+    });
+    assert.deepEqual(getDividerPositions(rows, 'allsvenskan'), [1, 3, 13, 14]);
+    // Every boundary in a noted table takes its text from the row, never here.
+    for (const position of getDividerPositions(rows, 'allsvenskan')) {
+        assert.equal(getDividerLabel('allsvenskan', position, rows), null, `position ${position}`);
+    }
+    // Without notes the same league does use the fallback.
+    assert.equal(getDividerLabel('allsvenskan', 13, table(16)), 'Relegation playoff');
+});
+
+test('a feed-supplied note still wins over the hardcoded label', async () => {
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const source = fs.readFileSync(
+        path.join(__dirname, '..', 'shl-highlights-app', 'components', 'StandingsTable.js'),
+        'utf8'
+    );
+    // `row?.note ||` must come first: the feed's own text survives a format
+    // change, the hardcoded table does not. And the rows must be passed, or the
+    // fallback cannot tell a noted feed from a noteless one.
+    assert.match(source, /row\?\.note \|\| getDividerLabel\(league \|\| sport, position, standings\)/);
+});
+
 test('an empty table is safe', async () => {
     const { getDividerPositions } = await load();
     assert.deepEqual(getDividerPositions([], 'shl'), []);

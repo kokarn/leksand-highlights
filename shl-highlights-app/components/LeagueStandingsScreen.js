@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 
 import { useTheme } from '../contexts';
 import { LeagueStandingsBlock } from './LeagueStandingsBlock';
+import { standingsColumnLayout } from '../utils/standingsPresentation';
 
 /**
  * Standalone league standings screen, reachable from a team page's
@@ -25,6 +26,10 @@ import { LeagueStandingsBlock } from './LeagueStandingsBlock';
 export function LeagueStandingsScreen({ league, family, highlightTeamCode, highlightTeamName }) {
     const router = useRouter();
     const { colors } = useTheme();
+    const { width: windowWidth } = useWindowDimensions();
+    // Outermost of the three paddings that inset the table; see the block and
+    // standingsColumnLayout for why they shrink on a wide screen.
+    const { screenPadding } = standingsColumnLayout(windowWidth);
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -82,7 +87,7 @@ export function LeagueStandingsScreen({ league, family, highlightTeamCode, highl
             ) : error ? (
                 <View style={styles.message}><Text style={{ color: colors.textMuted }}>{error}</Text></View>
             ) : (
-                <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+                <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: screenPadding }]} showsVerticalScrollIndicator={false}>
                     <LeagueStandingsBlock
                         league={league}
                         family={family?.family}
