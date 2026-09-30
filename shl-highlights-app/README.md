@@ -4,6 +4,10 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.48.0
+- The All tab now always shows every match. It renders no My teams / All matches toggle — there is no single league to show standings for — but it still obeyed the choice you last made on the Hockey or Football tab, so leaving that on "My teams" silently pruned the cross-sport list with no visible control to widen it. The Hockey and Football tabs keep their own remembered choice exactly as before
+- Mark your favourite teams in the all-matches lists. A match involving a team you follow now carries the same faint accent tint that already highlights your clubs in the standings tables, in the All tab and in both sports' All matches views. Matched on club name rather than team code, so a favourite still lights up where the schedule and standings feeds spell the same club differently. A live match keeps its red styling, and the My teams lists are left untinted since every row there is already a favourite
+
 ### 2.47.0
 - Make the standings tables use the width they have. The table used to sit inside two nested cards that each drew their own border and padding, which on a phone left the rows 318px of a 390px screen; there is now one card and the table runs to its edges, so the club-name column gains ~34px and the whole table reads wider. On a tablet or in a browser the columns also flex to fill the row instead of leaving the surplus in gaps between them (365px of it at 1440px), and past a tablet width the table adds GF/GA — which every standings feed already returns — and spells club names out in full
 - Give the hockey standings the same qualification and relegation markers the football tables have. SHL now labels its boundaries Playoffs (after 6th), Play-in (after 10th) and Relegation playoff (after 12th), and HockeyAllsvenskan labels SHL qualification (after 2nd), Playoffs (after 6th) and Relegation group (after 10th). The lines were already drawn but unlabelled, so you could see that something changed after 6th without seeing what

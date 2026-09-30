@@ -241,3 +241,35 @@ export const leaguesForTeam = (games, leagues) => {
     const present = new Set((games || []).map((game) => String(game?.sport || '').toLowerCase()));
     return (leagues || []).filter((league) => present.has(league.slug));
 };
+
+/**
+ * Does this game involve any of the user's favourite teams?
+ *
+ * The "All matches" lists show every fixture, so a favourite needs marking
+ * rather than filtering. Built on the same favourite-token set the standings
+ * tables use (buildFavoriteTokens), for the same reason they need it: the
+ * favourites list holds keys from the GAMES feeds, and nothing guarantees a
+ * bare `includes` on a code matches — the Allsvenskan games feed is an ESPN +
+ * FotbollPlay merge carrying two codes per club, so a favourite stored as DEIF
+ * would never light up a row the other source spelled DEG.
+ *
+ * Takes the prebuilt token set rather than the favourites array so a list
+ * builds it once per render instead of once per row.
+ *
+ * @param {object} game - a game with homeTeamInfo / awayTeamInfo
+ * @param {Set<string>} favoriteTokens - from buildFavoriteTokens
+ * @returns {boolean}
+ */
+export const gameInvolvesFavorite = (game, favoriteTokens) => {
+    if (!game || !favoriteTokens?.size) {
+        return false;
+    }
+    for (const side of [game.homeTeamInfo, game.awayTeamInfo]) {
+        for (const token of teamIdentityTokens(side)) {
+            if (favoriteTokens.has(token)) {
+                return true;
+            }
+        }
+    }
+    return false;
+};

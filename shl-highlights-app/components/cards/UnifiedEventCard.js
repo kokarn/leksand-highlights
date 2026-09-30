@@ -20,24 +20,29 @@ const SPORT_COLORS = {
 
 /**
  * Unified event card that renders the appropriate sport-specific card
- * with an optional sport indicator
+ * with an optional sport indicator.
+ *
+ * `isFavorite` marks a match involving a team the user follows. The cross-sport
+ * "All" list is never team-filtered, so the tint is how a followed team is found
+ * in it. Biathlon is a per-athlete sport with no team favourites, so its card
+ * takes no such prop.
  */
-export const UnifiedEventCard = memo(function UnifiedEventCard({ event, onPress, showSportIndicator = true }) {
+export const UnifiedEventCard = memo(function UnifiedEventCard({ event, onPress, showSportIndicator = true, isFavorite = false }) {
     const sport = event.sport;
     const sportColor = SPORT_COLORS[sport] || '#666';
 
     const renderCard = () => {
         if (sport === 'shl') {
-            return <GameCard game={event} onPress={() => onPress(event)} />;
+            return <GameCard game={event} onPress={() => onPress(event)} isFavorite={isFavorite} />;
         }
         if (sport === 'hockeyallsvenskan') {
-            return <GameCard game={event} onPress={() => onPress(event)} leagueLabel="HockeyAllsvenskan" />;
+            return <GameCard game={event} onPress={() => onPress(event)} leagueLabel="HockeyAllsvenskan" isFavorite={isFavorite} />;
         }
         if (sport === 'football' || sport === 'allsvenskan' || sport === 'svenska-cupen' || sport === 'europa-league-qual' || sport === 'conference-league-qual') {
             const leagueLabel = sport === 'svenska-cupen'
                 ? 'Svenska Cupen'
                 : (sport === 'europa-league-qual' ? 'Europa League Qualifying' : (sport === 'conference-league-qual' ? 'Conference League Qualifying' : 'Allsvenskan'));
-            return <FootballGameCard game={event} onPress={() => onPress(event)} leagueLabel={leagueLabel} />;
+            return <FootballGameCard game={event} onPress={() => onPress(event)} leagueLabel={leagueLabel} isFavorite={isFavorite} />;
         }
         if (sport === 'biathlon') {
             return <BiathlonRaceCard race={event} onPress={() => onPress(event)} />;

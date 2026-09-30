@@ -28,8 +28,8 @@ test('schedule scope is persisted via a dedicated storage key', () => {
 
 test("'all' scope bypasses the team filter by passing empty arrays to the data hooks", () => {
     assert.match(appSource, /const showAllMatches = scheduleScope === 'all'/);
-    assert.match(appSource, /const scopedTeams = showAllMatches \? \[\] : selectedTeams/);
-    assert.match(appSource, /const scopedFootballTeams = showAllMatches \? \[\] : selectedFootballTeams/);
+    assert.match(appSource, /const scopedTeams = unfiltered \? \[\] : selectedTeams/);
+    assert.match(appSource, /const scopedFootballTeams = unfiltered \? \[\] : selectedFootballTeams/);
     // hooks consume the scoped arrays, not the raw selected lists
     assert.match(appSource, /useFootballData\(activeSport, scopedFootballTeams/);
     assert.match(appSource, /useShlData\(activeSport, scopedTeams/);

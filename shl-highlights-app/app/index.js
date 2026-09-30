@@ -5,6 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams } from 'expo-router';
+import { buildFavoriteTokens } from '../utils/standingsIdentity';
+import { gameInvolvesFavorite } from '../utils/teamGames';
 
 // Theme
 import { useTheme } from '../contexts';
@@ -12,6 +14,8 @@ import { useTheme } from '../contexts';
 // Card height constants for consistent scroll behavior
 // Height = padding (32) + header (~36) + content (~90) + marginBottom (16)
 const GAME_CARD_HEIGHT = 174;
+// Which family a cross-sport row's favourites come from; see eventIsFavorite.
+const HOCKEY_SPORTS = ['shl', 'hockeyallsvenskan'];
 const FOOTBALL_CARD_HEIGHT = 174;
 // Biathlon: padding (32) + cardHeader (~40) + mainRow (~80) + marginBottom (16)
 const BIATHLON_CARD_HEIGHT = 168;
@@ -125,9 +129,18 @@ export default function App() {
     // When the schedule scope is 'all', pass empty filter arrays so the data
     // hooks return every match of the day (their team filter self-disables when
     // the selected list is empty). 'myteams' keeps the user's followed teams.
+    //
+    // The 'all' SPORT tab is always unfiltered, whatever the scope says. Its
+    // cross-sport list has no ScopeToggle above it — there is no single league to
+    // show standings for — so the scope was an invisible control there: a user who
+    // had left the hockey tab on "My teams" saw a silently pruned "All" list with
+    // no way to widen it. The scope belongs to the per-sport tabs that display it,
+    // so those keep their remembered choice untouched and this tab ignores it.
+    const isAllSportsTab = activeSport === 'all';
     const showAllMatches = scheduleScope === 'all';
-    const scopedTeams = showAllMatches ? [] : selectedTeams;
-    const scopedFootballTeams = showAllMatches ? [] : selectedFootballTeams;
+    const unfiltered = showAllMatches || isAllSportsTab;
+    const scopedTeams = unfiltered ? [] : selectedTeams;
+    const scopedFootballTeams = unfiltered ? [] : selectedFootballTeams;
 
     // Eager load all sports data on app start for instant scroll
     const shl = useShlData(activeSport, scopedTeams, { eagerLoad: true });
@@ -384,6 +397,25 @@ export default function App() {
             ((a.names?.short || a.code) || '').localeCompare((b.names?.short || b.code) || '', 'sv')
         );
     }, [shl.teams, hockeyAllsvenskan.teams]);
+
+    // Favourite tokens for tinting a match row the user follows. Built through
+    // buildFavoriteTokens (not a bare `includes`) for the reason documented in
+    // utils/standingsIdentity: a favourite key and a games-feed team code need not
+    // share a spelling, and the roster is what bridges them. Built once per list
+    // here rather than once per row.
+    //
+    // The two families are kept apart so a hockey favourite cannot tint a football
+    // match: the token stems are lossy, and the only known collisions across the
+    // six feeds are cross-SPORT ones. The cross-sport 'all' list checks a row
+    // against the set for the family it belongs to.
+    const hockeyFavoriteTokens = useMemo(
+        () => buildFavoriteTokens(selectedTeams, combinedHockeyTeams),
+        [selectedTeams, combinedHockeyTeams]
+    );
+    const footballFavoriteTokens = useMemo(
+        () => buildFavoriteTokens(selectedFootballTeams, combinedFootballTeams),
+        [selectedFootballTeams, combinedFootballTeams]
+    );
 
     // Inline standings for the Hockey and Football tabs (scheduleScope ===
     // 'standings'). Every standings surface in the app renders the same
@@ -913,6 +945,7 @@ export default function App() {
                             game={item.game}
                             family={item.game.sport === 'hockeyallsvenskan' ? 'hockeyallsvenskan' : 'shl'}
                             onPress={() => handleHockeyGamePress(item.game)}
+                            isFavorite={gameInvolvesFavorite(item.game, hockeyFavoriteTokens)}
                         />
                     )
                 ) : (
@@ -986,6 +1019,7 @@ export default function App() {
                             game={item.game}
                             family="football"
                             onPress={() => openFootballGame(item.game)}
+                            isFavorite={gameInvolvesFavorite(item.game, footballFavoriteTokens)}
                         />
                     )
                 ) : (
@@ -1170,6 +1204,17 @@ export default function App() {
         );
     };
 
+    // Which favourite-token set a cross-sport row is judged against. Biathlon has
+    // no team favourites (it is per-athlete), so it never tints.
+    const eventIsFavorite = useCallback((event) => {
+        const sport = String(event?.sport || '');
+        if (sport === 'biathlon') {
+            return false;
+        }
+        const tokens = HOCKEY_SPORTS.includes(sport) ? hockeyFavoriteTokens : footballFavoriteTokens;
+        return gameInvolvesFavorite(event, tokens);
+    }, [hockeyFavoriteTokens, footballFavoriteTokens]);
+
     // Memoized render function for unified event items
     const renderUnifiedItem = useCallback(({ item }) => {
         if (item.type === 'header') {
@@ -1187,9 +1232,10 @@ export default function App() {
                 event={item.event}
                 onPress={unified.handleEventPress}
                 showSportIndicator={false}
+                isFavorite={eventIsFavorite(item.event)}
             />
         );
-    }, [unified.handleEventPress]);
+    }, [unified.handleEventPress, eventIsFavorite]);
 
     // Memoized key extractor for unified list
     const unifiedKeyExtractor = useCallback((item) => {

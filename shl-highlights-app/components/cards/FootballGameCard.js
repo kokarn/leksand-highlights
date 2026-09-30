@@ -9,7 +9,7 @@ const getTeamName = (team, fallback) => resolveTeamName(team, { fallback });
 
 const getTeamLogo = (team) => getTeamLogoUri(team, 'football');
 
-export const FootballGameCard = memo(function FootballGameCard({ game, onPress, leagueLabel = 'Allsvenskan' }) {
+export const FootballGameCard = memo(function FootballGameCard({ game, onPress, leagueLabel = 'Allsvenskan', isFavorite = false }) {
     const { colors, isDark } = useTheme();
     const { width: windowWidth } = useWindowDimensions();
     const isCompactLayout = windowWidth <= 430;
@@ -45,6 +45,7 @@ export const FootballGameCard = memo(function FootballGameCard({ game, onPress, 
                 end={{ x: 1, y: 1 }}
                 style={[styles.gameCard, { borderColor: colors.cardBorder }, isLive && styles.gameCardLive]}
             >
+                {isFavorite && <View style={[styles.favoriteTint, { backgroundColor: colors.chipActive }]} pointerEvents="none" />}
                 <View style={styles.cardHeader}>
                     <Text style={[styles.leagueText, { color: colors.textMuted }]}>{leagueLabel}</Text>
                     <View style={styles.headerRight}>
@@ -133,6 +134,15 @@ export const FootballGameCard = memo(function FootballGameCard({ game, onPress, 
 });
 
 const styles = StyleSheet.create({
+    // A favourite team's wash, layered OVER the card's gradient rather than folded
+    // into its stops: chipActive is translucent (it is designed to sit on
+    // something), so as a gradient stop it would have dropped the card's opaque
+    // base and let the screen gradient show through. Its radius repeats
+    // gameCard's because the card does not clip its children.
+    favoriteTint: {
+        ...StyleSheet.absoluteFillObject,
+        borderRadius: 16
+    },
     gameCard: {
         borderRadius: 16,
         padding: 16,

@@ -17,8 +17,13 @@ export const COMPACT_CARD_HEIGHT = 56;
  * (live=red, finished=green, upcoming=accent). Reuses the shared team-identity
  * resolvers so names/logos match the tall cards. Works for both hockey and
  * football via the `family` prop passed to getTeamLogoUri.
+ *
+ * `isFavorite` tints the row with the same faint accent wash that marks a
+ * favourite in the standings tables, so one visual language means "a team you
+ * follow" across the app. The caller decides it (via gameInvolvesFavorite) so
+ * the favourite-token set is built once per list rather than once per row.
  */
-export const CompactGameCard = memo(function CompactGameCard({ game, onPress, family = 'football' }) {
+export const CompactGameCard = memo(function CompactGameCard({ game, onPress, family = 'football', isFavorite = false }) {
     const { colors, isDark } = useTheme();
 
     const homeTeam = game?.homeTeamInfo ?? {};
@@ -39,9 +44,11 @@ export const CompactGameCard = memo(function CompactGameCard({ game, onPress, fa
     const stripeColor = isLive ? '#FF453A' : (isFinished ? '#30D158' : colors.accent);
     const scoreColor = isLive ? '#FF453A' : colors.text;
 
-    const cardColors = isDark
-        ? (isLive ? '#2a1c1c' : colors.card)
-        : colors.card;
+    // Live styling still wins: a live match is the more urgent signal, and its
+    // red wash would fight the accent one.
+    const cardColors = isLive
+        ? (isDark ? '#2a1c1c' : colors.card)
+        : (isFavorite ? colors.chipActive : colors.card);
 
     const renderLogo = (uri) => (
         uri ? (
