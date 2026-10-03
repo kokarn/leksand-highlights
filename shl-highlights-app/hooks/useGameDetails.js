@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { normalizeScoreValue } from '../utils';
+import { resolveDisplayScore } from '../utils/gameScore';
 
 const parseHockeyEventTime = (time) => {
     if (!time) return Number.POSITIVE_INFINITY;
@@ -28,14 +28,18 @@ export function useGameDetails(gameDetails, selectedGame, videos = []) {
         let sog = { home: 0, away: 0 };
         let pp = { home: '-', away: '-' };
         let pim = { home: 0, away: 0 };
-        let actualScore = { home: null, away: null };
+        // The team-stats 'G' row. Carries the shots-on-goal totals alongside the
+        // score, which is why it is read here at all — but it is a POST-game
+        // endpoint and its score lags while the game is in progress, so it is
+        // only a fallback for the header. See utils/gameScore.js.
+        let statsScore = { home: null, away: null };
 
         const statsArray = gameDetails.teamStats?.stats || [];
         statsArray.forEach(stat => {
             const key = stat.homeTeam?.sideTranslateKey || stat.awayTeam?.sideTranslateKey;
             if (key === 'G') {
-                actualScore.home = stat.homeTeam?.left?.value;
-                actualScore.away = stat.awayTeam?.left?.value;
+                statsScore.home = stat.homeTeam?.left?.value;
+                statsScore.away = stat.awayTeam?.left?.value;
                 sog.home = stat.homeTeam?.right?.value;
                 sog.away = stat.awayTeam?.right?.value;
             } else if (key === 'PPG') {
@@ -47,21 +51,23 @@ export function useGameDetails(gameDetails, selectedGame, videos = []) {
             }
         });
 
-        const detailHomeScore = normalizeScoreValue(gameDetails.info?.homeTeam?.score);
-        const detailAwayScore = normalizeScoreValue(gameDetails.info?.awayTeam?.score);
-        const fallbackHomeScore = normalizeScoreValue(selectedGame.homeTeamResult?.score) ?? normalizeScoreValue(selectedGame.homeTeamInfo?.score);
-        const fallbackAwayScore = normalizeScoreValue(selectedGame.awayTeamResult?.score) ?? normalizeScoreValue(selectedGame.awayTeamInfo?.score);
-        const isPostGame = selectedGame.state === 'post-game';
-        const scoreDisplay = isPostGame
-            ? {
-                // Keep post-game score aligned with the schedule/listing score.
-                home: fallbackHomeScore ?? detailHomeScore ?? actualScore.home ?? '-',
-                away: fallbackAwayScore ?? detailAwayScore ?? actualScore.away ?? '-'
-            }
-            : {
-                home: actualScore.home ?? detailHomeScore ?? fallbackHomeScore ?? '-',
-                away: actualScore.away ?? detailAwayScore ?? fallbackAwayScore ?? '-'
-            };
+        // While a game is live the header is driven by the SAME goal events the
+        // list below it renders, so the two cannot disagree — the bug this
+        // replaces had the header a goal behind its own events list, because it
+        // preferred the lagging team-stats score. See utils/gameScore.js.
+        const scoreDisplay = resolveDisplayScore({
+            goals: gameDetails.events?.goals,
+            detailScore: {
+                home: gameDetails.info?.homeTeam?.score,
+                away: gameDetails.info?.awayTeam?.score
+            },
+            statsScore,
+            listingScore: {
+                home: selectedGame.homeTeamResult?.score ?? selectedGame.homeTeamInfo?.score,
+                away: selectedGame.awayTeamResult?.score ?? selectedGame.awayTeamInfo?.score
+            },
+            isPostGame: selectedGame.state === 'post-game'
+        });
 
         const interestingEvents = [];
         let currentPeriod = -1;
