@@ -59,6 +59,7 @@ const {
 } = require('./modules/cache');
 const { getProvider, getAvailableSports } = require('./modules/providers');
 const { getAllGamesCached } = require('./modules/games-cache');
+const { refreshLiveGames } = require('./modules/live-games');
 const { buildTeamsIndex, queryTeams, usesEnvelopeApi, FOOTBALL_LEAGUES } = require('./modules/teams-index');
 const { formatSwedishTimestamp } = require('./modules/utils');
 const notifier = require('./modules/notifier');
@@ -1312,6 +1313,13 @@ app.get('/api/hockeyallsvenskan/games', async (req, res) => {
             games = [];
         }
 
+        // Same treatment as /api/games, and for the same reason: HA runs on the
+        // SHL backend, whose schedule feed reports no in-play score, so a live
+        // game arrives here with `score: null` and the app rendered a bare '-'
+        // where the score should be. The live score only exists on the
+        // play-by-play endpoint, which is what this reaches for.
+        games = await refreshLiveGames(provider, games);
+
         const now = new Date();
         const shouldUseFastCache = shouldUseFastGamesCache(games, now);
         if (!usedCache) {
@@ -1565,39 +1573,11 @@ app.get('/api/games', async (req, res) => {
         if (baseGames) {
             console.log('[Cache HIT] /api/games');
 
-            // Check for games that might have transitioned to live since caching
-            // This handles the case where a game was cached as pre-game but has now started
-            const gamesInLiveWindow = baseGames.filter(g => provider.isGameInLiveWindow(g));
-            if (gamesInLiveWindow.length > 0) {
-                console.log(`[Cache] Checking ${gamesInLiveWindow.length} games that may have started...`);
-                const liveCheckResults = await Promise.all(
-                    gamesInLiveWindow.map(async (game) => {
-                        const hasStarted = await provider.checkGameHasStarted(game.uuid);
-                        return { gameId: game.uuid, hasStarted };
-                    })
-                );
-
-                const liveGameIds = new Set(
-                    liveCheckResults.filter(r => r.hasStarted).map(r => r.gameId)
-                );
-
-                if (liveGameIds.size > 0) {
-                    console.log(`[Cache] Found ${liveGameIds.size} games that have transitioned to live`);
-                    baseGames = baseGames.map(game => {
-                        if (liveGameIds.has(game.uuid)) {
-                            return { ...game, state: 'live' };
-                        }
-                        return game;
-                    });
-                }
-            }
-
-            // For live games, always fetch fresh scores even on cache hit
-            const hasLiveGames = baseGames.some(g => g.state === 'live');
-            if (hasLiveGames) {
-                console.log('[Cache] Enriching live games with fresh scores...');
-                baseGames = await provider.enrichGames(baseGames);
-            }
+            // Promote games that have started since caching, then refresh live
+            // scores — the cached score for a live game is stale by construction,
+            // since the schedule feed never carries an in-play one. Shared with
+            // the HockeyAllsvenskan route; see modules/live-games.js.
+            baseGames = await refreshLiveGames(provider, baseGames);
         } else {
             usedCache = false;
             console.log('[Cache MISS] /api/games - fetching fresh data...');

@@ -216,6 +216,10 @@ export function useSvenskaCupenData(activeSport, selectedFootballTeams, options 
 
     return {
         games: sortedGames,
+        // The feed as it arrived, before the favourites filter. The standings
+        // scope needs every live game, not just a favourite's: a table projected
+        // from a filtered list would silently omit the other games in progress.
+        allGames: games,
         loading,
         refreshing,
         selectedGame,

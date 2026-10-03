@@ -1,5 +1,5 @@
-import { useCallback, useMemo } from 'react';
-import { ActivityIndicator, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -9,6 +9,18 @@ import { getLeagueBySlug } from '../constants/teamFamilies';
 import { formatSwedishDate } from '../utils';
 import { standingsRowTeamParam } from '../utils/standingsIdentity';
 import { standingsColumnLayout, standingsRowKey, standingsRowLogo, standingsSections } from '../utils/standingsPresentation';
+import { projectLiveStandings } from '../utils/liveStandings';
+
+// The app's one "in progress" red — the live stripe on CompactGameCard, the LIVE
+// label on GameCard, the live row wash in StandingsTable. Not themed: it means
+// the same thing in both schemes, as it does on the cards.
+const LIVE_RED = '#FF453A';
+const liveChipBackground = 'rgba(255, 69, 58, 0.12)';
+
+// A stable default for the `liveGames` prop. A fresh [] per render would be a
+// new dependency identity every time and re-run the projection memo on every
+// render of the surfaces that omit the prop.
+const NO_GAMES = [];
 
 /**
  * One league's standings, chrome and all — the single standings surface.
@@ -44,6 +56,10 @@ export const LeagueStandingsBlock = ({
     // one feed cannot reach a standings row from another; see standingsIdentity.
     teamRoster = [],
     title,
+    // Games for this league, used to project the table forward over whatever is
+    // in progress. Any states may be passed; only live ones are read. Omit it
+    // (the three non-tab surfaces do) and no Live control is offered.
+    liveGames = NO_GAMES,
     // Modals must dismiss themselves before the router push, or the team page
     // opens behind them.
     onBeforeNavigate,
@@ -64,9 +80,28 @@ export const LeagueStandingsBlock = ({
         [league]
     );
 
+    const standingsSport = resolvedLeague?.standingsSport || 'football';
+
+    // The table as it would stand if every game in progress ended at its
+    // current score. Null whenever there is nothing to project — no live game,
+    // no resolved live score, or no live game that maps onto a row — and that
+    // null is what keeps the control off screen rather than offering a toggle
+    // that would change nothing. Grouped (cup) payloads carry no `standings`,
+    // so they return null too.
+    const liveProjection = useMemo(
+        () => projectLiveStandings(data, liveGames, { sport: standingsSport }),
+        [data, liveGames, standingsSport]
+    );
+
+    // Off by default: the official table is the truthful one, and a projection
+    // the user did not ask for would misreport the league. Per-block state, so
+    // SHL and HockeyAllsvenskan toggle independently.
+    const [showLive, setShowLive] = useState(false);
+    const liveActive = showLive && !!liveProjection;
+
     const sections = useMemo(
-        () => standingsSections(resolvedLeague, data),
-        [resolvedLeague, data]
+        () => standingsSections(resolvedLeague, liveActive ? { ...data, standings: liveProjection.standings } : data),
+        [resolvedLeague, data, liveActive, liveProjection]
     );
 
     const navigateToTeam = useCallback((row) => {
@@ -81,21 +116,45 @@ export const LeagueStandingsBlock = ({
         router.push(`/team/${family}/${encodeURIComponent(param)}`);
     }, [router, family, teamRoster, onBeforeNavigate]);
 
-    const standingsSport = resolvedLeague?.standingsSport || 'football';
     const getTeamLogo = useCallback(
         (row) => standingsRowLogo(row, standingsSport),
         [standingsSport]
+    );
+
+    // Only rendered when there is something to project, so the control never
+    // appears as a no-op. On: the table is the live projection, and "Updated …"
+    // is replaced by a note saying so — the feed's timestamp describes the
+    // official table, not this one.
+    const livePill = () => (
+        <TouchableOpacity
+            onPress={() => setShowLive((previous) => !previous)}
+            activeOpacity={0.7}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: liveActive }}
+            accessibilityLabel="Show the table as if the games in progress ended now"
+            style={[
+                styles.livePill,
+                { borderColor: colors.cardBorder, backgroundColor: colors.chip },
+                liveActive && { borderColor: LIVE_RED, backgroundColor: liveChipBackground }
+            ]}
+        >
+            <View style={[styles.liveDot, { backgroundColor: liveActive ? LIVE_RED : colors.textMuted }]} />
+            <Text style={[styles.livePillText, { color: liveActive ? LIVE_RED : colors.textMuted }]}>LIVE</Text>
+        </TouchableOpacity>
     );
 
     const header = (label, lastUpdated) => (
         <View style={[styles.header, { paddingHorizontal: layout.blockHeaderPaddingH, borderBottomColor: colors.cardBorder }]}>
             <Ionicons name="podium-outline" size={16} color={colors.accent} />
             <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{label}</Text>
-            {lastUpdated ? (
+            {liveActive ? (
+                <Text style={[styles.meta, { color: LIVE_RED }]}>If results stand</Text>
+            ) : lastUpdated ? (
                 <Text style={[styles.meta, { color: colors.textSecondary }]}>
                     Updated {formatSwedishDate(lastUpdated, 'd MMM HH:mm')}
                 </Text>
             ) : null}
+            {liveProjection ? livePill() : null}
         </View>
     );
 
@@ -147,6 +206,7 @@ export const LeagueStandingsBlock = ({
                 league={resolvedLeague?.slug}
                 getTeamKey={standingsRowKey}
                 getTeamLogo={getTeamLogo}
+                liveTokens={liveActive ? liveProjection.liveTokens : null}
                 onTeamPress={family ? navigateToTeam : undefined}
             />
         </>
@@ -171,6 +231,19 @@ const styles = StyleSheet.create({
     header: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingBottom: 10, borderBottomWidth: 1 },
     title: { fontSize: 15, fontWeight: '700', flex: 1 },
     meta: { fontSize: 11, fontWeight: '600' },
+    // Sized to sit in the header row without growing it: the dot plus four
+    // uppercase characters, matching the chip language of ScopeToggle.
+    livePill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 7,
+        paddingVertical: 3,
+        borderRadius: 7,
+        borderWidth: 1
+    },
+    liveDot: { width: 6, height: 6, borderRadius: 3 },
+    livePillText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.3 },
     // Closes the card itself when there is no table under it yet.
     loader: { marginVertical: 12 },
     empty: { fontSize: 13, fontWeight: '500', textAlign: 'center', paddingVertical: 16 }

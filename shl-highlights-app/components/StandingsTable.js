@@ -2,7 +2,14 @@ import { Fragment } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { useTheme } from '../contexts';
 import { buildFavoriteTokens, standingsRowIsFavorite, getDividerPositions, getDividerLabel } from '../utils/standingsIdentity';
+import { standingsRowIsLive } from '../utils/liveStandings';
 import { standingsColumnLayout } from '../utils/standingsPresentation';
+
+// The live-projection row wash. Deliberately the same red the rest of the app
+// uses for "in progress" (#FF453A — the live stripe on CompactGameCard, the LIVE
+// label on GameCard), at a low enough alpha to sit under tabular text in both
+// themes. Dark needs slightly more to read against #1c1c1e.
+const liveRowTint = (isDark) => (isDark ? 'rgba(255, 69, 58, 0.18)' : 'rgba(255, 69, 58, 0.10)');
 
 /**
  * Format stat value for display
@@ -67,6 +74,9 @@ export const StandingsTable = ({
     sport = 'shl', // column set: 'shl' (OW/OL) or 'football' (D)
     league, // league slug — picks the divider rule; falls back to `sport`
     teamRoster = [], // { key, name } list, so a favourite key resolves to its club name
+    // Tokens of the rows a live game touches, from projectLiveStandings. Only
+    // set while a live projection is being shown; null means an official table.
+    liveTokens = null,
     getTeamKey,
     getTeamLogo,
     onTeamPress
@@ -148,6 +158,9 @@ export const StandingsTable = ({
                 // feeds and the games feeds (which favourites come from) use
                 // different id spaces. See utils/standingsIdentity.
                 const isFavorite = standingsRowIsFavorite(team, favoriteTokens);
+                // A row the live projection moved. Tinted so the effect of the
+                // games in progress is readable without comparing two tables.
+                const isLiveRow = standingsRowIsLive(team, liveTokens);
                 const logoUrl = getTeamLogo?.(team);
                 const position = Number(team.position);
                 const showDivider = dividerPositions.includes(position);
@@ -164,7 +177,7 @@ export const StandingsTable = ({
 
                 return (
                     <Fragment key={team.teamUuid || team.teamCode || team.teamName}>
-                        <RowContainer {...rowProps} style={[styles.tableRow, rowLayout, { borderBottomColor: colors.separator }, isLastRow && styles.tableRowLast, isFavorite && { backgroundColor: colors.chipActive }]}>
+                        <RowContainer {...rowProps} style={[styles.tableRow, rowLayout, { borderBottomColor: colors.separator }, isLastRow && styles.tableRowLast, isFavorite && { backgroundColor: colors.chipActive }, isLiveRow && { backgroundColor: liveRowTint(isDark) }]}>
                         <Text style={[styles.tableCell, cellText, statStyle('rank'), { color: colors.text }]}>
                             {formatStatValue(team.position)}
                         </Text>

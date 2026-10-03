@@ -470,6 +470,7 @@ export default function App() {
                         loading={entry.loading}
                         favorites={entry.favorites}
                         teamRoster={entry.roster}
+                        liveGames={entry.liveGames}
                         style={index > 0 ? { marginTop: 12 } : null}
                     />
                 ))}
@@ -478,14 +479,14 @@ export default function App() {
     }, [windowWidth, isLeagueVisible]);
 
     const renderHockeyStandings = useCallback(() => renderStandingsScope([
-        { slug: 'shl', family: 'hockey', data: shlStandings, loading: shlStandingsLoading, favorites: selectedTeams, roster: combinedHockeyTeams },
-        { slug: 'hockeyallsvenskan', family: 'hockey', data: haStandings, loading: haStandingsLoading, favorites: selectedTeams, roster: combinedHockeyTeams }
-    ]), [renderStandingsScope, shlStandings, shlStandingsLoading, haStandings, haStandingsLoading, selectedTeams, combinedHockeyTeams]);
+        { slug: 'shl', family: 'hockey', data: shlStandings, loading: shlStandingsLoading, favorites: selectedTeams, roster: combinedHockeyTeams, liveGames: shl.allGames },
+        { slug: 'hockeyallsvenskan', family: 'hockey', data: haStandings, loading: haStandingsLoading, favorites: selectedTeams, roster: combinedHockeyTeams, liveGames: hockeyAllsvenskan.allGames }
+    ]), [renderStandingsScope, shlStandings, shlStandingsLoading, haStandings, haStandingsLoading, selectedTeams, combinedHockeyTeams, shl.allGames, hockeyAllsvenskan.allGames]);
 
     const renderFootballStandings = useCallback(() => renderStandingsScope([
-        { slug: 'allsvenskan', family: 'football', data: footballStandings, loading: footballStandingsLoading, favorites: selectedFootballTeams, roster: combinedFootballTeams },
-        { slug: 'svenska-cupen', family: 'football', data: cupenStandings, loading: cupenStandingsLoading, favorites: selectedFootballTeams, roster: combinedFootballTeams }
-    ]), [renderStandingsScope, footballStandings, footballStandingsLoading, cupenStandings, cupenStandingsLoading, selectedFootballTeams, combinedFootballTeams]);
+        { slug: 'allsvenskan', family: 'football', data: footballStandings, loading: footballStandingsLoading, favorites: selectedFootballTeams, roster: combinedFootballTeams, liveGames: football.allGames },
+        { slug: 'svenska-cupen', family: 'football', data: cupenStandings, loading: cupenStandingsLoading, favorites: selectedFootballTeams, roster: combinedFootballTeams, liveGames: svenskaCupen.allGames }
+    ]), [renderStandingsScope, footballStandings, footballStandingsLoading, cupenStandings, cupenStandingsLoading, selectedFootballTeams, combinedFootballTeams, football.allGames, svenskaCupen.allGames]);
 
     // The scope-wide spinner stands in for the whole scope, so it may only show
     // while EVERY league it would replace is still loading — and a hidden league
