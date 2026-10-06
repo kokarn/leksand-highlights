@@ -11,13 +11,12 @@ import { gameInvolvesFavorite } from '../utils/teamGames';
 // Theme
 import { useTheme } from '../contexts';
 
-// Card height constants for consistent scroll behavior
-// Height = padding (32) + header (~36) + content (~90) + marginBottom (16)
-const GAME_CARD_HEIGHT = 174;
-// Which family a cross-sport row's favourites come from; see eventIsFavorite.
+// Hockey slugs, used to pick a cross-sport row's logo family on the Home list.
 const HOCKEY_SPORTS = ['shl', 'hockeyallsvenskan'];
-const FOOTBALL_CARD_HEIGHT = 174;
-// Biathlon: padding (32) + cardHeader (~40) + mainRow (~80) + marginBottom (16)
+// Biathlon: padding (32) + cardHeader (~40) + mainRow (~80) + marginBottom (16).
+// The only tall card left in a main list — the biathlon tab keeps
+// BiathlonRaceCard, while every schedule list now renders uniform compact rows
+// measured by COMPACT_CARD_HEIGHT / DAY_HEADER_HEIGHT instead.
 const BIATHLON_CARD_HEIGHT = 168;
 const BIATHLON_MEDAL_COLORS = {
     1: '#FFD700',
@@ -86,7 +85,7 @@ import {
     LeagueStandingsBlock
 } from '../components';
 
-import { GameCard, FootballGameCard, CompactGameCard, COMPACT_CARD_HEIGHT, BiathlonRaceCard, UnifiedEventCard } from '../components/cards';
+import { CompactGameCard, CompactRaceCard, COMPACT_CARD_HEIGHT, BiathlonRaceCard } from '../components/cards';
 import {
     RaceModal,
     FootballMatchModal,
@@ -130,17 +129,26 @@ export default function App() {
     // hooks return every match of the day (their team filter self-disables when
     // the selected list is empty). 'myteams' keeps the user's followed teams.
     //
-    // The 'all' SPORT tab is always unfiltered, whatever the scope says. Its
-    // cross-sport list has no ScopeToggle above it — there is no single league to
-    // show standings for — so the scope was an invisible control there: a user who
-    // had left the hockey tab on "My teams" saw a silently pruned "All" list with
-    // no way to widen it. The scope belongs to the per-sport tabs that display it,
-    // so those keep their remembered choice untouched and this tab ignores it.
-    const isAllSportsTab = activeSport === 'all';
+    // The Home tab is ALWAYS filtered to the teams you follow — that is what it
+    // is for — and it ignores scheduleScope entirely. The scope belongs to the
+    // per-sport tabs that render the toggle; Home shows no toggle, so obeying it
+    // there would be an invisible control (a user who had left the hockey tab on
+    // "All matches" would get an unexplained full cross-sport list).
+    //
+    // With no favourites picked yet, selectedTeams is empty, so the hooks' filter
+    // self-disables and Home falls back to showing everything rather than
+    // rendering an empty screen. Biathlon needs no equivalent: its nation/gender
+    // filters are already passed unscoped, so they apply on every tab.
+    const isHomeTab = activeSport === 'all';
     const showAllMatches = scheduleScope === 'all';
-    const unfiltered = showAllMatches || isAllSportsTab;
+    const unfiltered = !isHomeTab && showAllMatches;
     const scopedTeams = unfiltered ? [] : selectedTeams;
     const scopedFootballTeams = unfiltered ? [] : selectedFootballTeams;
+
+    // Whether Home is in its filtered state or its show-everything fallback.
+    // Biathlon's nation/gender picks do not count: they narrow the races Home
+    // shows but cannot, on their own, make it a "your teams" list.
+    const hasFavorites = selectedTeams.length > 0 || selectedFootballTeams.length > 0;
 
     // Eager load all sports data on app start for instant scroll
     const shl = useShlData(activeSport, scopedTeams, { eagerLoad: true });
@@ -174,26 +182,19 @@ export default function App() {
         });
     }, [football.games, svenskaCupen.games, europaLeagueQual.games, conferenceLeagueQual.games]);
 
-    const combinedFootballTargetGameIndex = useMemo(() => {
-        if (!combinedFootballGames.length) {
-            return 0;
-        }
-        const liveIndex = combinedFootballGames.findIndex(g => g.state === 'live');
-        if (liveIndex !== -1) {
-            return liveIndex;
-        }
-        const upcomingIndex = combinedFootballGames.findIndex(g => g.state !== 'post-game');
-        if (upcomingIndex !== -1) {
-            return upcomingIndex;
-        }
-        return combinedFootballGames.length - 1;
-    }, [combinedFootballGames]);
-
-    // All-matches scope renders a day-grouped list (DayHeader rows interleaved
-    // with compact game rows). Sections + a precomputed variable-height layout
-    // drive getItemLayout and the auto-scroll offset. Empty in My-teams scope.
+    // BOTH scopes render a day-grouped list (DayHeader rows interleaved with
+    // compact game rows). Sections + a precomputed variable-height layout drive
+    // getItemLayout and the auto-scroll offset.
+    //
+    // Only the league filter is scope-specific: hiding a league is an
+    // All-matches concept, and the My-teams list is already narrowed to the
+    // teams you follow.
     const footballSections = useMemo(
-        () => (showAllMatches ? buildScheduleSections(filterVisibleLeagues(combinedFootballGames, hiddenAllMatchesLeagues)) : []),
+        () => buildScheduleSections(
+            showAllMatches
+                ? filterVisibleLeagues(combinedFootballGames, hiddenAllMatchesLeagues)
+                : combinedFootballGames
+        ),
         [showAllMatches, combinedFootballGames, hiddenAllMatchesLeagues]
     );
     const footballSectionLayout = useMemo(
@@ -205,7 +206,7 @@ export default function App() {
         [footballSections, footballSectionLayout]
     );
     // Anchor index for the fresh-mount initialScrollIndex (lands on today without
-    // a racing post-mount scrollToOffset). 0 when no sections (My-teams scope).
+    // a racing post-mount scrollToOffset). 0 when the list is empty.
     const footballSectionAnchorIndex = useMemo(
         () => (footballSections.length ? findTargetAnchorIndex(footballSections) : 0),
         [footballSections]
@@ -215,28 +216,25 @@ export default function App() {
     const hasHockeyCombinedInitialScrolled = useRef(false);
 
     // Reset the one-shot auto-scroll guards when the schedule scope flips so the
-    // list re-anchors to live/upcoming in the newly-sized (compact vs card) list.
-    // The list also holds a stale scroll offset from the previous scope (e.g. the
-    // long "All matches" list leaves a large offset that overshoots the short
-    // "My teams" list), so snap both lists back to the top here first. This effect
+    // list re-anchors to live/upcoming in the newly-filtered list. This effect
     // MUST be declared BEFORE the target-scroll effects below: React runs effects
     // in declaration order, and the guards are refs mutated synchronously, so
     // clearing them here lets the target effects (which also list scheduleScope in
     // their deps) re-anchor to live/upcoming in the SAME commit. If this runs
     // after them, they bail on the still-true guard and the list stays at the top.
-    const isFirstScopeRender = useRef(true);
+    //
+    // It deliberately does NOT scroll the lists back to the top. A scope flip
+    // changes each list's `key`, so the list REMOUNTS with a fresh scroll
+    // position and re-applies initialScrollIndex — there is no stale offset left
+    // to clear. A scrollToOffset(0) here only races that remount, and it lost
+    // often enough to matter: scheduleScope starts at 'myteams' and is hydrated
+    // from AsyncStorage after mount, so a user with 'all' saved gets a scope
+    // CHANGE on every cold load. When the reset landed after the remount had
+    // positioned the list, the rows stayed rendered around the anchor while the
+    // offset sat at 0 — a blank screen with a full scrollbar.
     useEffect(() => {
         hasFootballCombinedInitialScrolled.current = false;
         hasHockeyCombinedInitialScrolled.current = false;
-
-        // Don't fight the initial mount scroll — only react to real scope changes.
-        if (isFirstScopeRender.current) {
-            isFirstScopeRender.current = false;
-            return;
-        }
-
-        football.listRef.current?.scrollToOffset({ offset: 0, animated: false });
-        shl.listRef.current?.scrollToOffset({ offset: 0, animated: false });
     }, [scheduleScope]);
 
     // A league switched off in Settings is off on every surface that lists
@@ -304,12 +302,9 @@ export default function App() {
         if (hasFootballCombinedInitialScrolled.current || !combinedFootballGames.length) {
             return;
         }
-        // In all-matches scope the list is day-grouped (headers interleaved), so
-        // the target offset comes from the precomputed section layout; otherwise
-        // it's the plain card-height * game index.
-        const offset = showAllMatches
-            ? footballSectionTargetOffset
-            : combinedFootballTargetGameIndex * FOOTBALL_CARD_HEIGHT;
+        // Both scopes are day-grouped (headers interleaved with compact rows),
+        // so the target offset always comes from the precomputed section layout.
+        const offset = footballSectionTargetOffset;
         if (offset <= 0) {
             hasFootballCombinedInitialScrolled.current = true;
             return;
@@ -321,7 +316,7 @@ export default function App() {
             }
         }, 50);
         return () => clearTimeout(timeoutId);
-    }, [activeSport, football.viewMode, combinedFootballTargetGameIndex, combinedFootballGames.length, scheduleScope, showAllMatches, footballSectionTargetOffset]);
+    }, [activeSport, football.viewMode, combinedFootballGames.length, scheduleScope, footballSectionTargetOffset]);
 
     // Combined hockey games (SHL + HockeyAllsvenskan) for single list
     const combinedHockeyGames = useMemo(() => {
@@ -334,24 +329,13 @@ export default function App() {
         });
     }, [shl.games, hockeyAllsvenskan.games]);
 
-    const combinedHockeyTargetGameIndex = useMemo(() => {
-        if (!combinedHockeyGames.length) {
-            return 0;
-        }
-        const liveIndex = combinedHockeyGames.findIndex(g => g.state === 'live');
-        if (liveIndex !== -1) {
-            return liveIndex;
-        }
-        const upcomingIndex = combinedHockeyGames.findIndex(g => g.state !== 'post-game');
-        if (upcomingIndex !== -1) {
-            return upcomingIndex;
-        }
-        return combinedHockeyGames.length - 1;
-    }, [combinedHockeyGames]);
-
-    // Day-grouped sections for the hockey all-matches list (see football above).
+    // Day-grouped sections for the hockey schedule list (see football above).
     const hockeySections = useMemo(
-        () => (showAllMatches ? buildScheduleSections(filterVisibleLeagues(combinedHockeyGames, hiddenAllMatchesLeagues)) : []),
+        () => buildScheduleSections(
+            showAllMatches
+                ? filterVisibleLeagues(combinedHockeyGames, hiddenAllMatchesLeagues)
+                : combinedHockeyGames
+        ),
         [showAllMatches, combinedHockeyGames, hiddenAllMatchesLeagues]
     );
     const hockeySectionLayout = useMemo(
@@ -513,9 +497,9 @@ export default function App() {
         if (hasHockeyCombinedInitialScrolled.current || !combinedHockeyGames.length) {
             return;
         }
-        const offset = showAllMatches
-            ? hockeySectionTargetOffset
-            : combinedHockeyTargetGameIndex * GAME_CARD_HEIGHT;
+        // See the football list: both scopes are day-grouped, so the offset
+        // always comes from the section layout.
+        const offset = hockeySectionTargetOffset;
         if (offset <= 0) {
             hasHockeyCombinedInitialScrolled.current = true;
             return;
@@ -527,7 +511,7 @@ export default function App() {
             }
         }, 50);
         return () => clearTimeout(timeoutId);
-    }, [activeSport, combinedHockeyTargetGameIndex, combinedHockeyGames.length, scheduleScope, showAllMatches, hockeySectionTargetOffset]);
+    }, [activeSport, combinedHockeyGames.length, scheduleScope, hockeySectionTargetOffset]);
 
     // Merged hockey teams (SHL + HockeyAllsvenskan) for filter in Settings/Onboarding
     // Merged football teams (Allsvenskan + Svenska Cupen) for filter in Settings/Onboarding
@@ -892,25 +876,19 @@ export default function App() {
         }
     }, [activeSport, shl, hockeyAllsvenskan, football, svenskaCupen, europaLeagueQual, conferenceLeagueQual, biathlon, unified]);
 
-    // getItemLayout functions for consistent scroll behavior. In 'all' scope the
-    // list is day-grouped (DayHeader + CompactGameCard rows of differing heights),
-    // so we index into the precomputed section layout; in 'myteams' scope every
-    // row is a uniform tall card.
+    // getItemLayout functions for consistent scroll behavior. Both scopes render
+    // a day-grouped list (DayHeader + CompactGameCard rows of differing heights),
+    // so we index into the precomputed section layout, falling back to a compact
+    // row for an index the layout has not measured.
     const getShlItemLayout = useCallback((data, index) => {
-        if (showAllMatches) {
-            const l = hockeySectionLayout[index];
-            return l ? { ...l, index } : { length: COMPACT_CARD_HEIGHT, offset: COMPACT_CARD_HEIGHT * index, index };
-        }
-        return { length: GAME_CARD_HEIGHT, offset: GAME_CARD_HEIGHT * index, index };
-    }, [showAllMatches, hockeySectionLayout]);
+        const l = hockeySectionLayout[index];
+        return l ? { ...l, index } : { length: COMPACT_CARD_HEIGHT, offset: COMPACT_CARD_HEIGHT * index, index };
+    }, [hockeySectionLayout]);
 
     const getFootballItemLayout = useCallback((data, index) => {
-        if (showAllMatches) {
-            const l = footballSectionLayout[index];
-            return l ? { ...l, index } : { length: COMPACT_CARD_HEIGHT, offset: COMPACT_CARD_HEIGHT * index, index };
-        }
-        return { length: FOOTBALL_CARD_HEIGHT, offset: FOOTBALL_CARD_HEIGHT * index, index };
-    }, [showAllMatches, footballSectionLayout]);
+        const l = footballSectionLayout[index];
+        return l ? { ...l, index } : { length: COMPACT_CARD_HEIGHT, offset: COMPACT_CARD_HEIGHT * index, index };
+    }, [footballSectionLayout]);
 
     const getBiathlonItemLayout = useCallback((data, index) => ({
         length: BIATHLON_CARD_HEIGHT,
@@ -969,40 +947,34 @@ export default function App() {
     // Render Hockey schedule (SHL + HockeyAllsvenskan in one list)
     const renderHockeySchedule = () => (
         <FlatList
-            // Remount the list when the scope flips: swapping data in place
-            // (flat games <-> day-grouped sections with different item heights)
-            // leaves Android's VirtualizedList showing a blank list until a
-            // manual scroll forces a cell recompute. A changing key gives a
-            // fresh initial render that paints immediately.
+            // Remount the list when the scope flips: swapping the whole data
+            // array in place leaves Android's VirtualizedList showing a blank
+            // list until a manual scroll forces a cell recompute. A changing key
+            // gives a fresh initial render that paints immediately — and also
+            // re-applies initialScrollIndex against the new list.
             key={`hockey-${scheduleScope}`}
             ref={shl.listRef}
-            data={showAllMatches ? hockeySections : combinedHockeyGames}
-            // On the all-matches list, position on today at mount time via
-            // initialScrollIndex (backed by getItemLayout) instead of a
-            // post-mount scrollToOffset — the latter races the first layout and
-            // no-ops on the very first cold render.
-            initialScrollIndex={showAllMatches ? hockeySectionAnchorIndex : undefined}
+            data={hockeySections}
+            // Position on today at mount time via initialScrollIndex (backed by
+            // getItemLayout) instead of a post-mount scrollToOffset — the latter
+            // races the first layout and no-ops on the very first cold render.
+            initialScrollIndex={hockeySectionAnchorIndex}
             renderItem={({ item }) => (
-                showAllMatches ? (
-                    item.type === 'header' ? (
-                        <DayHeader date={item.date} />
-                    ) : (
-                        <CompactGameCard
-                            game={item.game}
-                            family={item.game.sport === 'hockeyallsvenskan' ? 'hockeyallsvenskan' : 'shl'}
-                            onPress={() => handleHockeyGamePress(item.game)}
-                            isFavorite={gameInvolvesFavorite(item.game, hockeyFavoriteTokens)}
-                        />
-                    )
+                item.type === 'header' ? (
+                    <DayHeader date={item.date} />
                 ) : (
-                    <GameCard
-                        game={item}
-                        onPress={() => handleHockeyGamePress(item)}
-                        leagueLabel={item.sport === 'hockeyallsvenskan' ? 'HockeyAllsvenskan' : 'SHL'}
+                    <CompactGameCard
+                        game={item.game}
+                        family={item.game.sport === 'hockeyallsvenskan' ? 'hockeyallsvenskan' : 'shl'}
+                        onPress={() => handleHockeyGamePress(item.game)}
+                        // Only All matches tints: in My teams every row is
+                        // already a followed team, and a mark on every row
+                        // marks nothing.
+                        isFavorite={showAllMatches && gameInvolvesFavorite(item.game, hockeyFavoriteTokens)}
                     />
                 )
             )}
-            keyExtractor={item => (showAllMatches ? item.key : `${item.sport}-${item.uuid}`)}
+            keyExtractor={item => item.key}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
             getItemLayout={getShlItemLayout}
@@ -1038,13 +1010,6 @@ export default function App() {
         }
     };
 
-    const footballLeagueLabel = (sport) => (
-        sport === 'svenska-cupen' ? 'Svenska Cupen'
-            : sport === 'europa-league-qual' ? 'Europa League Qualifying'
-                : sport === 'conference-league-qual' ? 'Conference League Qualifying'
-                    : 'Allsvenskan'
-    );
-
     const renderFootballSchedule = () => (
         <FlatList
             // See hockey list: remount on scope flip so Android's VirtualizedList
@@ -1052,31 +1017,24 @@ export default function App() {
             // blank list until the first manual scroll.
             key={`football-${scheduleScope}`}
             ref={football.listRef}
-            data={showAllMatches ? footballSections : combinedFootballGames}
-            // See hockey list: position on today at mount time in all-matches
-            // scope so the first cold render lands on today, not the top.
-            initialScrollIndex={showAllMatches ? footballSectionAnchorIndex : undefined}
+            data={footballSections}
+            // See hockey list: position on today at mount time so the first cold
+            // render lands on today, not the top.
+            initialScrollIndex={footballSectionAnchorIndex}
             renderItem={({ item }) => (
-                showAllMatches ? (
-                    item.type === 'header' ? (
-                        <DayHeader date={item.date} />
-                    ) : (
-                        <CompactGameCard
-                            game={item.game}
-                            family="football"
-                            onPress={() => openFootballGame(item.game)}
-                            isFavorite={gameInvolvesFavorite(item.game, footballFavoriteTokens)}
-                        />
-                    )
+                item.type === 'header' ? (
+                    <DayHeader date={item.date} />
                 ) : (
-                    <FootballGameCard
-                        game={item}
-                        onPress={() => openFootballGame(item)}
-                        leagueLabel={footballLeagueLabel(item.sport)}
+                    <CompactGameCard
+                        game={item.game}
+                        family="football"
+                        onPress={() => openFootballGame(item.game)}
+                        // See hockey list: only All matches tints.
+                        isFavorite={showAllMatches && gameInvolvesFavorite(item.game, footballFavoriteTokens)}
                     />
                 )
             )}
-            keyExtractor={item => (showAllMatches ? item.key : `${item.sport}-${item.uuid}`)}
+            keyExtractor={item => item.key}
             contentContainerStyle={styles.listContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
             getItemLayout={getFootballItemLayout}
@@ -1250,18 +1208,18 @@ export default function App() {
         );
     };
 
-    // Which favourite-token set a cross-sport row is judged against. Biathlon has
-    // no team favourites (it is per-athlete), so it never tints.
-    const eventIsFavorite = useCallback((event) => {
-        const sport = String(event?.sport || '');
-        if (sport === 'biathlon') {
-            return false;
-        }
-        const tokens = HOCKEY_SPORTS.includes(sport) ? hockeyFavoriteTokens : footballFavoriteTokens;
-        return gameInvolvesFavorite(event, tokens);
-    }, [hockeyFavoriteTokens, footballFavoriteTokens]);
+    // The Home list never tints a row, in either of its two states, so it needs
+    // no favourite predicate at all:
+    //   - favourites set: the list IS your teams, so every row would tint and a
+    //     mark on every row marks nothing (the My-teams scope reasons the same).
+    //   - no favourites: there are no tokens, so there is nothing to mark.
+    // The per-sport All-matches lists still tint, which is where finding a
+    // followed team among every other match actually needs the marker.
 
-    // Memoized render function for unified event items
+    // Memoized render function for unified event items. The cross-sport list
+    // renders the same compact rows as the per-sport schedules, so one row
+    // height holds across every list in the app.
+    const handleUnifiedEventPress = unified.handleEventPress;
     const renderUnifiedItem = useCallback(({ item }) => {
         if (item.type === 'header') {
             return (
@@ -1273,27 +1231,46 @@ export default function App() {
                 />
             );
         }
+        // Day header inside a multi-day status section ("This Week", "Upcoming",
+        // "Recent Results"): a compact row shows only a kickoff time, so without
+        // this a match days away would read as a bare "19:00".
+        if (item.type === 'dayHeader') {
+            return <DayHeader date={item.date} />;
+        }
+        const event = item.event;
+        const sport = String(event?.sport || '');
+        // A race has no home/away sides, so it gets the race-shaped row.
+        if (sport === 'biathlon') {
+            return <CompactRaceCard race={event} onPress={handleUnifiedEventPress} />;
+        }
         return (
-            <UnifiedEventCard
-                event={item.event}
-                onPress={unified.handleEventPress}
-                showSportIndicator={false}
-                isFavorite={eventIsFavorite(item.event)}
+            <CompactGameCard
+                game={event}
+                family={HOCKEY_SPORTS.includes(sport) ? sport : 'football'}
+                // handleEventPress takes the event; the compact card calls
+                // onPress() bare, so it is wrapped here.
+                onPress={() => handleUnifiedEventPress(event)}
             />
         );
-    }, [unified.handleEventPress, eventIsFavorite]);
+    }, [handleUnifiedEventPress]);
 
     // Memoized key extractor for unified list
     const unifiedKeyExtractor = useCallback((item) => {
         if (item.type === 'header') {
             return `header-${item.key}`;
         }
+        if (item.type === 'dayHeader') {
+            return `dayHeader-${item.key}`;
+        }
         return item.key || item.event?.uuid || `event-${item.event?.startTime}`;
     }, []);
 
-    // Render Unified schedule - all sports combined
+    // Render Home schedule - your teams across every sport
     const renderUnifiedSchedule = () => (
         <FlatList
+            // Remount when the favourites change so the list paints the newly
+            // filtered rows immediately (see the per-sport lists' scope key).
+            key={`home-${hasFavorites ? 'favorites' : 'everything'}`}
             ref={unified.listRef}
             data={unified.flatListData}
             renderItem={renderUnifiedItem}
@@ -1305,7 +1282,16 @@ export default function App() {
             removeClippedSubviews={true}
             maxToRenderPerBatch={15}
             windowSize={15}
-            ListEmptyComponent={<EmptyState message="No events found." />}
+            // With favourites set the list is narrow enough to genuinely come up
+            // empty (an off-season for every team you follow), so say why rather
+            // than the bare "No events found".
+            ListEmptyComponent={
+                <EmptyState
+                    message={hasFavorites
+                        ? 'Nothing coming up for the teams you follow. Add more under Settings, or browse a league from the Hockey or Football tabs.'
+                        : 'No events found.'}
+                />
+            }
         />
     );
 

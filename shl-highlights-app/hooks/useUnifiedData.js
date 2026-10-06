@@ -1,5 +1,6 @@
 import { useMemo, useCallback, useRef } from 'react';
 import { parseISO, isToday, isTomorrow, differenceInDays, startOfDay } from 'date-fns';
+import { localDayKey } from '../utils/scheduleSections';
 
 /**
  * Normalize an event from any sport to a common structure
@@ -102,14 +103,34 @@ const groupEventsIntoSections = (events) => {
 
 /**
  * Build flat list data with section headers for SectionList-like rendering in FlatList
+ *
+ * Sections that span more than one calendar day ("This Week", "Upcoming",
+ * "Recent Results") additionally get a day header wherever the day changes.
+ * The rows are compact — they show a kickoff time and no date — so without this
+ * a match three days out would read as a bare "19:00". Live Now / Starting Soon
+ * / Today / Tomorrow are single-day by construction and get none, which is why
+ * `multiDay` is opt-in per section rather than applied to all of them.
  */
 const buildFlatListData = (sections) => {
     const data = [];
 
-    const addSection = (key, title, events, icon) => {
+    const addSection = (key, title, events, icon, { multiDay = false } = {}) => {
         if (events.length > 0) {
             data.push({ type: 'header', key, title, icon, count: events.length });
+            let lastDayKey = null;
             events.forEach(event => {
+                if (multiDay) {
+                    const dayKey = localDayKey(event.startDateTime);
+                    if (dayKey !== lastDayKey) {
+                        data.push({
+                            type: 'dayHeader',
+                            key: `${key}-day-${dayKey}`,
+                            dayKey,
+                            date: event.startDateTime ?? null
+                        });
+                        lastDayKey = dayKey;
+                    }
+                }
                 data.push({ type: 'event', event, key: event.uuid || `${event.sport}-${event.startTime}` });
             });
         }
@@ -119,9 +140,9 @@ const buildFlatListData = (sections) => {
     addSection('startingSoon', 'Starting Soon', sections.startingSoon, 'time-outline');
     addSection('today', 'Today', sections.today, 'today-outline');
     addSection('tomorrow', 'Tomorrow', sections.tomorrow, 'calendar-outline');
-    addSection('thisWeek', 'This Week', sections.thisWeek, 'calendar-outline');
-    addSection('upcoming', 'Upcoming', sections.upcoming, 'arrow-forward-outline');
-    addSection('recentResults', 'Recent Results', sections.recentResults, 'checkmark-done-outline');
+    addSection('thisWeek', 'This Week', sections.thisWeek, 'calendar-outline', { multiDay: true });
+    addSection('upcoming', 'Upcoming', sections.upcoming, 'arrow-forward-outline', { multiDay: true });
+    addSection('recentResults', 'Recent Results', sections.recentResults, 'checkmark-done-outline', { multiDay: true });
 
     return data;
 };

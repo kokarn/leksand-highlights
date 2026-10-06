@@ -94,15 +94,31 @@ test('a favourite matches across the feeds\' disagreeing id spaces', async () =>
     );
 });
 
-// --- the 'all' sport tab ignores the scope -------------------------------
+// --- the Home tab ignores the scope and keeps your filter ----------------
 
-test("the 'all' sport tab is always unfiltered, whatever the remembered scope says", () => {
-    assert.match(appSource, /const isAllSportsTab = activeSport === 'all'/);
-    assert.match(appSource, /const unfiltered = showAllMatches \|\| isAllSportsTab/);
-    // Both families' scoped arrays go through `unfiltered`, not showAllMatches:
-    // the tab has no ScopeToggle, so the scope was an invisible filter there.
+test('the Home tab is always filtered to your teams, whatever the remembered scope says', () => {
+    assert.match(appSource, /const isHomeTab = activeSport === 'all'/);
+    // Home opts OUT of the unfiltered path: it is the "your teams" view, so the
+    // scope (which it renders no toggle for) must not widen it.
+    assert.match(appSource, /const unfiltered = !isHomeTab && showAllMatches/);
     assert.match(appSource, /const scopedTeams = unfiltered \? \[\] : selectedTeams/);
     assert.match(appSource, /const scopedFootballTeams = unfiltered \? \[\] : selectedFootballTeams/);
+});
+
+test('with no favourites picked, Home falls back to everything instead of an empty screen', () => {
+    // The hooks' team filter self-disables on an empty array, so the fallback is
+    // structural — but the flag drives the remount key and the empty-state copy.
+    assert.match(appSource, /const hasFavorites = selectedTeams\.length > 0 \|\| selectedFootballTeams\.length > 0/);
+    assert.match(appSource, /key=\{`home-\$\{hasFavorites \? 'favorites' : 'everything'\}`\}/);
+    assert.match(appSource, /hasFavorites\s*\n?\s*\? 'Nothing coming up for the teams you follow/);
+});
+
+test('the cross-sport tab is labelled Home, keeping its stored key', () => {
+    const pickerSource = read('components/SportPicker.js');
+    // The key stays 'all' so an existing install's saved sport still resolves.
+    assert.match(pickerSource, /\{ key: 'all', name: 'Home', icon: 'home-outline' \}/);
+    assert.doesNotMatch(pickerSource, /name: 'All'/);
+    assert.match(read('components/SportTab.js'), /all: 'Home'/);
 });
 
 test('the per-sport tabs keep their own scope — the fix must not clear it', () => {
@@ -127,30 +143,49 @@ test('favourite tokens are built once per list, per family, from the roster', ()
 
 test('the two families stay separate so a hockey favourite cannot tint a football match', () => {
     // The token stems are lossy and the only known collisions across the six
-    // live feeds are cross-SPORT, so one merged set could mis-tint.
-    assert.match(appSource, /HOCKEY_SPORTS\.includes\(sport\) \? hockeyFavoriteTokens : footballFavoriteTokens/);
-    // Biathlon is per-athlete: no team favourites, so it never tints.
-    assert.match(appSource, /if \(sport === 'biathlon'\) \{\s*return false;/);
+    // live feeds are cross-SPORT, so one merged set could mis-tint. Each list
+    // only ever consults its OWN family's tokens, which is what keeps them
+    // apart now that Home (the one mixed-sport list) does not tint at all.
+    assert.match(appSource, /gameInvolvesFavorite\(item\.game, hockeyFavoriteTokens\)/);
+    assert.match(appSource, /gameInvolvesFavorite\(item\.game, footballFavoriteTokens\)/);
+    // Neither set is passed to the other list, and nothing merges them.
+    const hockeyList = appSource.match(/const renderHockeySchedule[\s\S]*?const renderFootballSchedule/);
+    assert.ok(hockeyList, 'hockey list must exist');
+    assert.doesNotMatch(hockeyList[0], /footballFavoriteTokens/);
+    // Biathlon is per-athlete: no team favourites, so its row takes no tint prop.
+    const raceRow = appSource.match(/<CompactRaceCard[^/]*\/>/);
+    assert.ok(raceRow, 'the race row must exist');
+    assert.doesNotMatch(raceRow[0], /isFavorite/);
 });
 
-test('all three all-matches lists mark a favourite row', () => {
-    // cross-sport list
-    assert.match(appSource, /<UnifiedEventCard[\s\S]*?isFavorite=\{eventIsFavorite\(item\.event\)\}/);
-    // the two per-sport all-matches (compact) lists
-    assert.match(appSource, /isFavorite=\{gameInvolvesFavorite\(item\.game, hockeyFavoriteTokens\)\}/);
-    assert.match(appSource, /isFavorite=\{gameInvolvesFavorite\(item\.game, footballFavoriteTokens\)\}/);
+test('the per-sport all-matches lists mark a favourite row', () => {
+    assert.match(appSource, /isFavorite=\{showAllMatches && gameInvolvesFavorite\(item\.game, hockeyFavoriteTokens\)\}/);
+    assert.match(appSource, /isFavorite=\{showAllMatches && gameInvolvesFavorite\(item\.game, footballFavoriteTokens\)\}/);
+});
+
+test('Home never tints: in either state the mark would carry no information', () => {
+    // Favourites set -> the list IS your teams, so every row would tint.
+    // No favourites -> there are no tokens, so there is nothing to mark.
+    assert.doesNotMatch(appSource, /eventIsFavorite/);
+    const homeRow = appSource.match(/<CompactGameCard\s+game=\{event\}[\s\S]*?\/>/);
+    assert.ok(homeRow, 'the Home row must exist');
+    assert.doesNotMatch(homeRow[0], /isFavorite/);
 });
 
 test('the My-teams lists do NOT tint: every row there is already a favourite', () => {
-    // A mark that is on every row marks nothing. The tall-card branch of the
-    // per-sport lists only renders in 'myteams' scope, so it takes no isFavorite.
-    const tallHockey = appSource.match(/<GameCard\s+game=\{item\}[\s\S]*?\/>/);
-    const tallFootball = appSource.match(/<FootballGameCard\s+game=\{item\}[\s\S]*?\/>/);
-    assert.ok(tallHockey && tallFootball, 'both per-sport tall-card branches must exist');
-    assert.doesNotMatch(tallHockey[0], /isFavorite/);
-    assert.doesNotMatch(tallFootball[0], /isFavorite/);
+    // A mark that is on every row marks nothing. Both scopes now render the same
+    // compact row, so the distinction moved from "which card" to the
+    // showAllMatches guard on the single isFavorite prop — asserted above. What
+    // matters here is that nothing tints unconditionally.
+    assert.doesNotMatch(appSource, /isFavorite=\{gameInvolvesFavorite\(item\.game/);
+    // Biathlon races take no favourite prop at all (per-athlete sport).
+    assert.match(appSource, /<CompactRaceCard race=\{event\}[^/]*\/>/);
+    const raceRow = appSource.match(/<CompactRaceCard race=\{event\}[^/]*\/>/)[0];
+    assert.doesNotMatch(raceRow, /isFavorite/);
 });
 
+// The tall cards no longer appear in any schedule list, but they are still
+// rendered by the team pages, so their tint contract is still live.
 test('the marker reuses the standings tint, and cards take it as a prop', () => {
     // One visual language for "a team you follow": the same token the standings
     // rows use, not a new colour.

@@ -46,10 +46,12 @@ export const STORAGE_KEYS = {
 };
 
 // Leagues shown in the "All matches" schedule view, grouped by the sport tab
-// they live under (the All-matches compact list only exists for Hockey and
-// Football, so biathlon is intentionally excluded). `id` matches the game
-// `sport` slug so filtering is a direct `game.sport` lookup. Adding a league
-// here makes it appear in the All-matches league filter automatically.
+// they live under. Biathlon is excluded because this filter belongs to the
+// Hockey and Football tabs' scope toggle, and the biathlon tab has none — so a
+// biathlon race on the cross-sport "All" tab is currently the one row type the
+// filter cannot hide. `id` matches the game `sport` slug so filtering is a
+// direct `game.sport` lookup. Adding a league here makes it appear in the
+// All-matches league filter automatically.
 export const ALL_MATCHES_LEAGUES = [
     { id: 'shl', label: 'SHL', sportGroup: 'Hockey', icon: 'snow-outline' },
     { id: 'hockeyallsvenskan', label: 'HockeyAllsvenskan', sportGroup: 'Hockey', icon: 'snow-outline' },

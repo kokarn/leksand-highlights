@@ -5,8 +5,12 @@ import { useTheme } from '../contexts';
 
 // Hockey uses a MaterialCommunityIcons puck (Ionicons has no hockey glyph);
 // everything else uses Ionicons.
+//
+// 'all' keeps its stored key so existing installs' saved sport preference still
+// resolves — only the label and icon changed when the cross-sport tab became
+// "Home" (your teams) rather than "All" (every match).
 const SPORTS = [
-    { key: 'all', name: 'All', icon: 'grid-outline' },
+    { key: 'all', name: 'Home', icon: 'home-outline' },
     { key: 'hockey', name: 'Hockey', icon: 'hockey-puck', iconSet: 'mci' },
     { key: 'football', name: 'Football', icon: 'football-outline' },
     { key: 'biathlon', name: 'Biathlon', icon: 'locate-outline' }
@@ -49,7 +53,7 @@ export const SportPicker = ({ activeSport, onSportChange }) => {
             >
                 <Pressable style={[styles.overlay, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.5)' }]} onPress={() => setIsOpen(false)}>
                     <View style={[styles.dropdown, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                        <Text style={[styles.dropdownTitle, { color: colors.textMuted }]}>Select Sport</Text>
+                        <Text style={[styles.dropdownTitle, { color: colors.textMuted }]}>Select View</Text>
                         {SPORTS.map((sport) => (
                             <TouchableOpacity
                                 key={sport.key}

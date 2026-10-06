@@ -2,7 +2,7 @@ import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 const SPORT_NAMES = {
-    all: 'All',
+    all: 'Home',
     shl: 'Hockey',
     hockey: 'Hockey',
     biathlon: 'Biathlon',
@@ -23,7 +23,7 @@ export const SportTab = ({ sport, isActive, onPress }) => {
             ) : (
                 <Ionicons
                     name={sport === 'all'
-                        ? 'grid-outline'
+                        ? 'home-outline'
                         : sport === 'biathlon'
                             ? 'locate-outline'
                             : sport === 'football'

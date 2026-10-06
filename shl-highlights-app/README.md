@@ -4,6 +4,13 @@ A React Native app for following Swedish hockey, football, and biathlon events.
 
 ## Changelog
 
+### 2.51.0
+- Every schedule list now uses the compact single-row listing. My teams and the cross-sport tab used to show tall cards — about three fixtures on a phone screen — where the same screen now holds eleven. One row height everywhere also means one set of scroll measurements instead of two
+- My teams is now grouped by day, with today accented, the way All matches already was. A compact row shows only a kickoff time, so without a date above it a match next week was indistinguishable from one tonight. The cross-sport list gets the same headers inside its multi-day sections ("This Week", "Upcoming", "Recent Results")
+- Biathlon races get a row of their own in the cross-sport list. A race has no home and away side, so instead of the two-team layout it shows nation flag, discipline and distance, the start time or "Ended", and a gender badge — plus the orange "starting soon" state the match rows have no equivalent for
+- The **All** tab is now **Home**, and shows only the teams you follow. It used to deliberately ignore your favourites and list every match in every league; it now applies them across all sports at once. Pick nothing and it still shows everything, so it is never an empty screen. The Hockey and Football tabs keep their My teams / All matches / Standings toggle for browsing a full league
+- Fix the Hockey and Football lists landing in the wrong place, or on a blank screen with a full scrollbar, when opened on All matches. Two separate causes: each league's data hook was scrolling the shared list to its own target using a tall-card height (overshooting by ~3x against compact rows), and the saved scope being restored after launch counted as a scope change, firing a scroll-to-top that raced the list's remount
+
 ### 2.48.0
 - The All tab now always shows every match. It renders no My teams / All matches toggle — there is no single league to show standings for — but it still obeyed the choice you last made on the Hockey or Football tab, so leaving that on "My teams" silently pruned the cross-sport list with no visible control to widen it. The Hockey and Football tabs keep their own remembered choice exactly as before
 - Mark your favourite teams in the all-matches lists. A match involving a team you follow now carries the same faint accent tint that already highlights your clubs in the standings tables, in the All tab and in both sports' All matches views. Matched on club name rather than team code, so a favourite still lights up where the schedule and standings feeds spell the same club differently. A live match keeps its red styling, and the My teams lists are left untinted since every row there is already a favourite

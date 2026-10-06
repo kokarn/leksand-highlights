@@ -289,33 +289,10 @@ export function useHockeyAllsvenskanData(activeSport, selectedTeams, options = {
     // Determine effective initial scroll index (skip if user has scrolled before)
     const effectiveInitialScrollIndex = hasUserScrolled.current ? undefined : (targetGameIndex > 0 ? targetGameIndex : undefined);
 
-    // Card height constant for content offset calculation
-    const GAME_CARD_HEIGHT = 174;
-
-    // Track if initial scroll has been performed
-    const hasInitialScrolled = useRef(false);
-
-    // Scroll to target position after data loads (without animation)
-    useEffect(() => {
-        if (
-            activeSport === 'hockey' &&
-            !hasInitialScrolled.current &&
-            !hasUserScrolled.current &&
-            targetGameIndex > 0 &&
-            sortedGames.length > 0
-        ) {
-            const timeoutId = setTimeout(() => {
-                if (listRef.current && !hasInitialScrolled.current) {
-                    hasInitialScrolled.current = true;
-                    listRef.current.scrollToOffset({
-                        offset: targetGameIndex * GAME_CARD_HEIGHT,
-                        animated: false
-                    });
-                }
-            }, 50);
-            return () => clearTimeout(timeoutId);
-        }
-    }, [activeSport, targetGameIndex, sortedGames.length]);
+    // NOTE: this hook's listRef is never attached to a rendered list — the
+    // hockey tab renders ONE combined day-grouped list from app/index.js, which
+    // owns the auto-scroll. A tall-card-height scroll effect lived here and was
+    // dead code; it is removed rather than left to rot against compact rows.
 
     return {
         // State

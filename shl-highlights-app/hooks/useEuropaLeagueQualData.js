@@ -189,30 +189,11 @@ export function useEuropaLeagueQualData(activeSport, selectedFootballTeams, opti
         return () => clearInterval(intervalId);
     }, [selectedGame]);
 
-    const FOOTBALL_CARD_HEIGHT = 174;
-    const hasInitialScrolled = useRef(false);
+    // NOTE: this hook's listRef is never attached to a rendered list — the
+    // football tab renders ONE combined day-grouped list from app/index.js,
+    // which owns the auto-scroll. A tall-card-height scroll effect lived here
+    // and was dead code; removed rather than left to rot against compact rows.
     const effectiveInitialScrollIndex = hasUserScrolled.current ? undefined : (targetGameIndex > 0 ? targetGameIndex : undefined);
-
-    useEffect(() => {
-        if (
-            activeSport === 'football' &&
-            !hasInitialScrolled.current &&
-            !hasUserScrolled.current &&
-            targetGameIndex > 0 &&
-            sortedGames.length > 0
-        ) {
-            const timeoutId = setTimeout(() => {
-                if (listRef.current && !hasInitialScrolled.current) {
-                    hasInitialScrolled.current = true;
-                    listRef.current.scrollToOffset({
-                        offset: targetGameIndex * FOOTBALL_CARD_HEIGHT,
-                        animated: false
-                    });
-                }
-            }, 50);
-            return () => clearTimeout(timeoutId);
-        }
-    }, [activeSport, targetGameIndex, sortedGames.length]);
 
     return {
         games: sortedGames,
