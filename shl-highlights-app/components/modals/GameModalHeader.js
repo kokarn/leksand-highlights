@@ -15,6 +15,9 @@ import { resolveMediaUrl } from '../../api/shl';
  * @param {string} props.state - 'pre-game' | 'live' | 'post-game'
  * @param {string} props.startDateTime - ISO date string
  * @param {function} props.onClose
+ * @param {{on: boolean, onToggle: function}|null} [props.notificationBell] - the
+ *        per-match alerts toggle; omitted where push is unavailable (web, or no
+ *        permission)
  */
 export const GameModalHeader = ({
     homeTeam,
@@ -25,7 +28,8 @@ export const GameModalHeader = ({
     startDateTime,
     statusText,
     onClose,
-    onTeamPress
+    onTeamPress,
+    notificationBell = null
 }) => {
     const { colors } = useTheme();
     const { width: windowWidth } = useWindowDimensions();
@@ -49,6 +53,21 @@ export const GameModalHeader = ({
 
     return (
         <View style={themedStyles.modalHeader}>
+            {notificationBell && (
+                <TouchableOpacity
+                    onPress={notificationBell.onToggle}
+                    style={themedStyles.bellButton}
+                    accessibilityRole="switch"
+                    accessibilityState={{ checked: notificationBell.on }}
+                    accessibilityLabel="Notifications for this match"
+                >
+                    <Ionicons
+                        name={notificationBell.on ? 'notifications' : 'notifications-off-outline'}
+                        size={22}
+                        color={notificationBell.on ? colors.accent : colors.textMuted}
+                    />
+                </TouchableOpacity>
+            )}
             <TouchableOpacity onPress={onClose} style={themedStyles.closeButton}>
                 <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
@@ -124,6 +143,14 @@ const createStyles = (colors) => StyleSheet.create({
         position: 'absolute',
         top: 20,
         right: 16,
+        zIndex: 10,
+        padding: 8
+    },
+    // Mirrors the close button on the opposite corner.
+    bellButton: {
+        position: 'absolute',
+        top: 20,
+        left: 16,
         zIndex: 10,
         padding: 8
     },

@@ -42,7 +42,11 @@ export const STORAGE_KEYS = {
     // Leagues HIDDEN from the "All matches" view. Stored as the hidden set (not
     // the shown set) so newly-added leagues appear by default and need no
     // migration. Empty = every league shown.
-    HIDDEN_ALL_MATCHES_LEAGUES: 'hiddenAllMatchesLeagues'
+    HIDDEN_ALL_MATCHES_LEAGUES: 'hiddenAllMatchesLeagues',
+    // Per-match notification overrides from a match header's bell:
+    // { 'sport:gameId': { kind: 'mute'|'game', startDateTime } }.
+    // See utils/gameNotifications.js.
+    GAME_NOTIFICATION_OVERRIDES: 'gameNotificationOverrides'
 };
 
 // Leagues shown in the "All matches" schedule view, grouped by the sport tab

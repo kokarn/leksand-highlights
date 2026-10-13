@@ -26,6 +26,73 @@ function sanitizeTopicName(str) {
 }
 
 /**
+ * The two per-match topics behind the match header's notification bell (#53).
+ *
+ *  - `game_{sport}_{id}` opts a device IN to a match neither of whose teams it
+ *    follows.
+ *  - `mute_{sport}_{id}` opts a device OUT of a match it would otherwise get via
+ *    a team topic — someone watching later who does not want the score spoiled.
+ *
+ * The sport is part of the name because ids are only unique within a feed: the
+ * football feeds use small integers. Must stay in sync with gameTopic() in the
+ * app's utils/gameNotifications.js; test/game-notifications.test.js checks both.
+ * @param {'game'|'mute'} kind
+ * @param {string} sport - league slug, e.g. 'shl', 'allsvenskan'
+ * @param {string|number} gameId
+ * @returns {string|null} null when there is no id to build a topic from
+ */
+function buildGameTopic(kind, sport, gameId) {
+    const id = sanitizeTopicName(String(gameId ?? ''));
+    if (!id || id === 'unknown') {
+        return null;
+    }
+    return `${kind}_${sanitizeTopicName(normalizeSportForDeepLink(sport))}_${id}`;
+}
+
+/**
+ * The FCM condition for one alert about one match.
+ *
+ * Reaches a device that has the alert type on AND either follows a team in the
+ * match without having muted it, or has opted in to the match itself:
+ *
+ *   'type' in topics && ((teamA || teamB) && !mute || game)
+ *
+ * One condition rather than a send per audience, so a device in both audiences
+ * (it opted in, then followed a team) still gets one push, not two. Two teams
+ * plus three other topics is FCM's limit of five per condition — which is why
+ * the scoring team is never listed on its own: it is always one of the two.
+ * @param {string} typeTopic - e.g. 'goal_notifications', 'pre_game_shl'
+ * @param {string[]} teamCodes - raw team codes; deduped and sanitized here
+ * @param {string} sport
+ * @param {string|number} gameId
+ * @returns {string|null} null when there is no team and no match to target
+ */
+function buildGameCondition(typeTopic, teamCodes, sport, gameId, { muting = true } = {}) {
+    const teamTopics = [...new Set(
+        (teamCodes || [])
+            .filter(Boolean)
+            .map(code => sanitizeTopicName(code))
+            .filter(code => code && code !== 'unknown')
+            .map(code => `team_${code}`)
+    )].slice(0, 2);
+    const gameTopic = buildGameTopic('game', sport, gameId);
+    const muteTopic = muting ? buildGameTopic('mute', sport, gameId) : null;
+
+    const audiences = [];
+    if (teamTopics.length) {
+        const teams = teamTopics.map(topic => `'${topic}' in topics`).join(' || ');
+        audiences.push(muteTopic ? `((${teams}) && !('${muteTopic}' in topics))` : `(${teams})`);
+    }
+    if (gameTopic) {
+        audiences.push(`'${gameTopic}' in topics`);
+    }
+    if (!audiences.length) {
+        return null;
+    }
+    return `'${typeTopic}' in topics && (${audiences.join(' || ')})`;
+}
+
+/**
  * Normalize sport identifiers for deep links
  * @param {string} sport - Sport identifier
  * @returns {string} Normalized sport key
@@ -696,33 +763,18 @@ async function sendGoalNotification(goal, options = {}) {
         // Send to specific device
         result = await sendToDevice({ token, title, body: message, data, urgent: true });
     } else {
-        // Goal alerts should reach users following either team in this game.
-        // When sendOpposing is disabled (e.g. in certain tests), only target the scoring team.
+        // Goal alerts should reach users following either team in this game, or
+        // who opted in to it. When sendOpposing is disabled (e.g. in certain
+        // tests), only target the scoring team.
         const teamCodesToTarget = sendOpposing
-            ? [homeTeamCode, awayTeamCode, scoringTeamCode]
+            ? [homeTeamCode, awayTeamCode]
             : [scoringTeamCode];
 
-        const teamTopics = [...new Set(
-            teamCodesToTarget
-                .filter(code => Boolean(code))
-                .map(code => sanitizeTopicName(code))
-                .filter(code => code && code !== 'unknown')
-                .map(code => `team_${code}`)
-        )];
-
-        if (teamTopics.length === 0) {
-            return { success: false, error: 'Missing team topics for goal notification targeting' };
-        }
-
-        const teamsCondition = teamTopics.length === 1
-            ? `'${teamTopics[0]}' in topics`
-            : `(${teamTopics.map(topic => `'${topic}' in topics`).join(' || ')})`;
-        const condition = `'goal_notifications' in topics && ${teamsCondition}`;
-
-        console.log(`[FCM] Sending goal notification to: ${condition}`);
-        
-        result = await sendWithCondition({
-            condition,
+        result = await sendGameAlert({
+            typeTopic: 'goal_notifications',
+            teamCodes: teamCodesToTarget,
+            sport,
+            gameId,
             title,
             body: message,
             data,
@@ -778,23 +830,16 @@ async function sendHighlightNotification(highlight, options = {}) {
         return sendToDevice({ token, title, body, data });
     }
 
-    const teamTopics = [homeTeamCode, awayTeamCode]
-        .filter(Boolean)
-        .map(code => `team_${sanitizeTopicName(code)}`);
-    const uniqueTeamTopics = [...new Set(teamTopics)];
-
-    if (uniqueTeamTopics.length === 0) {
+    if (![homeTeamCode, awayTeamCode].some(Boolean)) {
         console.warn('[FCM] Highlight notification skipped - missing team topics');
         return { success: false, error: 'Missing team codes for highlight targeting' };
     }
 
-    const teamsCondition = uniqueTeamTopics.map(topic => `'${topic}' in topics`).join(' || ');
-    const condition = `'goal_notifications' in topics && (${teamsCondition})`;
-
-    console.log(`[FCM] Sending highlight notification to: ${condition}`);
-
-    return sendWithCondition({
-        condition,
+    return sendGameAlert({
+        typeTopic: 'goal_notifications',
+        teamCodes: [homeTeamCode, awayTeamCode],
+        sport,
+        gameId,
         title,
         body,
         data
@@ -839,6 +884,29 @@ async function sendWithCondition({ condition, title, body, data = {}, urgent = f
         logError('sendWithCondition', error.message, { condition, title, body });
         return { success: false, error: error.message };
     }
+}
+
+/**
+ * Send one alert about one match to everyone buildGameCondition targets.
+ *
+ * FCM's docs only show && and || in conditions, so the mute clause's `!` is the
+ * one part that could be refused. If it is, the alert is resent without it: a
+ * muted match briefly un-muting is far better than every goal alert failing.
+ * @returns {Promise<{success: boolean, error?: string, messageId?: string}>}
+ */
+async function sendGameAlert({ typeTopic, teamCodes, sport, gameId, title, body, data, urgent = false }) {
+    const condition = buildGameCondition(typeTopic, teamCodes, sport, gameId);
+    if (!condition) {
+        return { success: false, error: 'Missing team topics for targeting' };
+    }
+    console.log(`[FCM] Sending ${data?.type || 'game'} notification to: ${condition}`);
+    const result = await sendWithCondition({ condition, title, body, data, urgent });
+    if (result.success || !/invalid/i.test(result.error || '')) {
+        return result;
+    }
+    const fallback = buildGameCondition(typeTopic, teamCodes, sport, gameId, { muting: false });
+    console.warn(`[FCM] Condition refused (${result.error}); retrying without the mute clause`);
+    return sendWithCondition({ condition: fallback, title, body, data, urgent });
 }
 
 /**
@@ -944,14 +1012,17 @@ async function sendPreGameNotification(gameInfo) {
     // Biathlon has no team codes, so it targets the pre-game topic directly.
     const TEAM_SPORTS = ['shl', 'hockeyallsvenskan', 'allsvenskan', 'svenska-cupen', 'europa-league-qual', 'conference-league-qual'];
     if (TEAM_SPORTS.includes(sport) && homeTeamCode && awayTeamCode) {
-        const homeTeamTopic = `team_${sanitizeTopicName(homeTeamCode)}`;
-        const awayTeamTopic = `team_${sanitizeTopicName(awayTeamCode)}`;
-
-        // Condition: pre_game AND (home_team OR away_team)
-        const condition = `'${preGameTopic}' in topics && ('${homeTeamTopic}' in topics || '${awayTeamTopic}' in topics)`;
-
+        // Condition: pre_game AND (either team, unless muted, OR opted in)
         console.log(`[FCM] Sending pre-game notification for ${sport}: ${message}`);
-        return sendWithCondition({ condition, title, body: message, data });
+        return sendGameAlert({
+            typeTopic: preGameTopic,
+            teamCodes: [homeTeamCode, awayTeamCode],
+            sport,
+            gameId,
+            title,
+            body: message,
+            data
+        });
     } else {
         // For biathlon (or any sport without team codes), just use the pre-game topic
         console.log(`[FCM] Sending pre-game notification for ${sport}: ${message}`);
@@ -1067,6 +1138,8 @@ module.exports = {
     clearErrorLog,
     __test: {
         buildGoalNotificationMessage,
-        buildGameDeepLink
+        buildGameDeepLink,
+        buildGameTopic,
+        buildGameCondition
     }
 };

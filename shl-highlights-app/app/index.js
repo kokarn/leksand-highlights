@@ -57,6 +57,7 @@ import { getNationFlag, fetchHockeyAllsvenskanStandings, fetchStandings, fetchFo
 import { formatSwedishDate } from '../utils';
 import { buildScheduleSections, buildItemLayout, findTargetScrollOffset, findTargetAnchorIndex, filterVisibleLeagues, DAY_HEADER_HEIGHT } from '../utils/scheduleSections';
 import { standingsColumnLayout } from '../utils/standingsPresentation';
+import { followsGameTeam, gameNotificationsOn, gameOverrideKey, toggledGameOverride } from '../utils/gameNotifications';
 
 // Hooks
 import {
@@ -531,8 +532,28 @@ export default function App() {
         fcmToken,
         // Per-league pre-game reminder state + toggle
         preGameLeagues,
-        togglePreGameLeague
+        togglePreGameLeague,
+        gameOverrides,
+        setGameOverride
     } = usePushNotifications();
+
+    // The bell in a match header (#53): mutes a followed team's match, or opts in
+    // to one with no followed team. Shown only where a push could actually arrive
+    // — not on web, and not without a token or permission.
+    const buildNotificationBell = useCallback((game, sport, followedKeys) => {
+        if (!game?.uuid || !fcmToken || !hasNotificationPermission) {
+            return null;
+        }
+        const followsTeam = followsGameTeam(game, followedKeys);
+        const override = gameOverrides[gameOverrideKey(sport, game.uuid)]?.kind;
+        return {
+            on: gameNotificationsOn(followsTeam, override),
+            onToggle: () => setGameOverride(
+                { sport, gameId: game.uuid, startDateTime: game.rawStartDateTime || game.startDateTime },
+                toggledGameOverride(followsTeam, override)
+            )
+        };
+    }, [fcmToken, hasNotificationPermission, gameOverrides, setGameOverride]);
 
     // App self-update (Android sideload) — check GitHub Releases on launch
     const appUpdate = useAppUpdate();
@@ -1407,6 +1428,7 @@ export default function App() {
                 selectedTeams={selectedTeams}
                 teamRoster={combinedHockeyTeams}
                 targetVideoId={shlTargetVideoId}
+                notificationBell={buildNotificationBell(shl.selectedGame, 'shl', selectedTeams)}
             />
 
             {/* HockeyAllsvenskan Game Modal (reuses SHL modal — identical data shape) */}
@@ -1426,6 +1448,7 @@ export default function App() {
                 standingsFetcher={fetchHockeyAllsvenskanStandings}
                 standingsSport="hockeyallsvenskan"
                 targetVideoId={haTargetVideoId}
+                notificationBell={buildNotificationBell(hockeyAllsvenskan.selectedGame, 'hockeyallsvenskan', selectedTeams)}
             />
 
             {/* Football Match Modal */}
@@ -1444,6 +1467,7 @@ export default function App() {
                 activeTab={footballActiveTab}
                 onTabChange={setFootballActiveTab}
                 targetVideoId={footballTargetVideoId}
+                notificationBell={buildNotificationBell(football.selectedGame, 'allsvenskan', selectedFootballTeams)}
             />
 
             {/* Svenska Cupen Match Modal */}
@@ -1460,6 +1484,7 @@ export default function App() {
                 selectedTeams={selectedFootballTeams}
                 teamRoster={combinedFootballTeams}
                 showStandingsTab={true}
+                notificationBell={buildNotificationBell(svenskaCupen.selectedGame, 'svenska-cupen', selectedFootballTeams)}
             />
 
             {/* Europa League Qualifying Match Modal */}
@@ -1476,6 +1501,7 @@ export default function App() {
                 selectedTeams={selectedFootballTeams}
                 teamRoster={combinedFootballTeams}
                 showStandingsTab={false}
+                notificationBell={buildNotificationBell(europaLeagueQual.selectedGame, 'europa-league-qual', selectedFootballTeams)}
             />
 
             {/* Conference League Qualifying Match Modal */}
@@ -1492,6 +1518,7 @@ export default function App() {
                 selectedTeams={selectedFootballTeams}
                 teamRoster={combinedFootballTeams}
                 showStandingsTab={false}
+                notificationBell={buildNotificationBell(conferenceLeagueQual.selectedGame, 'conference-league-qual', selectedFootballTeams)}
             />
 
             {/* Biathlon Race Modal */}

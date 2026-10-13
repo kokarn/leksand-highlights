@@ -91,7 +91,9 @@ export const ShlGameModal = ({
     teamRoster = [],
     standingsFetcher = fetchStandings,
     standingsSport = 'shl',
-    targetVideoId = null
+    targetVideoId = null,
+    // { on, onToggle } for this match's alerts, or null to show no bell
+    notificationBell = null
 }) => {
     const { colors } = useTheme();
     const router = useRouter();
@@ -514,6 +516,7 @@ export const ShlGameModal = ({
                             startDateTime={startDateTime}
                             onClose={handleClose}
                             onTeamPress={(side) => navigateToHeaderTeam(side === 'home' ? homeCode : awayCode)}
+                            notificationBell={notificationBell}
                         />
 
                         {/* Tab Bar */}

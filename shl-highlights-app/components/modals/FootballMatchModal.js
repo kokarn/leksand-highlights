@@ -103,7 +103,7 @@ const FOOTBALL_BASE_TABS = [
 ];
 const FOOTBALL_STANDINGS_TAB = { key: 'standings', title: 'Standings', icon: 'podium-outline' };
 
-export const FootballMatchModal = ({ match, details, videos = [], visible, onClose, loading, onRefresh, refreshing = false, selectedTeams = [], teamRoster = [], showStandingsTab = false, sport = 'allsvenskan', activeTab: controlledActiveTab, onTabChange, targetVideoId = null }) => {
+export const FootballMatchModal = ({ match, details, videos = [], visible, onClose, loading, onRefresh, refreshing = false, selectedTeams = [], teamRoster = [], showStandingsTab = false, sport = 'allsvenskan', activeTab: controlledActiveTab, onTabChange, targetVideoId = null, notificationBell = null }) => {
     const { colors } = useTheme();
     const router = useRouter();
     const { width: windowWidth } = useWindowDimensions();
@@ -709,6 +709,7 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
                     statusText={info?.statusText}
                     onClose={handleClose}
                     onTeamPress={(side) => navigateToHeaderTeam(side === 'home' ? homeCode : awayCode)}
+                    notificationBell={notificationBell}
                 />
 
                 {/* Tab Bar */}

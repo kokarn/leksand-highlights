@@ -3,6 +3,7 @@ import { Platform, PermissionsAndroid } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS, FCM_TOPICS, PRE_GAME_LEAGUES, LEGACY_FOOTBALL_LEAGUE_IDS } from '../constants';
+import { gameTopic, gameOverrideKey, pruneGameOverrides } from '../utils/gameNotifications';
 
 // Silence Firebase modular API deprecation warnings (namespaced API still works in v23)
 // TODO: Migrate to modular API in a future release
@@ -33,6 +34,8 @@ const LEAGUE_BY_ID = PRE_GAME_LEAGUES.reduce((acc, l) => { acc[l.id] = l; return
  * - team_{code} - individual team subscription (e.g., team_lif, team_aik)
  * - pre_game_{league} - one topic per league for pre-game reminders
  *   (see PRE_GAME_LEAGUES in constants). Each league is toggled independently.
+ * - mute_{sport}_{gameId} / game_{sport}_{gameId} - one match muted despite a
+ *   followed team, or opted in without one (see utils/gameNotifications.js)
  */
 export function usePushNotifications() {
     const [isInitialized, setIsInitialized] = useState(false);
@@ -48,6 +51,12 @@ export function usePushNotifications() {
 
     // Track all current team topics
     const currentTeamsRef = useRef(new Set());
+
+    // Per-match overrides: { 'sport:gameId': { kind, startDateTime } }. State for
+    // rendering the bell, mirrored in a ref so buildCurrentTopicList (which has no
+    // deps, by design) reads the latest without being rebuilt.
+    const [gameOverrides, setGameOverrides] = useState({});
+    const gameOverridesRef = useRef({});
 
     // Queue for pending topic updates before initialization
     const pendingTeamUpdatesRef = useRef(null);
@@ -183,6 +192,15 @@ export function usePushNotifications() {
         // Add team topics
         for (const team of currentTeamsRef.current) {
             topics.push(`team_${team}`);
+        }
+
+        // Add per-match overrides
+        for (const [key, entry] of Object.entries(gameOverridesRef.current)) {
+            const [sport, ...rest] = key.split(':');
+            const topic = gameTopic(entry.kind, sport, rest.join(':'));
+            if (topic) {
+                topics.push(topic);
+            }
         }
 
         return topics;
@@ -362,6 +380,35 @@ export function usePushNotifications() {
 
                 console.log('[FCM] Synced team topics on init:', allTeams);
 
+                // Restore per-match overrides, dropping any for long-finished
+                // matches so their topics do not pile up on the device.
+                let savedOverrides = {};
+                try {
+                    savedOverrides = JSON.parse(await AsyncStorage.getItem(STORAGE_KEYS.GAME_NOTIFICATION_OVERRIDES) || '{}') || {};
+                } catch (e) {
+                    console.error('[FCM] Error parsing saved match overrides:', e);
+                }
+                const { kept, expired } = pruneGameOverrides(savedOverrides, Date.now());
+                for (const { key, kind } of expired) {
+                    const [sport, ...rest] = key.split(':');
+                    const topic = gameTopic(kind, sport, rest.join(':'));
+                    if (topic) {
+                        await unsubscribeFromTopic(topic);
+                    }
+                }
+                for (const [key, entry] of Object.entries(kept)) {
+                    const [sport, ...rest] = key.split(':');
+                    const topic = gameTopic(entry.kind, sport, rest.join(':'));
+                    if (topic) {
+                        await subscribeToTopic(topic);
+                    }
+                }
+                if (expired.length) {
+                    await AsyncStorage.setItem(STORAGE_KEYS.GAME_NOTIFICATION_OVERRIDES, JSON.stringify(kept));
+                }
+                gameOverridesRef.current = kept;
+                setGameOverrides(kept);
+
                 // Listen for token refresh
                 const unsubscribeTokenRefresh = messaging().onTokenRefresh(async (newToken) => {
                     console.log('[FCM] Token refreshed');
@@ -528,6 +575,48 @@ export function usePushNotifications() {
     }, [applyTeamTopics]);
 
     /**
+     * Set or clear one match's override.
+     * @param {{sport: string, gameId: string, startDateTime?: string}} game
+     * @param {'mute'|'game'|null} kind - null clears it
+     */
+    const setGameOverride = useCallback(async ({ sport, gameId, startDateTime }, kind) => {
+        if (!sport || !gameId) {
+            return;
+        }
+        const key = gameOverrideKey(sport, gameId);
+        const previous = gameOverridesRef.current[key];
+        const next = { ...gameOverridesRef.current };
+        if (kind) {
+            next[key] = { kind, startDateTime: startDateTime || null };
+        } else {
+            delete next[key];
+        }
+        gameOverridesRef.current = next;
+        setGameOverrides(next);
+        await AsyncStorage.setItem(STORAGE_KEYS.GAME_NOTIFICATION_OVERRIDES, JSON.stringify(next));
+
+        if (!messaging || !isInitializedRef.current) {
+            // Init subscribes to everything stored, so nothing is lost.
+            return;
+        }
+        if (previous && previous.kind !== kind) {
+            const oldTopic = gameTopic(previous.kind, sport, gameId);
+            if (oldTopic) {
+                await unsubscribeFromTopic(oldTopic);
+            }
+        }
+        if (kind && previous?.kind !== kind) {
+            const newTopic = gameTopic(kind, sport, gameId);
+            if (newTopic) {
+                await subscribeToTopic(newTopic);
+            }
+        }
+        if (fcmToken) {
+            await registerWithServer(fcmToken, await buildCurrentTopicList());
+        }
+    }, [subscribeToTopic, unsubscribeFromTopic, fcmToken, registerWithServer, buildCurrentTopicList]);
+
+    /**
      * Get all current topics (for debugging)
      */
     const getTags = useCallback(async () => {
@@ -587,6 +676,8 @@ export function usePushNotifications() {
         goalNotificationsEnabled,
         // Per-league pre-game reminder state: { [leagueId]: boolean }
         preGameLeagues,
+        // Per-match overrides: { 'sport:gameId': { kind: 'mute'|'game', startDateTime } }
+        gameOverrides,
 
         // Actions
         requestPermission,
@@ -594,6 +685,8 @@ export function usePushNotifications() {
         toggleGoalNotifications,
         // Per-league pre-game reminder toggle: togglePreGameLeague(leagueId, enabled)
         togglePreGameLeague,
+        // setGameOverride({ sport, gameId, startDateTime }, 'mute' | 'game' | null)
+        setGameOverride,
         setTeamTags,
         getTags,
         syncTeamTags
