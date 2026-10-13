@@ -19,13 +19,32 @@ class BiathlonProvider extends BaseProvider {
             'Accept': 'application/json'
         };
 
-        // Current season identifier
-        this.currentSeason = '2025-26';
     }
 
     /**
-     * Get the 2025-26 World Cup calendar
-     * This is a curated list based on official IBU calendar
+     * The current season, e.g. '2026-27', derived from today's date.
+     *
+     * Was a hardcoded '2025-26', which left the whole sport on last winter's
+     * schedule and standings once the season turned over. A World Cup season runs
+     * late November to March and the IBU lists the next one long before it starts,
+     * so the switch happens on 1 July — the dead middle of the off-season. A getter
+     * rather than a constructor value so a long-running server rolls over too.
+     * (fetchAllGames still merges in the previous season until the new one has a
+     * completed race, so the off-season does not show an empty list.)
+     */
+    get currentSeason() {
+        return this.getSeasonForDate(new Date());
+    }
+
+    getSeasonForDate(date) {
+        const year = date.getUTCFullYear();
+        const startYear = date.getUTCMonth() >= 6 ? year : year - 1;
+        return `${startYear}-${String(startYear + 1).slice(-2)}`;
+    }
+
+    /**
+     * The 2025-26 World Cup calendar, a last-resort fallback for when the IBU API
+     * is unreachable. Curated by hand, so it does not follow currentSeason.
      */
     getSeasonCalendar() {
         return [
