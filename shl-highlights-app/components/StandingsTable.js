@@ -82,7 +82,7 @@ export const StandingsTable = ({
     onTeamPress
 }) => {
     const { colors, isDark } = useTheme();
-    const { width: windowWidth } = useWindowDimensions();
+    const { width: windowWidth, fontScale } = useWindowDimensions();
 
     if (standings.length === 0) {
         return (
@@ -96,7 +96,7 @@ export const StandingsTable = ({
     const favoriteTokens = buildFavoriteTokens(selectedTeams, teamRoster);
     const dividerPositions = getDividerPositions(standings, league || sport);
 
-    const layout = standingsColumnLayout(windowWidth);
+    const layout = standingsColumnLayout(windowWidth, fontScale);
     const columns = statColumns(isHockey, layout.showGoals);
 
     // The feed's own note wins; a league whose feed sends none falls back to the
@@ -115,9 +115,11 @@ export const StandingsTable = ({
     // `flexBasis` keeps the measured width as the starting point so the columns
     // hold their relative proportions (a rank column stays narrower than +/-),
     // while flexGrow spends the surplus on the cells. Without this the surplus
-    // went into the gaps between columns — 365px of it at 1440px.
+    // went into the gaps between columns — 365px of it at 1440px. They never
+    // shrink below that width, though: it is what holds a two-digit value on one
+    // line, and the name column is the one that can truncate.
     const statStyle = (name) => (layout.fill
-        ? { flexGrow: 1, flexShrink: 1, flexBasis: layout[name], maxWidth: layout.statMaxWidth }
+        ? { flexGrow: 1, flexShrink: 0, flexBasis: layout[name], maxWidth: layout.statMaxWidth }
         : { width: layout[name] });
     const colWidth = {
         stat: statStyle('stat'),
@@ -134,14 +136,16 @@ export const StandingsTable = ({
         <View style={styles.table}>
             {/* Header Row */}
             <View style={[styles.tableRow, styles.tableRowHeader, rowLayout, { backgroundColor: isDark ? '#2c2c2e' : colors.cardHeader, borderBottomColor: colors.cardBorder }]}>
-                <Text style={[styles.tableHeaderText, headerText, statStyle('rank'), { color: colors.textSecondary }]}>#</Text>
+                <Text style={[styles.tableHeaderText, headerText, statStyle('rank'), { color: colors.textSecondary }]} numberOfLines={1} maxFontSizeMultiplier={layout.maxFontScale}>#</Text>
                 <View style={teamColStyle}>
-                    <Text style={[styles.tableHeaderText, headerText, styles.textLeft, { color: colors.textSecondary }]}>Team</Text>
+                    <Text style={[styles.tableHeaderText, headerText, styles.textLeft, { color: colors.textSecondary }]} maxFontSizeMultiplier={layout.maxFontScale}>Team</Text>
                 </View>
                 {columns.map(column => (
                     <Text
                         key={column.key}
                         style={[styles.tableHeaderText, headerText, colWidth[column.width], { color: colors.textSecondary }]}
+                        numberOfLines={1}
+                        maxFontSizeMultiplier={layout.maxFontScale}
                     >
                         {column.label}
                     </Text>
@@ -178,7 +182,7 @@ export const StandingsTable = ({
                 return (
                     <Fragment key={team.teamUuid || team.teamCode || team.teamName}>
                         <RowContainer {...rowProps} style={[styles.tableRow, rowLayout, { borderBottomColor: colors.separator }, isLastRow && styles.tableRowLast, isFavorite && { backgroundColor: colors.chipActive }, isLiveRow && { backgroundColor: liveRowTint(isDark) }]}>
-                        <Text style={[styles.tableCell, cellText, statStyle('rank'), { color: colors.text }]}>
+                        <Text style={[styles.tableCell, cellText, statStyle('rank'), { color: colors.text }]} numberOfLines={1} maxFontSizeMultiplier={layout.maxFontScale}>
                             {formatStatValue(team.position)}
                         </Text>
                         <View style={[teamColStyle, styles.teamCell, { gap: layout.teamGap }]}>
@@ -191,7 +195,7 @@ export const StandingsTable = ({
                             ) : (
                                 <View style={[styles.teamLogoPlaceholder, { width: layout.logo, height: layout.logo, borderRadius: layout.logo / 2, backgroundColor: colors.separator }]} />
                             )}
-                            <Text style={[styles.teamName, cellText, { color: colors.text }]} numberOfLines={1}>
+                            <Text style={[styles.teamName, cellText, { color: colors.text }]} numberOfLines={1} maxFontSizeMultiplier={layout.maxFontScale}>
                                 {displayName}
                             </Text>
                         </View>
@@ -205,6 +209,8 @@ export const StandingsTable = ({
                                     colWidth[column.width],
                                     { color: column.emphasis ? colors.text : colors.textSecondary }
                                 ]}
+                                numberOfLines={1}
+                                maxFontSizeMultiplier={layout.maxFontScale}
                             >
                                 {formatStatValue(team[column.field])}
                             </Text>
@@ -218,7 +224,7 @@ export const StandingsTable = ({
                                     any row, so their boundaries fall back to the
                                     league's own table and stop being bare lines. */}
                                 {dividerLabel(team, position) ? (
-                                    <Text style={[styles.dividerLabel, { color: colors.textMuted, backgroundColor: colors.card }]} numberOfLines={1}>
+                                    <Text style={[styles.dividerLabel, { color: colors.textMuted, backgroundColor: colors.card }]} numberOfLines={1} maxFontSizeMultiplier={layout.maxFontScale}>
                                         {dividerLabel(team, position)}
                                     </Text>
                                 ) : null}

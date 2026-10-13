@@ -29,7 +29,7 @@ test('the standings scope renders only the leagues that are switched on', () => 
     assert.match(appSource, /\{visible\.map\(\(entry, index\) => \(/);
     assert.doesNotMatch(appSource, /\{leagues\.map\(\(entry, index\) => \(/);
     // isLeagueVisible must be a dependency or the scope keeps a stale filter.
-    assert.match(appSource, /\}, \[windowWidth, isLeagueVisible\]\)/);
+    assert.match(appSource, /\}, \[windowWidth, fontScale, isLeagueVisible\]\)/);
 });
 
 test('a hidden league is not fetched either', () => {

@@ -67,13 +67,13 @@ export const LeagueStandingsBlock = ({
 }) => {
     const router = useRouter();
     const { colors } = useTheme();
-    const { width: windowWidth } = useWindowDimensions();
+    const { width: windowWidth, fontScale } = useWindowDimensions();
     // This card is THE card: StandingsTable used to draw an identical one inside
     // it (same background, same 1px border, same radius 12), so on a 390px phone
     // the doubled chrome left the row 318px of 390. The table now draws only rows
     // and runs to this card's edges, which is why the horizontal padding here is
     // 0 and the header carries its own inset instead.
-    const layout = standingsColumnLayout(windowWidth);
+    const layout = standingsColumnLayout(windowWidth, fontScale);
 
     const resolvedLeague = useMemo(
         () => (typeof league === 'string' ? getLeagueBySlug(league) : league) || null,

@@ -97,7 +97,7 @@ import {
 
 export default function App() {
     // Feeds the standings scope's horizontal padding; see renderStandingsScope.
-    const { width: windowWidth } = useWindowDimensions();
+    const { width: windowWidth, fontScale } = useWindowDimensions();
 
     // User preferences
     const {
@@ -442,7 +442,7 @@ export default function App() {
         }
         return (
             <ScrollView
-                contentContainerStyle={[styles.listContent, { paddingHorizontal: standingsColumnLayout(windowWidth).screenPadding }]}
+                contentContainerStyle={[styles.listContent, { paddingHorizontal: standingsColumnLayout(windowWidth, fontScale).screenPadding }]}
                 showsVerticalScrollIndicator={false}
             >
                 {visible.map((entry, index) => (
@@ -460,7 +460,7 @@ export default function App() {
                 ))}
             </ScrollView>
         );
-    }, [windowWidth, isLeagueVisible]);
+    }, [windowWidth, fontScale, isLeagueVisible]);
 
     const renderHockeyStandings = useCallback(() => renderStandingsScope([
         { slug: 'shl', family: 'hockey', data: shlStandings, loading: shlStandingsLoading, favorites: selectedTeams, roster: combinedHockeyTeams, liveGames: shl.allGames },

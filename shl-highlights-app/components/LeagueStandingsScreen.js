@@ -26,10 +26,10 @@ import { standingsColumnLayout } from '../utils/standingsPresentation';
 export function LeagueStandingsScreen({ league, family, highlightTeamCode, highlightTeamName }) {
     const router = useRouter();
     const { colors } = useTheme();
-    const { width: windowWidth } = useWindowDimensions();
+    const { width: windowWidth, fontScale } = useWindowDimensions();
     // Outermost of the three paddings that inset the table; see the block and
     // standingsColumnLayout for why they shrink on a wide screen.
-    const { screenPadding } = standingsColumnLayout(windowWidth);
+    const { screenPadding } = standingsColumnLayout(windowWidth, fontScale);
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);

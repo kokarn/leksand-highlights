@@ -98,6 +98,10 @@ const GOALS_MIN_WIDTH = 700;
 const FULL_NAME_MIN_WIDTH = 900;
 // Above this the columns flex to fill the row instead of sitting at fixed widths.
 const FILL_MIN_WIDTH = 560;
+// The most the system font may grow table text (maxFontSizeMultiplier). Past this
+// the stat columns cannot widen to match on a phone without pushing the name
+// column off the row: at 2x they alone would need 428dp of a 352dp row.
+const MAX_TABLE_FONT_SCALE = 1.3;
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
@@ -126,8 +130,18 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
  * capped well below the 2x column cap — a 24px digit in a table row reads as
  * broken regardless of how wide the window is.
  *
+ * The system font scale counts as much as the width. Type grows with it but a dp
+ * width does not, so with a large font setting a two-digit value wrapped onto two
+ * lines in its 26px column (issue #50). Every threshold is therefore measured in
+ * text units — the width divided by the font scale — and every column that holds
+ * text is widened by it. A phone set to a small display size and a large font
+ * reports a wide viewport, which is how that table came to show GF/GA as well.
+ *
  * @param {number} [windowWidth] - viewport width in dp (useWindowDimensions)
- * @returns {{showGoals: boolean, fullTeamName: boolean, fill: boolean,
+ * @param {number} [fontScale] - system font scale (useWindowDimensions); clamped
+ *        to [1, maxFontScale], so a small font setting keeps the phone metrics and
+ *        a huge one is capped on the text as well as on the columns
+ * @returns {{maxFontScale: number, showGoals: boolean, fullTeamName: boolean, fill: boolean,
  *            statMaxWidth: number|null, teamMinWidth: number,
  *            rank: number, stat: number, goalDiff: number, points: number,
  *            logo: number, cellFontSize: number, headerFontSize: number,
@@ -135,12 +149,19 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
  *            blockPaddingH: number, blockPaddingTop: number,
  *            blockHeaderPaddingH: number, screenPadding: number}}
  */
-export const standingsColumnLayout = (windowWidth) => {
-    const width = Number.isFinite(windowWidth) && windowWidth > 0 ? windowWidth : PHONE_WIDTH;
+export const standingsColumnLayout = (windowWidth, fontScale = 1) => {
+    const textScale = Number.isFinite(fontScale) ? clamp(fontScale, 1, MAX_TABLE_FONT_SCALE) : 1;
+    const dpWidth = Number.isFinite(windowWidth) && windowWidth > 0 ? windowWidth : PHONE_WIDTH;
+    const width = dpWidth / textScale;
     const scale = clamp(width / PHONE_WIDTH, 1, 2);
     const fill = width >= FILL_MIN_WIDTH;
-    const stat = Math.round(26 * scale);
+    // A text-holding column's width, in dp.
+    const textColumn = (base) => Math.round(base * scale * textScale);
+    const stat = textColumn(26);
     return {
+        // Pass as maxFontSizeMultiplier on every Text in the table, or glyphs
+        // outgrow the columns sized for them here.
+        maxFontScale: MAX_TABLE_FONT_SCALE,
         showGoals: width >= GOALS_MIN_WIDTH,
         fullTeamName: width >= FULL_NAME_MIN_WIDTH,
         // Columns grow to fill the row rather than leaving the surplus in gaps.
@@ -149,11 +170,11 @@ export const standingsColumnLayout = (windowWidth) => {
         // rather than as a column, and the name column is the better home for
         // the remaining width.
         statMaxWidth: fill ? Math.round(stat * 1.5) : null,
-        teamMinWidth: fill ? 150 : 0,
-        rank: Math.round(22 * scale),
+        teamMinWidth: fill ? Math.round(150 * textScale) : 0,
+        rank: textColumn(22),
         stat,
-        goalDiff: Math.round(32 * scale),
-        points: Math.round(30 * scale),
+        goalDiff: textColumn(32),
+        points: textColumn(30),
         logo: Math.round(clamp(18 * scale, 18, 26)),
         cellFontSize: Math.round(clamp(12 * scale, 12, 15)),
         headerFontSize: Math.round(clamp(10 * scale, 10, 12)),

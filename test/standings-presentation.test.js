@@ -230,6 +230,46 @@ test('metrics stop growing at 2x so a huge window keeps digits legible', async (
     assert.equal(wide.logo, 26);
 });
 
+// --- font scale (issue #50) ---------------------------------------------------
+// A large system font grows the digits but not a dp width, so a two-digit value
+// wrapped onto two lines in its 26px column. The screenshot came from a phone that
+// also reported a wide viewport (small display size), which is why it showed GF/GA.
+
+test('a large font scale widens every column that holds text', async () => {
+    const { standingsColumnLayout } = await load();
+    const normal = standingsColumnLayout(390);
+    const large = standingsColumnLayout(390, 1.25);
+    for (const key of ['rank', 'stat', 'goalDiff', 'points']) {
+        assert.equal(large[key], Math.round(normal[key] * 1.25), key);
+    }
+});
+
+test('thresholds are measured in text units, not dp', async () => {
+    const { standingsColumnLayout } = await load();
+    // 720dp would show GF/GA at the default font; at 1.3x it is ~554 text units.
+    assert.equal(standingsColumnLayout(720).showGoals, true);
+    const large = standingsColumnLayout(720, 1.3);
+    assert.equal(large.showGoals, false);
+    assert.equal(large.fill, false);
+});
+
+test('a huge font scale is capped, so the name column survives on a phone', async () => {
+    const { standingsColumnLayout } = await load();
+    const capped = standingsColumnLayout(390, 2);
+    assert.deepEqual(capped, standingsColumnLayout(390, capped.maxFontScale));
+    // Stats at the cap still leave a 390px row room for a club name.
+    const row = 390 - 2 * (capped.screenPadding + 1 + capped.rowPaddingH);
+    const stats = capped.rank + 5 * capped.stat + capped.goalDiff + capped.points;
+    assert.ok(row - stats >= 60, `name column would be ${row - stats}px`);
+});
+
+test('a small or bogus font scale keeps the phone metrics', async () => {
+    const { standingsColumnLayout } = await load();
+    for (const fontScale of [undefined, null, 0, 0.85, NaN]) {
+        assert.equal(standingsColumnLayout(390, fontScale).stat, 26, `fontScale: ${String(fontScale)}`);
+    }
+});
+
 test('the table reads its widths from the shared metrics, not from constants', async () => {
     const fs = require('node:fs');
     const source = fs.readFileSync(path.join(appDir, 'components', 'StandingsTable.js'), 'utf8');
@@ -291,6 +331,6 @@ test('all four standings surfaces reclaim their stacked padding', async () => {
     // The sport tab must override listContent rather than edit it: that style is
     // shared with the game-card lists, which do want the wider gutter.
     const index = fs.readFileSync(path.join(appDir, 'app', 'index.js'), 'utf8');
-    assert.match(index, /listContent,\s*\{ paddingHorizontal: standingsColumnLayout\(windowWidth\)\.screenPadding \}/);
+    assert.match(index, /listContent,\s*\{ paddingHorizontal: standingsColumnLayout\(windowWidth, fontScale\)\.screenPadding \}/);
     assert.match(index, /listContent: \{\s*paddingHorizontal: 12/);
 });
