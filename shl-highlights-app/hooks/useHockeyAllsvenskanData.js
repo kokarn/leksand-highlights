@@ -142,14 +142,19 @@ export function useHockeyAllsvenskanData(activeSport, selectedTeams, options = {
     }, []);
 
     // Derived teams list
+    // Keeps each team's `names` from the games feed, not just its code: the team
+    // picker searches on them, and a bare code meant "Leksand" found nothing
+    // because only "LIF" was there to match.
     const teams = useMemo(() => {
-        const teamCodes = new Set();
+        const byCode = new Map();
         games.forEach(g => {
-            if (g.homeTeamInfo?.code) teamCodes.add(g.homeTeamInfo.code);
-            if (g.awayTeamInfo?.code) teamCodes.add(g.awayTeamInfo.code);
+            [g.homeTeamInfo, g.awayTeamInfo].forEach(info => {
+                if (info?.code && !byCode.has(info.code)) {
+                    byCode.set(info.code, { code: info.code, names: info.names });
+                }
+            });
         });
-        return Array.from(teamCodes)
-            .map(code => ({ code }))
+        return Array.from(byCode.values())
             .sort((a, b) => a.code.localeCompare(b.code));
     }, [games]);
 
