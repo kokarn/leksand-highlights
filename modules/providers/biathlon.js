@@ -29,8 +29,8 @@ class BiathlonProvider extends BaseProvider {
      * late November to March and the IBU lists the next one long before it starts,
      * so the switch happens on 1 July — the dead middle of the off-season. A getter
      * rather than a constructor value so a long-running server rolls over too.
-     * (fetchAllGames still merges in the previous season until the new one has a
-     * completed race, so the off-season does not show an empty list.)
+     * (fetchAllGames falls back to the previous season only while the IBU has
+     * published no events for the new one, so the off-season is not an empty list.)
      */
     get currentSeason() {
         return this.getSeasonForDate(new Date());
@@ -552,17 +552,7 @@ class BiathlonProvider extends BaseProvider {
         try {
             const events = await this.fetchIbuSchedule();
             if (events.length) {
-                const currentRaces = this.transformToRaces(events);
-                const hasCompleted = currentRaces.some(race => race.state === 'completed');
-                if (!hasCompleted) {
-                    const previousSeason = this.getPreviousSeason();
-                    const previousEvents = await this.fetchIbuSchedule(previousSeason);
-                    if (previousEvents.length) {
-                        const previousRaces = this.transformToRaces(previousEvents);
-                        return this.mergeRaces(previousRaces, currentRaces);
-                    }
-                }
-                return currentRaces;
+                return this.transformToRaces(events);
             }
         } catch (error) {
             console.warn(`[${this.name}] Falling back to static calendar:`, error.message);

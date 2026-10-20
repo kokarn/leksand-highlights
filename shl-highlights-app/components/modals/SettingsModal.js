@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { View, Text, Modal, ScrollView, TouchableOpacity, Image, StyleSheet, Switch, Alert, Platform } from 'react-native';
+import { View, Text, Modal, ScrollView, TouchableOpacity, Image, StyleSheet, Switch, Alert, Platform, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
@@ -8,6 +8,7 @@ import { getTeamLogoUrl, resolveMediaUrl } from '../../api/shl';
 import { GENDER_OPTIONS, THEME_OPTIONS, PRE_GAME_LEAGUES, ALL_MATCHES_LEAGUES, HOCKEY_LEAGUE_FACETS, FOOTBALL_LEAGUE_FACETS } from '../../constants';
 import { useTheme } from '../../contexts';
 import { TeamFilterGrid } from '../TeamFilterGrid';
+import { buildBugReportUrl } from '../../utils/bugReport';
 
 const APP_VERSION = Constants.expoConfig?.version || '1.0.0';
 const DEBUG_TAP_COUNT = 5; // Number of taps to show debug menu
@@ -148,6 +149,21 @@ export const SettingsModal = ({
         );
     };
     
+    // Opens a pre-filled GitHub issue; the user reviews and submits it themselves.
+    const handleReportBug = async () => {
+        const url = buildBugReportUrl({
+            appVersion: APP_VERSION,
+            platform: Platform.OS,
+            osVersion: Platform.Version,
+            model: Constants.deviceName
+        });
+        try {
+            await Linking.openURL(url);
+        } catch {
+            Alert.alert('Could not open GitHub', 'Report the bug at github.com/kokarn/leksand-highlights/issues instead.');
+        }
+    };
+
     const themedStyles = getThemedStyles(colors, isDark);
 
     // App Updates card (Android sideload self-update). Extracted so it can render
@@ -686,6 +702,12 @@ export const SettingsModal = ({
                     <Text style={themedStyles.resetOnboardingText}>Restart setup wizard</Text>
                 </TouchableOpacity>
 
+                {/* Report a bug */}
+                <TouchableOpacity style={themedStyles.reportBugButton} onPress={handleReportBug}>
+                    <Ionicons name="bug-outline" size={20} color={colors.accent} />
+                    <Text style={themedStyles.reportBugText}>Report a bug</Text>
+                </TouchableOpacity>
+
                 {/* Version - Tap 5 times for debug menu */}
                 <TouchableOpacity 
                     style={styles.versionContainer} 
@@ -1091,6 +1113,23 @@ const getThemedStyles = (colors, isDark) => ({
         borderRadius: 12,
         borderWidth: 1,
         borderColor: 'rgba(255, 159, 10, 0.3)'
+    },
+    reportBugButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        marginTop: 12,
+        paddingVertical: 16,
+        backgroundColor: colors.card,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.cardBorder
+    },
+    reportBugText: {
+        color: colors.accent,
+        fontSize: 15,
+        fontWeight: '600'
     },
     resetOnboardingText: {
         color: colors.accentOrange,
