@@ -887,26 +887,80 @@ async function sendWithCondition({ condition, title, body, data = {}, urgent = f
 }
 
 /**
+ * Send one alert to specific device tokens (FCM multicast, 500 per call).
+ * @returns {Promise<{success: boolean, error?: string, sent?: number}>}
+ */
+async function sendToTokens({ tokens, title, body, data = {}, urgent = false }) {
+    if (!isConfigured()) {
+        console.warn('[FCM] Not configured. Cannot send notification.');
+        return { success: false, error: 'Not configured' };
+    }
+    const payload = {
+        notification: { title, body },
+        data: Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])),
+        ...buildDeliveryConfig({ urgent })
+    };
+    let sent = 0;
+    let lastError = null;
+    for (let i = 0; i < tokens.length; i += 500) {
+        try {
+            const response = await admin.messaging().sendEachForMulticast({ ...payload, tokens: tokens.slice(i, i + 500) });
+            sent += response.successCount;
+            stats.notificationsSent += response.successCount;
+            stats.errors += response.failureCount;
+            if (response.failureCount) {
+                lastError = response.responses.find(r => !r.success)?.error?.message || 'send failed';
+            }
+        } catch (error) {
+            stats.errors++;
+            lastError = error.message;
+            logError('sendToTokens', error.message, { title, body });
+        }
+    }
+    stats.lastSent = formatSwedishTimestamp();
+    console.log(`[FCM] Sent "${title}" to ${sent}/${tokens.length} devices`);
+    return sent > 0 || !lastError ? { success: true, sent } : { success: false, error: lastError };
+}
+
+/**
  * Send one alert about one match to everyone buildGameCondition targets.
  *
- * FCM's docs only show && and || in conditions, so the mute clause's `!` is the
- * one part that could be refused. If it is, the alert is resent without it: a
- * muted match briefly un-muting is far better than every goal alert failing.
+ * Muting never goes through FCM: a topic condition cannot be relied on to
+ * support `!`, and a muted match that still pushes is the bug. With no muted
+ * device the alert is a plain topic send (no `!`). When some device has muted
+ * the match, the audience is worked out here from the registered topics and
+ * sent to those tokens directly, minus the muted ones.
  * @returns {Promise<{success: boolean, error?: string, messageId?: string}>}
  */
 async function sendGameAlert({ typeTopic, teamCodes, sport, gameId, title, body, data, urgent = false }) {
-    const condition = buildGameCondition(typeTopic, teamCodes, sport, gameId);
+    const condition = buildGameCondition(typeTopic, teamCodes, sport, gameId, { muting: false });
     if (!condition) {
         return { success: false, error: 'Missing team topics for targeting' };
     }
-    console.log(`[FCM] Sending ${data?.type || 'game'} notification to: ${condition}`);
-    const result = await sendWithCondition({ condition, title, body, data, urgent });
-    if (result.success || !/invalid/i.test(result.error || '')) {
-        return result;
+    const muteTopic = buildGameTopic('mute', sport, gameId);
+    const devices = Object.entries(subscribersData.subscribers);
+    const muted = muteTopic ? devices.filter(([, d]) => (d.topics || []).includes(muteTopic)) : [];
+
+    if (!muted.length) {
+        console.log(`[FCM] Sending ${data?.type || 'game'} notification to: ${condition}`);
+        return sendWithCondition({ condition, title, body, data, urgent });
     }
-    const fallback = buildGameCondition(typeTopic, teamCodes, sport, gameId, { muting: false });
-    console.warn(`[FCM] Condition refused (${result.error}); retrying without the mute clause`);
-    return sendWithCondition({ condition: fallback, title, body, data, urgent });
+
+    const teamTopics = (teamCodes || []).filter(Boolean).map(c => `team_${sanitizeTopicName(c)}`);
+    const gameTopic = buildGameTopic('game', sport, gameId);
+    const tokens = devices
+        .filter(([, d]) => {
+            const topics = d.topics || [];
+            if (!topics.includes(typeTopic)) return false;
+            if (gameTopic && topics.includes(gameTopic)) return true;
+            return !topics.includes(muteTopic) && teamTopics.some(t => topics.includes(t));
+        })
+        .map(([token]) => token);
+    console.log(`[FCM] Sending ${data?.type || 'game'} notification to ${tokens.length} devices (${muted.length} muted ${muteTopic})`);
+    if (!tokens.length) {
+        return { success: true, sent: 0 };
+    }
+    return sendToTokens({ tokens, title, body, data, urgent });
 }
 
 /**
