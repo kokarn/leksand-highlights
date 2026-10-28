@@ -6,7 +6,7 @@ const pushNotifications = require('../modules/fcm-notifications');
 const AllsvenskanProvider = require('../modules/providers/allsvenskan');
 
 const { extractGoalDetails } = goalWatcher.__test;
-const { buildGoalNotificationMessage } = pushNotifications.__test;
+const { buildGoalNotificationMessage, buildGoalNotificationTitle } = pushNotifications.__test;
 
 test('AllsvenskanProvider.isGoalClip detects action.goal tag only', () => {
     const p = new AllsvenskanProvider();
@@ -136,3 +136,20 @@ test('goal notification message falls back when scorer is unknown', () => {
     assert.equal(message, "AIK scores! 3-2 (88' 2nd half)");
 });
 
+
+test('goal notification title leaves the league out (#59)', () => {
+    assert.equal(buildGoalNotificationTitle({ sport: 'shl', scoringTeamName: 'Leksands IF' }), '🏒 Goal: Leksands IF');
+    assert.equal(buildGoalNotificationTitle({ sport: 'allsvenskan', scoringTeamName: 'AIK' }), '⚽ Goal: AIK');
+    assert.equal(buildGoalNotificationTitle({ sport: 'svenska-cupen', scoringTeamName: 'AIK' }), '🏆 Goal: AIK');
+
+    for (const sport of ['shl', 'hockeyallsvenskan', 'allsvenskan', 'svenska-cupen', 'europa-league-qual', 'conference-league-qual']) {
+        const title = buildGoalNotificationTitle({ sport, scoringTeamName: 'AIK' });
+        assert.doesNotMatch(title, /SHL|Allsvenskan|Cupen|League|Qualifier/i, `${sport}: ${title}`);
+    }
+});
+
+test('goal notification title copes with a missing team name and an unknown sport', () => {
+    assert.equal(buildGoalNotificationTitle({ sport: 'shl', scoringTeamName: 'Unknown' }), '🏒 Goal!');
+    assert.equal(buildGoalNotificationTitle({ sport: 'shl', scoringTeamName: undefined }), '🏒 Goal!');
+    assert.equal(buildGoalNotificationTitle({ sport: 'curling', scoringTeamName: 'AIK' }), '🏒 Goal: AIK');
+});

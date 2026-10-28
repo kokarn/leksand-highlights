@@ -687,6 +687,27 @@ function buildGoalNotificationMessage({
     return message;
 }
 
+// Map EVERY tracked sport to its own emoji. This must stay in sync with the
+// goal-watcher SPORTS list — a sport missing here silently falls back to the
+// SHL emoji. The emoji says which kind of match it is; the league name is
+// deliberately NOT in the title, because it only crowded out the part people
+// read the notification for.
+const SPORT_EMOJIS = {
+    'shl': '🏒',
+    'hockeyallsvenskan': '🏒',
+    'allsvenskan': '⚽',
+    'svenska-cupen': '🏆',
+    'europa-league-qual': '⚽',
+    'conference-league-qual': '⚽',
+    'biathlon': '🎯'
+};
+
+function buildGoalNotificationTitle({ sport, scoringTeamName }) {
+    const emoji = SPORT_EMOJIS[sport] || SPORT_EMOJIS.shl;
+    const teamName = normalizeKnownName(scoringTeamName);
+    return teamName ? `${emoji} Goal: ${teamName}` : `${emoji} Goal!`;
+}
+
 /**
  * Send a goal notification
  * @param {Object} goal - Goal details
@@ -714,21 +735,7 @@ async function sendGoalNotification(goal, options = {}) {
 
     const normalizedSport = normalizeSportForDeepLink(sport);
 
-    // Build notification content.
-    // Map EVERY tracked sport to its own emoji + league label. This must stay in
-    // sync with the goal-watcher SPORTS list — a sport missing here silently falls
-    // back to the SHL default and goals get labelled with the wrong league.
-    const SPORT_LABELS = {
-        'shl': { emoji: '🏒', label: 'SHL' },
-        'hockeyallsvenskan': { emoji: '🏒', label: 'HockeyAllsvenskan' },
-        'allsvenskan': { emoji: '⚽', label: 'Allsvenskan' },
-        'svenska-cupen': { emoji: '🏆', label: 'Svenska Cupen' },
-        'europa-league-qual': { emoji: '⚽', label: 'Europa League Qualifier' },
-        'conference-league-qual': { emoji: '⚽', label: 'Conference League Qualifier' },
-        'biathlon': { emoji: '🎯', label: 'Biathlon' }
-    };
-    const { emoji: sportEmoji, label: sportLabel } = SPORT_LABELS[normalizedSport] || SPORT_LABELS.shl;
-    const title = `${sportEmoji} ${sportLabel} Goal: ${scoringTeamName}`;
+    const title = buildGoalNotificationTitle({ sport: normalizedSport, scoringTeamName });
 
     const message = buildGoalNotificationMessage({
         scorerName,
@@ -1192,6 +1199,7 @@ module.exports = {
     clearErrorLog,
     __test: {
         buildGoalNotificationMessage,
+        buildGoalNotificationTitle,
         buildGameDeepLink,
         buildGameTopic,
         buildGameCondition
