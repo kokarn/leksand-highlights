@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getTeamLogoUrl } from '../../api/shl';
-import { extractScore, formatRelativeDateEnglish, formatTime } from '../../utils';
+import { extractScore, formatRelativeDateEnglish, formatTime, formatLiveClock, formatFinalLabel } from '../../utils';
 import { useTheme } from '../../contexts';
 import { getTeamName, getTeamCode } from '../../utils/teamIdentity';
 
@@ -28,6 +28,11 @@ export const GameCard = memo(function GameCard({ game, onPress, leagueLabel = 'S
     const homeScore = extractScore(game?.homeTeamResult, homeTeam);
     const awayScore = extractScore(game?.awayTeamResult, awayTeam);
     const gameState = game?.state ?? '-';
+    // Hockey's live clock ("2nd 14:32") rides in statusText, the same slot football's minute does.
+    const liveClock = isLive ? formatLiveClock(game?.statusText) : null;
+    const statusLabel = isLive
+        ? (liveClock || 'Live')
+        : (formatFinalLabel(game) ?? (gameState === 'pre-game' ? 'Pre-game' : gameState));
     
     const cardColors = isDark 
         ? ['#1c1c1e', '#2c2c2e'] 
@@ -86,8 +91,8 @@ export const GameCard = memo(function GameCard({ game, onPress, leagueLabel = 'S
                         <Text style={[styles.scoreText, isCompactLayout && styles.scoreTextCompact, { color: colors.text }]}>
                             {homeScore} - {awayScore}
                         </Text>
-                        <Text style={[styles.statusText, { color: colors.textMuted }]} numberOfLines={1}>
-                            {gameState === 'post-game' ? 'Final' : gameState === 'pre-game' ? 'Pre-game' : gameState}
+                        <Text style={[styles.statusText, { color: isLive ? '#FF453A' : colors.textMuted }]} numberOfLines={1}>
+                            {statusLabel}
                         </Text>
                     </View>
                     <View style={[styles.teamContainer, isCompactLayout && styles.teamContainerCompact]}>

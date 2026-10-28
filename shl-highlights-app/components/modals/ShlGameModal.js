@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { getTeamLogoUrl, fetchStandings, resolveMediaUrl } from '../../api/shl';
 import { getTeamColor } from '../../constants';
-import { getVideoDisplayTitle, formatSwedishDate } from '../../utils';
+import { getVideoDisplayTitle, formatSwedishDate, getDecidedIn, formatFinalLabel } from '../../utils';
 import { useGameDetails } from '../../hooks/useGameDetails';
 import { useVideoPlayer } from '../../hooks/useVideoPlayer';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -273,7 +273,7 @@ export const ShlGameModal = ({
             || game?.venueInfo?.name
             || '-';
         const stateLabel = gameState === 'post-game'
-            ? 'Final'
+            ? (formatFinalLabel(game) ?? 'Final')
             : gameState === 'pre-game'
                 ? 'Pre-game'
                 : gameState || '-';
@@ -517,6 +517,8 @@ export const ShlGameModal = ({
                             awayScore={scoreDisplay.away}
                             state={gameState}
                             startDateTime={startDateTime}
+                            statusText={game?.statusText}
+                            decidedIn={getDecidedIn(game)}
                             onClose={handleClose}
                             onTeamPress={(side) => navigateToHeaderTeam(side === 'home' ? homeCode : awayCode)}
                             notificationBell={notificationBell}

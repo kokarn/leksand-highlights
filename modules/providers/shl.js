@@ -593,12 +593,65 @@ class SHLProvider extends BaseProvider {
                     return {
                         ...game,
                         homeTeamInfo: { ...game.homeTeamInfo, score: actualScore.home },
-                        awayTeamInfo: { ...game.awayTeamInfo, score: actualScore.away }
+                        awayTeamInfo: { ...game.awayTeamInfo, score: actualScore.away },
+                        // Only a live game has a clock worth showing; football's
+                        // statusText carries the match minute the same way.
+                        ...(game.state === 'live' && actualScore.clock && { statusText: actualScore.clock })
                     };
                 }
             }
             return game;
         }));
+    }
+
+    /**
+     * Where a live game is, read off its play-by-play events: "2nd 14:32",
+     * "OT 02:27", "SO", or "End of 1st" between periods.
+     *
+     * The schedule feed carries no clock at all, so this is as fresh as the
+     * newest event (a shot, a whistle) — a few seconds to a minute behind the
+     * arena. `time` is ELAPSED time in the period, which is what a hockey clock
+     * conventionally shows when counting up; it is not converted to time
+     * remaining, since the feed gives no period length (playoff OT is 20:00,
+     * regular-season OT is 5:00).
+     *
+     * @param {Array<object>} events - play-by-play events
+     * @returns {string|null} null when no period has started
+     */
+    static liveClockFromEvents(events) {
+        if (!Array.isArray(events) || events.length === 0) {
+            return null;
+        }
+
+        // Periods are 1..3, then 4+ for overtime, then the string 'shootout'.
+        const rank = (period) => (period === 'shootout' ? Infinity : Number(period));
+        const label = (period) => {
+            if (period === 'shootout') return 'SO';
+            const n = Number(period);
+            if (n === 1) return '1st';
+            if (n === 2) return '2nd';
+            if (n === 3) return '3rd';
+            return n === 4 ? 'OT' : `OT${n - 3}`;
+        };
+
+        const periods = events.filter(e => e?.type === 'period' && e.started && !Number.isNaN(rank(e.period)));
+        if (!periods.length) {
+            return null;
+        }
+        const current = periods.reduce((a, b) => (rank(b.period) > rank(a.period) ? b : a));
+
+        if (current.period === 'shootout') {
+            return 'SO';
+        }
+        if (current.finished) {
+            return `End of ${label(current.period)}`;
+        }
+
+        const times = events
+            .filter(e => e?.period === current.period && /^\d{1,2}:\d{2}$/.test(e.time || ''))
+            .map(e => e.time.padStart(5, '0'))
+            .sort();
+        return times.length ? `${label(current.period)} ${times[times.length - 1]}` : label(current.period);
     }
 
     async _fetchActualScore(game) {
@@ -626,7 +679,8 @@ class SHLProvider extends BaseProvider {
                         const latest = eventsWithScore[0];
                         return {
                             home: latest.homeTeam.score,
-                            away: latest.awayTeam.score
+                            away: latest.awayTeam.score,
+                            clock: SHLProvider.liveClockFromEvents(events)
                         };
                     }
                 }

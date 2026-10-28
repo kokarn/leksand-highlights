@@ -229,6 +229,41 @@ export const formatLiveClock = (statusText) => {
 };
 
 /**
+ * How a finished hockey game ended, when it didn't end in regulation: 'OT' or
+ * 'SO' (a shootout is decided after overtime, so it wins over `overtime`).
+ * Null for a regulation finish, an unfinished game, or football, whose games
+ * carry neither flag.
+ * @param {Object} game
+ * @returns {'OT'|'SO'|null}
+ */
+export const getDecidedIn = (game) => {
+    if (game?.state !== 'post-game') {
+        return null;
+    }
+    if (game.shootout || game.afterShootout) {
+        return 'SO';
+    }
+    if (game.overtime || game.afterOvertime) {
+        return 'OT';
+    }
+    return null;
+};
+
+/**
+ * The status line under a score: "Final", "Final/OT", "Final/SO" for a finished
+ * game, otherwise null so the caller keeps its own label.
+ * @param {Object} game
+ * @returns {string|null}
+ */
+export const formatFinalLabel = (game) => {
+    if (game?.state !== 'post-game') {
+        return null;
+    }
+    const decidedIn = getDecidedIn(game);
+    return decidedIn ? `Final/${decidedIn}` : 'Final';
+};
+
+/**
  * Get penalty minutes from penalty event
  * @param {Object} penalty - Penalty event object
  * @returns {string} Penalty minutes

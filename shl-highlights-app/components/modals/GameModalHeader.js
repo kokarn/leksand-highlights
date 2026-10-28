@@ -27,6 +27,7 @@ export const GameModalHeader = ({
     state,
     startDateTime,
     statusText,
+    decidedIn = null,
     onClose,
     onTeamPress,
     notificationBell = null
@@ -37,7 +38,7 @@ export const GameModalHeader = ({
     const isCompactHeader = windowWidth <= 430;
     const liveClock = isLive ? formatLiveClock(statusText) : null;
     const stateLabel = state === 'post-game'
-        ? 'Final'
+        ? (decidedIn ? `Final/${decidedIn}` : 'Final')
         : state === 'pre-game'
             ? 'Pre-game'
             : isLive

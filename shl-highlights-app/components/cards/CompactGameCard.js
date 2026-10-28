@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import { extractScore, formatTime, formatLiveClock } from '../../utils';
+import { extractScore, formatTime, formatLiveClock, getDecidedIn } from '../../utils';
 import { useTheme } from '../../contexts';
 import { getTeamName as resolveTeamName, getTeamLogoUri } from '../../utils/teamIdentity';
 
@@ -37,9 +37,11 @@ export const CompactGameCard = memo(function CompactGameCard({ game, onPress, fa
     const homeScore = extractScore(null, homeTeam);
     const awayScore = extractScore(null, awayTeam);
     const formattedTime = formatTime(game?.startDateTime);
-    // Football live games carry a match minute in statusText ("37'", "HT").
-    // Hockey has no live clock, so this is null there and we just show the score.
+    // Live games carry their position in statusText: a football minute ("37'",
+    // "HT") or a hockey period and clock ("2nd 14:32").
     const liveClock = isLive ? formatLiveClock(game?.statusText) : null;
+    // A finished hockey game that went past regulation says so under the score.
+    const decidedIn = getDecidedIn(game);
 
     const stripeColor = isLive ? '#FF453A' : (isFinished ? '#30D158' : colors.accent);
     const scoreColor = isLive ? '#FF453A' : colors.text;
@@ -86,6 +88,9 @@ export const CompactGameCard = memo(function CompactGameCard({ game, onPress, fa
                             </Text>
                             {liveClock && (
                                 <Text style={styles.liveClock} numberOfLines={1}>{liveClock}</Text>
+                            )}
+                            {decidedIn && (
+                                <Text style={[styles.decidedIn, { color: colors.textMuted }]} numberOfLines={1}>{decidedIn}</Text>
                             )}
                         </>
                     )}
@@ -139,7 +144,7 @@ const styles = StyleSheet.create({
         minWidth: 0
     },
     centre: {
-        width: 66,
+        width: 78,
         alignItems: 'center',
         justifyContent: 'center'
     },
@@ -169,6 +174,11 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '700',
         fontVariant: ['tabular-nums']
+    },
+    decidedIn: {
+        fontSize: 10,
+        fontWeight: '700',
+        marginTop: 1
     },
     liveClock: {
         fontSize: 10,
