@@ -69,6 +69,24 @@ test('both modals declare teamRoster so the prop is not silently dropped', () =>
     }
 });
 
+test('a match modal whose league has standings is handed that league\'s games', () => {
+    // The block only offers the Live control when it is given the league's games
+    // to project from. The modals' Standings tab omitted them, so the toggle was
+    // never visible there even with a game in progress (#56). The qualifying
+    // rounds have no standings tab, so they are the only instances left out.
+    const instances = read('app/index.js').match(/<(?:ShlGameModal|FootballMatchModal)\b[\s\S]*?\/>/g) || [];
+    const withStandings = instances.filter((instance) => !/showStandingsTab=\{false\}/.test(instance));
+    assert.equal(withStandings.length, 4, 'SHL, HockeyAllsvenskan, Allsvenskan, Svenska Cupen');
+    for (const instance of withStandings) {
+        assert.match(instance, /liveGames=\{\w+\.allGames\}/, instance.slice(1, instance.indexOf('\n')));
+    }
+    for (const file of ['components/modals/ShlGameModal.js', 'components/modals/FootballMatchModal.js']) {
+        const source = read(file);
+        assert.match(source, /\bliveGames\b[,\s}]/, `${file} declares the prop`);
+        assert.match(source, /liveGames=\{liveGames\}/, `${file} forwards it to the block`);
+    }
+});
+
 test('the grouped layout comes from the league config, not a hardcoded slug', () => {
     // FootballMatchModal used to branch on `sport === 'svenska-cupen'` and the
     // standalone screen on its own standingsFormat read. One predicate now, in

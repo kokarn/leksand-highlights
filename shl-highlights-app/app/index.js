@@ -1427,6 +1427,7 @@ export default function App() {
                 refreshing={shl.refreshingModal}
                 selectedTeams={selectedTeams}
                 teamRoster={combinedHockeyTeams}
+                liveGames={shl.allGames}
                 targetVideoId={shlTargetVideoId}
                 notificationBell={buildNotificationBell(shl.selectedGame, 'shl', selectedTeams)}
             />
@@ -1447,6 +1448,7 @@ export default function App() {
                 teamRoster={combinedHockeyTeams}
                 standingsFetcher={fetchHockeyAllsvenskanStandings}
                 standingsSport="hockeyallsvenskan"
+                liveGames={hockeyAllsvenskan.allGames}
                 targetVideoId={haTargetVideoId}
                 notificationBell={buildNotificationBell(hockeyAllsvenskan.selectedGame, 'hockeyallsvenskan', selectedTeams)}
             />
@@ -1464,6 +1466,7 @@ export default function App() {
                 selectedTeams={selectedFootballTeams}
                 teamRoster={combinedFootballTeams}
                 showStandingsTab={true}
+                liveGames={football.allGames}
                 activeTab={footballActiveTab}
                 onTabChange={setFootballActiveTab}
                 targetVideoId={footballTargetVideoId}
@@ -1484,6 +1487,7 @@ export default function App() {
                 selectedTeams={selectedFootballTeams}
                 teamRoster={combinedFootballTeams}
                 showStandingsTab={true}
+                liveGames={svenskaCupen.allGames}
                 notificationBell={buildNotificationBell(svenskaCupen.selectedGame, 'svenska-cupen', selectedFootballTeams)}
             />
 

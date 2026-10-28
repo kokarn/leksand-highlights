@@ -103,7 +103,7 @@ const FOOTBALL_BASE_TABS = [
 ];
 const FOOTBALL_STANDINGS_TAB = { key: 'standings', title: 'Standings', icon: 'podium-outline' };
 
-export const FootballMatchModal = ({ match, details, videos = [], visible, onClose, loading, onRefresh, refreshing = false, selectedTeams = [], teamRoster = [], showStandingsTab = false, sport = 'allsvenskan', activeTab: controlledActiveTab, onTabChange, targetVideoId = null, notificationBell = null }) => {
+export const FootballMatchModal = ({ match, details, videos = [], visible, onClose, loading, onRefresh, refreshing = false, selectedTeams = [], teamRoster = [], showStandingsTab = false, sport = 'allsvenskan', activeTab: controlledActiveTab, onTabChange, targetVideoId = null, notificationBell = null, liveGames }) => {
     const { colors } = useTheme();
     const router = useRouter();
     const { width: windowWidth } = useWindowDimensions();
@@ -652,6 +652,7 @@ export const FootballMatchModal = ({ match, details, videos = [], visible, onClo
                 loading={loadingStandings}
                 favorites={selectedTeams}
                 teamRoster={teamRoster}
+                liveGames={liveGames}
                 onBeforeNavigate={handleClose}
             />
         </ScrollView>

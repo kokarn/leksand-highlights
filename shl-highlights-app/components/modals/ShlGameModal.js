@@ -91,6 +91,8 @@ export const ShlGameModal = ({
     teamRoster = [],
     standingsFetcher = fetchStandings,
     standingsSport = 'shl',
+    // The league's games, so the standings tab can offer the live projection.
+    liveGames,
     targetVideoId = null,
     // { on, onToggle } for this match's alerts, or null to show no bell
     notificationBell = null
@@ -497,6 +499,7 @@ export const ShlGameModal = ({
                 loading={loadingStandings}
                 favorites={selectedTeams}
                 teamRoster={teamRoster}
+                liveGames={liveGames}
                 onBeforeNavigate={handleClose}
             />
         </ScrollView>
