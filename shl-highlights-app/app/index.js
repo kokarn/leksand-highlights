@@ -1449,6 +1449,7 @@ export default function App() {
                 standingsFetcher={fetchHockeyAllsvenskanStandings}
                 standingsSport="hockeyallsvenskan"
                 liveGames={hockeyAllsvenskan.allGames}
+                showHighlightsTab={false}
                 targetVideoId={haTargetVideoId}
                 notificationBell={buildNotificationBell(hockeyAllsvenskan.selectedGame, 'hockeyallsvenskan', selectedTeams)}
             />

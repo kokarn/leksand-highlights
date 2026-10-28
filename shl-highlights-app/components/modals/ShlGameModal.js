@@ -29,7 +29,7 @@ const SHL_MODAL_TABS = [
     { key: 'highlights', title: 'Highlights', compactTitle: 'Clips', icon: 'videocam' },
     { key: 'standings', title: 'Standings', compactTitle: 'Table', icon: 'podium-outline' }
 ];
-const SHL_TAB_KEYS = SHL_MODAL_TABS.map((tab) => tab.key);
+const NO_HIGHLIGHTS_TABS = SHL_MODAL_TABS.filter((tab) => tab.key !== 'highlights');
 const SWIPE_THRESHOLD = 50;
 const SWIPE_VELOCITY_THRESHOLD = 500;
 
@@ -81,7 +81,7 @@ export const ShlGameModal = ({
     visible,
     loading,
     onClose,
-    activeTab,
+    activeTab: requestedTab,
     onTabChange,
     onRefresh,
     refreshing = false,
@@ -93,6 +93,8 @@ export const ShlGameModal = ({
     standingsSport = 'shl',
     // The league's games, so the standings tab can offer the live projection.
     liveGames,
+    // False for a league with no clip source, so the tab isn't an empty room.
+    showHighlightsTab = true,
     targetVideoId = null,
     // { on, onToggle } for this match's alerts, or null to show no bell
     notificationBell = null
@@ -101,6 +103,10 @@ export const ShlGameModal = ({
     const router = useRouter();
     const { width: windowWidth } = useWindowDimensions();
     const useCompactTabs = windowWidth <= 430;
+    const tabs = showHighlightsTab ? SHL_MODAL_TABS : NO_HIGHLIGHTS_TABS;
+    const tabKeys = tabs.map((tab) => tab.key);
+    // A deep link can still ask for a tab this league doesn't have.
+    const activeTab = tabKeys.includes(requestedTab) ? requestedTab : 'summary';
     const { processedData, scoreDisplay, events, goals, getGoalVideoId } = useGameDetails(gameDetails, game, videos);
     const {
         playingVideoId,
@@ -165,7 +171,7 @@ export const ShlGameModal = ({
     const handleGestureStateChange = ({ nativeEvent }) => {
         if (nativeEvent.state === State.END) {
             const { translationX: tx, velocityX } = nativeEvent;
-            const currentIndex = SHL_TAB_KEYS.indexOf(activeTab);
+            const currentIndex = tabKeys.indexOf(activeTab);
 
             let shouldSwipe = false;
             let direction = 0;
@@ -174,7 +180,7 @@ export const ShlGameModal = ({
             if (Math.abs(tx) > SWIPE_THRESHOLD || Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
                 direction = tx > 0 ? -1 : 1; // Swipe right = go left (previous), swipe left = go right (next)
                 const nextIndex = currentIndex + direction;
-                if (nextIndex >= 0 && nextIndex < SHL_TAB_KEYS.length) {
+                if (nextIndex >= 0 && nextIndex < tabKeys.length) {
                     shouldSwipe = true;
                 }
             }
@@ -186,7 +192,7 @@ export const ShlGameModal = ({
                     duration: 150,
                     useNativeDriver: Platform.OS !== 'web'
                 }).start(() => {
-                    handleTabChange(SHL_TAB_KEYS[currentIndex + direction]);
+                    handleTabChange(tabKeys[currentIndex + direction]);
                     translateX.setValue(direction * SCREEN_WIDTH);
                     Animated.spring(translateX, {
                         toValue: 0,
@@ -526,7 +532,7 @@ export const ShlGameModal = ({
 
                         {/* Tab Bar */}
                         <MatchTabBar
-                            tabs={SHL_MODAL_TABS}
+                            tabs={tabs}
                             activeTab={activeTab}
                             onTabChange={handleTabChange}
                             compact={useCompactTabs}

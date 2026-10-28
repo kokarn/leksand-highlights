@@ -157,3 +157,21 @@ test('the same standings row yields the same team URL from every surface', () =>
     assert.match(read('components/TeamGamesScreen.js'), /params\.set\('name', teamName\)/);
     assert.match(read('components/LeagueStandingsScreen.js'), /key: String\(highlightTeamCode\)\.toUpperCase\(\), name: String\(highlightTeamName\)/);
 });
+
+test('HockeyAllsvenskan has no Clips tab, because it has no clip source', () => {
+    // Its games are looked up on www.shl.se's media/videos-for-game, which has
+    // nothing for HA (always {"items":[]}); the league's highlights live on
+    // YouTube, which the provider doesn't read. An always-empty tab is worse than
+    // none. SHL keeps it, and a deep link to the missing tab falls back to Summary.
+    const index = read('app/index.js');
+    const instances = index.match(/<ShlGameModal\b[\s\S]*?\/>/g) || [];
+    const ha = instances.find((instance) => /standingsSport="hockeyallsvenskan"/.test(instance));
+    const shl = instances.find((instance) => !/standingsSport=/.test(instance));
+    assert.match(ha, /showHighlightsTab=\{false\}/);
+    assert.doesNotMatch(shl, /showHighlightsTab/);
+
+    const modal = read('components/modals/ShlGameModal.js');
+    assert.match(modal, /showHighlightsTab = true/, 'defaults on, so SHL is unchanged');
+    assert.match(modal, /tabKeys\.includes\(requestedTab\) \? requestedTab : 'summary'/);
+    assert.doesNotMatch(modal, /SHL_TAB_KEYS/, 'swipe must use the filtered keys');
+});
