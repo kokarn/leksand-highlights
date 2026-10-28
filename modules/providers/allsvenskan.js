@@ -325,10 +325,15 @@ class AllsvenskanProvider extends BaseProvider {
     }
 
     async fetchSeasonEvents(year) {
-        // The ESPN scoreboard endpoint only returns the current day's games
-        // and the `dates` parameter is no longer functional (returns 400).
-        // Fetch without date params to get the current match day.
-        const url = `${this.scoreboardBaseUrl}?limit=${this.maxEvents}`;
+        // Without `dates` the scoreboard only returns the current match day, which
+        // left every older finished match known only to FotbollPlay. ESPN's
+        // summary endpoint can't resolve a FotbollPlay id, so opening one 404'd
+        // and the match showed no events (#60). A bare year (`dates=2026`) works
+        // and returns the whole season; a day (`dates=20260823`) does too. Only
+        // a start-end RANGE comes back empty. dedupeGamesAcrossSources then
+        // lets the ESPN record win over its FotbollPlay twin, since its id is
+        // the one the summary can open.
+        const url = `${this.scoreboardBaseUrl}?dates=${year}&limit=${this.maxEvents}`;
         const response = await fetch(url, { headers: this.headers });
 
         if (!response.ok) {

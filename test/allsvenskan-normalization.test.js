@@ -269,3 +269,28 @@ test('fetchAllGames still uses the FotbollPlay supplement for Allsvenskan', asyn
     assert.equal(out.length, 1);
     assert.equal(out[0].sport, 'allsvenskan');
 });
+
+// --- the season scoreboard, not just today's (#60) ---------------------------
+// fetchSeasonEvents used to call the scoreboard without `dates`, which returns
+// only the current match day. Every older finished match then came from
+// FotbollPlay alone, and ESPN's summary endpoint cannot resolve a FotbollPlay id
+// (HTTP 404 -> "Game not found"), so old matches opened with no events.
+
+test('fetchSeasonEvents asks ESPN for the whole season by year', async () => {
+    const realFetch = global.fetch;
+    const urls = [];
+    global.fetch = async (url) => {
+        urls.push(String(url));
+        return { ok: true, json: async () => ({ events: [{ id: '1' }] }) };
+    };
+    try {
+        const events = await new AllsvenskanProvider().fetchSeasonEvents(2026);
+        assert.equal(events.length, 1);
+        const params = new URL(urls[0]).searchParams;
+        // A bare year works; a start-end range comes back empty from ESPN.
+        assert.equal(params.get('dates'), '2026');
+        assert.doesNotMatch(params.get('dates'), /-/);
+    } finally {
+        global.fetch = realFetch;
+    }
+});
