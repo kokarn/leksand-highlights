@@ -41,3 +41,61 @@ test('fetchAllGames does not mix in the previous season once the current one has
     await provider.fetchAllGames();
     assert.deepEqual(requested, [provider.currentSeason]);
 });
+
+// The IBU datacenter 401s every data request without an `apikey` header, which
+// made fetchAllGames fall back to last season's static calendar (all completed),
+// so Home had no biathlon rows. The key is read from the site's own bundle.
+test('IBU requests carry the apikey read from the site, and a 401 refreshes it', async () => {
+    const KEY_OLD = '00000000-0000-0000-0000-000000000001';
+    const KEY_NEW = '00000000-0000-0000-0000-000000000002';
+    let currentKey = KEY_OLD;
+    const dataKeys = [];
+    const realFetch = global.fetch;
+    global.fetch = async url => {
+        const target = String(url);
+        const reply = (status, body) => ({
+            ok: status >= 200 && status < 300,
+            status,
+            text: async () => body,
+            json: async () => JSON.parse(body)
+        });
+        if (target.endsWith('biathlonresults.com/')) {
+            return reply(200, '<script src="/vendors~x.js"></script><script src="/app~y.js"></script>');
+        }
+        if (target.endsWith('/app~y.js')) {
+            return reply(200, `window.ApiKey = "${currentKey}";`);
+        }
+        if (target.endsWith('/vendors~x.js')) {
+            return reply(200, 'nothing here');
+        }
+        return reply(500, '{}');
+    };
+    const provider = new BiathlonProvider();
+    const calls = [];
+    const wrapped = global.fetch;
+    global.fetch = async (url, options = {}) => {
+        const target = String(url);
+        if (!target.includes('/modules/sportapi/api/')) {
+            return wrapped(url, options);
+        }
+        calls.push(options.headers.apikey);
+        dataKeys.push(options.headers.apikey);
+        const accepted = options.headers.apikey === currentKey;
+        return {
+            ok: accepted,
+            status: accepted ? 200 : 401,
+            json: async () => [{ EventId: 'E1' }]
+        };
+    };
+    try {
+        assert.deepEqual(await provider.fetchIbuJson('Events?SeasonId=2627', 'events'), [{ EventId: 'E1' }]);
+        assert.deepEqual(dataKeys, [KEY_OLD]);
+
+        // The site rotates its key: the next call 401s, refreshes and retries once.
+        currentKey = KEY_NEW;
+        assert.deepEqual(await provider.fetchIbuJson('Events?SeasonId=2627', 'events'), [{ EventId: 'E1' }]);
+        assert.deepEqual(dataKeys, [KEY_OLD, KEY_OLD, KEY_NEW]);
+    } finally {
+        global.fetch = realFetch;
+    }
+});

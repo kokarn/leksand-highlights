@@ -14,6 +14,8 @@ class BiathlonProvider extends BaseProvider {
         // IBU Datacenter API base URL
         this.baseUrl = 'https://www.biathlonworld.com';
         this.resultsApiBaseUrl = 'https://www.biathlonresults.com/modules/sportapi/api';
+        this.siteUrl = 'https://www.biathlonresults.com/';
+        this.apiKeyPromise = process.env.BIATHLON_API_KEY ? Promise.resolve(process.env.BIATHLON_API_KEY) : null;
         this.headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'application/json'
@@ -332,13 +334,62 @@ class BiathlonProvider extends BaseProvider {
         return `${prefix} - ${event.ShortDescription || event.Organizer || 'TBA'}`;
     }
 
+    /**
+     * The IBU datacenter answers data requests with an empty 401 unless they carry
+     * an `apikey` header. The key is public: biathlonresults.com ships it in its
+     * app bundle (`ApiKey = "<uuid>"`) and sends it with every request. We read it
+     * from there on the first request and again whenever the API rejects it, so a
+     * rotated key heals itself. BIATHLON_API_KEY, when set, is used until rejected.
+     * Without it every call 401s and the schedule silently degrades to the static
+     * (previous-season) calendar.
+     */
+    async fetchApiKey() {
+        const pageResponse = await fetch(this.siteUrl, { headers: this.headers });
+        if (!pageResponse.ok) {
+            throw new Error(`IBU site fetch failed (${pageResponse.status})`);
+        }
+        const page = await pageResponse.text();
+        const scriptPaths = [...page.matchAll(/<script[^>]*\ssrc=["']?([^"'\s>]+\.js)/gi)].map(match => match[1]);
+        // The key lives in the app bundles; check them before the vendor ones.
+        scriptPaths.sort((a, b) => Number(!a.includes('app')) - Number(!b.includes('app')));
+        for (const scriptPath of scriptPaths) {
+            const scriptResponse = await fetch(new URL(scriptPath, this.siteUrl), { headers: this.headers });
+            if (!scriptResponse.ok) {
+                continue;
+            }
+            const keyMatch = (await scriptResponse.text()).match(/ApiKey\s*=\s*["']([0-9a-fA-F-]{36})["']/);
+            if (keyMatch) {
+                return keyMatch[1];
+            }
+        }
+        throw new Error('IBU api key not found on the site');
+    }
+
+    async getApiKey({ refresh = false } = {}) {
+        if (refresh || !this.apiKeyPromise) {
+            this.apiKeyPromise = this.fetchApiKey().catch(error => {
+                this.apiKeyPromise = null;
+                throw error;
+            });
+        }
+        return this.apiKeyPromise;
+    }
+
     async fetchIbuJson(endpoint, label) {
         const isAbsolute = typeof endpoint === 'string' && endpoint.startsWith('http');
         const url = isAbsolute ? endpoint : `${this.resultsApiBaseUrl}/${endpoint}`;
         const context = label || 'data';
 
         try {
-            const response = await fetch(url, { headers: this.headers });
+            const request = async refresh => {
+                const apikey = await this.getApiKey({ refresh });
+                return fetch(url, { headers: { ...this.headers, apikey } });
+            };
+            let response = await request(false);
+            if (response.status === 401) {
+                // The site rotated its key: read the current one and retry once.
+                response = await request(true);
+            }
             if (!response.ok) {
                 throw new Error(`IBU ${context} fetch failed (${response.status})`);
             }
