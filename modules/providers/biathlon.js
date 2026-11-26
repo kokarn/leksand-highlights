@@ -344,7 +344,10 @@ class BiathlonProvider extends BaseProvider {
      * (previous-season) calendar.
      */
     async fetchApiKey() {
-        const pageResponse = await fetch(this.siteUrl, { headers: this.headers });
+        // The site and its bundles are not JSON: with this.headers' Accept:
+        // application/json the site answers 406, so ask for what a browser asks for.
+        const siteHeaders = { 'User-Agent': this.headers['User-Agent'], 'Accept': '*/*' };
+        const pageResponse = await fetch(this.siteUrl, { headers: siteHeaders });
         if (!pageResponse.ok) {
             throw new Error(`IBU site fetch failed (${pageResponse.status})`);
         }
@@ -353,7 +356,7 @@ class BiathlonProvider extends BaseProvider {
         // The key lives in the app bundles; check them before the vendor ones.
         scriptPaths.sort((a, b) => Number(!a.includes('app')) - Number(!b.includes('app')));
         for (const scriptPath of scriptPaths) {
-            const scriptResponse = await fetch(new URL(scriptPath, this.siteUrl), { headers: this.headers });
+            const scriptResponse = await fetch(new URL(scriptPath, this.siteUrl), { headers: siteHeaders });
             if (!scriptResponse.ok) {
                 continue;
             }

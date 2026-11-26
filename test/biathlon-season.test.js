@@ -51,8 +51,12 @@ test('IBU requests carry the apikey read from the site, and a 401 refreshes it',
     let currentKey = KEY_OLD;
     const dataKeys = [];
     const realFetch = global.fetch;
-    global.fetch = async url => {
+    global.fetch = async (url, options = {}) => {
         const target = String(url);
+        // biathlonresults.com answers 406 to a page/bundle request that only accepts JSON.
+        if (!target.includes('/modules/sportapi/api/') && options.headers?.Accept === 'application/json') {
+            return { ok: false, status: 406, text: async () => '', json: async () => ({}) };
+        }
         const reply = (status, body) => ({
             ok: status >= 200 && status < 300,
             status,
