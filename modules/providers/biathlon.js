@@ -526,7 +526,10 @@ class BiathlonProvider extends BaseProvider {
                 const hasResultStatus = ['OFFICIAL', 'PROVISIONAL', 'UNOFFICIAL'].includes(resultStatus);
                 const isFinished = scheduleStatus === 'FINISHED' || scheduleStatus === 'COMPLETED' || hasResultStatus;
                 // Only use isLiveWindow if the race is actually ongoing (not finished)
-                const isLive = Boolean(race.isLive) || Boolean(race.hasLiveData) || (isLiveWindow && !isFinished);
+                // IBU raises hasLiveData/isLive as soon as the start list is published (hours early),
+                // so only trust those flags from 10 minutes before the scheduled start.
+                const isNearStart = timeSinceStart > -600000;
+                const isLive = (isNearStart && (Boolean(race.isLive) || Boolean(race.hasLiveData))) || (isLiveWindow && !isFinished);
                 // Check if IBU has marked the race as started but no live data yet (athletes warming up, about to start)
                 const isIbuStarted = scheduleStatus === 'STARTED' || scheduleStatus === 'IN PROGRESS';
                 const isStartingSoon = isIbuStarted && !Boolean(race.hasLiveData) && !isFinished;
@@ -731,7 +734,9 @@ class BiathlonProvider extends BaseProvider {
             const diffMs = now - raceDateTime;
             const isPast = raceDateTime < now;
             const isLiveWindow = !isPast && diffMs > -3600000 && diffMs < 7200000;
-            const isLive = Boolean(race.isLive) || Boolean(race.hasLiveData) || isLiveWindow;
+            // IBU flags live data hours before the start (start list published), so gate on proximity to start.
+            const isNearStart = diffMs > -600000;
+            const isLive = (isNearStart && (Boolean(race.isLive) || Boolean(race.hasLiveData))) || isLiveWindow;
             // Check if IBU has marked the race as started but no live data yet
             const isIbuStarted = scheduleStatus === 'STARTED' || scheduleStatus === 'IN PROGRESS';
             const isStartingSoon = isIbuStarted && !Boolean(race.hasLiveData) && !isFinished;

@@ -5,6 +5,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { getNationFlag } from '../../api/shl';
 import { GENDER_COLORS } from '../../constants';
 import { formatSwedishDate } from '../../utils';
+
+const formatLocalStartTime = (iso) => {
+    if (!iso) {
+        return null;
+    }
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) {
+        return null;
+    }
+    return date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+};
 import { useTheme } from '../../contexts/ThemeContext';
 import { ShootingDisplay, ShootingInline } from '../biathlon';
 
@@ -65,7 +76,7 @@ function groupByNation(participants) {
             groups[nation].startOrder = item?.StartOrder ?? null;
             groups[nation].totalTime = item?.TotalTime || item?.Result || null;
             groups[nation].behind = item?.Behind || null;
-            groups[nation].startInfo = item?.StartInfo || null;
+            groups[nation].startInfo = formatLocalStartTime(item?.StartTime) || item?.StartInfo || null;
             groups[nation].bib = item?.Bib || null;
         } else {
             // Add athlete to the team
@@ -142,7 +153,8 @@ const ResultRow = ({ item, index, hasResults, isExpanded, onToggle, isRaceComple
     const isTopThree = isRaceCompleted && parseInt(rank, 10) <= 3;
 
     // For start list, show start info
-    const startInfo = !hasResults ? item?.StartInfo : null;
+    // IBU's StartInfo is in the venue's local time; render StartTime in the device timezone instead.
+    const startInfo = !hasResults ? (formatLocalStartTime(item?.StartTime) || item?.StartInfo) : null;
 
     return (
         <TouchableOpacity
