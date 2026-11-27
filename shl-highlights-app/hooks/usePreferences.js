@@ -21,8 +21,8 @@ export function usePreferences() {
     const [selectedGenders, setSelectedGenders] = useState([]);
 
     // Schedule scope: 'myteams' shows followed teams only, 'all' shows every
-    // match today rendered as compact rows. Defaults to 'myteams'.
-    const [scheduleScope, setScheduleScope] = useState('myteams');
+    // match today rendered as compact rows. Defaults to 'all'.
+    const [scheduleScope, setScheduleScope] = useState('all');
 
     // Leagues the user has switched off in Settings (array of `sport` slugs).
     // Hidden everywhere a league is listed: the "All matches" schedule and the
@@ -77,7 +77,8 @@ export function usePreferences() {
                 if (savedNations) setSelectedNations(JSON.parse(savedNations));
                 if (savedGenders) setSelectedGenders(JSON.parse(savedGenders));
                 if (savedFootballTeams) setSelectedFootballTeams(JSON.parse(savedFootballTeams));
-                if (savedScheduleScope) setScheduleScope(savedScheduleScope);
+                // 'myteams' was removed; installs that saved it fall back to 'all'.
+                if (savedScheduleScope && savedScheduleScope !== 'myteams') setScheduleScope(savedScheduleScope);
                 if (savedHiddenLeagues) setHiddenAllMatchesLeagues(JSON.parse(savedHiddenLeagues));
 
                 if (!onboardingComplete) {

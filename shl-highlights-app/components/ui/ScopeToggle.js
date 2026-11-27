@@ -3,15 +3,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts';
 
 /**
- * Segmented control to switch the schedule between the user's followed teams
- * ('myteams') and every match of the day ('all'). Styled to match ViewToggle /
+ * Segmented control to switch the schedule between every match ('all')
+ * and the league standings ('standings'). Styled to match ViewToggle /
  * SportTab so it reads as part of the same selector family.
  */
 export const ScopeToggle = ({ scope, onChange }) => {
     const { colors } = useTheme();
 
     const options = [
-        { key: 'myteams', label: 'My teams', icon: 'star-outline' },
         { key: 'all', label: 'All matches', icon: 'grid-outline' },
         { key: 'standings', label: 'Standings', icon: 'stats-chart' }
     ];

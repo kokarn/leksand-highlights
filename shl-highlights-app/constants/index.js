@@ -37,7 +37,7 @@ export const STORAGE_KEYS = {
     LEGACY_PRE_GAME_FOOTBALL_ENABLED: 'preGameFootballEnabled',
     // Theme preference
     THEME_MODE: 'themeMode',
-    // Schedule scope: 'myteams' (followed teams only) vs 'all' (every match, compact)
+    // Schedule scope: 'all' (every match, compact) vs 'standings'
     SCHEDULE_SCOPE: 'scheduleScope',
     // Leagues HIDDEN from the "All matches" view. Stored as the hidden set (not
     // the shown set) so newly-added leagues appear by default and need no
