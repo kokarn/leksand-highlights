@@ -17,7 +17,7 @@ const onboardingSource = read('components/modals/OnboardingModal.js');
 
 test('schedule scope is persisted via a dedicated storage key', () => {
     assert.match(constantsSource, /SCHEDULE_SCOPE:\s*'scheduleScope'/);
-    assert.match(prefsSource, /const \[scheduleScope, setScheduleScope\] = useState\('myteams'\)/);
+    assert.match(prefsSource, /const \[scheduleScope, setScheduleScope\] = useState\('all'\)/);
     // loads and saves through AsyncStorage like the other prefs
     assert.match(prefsSource, /AsyncStorage\.getItem\(STORAGE_KEYS\.SCHEDULE_SCOPE\)/);
     assert.match(prefsSource, /savePreference\(STORAGE_KEYS\.SCHEDULE_SCOPE, scope\)/);
@@ -119,8 +119,8 @@ test('switching scope does NOT scroll to the top — the key change remounts the
     assert.match(appSource, /key=\{`football-\$\{scheduleScope\}`\}/);
 });
 
-test('ScopeToggle offers My teams / All matches and is wired into both tabs', () => {
-    assert.match(scopeToggleSource, /key: 'myteams', label: 'My teams'/);
+test('ScopeToggle offers All matches / Standings and is wired into both tabs', () => {
+    assert.doesNotMatch(scopeToggleSource, /myteams/);
     assert.match(scopeToggleSource, /key: 'all', label: 'All matches'/);
     const count = (appSource.match(/<ScopeToggle scope=\{scheduleScope\} onChange=\{handleScheduleScopeChange\}/g) || []).length;
     assert.equal(count, 2);
